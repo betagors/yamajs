@@ -1,10 +1,5 @@
 // Simple in-memory storage for todos
-interface Todo {
-  id: string;
-  title: string;
-  completed: boolean;
-  createdAt: string;
-}
+import type { Todo } from "./types.js"; // Generated types!
 
 class TodoStorage {
   private todos: Todo[] = [];

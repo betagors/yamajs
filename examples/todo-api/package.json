@@ -6,10 +6,12 @@
   "scripts": {
     "dev": "tsx dev-server.mjs",
     "start": "tsx dev-server.mjs",
+    "typegen": "yama-typegen yama.yaml src/types.ts",
     "build": "echo \"Example doesn't need building, but ensure dependencies are built: pnpm build:packages\""
   },
   "dependencies": {
-    "@yama/runtime-node": "workspace:*"
+    "@yama/runtime-node": "workspace:*",
+    "@yama/core": "workspace:*"
   },
   "devDependencies": {
     "tsx": "^4.7.0"

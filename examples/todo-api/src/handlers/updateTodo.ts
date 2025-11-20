@@ -1,10 +1,6 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import { todoStorage } from "../storage.js";
-
-interface UpdateTodoInput {
-  title?: string;
-  completed?: boolean;
-}
+import type { UpdateTodoInput } from "../types.js"; // Generated types!
 
 export async function updateTodo(
   request: FastifyRequest<{ 

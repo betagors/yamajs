@@ -13,3 +13,6 @@ export {
   type ValidationResult
 } from "./models.js";
 
+// Export type generation
+export { generateTypes } from "./typegen.js";
+

@@ -1,10 +1,11 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import { todoStorage } from "../storage.js";
+import type { Todo } from "../types.js"; // Generated types!
 
 export async function getTodoById(
   request: FastifyRequest<{ Params: { id: string } }>,
   reply: FastifyReply
-) {
+): Promise<Todo | void> {
   const { id } = request.params;
   const todo = todoStorage.getById(id);
 
