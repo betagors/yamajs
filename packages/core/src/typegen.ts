@@ -3,8 +3,32 @@ import type { ModelField, ModelDefinition, YamaModels } from "./models.js";
 /**
  * Convert a Yama model field to TypeScript type string
  */
-function fieldToTypeScript(field: ModelField, indent = 0): string {
+function fieldToTypeScript(
+  field: ModelField,
+  indent = 0,
+  models?: YamaModels,
+  visited: Set<string> = new Set()
+): string {
   const spaces = "  ".repeat(indent);
+  
+  // Handle model references
+  if (field.$ref) {
+    if (visited.has(field.$ref)) {
+      throw new Error(`Circular reference detected in type generation: ${field.$ref}`);
+    }
+    
+    if (!models || !models[field.$ref]) {
+      throw new Error(`Model reference "${field.$ref}" not found in type generation`);
+    }
+    
+    // Return the referenced model name directly
+    return field.$ref;
+  }
+  
+  // Type is required if $ref is not present
+  if (!field.type) {
+    throw new Error(`Field must have either a type or $ref`);
+  }
   
   switch (field.type) {
     case "string":
@@ -36,7 +60,7 @@ function fieldToTypeScript(field: ModelField, indent = 0): string {
     
     case "array":
       if (field.items) {
-        const itemType = fieldToTypeScript(field.items, indent);
+        const itemType = fieldToTypeScript(field.items, indent, models, visited);
         return `${itemType}[]`;
       }
       return "unknown[]";
@@ -45,7 +69,7 @@ function fieldToTypeScript(field: ModelField, indent = 0): string {
       if (field.properties) {
         const props: string[] = [];
         for (const [propName, propField] of Object.entries(field.properties)) {
-          const propType = fieldToTypeScript(propField, indent + 1);
+          const propType = fieldToTypeScript(propField, indent + 1, models, visited);
           const optional = propField.required ? "" : "?";
           props.push(`${spaces}  ${propName}${optional}: ${propType};`);
         }
@@ -61,11 +85,16 @@ function fieldToTypeScript(field: ModelField, indent = 0): string {
 /**
  * Generate TypeScript type definition for a model
  */
-function generateModelType(modelName: string, modelDef: ModelDefinition): string {
+function generateModelType(
+  modelName: string,
+  modelDef: ModelDefinition,
+  models?: YamaModels,
+  visited: Set<string> = new Set()
+): string {
   const fields: string[] = [];
   
   for (const [fieldName, field] of Object.entries(modelDef.fields)) {
-    const fieldType = fieldToTypeScript(field, 1);
+    const fieldType = fieldToTypeScript(field, 1, models, visited);
     const optional = field.required ? "" : "?";
     fields.push(`  ${fieldName}${optional}: ${fieldType};`);
   }
@@ -85,7 +114,7 @@ export function generateTypes(models: YamaModels): string {
   const typeDefinitions: string[] = [];
   
   for (const [modelName, modelDef] of Object.entries(models)) {
-    typeDefinitions.push(generateModelType(modelName, modelDef));
+    typeDefinitions.push(generateModelType(modelName, modelDef, models));
   }
   
   return imports + typeDefinitions.join("\n\n") + "\n";

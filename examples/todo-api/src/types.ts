@@ -19,10 +19,5 @@ export interface UpdateTodoInput {
 }
 
 export interface TodoList {
-  todos?: {
-    id: string;
-    title: string;
-    completed?: boolean;
-    createdAt?: string;
-  }[];
+  todos?: Todo[];
 }

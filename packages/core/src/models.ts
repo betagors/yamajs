@@ -3,7 +3,7 @@ import addFormats from "ajv-formats";
 
 // Type definitions for YAML model structure
 export interface ModelField {
-  type: "string" | "number" | "boolean" | "integer" | "array" | "object";
+  type?: "string" | "number" | "boolean" | "integer" | "array" | "object";
   required?: boolean;
   default?: unknown;
   format?: string;
@@ -13,6 +13,7 @@ export interface ModelField {
   max?: number;
   pattern?: string;
   enum?: unknown[];
+  $ref?: string; // Reference to another model name
 }
 
 export interface ModelDefinition {
@@ -33,7 +34,35 @@ export interface ValidationResult {
 /**
  * Convert Yama model field to JSON Schema property
  */
-function fieldToJsonSchema(field: ModelField, fieldName: string): Record<string, unknown> {
+function fieldToJsonSchema(
+  field: ModelField,
+  fieldName: string,
+  models?: YamaModels,
+  visited: Set<string> = new Set()
+): Record<string, unknown> {
+  // Handle model references
+  if (field.$ref) {
+    if (visited.has(field.$ref)) {
+      throw new Error(`Circular reference detected: ${field.$ref}`);
+    }
+
+    if (!models || !models[field.$ref]) {
+      throw new Error(`Model reference "${field.$ref}" not found`);
+    }
+
+    // Recursively convert the referenced model
+    visited.add(field.$ref);
+    const referencedModel = models[field.$ref];
+    const schema = modelToJsonSchema(field.$ref, referencedModel, models, visited);
+    visited.delete(field.$ref);
+    return schema;
+  }
+
+  // Type is required if $ref is not present
+  if (!field.type) {
+    throw new Error(`Field "${fieldName}" must have either a type or $ref`);
+  }
+
   const schema: Record<string, unknown> = {
     type: field.type === "integer" ? "integer" : field.type
   };
@@ -63,7 +92,7 @@ function fieldToJsonSchema(field: ModelField, fieldName: string): Record<string,
 
   // Handle array types
   if (field.type === "array" && field.items) {
-    schema.items = fieldToJsonSchema(field.items, "item");
+    schema.items = fieldToJsonSchema(field.items, "item", models, visited);
   }
 
   // Handle object types
@@ -71,7 +100,7 @@ function fieldToJsonSchema(field: ModelField, fieldName: string): Record<string,
     const properties: Record<string, unknown> = {};
     const required: string[] = [];
     for (const [propName, propField] of Object.entries(field.properties)) {
-      properties[propName] = fieldToJsonSchema(propField, propName);
+      properties[propName] = fieldToJsonSchema(propField, propName, models, visited);
       if (propField.required) {
         required.push(propName);
       }
@@ -88,13 +117,15 @@ function fieldToJsonSchema(field: ModelField, fieldName: string): Record<string,
  */
 export function modelToJsonSchema(
   modelName: string,
-  modelDef: ModelDefinition
+  modelDef: ModelDefinition,
+  models?: YamaModels,
+  visited: Set<string> = new Set()
 ): Record<string, unknown> {
   const properties: Record<string, unknown> = {};
   const required: string[] = [];
 
   for (const [fieldName, field] of Object.entries(modelDef.fields)) {
-    properties[fieldName] = fieldToJsonSchema(field, fieldName);
+    properties[fieldName] = fieldToJsonSchema(field, fieldName, models, visited);
     
     if (field.required) {
       required.push(fieldName);
@@ -129,7 +160,7 @@ export class ModelValidator {
     this.validators.clear();
 
     for (const [modelName, modelDef] of Object.entries(models)) {
-      const schema = modelToJsonSchema(modelName, modelDef);
+      const schema = modelToJsonSchema(modelName, modelDef, models);
       const validator = this.ajv.compile(schema);
       this.validators.set(modelName, validator);
     }
