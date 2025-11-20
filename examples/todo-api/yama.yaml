@@ -35,11 +35,32 @@ models:
         type: boolean
         required: false
 
+  TodoList:
+    fields:
+      todos:
+        type: array
+        items:
+          type: object
+          properties:
+            id:
+              type: string
+              required: true
+            title:
+              type: string
+              required: true
+            completed:
+              type: boolean
+            createdAt:
+              type: string
+              format: date-time
+
 endpoints:
   - path: /todos
     method: GET
     handler: getTodos
     description: Get all todos
+    response:
+      type: TodoList
   
   - path: /todos
     method: POST
@@ -47,11 +68,15 @@ endpoints:
     description: Create a new todo
     body:
       type: CreateTodoInput
+    response:
+      type: Todo
   
   - path: /todos/:id
     method: GET
     handler: getTodoById
     description: Get a single todo by ID
+    response:
+      type: Todo
   
   - path: /todos/:id
     method: PUT
@@ -59,6 +84,8 @@ endpoints:
     description: Update a todo
     body:
       type: UpdateTodoInput
+    response:
+      type: Todo
   
   - path: /todos/:id
     method: DELETE

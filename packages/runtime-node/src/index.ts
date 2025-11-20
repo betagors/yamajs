@@ -17,6 +17,9 @@ interface YamaConfig {
     body?: {
       type: string;
     };
+    response?: {
+      type: string;
+    };
   }>;
 }
 
@@ -92,7 +95,7 @@ function registerRoutes(
   }
 
   for (const endpoint of config.endpoints) {
-    const { path, method, handler: handlerName, description, body } = endpoint;
+    const { path, method, handler: handlerName, description, body, response } = endpoint;
     const handlerFn = handlers[handlerName];
 
     if (!handlerFn) {
@@ -130,7 +133,30 @@ function registerRoutes(
 
         const result = await handlerFn(request, reply);
         
-        // TODO: Validate response if response model is specified
+        // Validate response if response model is specified
+        if (response?.type && result !== undefined) {
+          const responseValidation = validator.validate(response.type, result);
+          
+          if (!responseValidation.valid) {
+            console.error(`❌ Response validation failed for ${handlerName}:`, responseValidation.errors);
+            // In development, return validation errors; in production, log and return generic error
+            if (process.env.NODE_ENV === "development") {
+              reply.status(500).send({
+                error: "Response validation failed",
+                message: validator.formatErrors(responseValidation.errors || []),
+                errors: responseValidation.errors
+              });
+              return;
+            } else {
+              reply.status(500).send({
+                error: "Internal server error",
+                message: "Response does not match expected schema"
+              });
+              return;
+            }
+          }
+        }
+
         return result;
       } catch (error) {
         console.error(`Error in handler ${handlerName}:`, error);
@@ -142,7 +168,7 @@ function registerRoutes(
     });
 
     console.log(
-      `✅ Registered route: ${method.toUpperCase()} ${path} -> ${handlerName}${description ? ` (${description})` : ""}${body?.type ? ` [validates: ${body.type}]` : ""}`
+      `✅ Registered route: ${method.toUpperCase()} ${path} -> ${handlerName}${description ? ` (${description})` : ""}${body?.type ? ` [validates body: ${body.type}]` : ""}${response?.type ? ` [validates response: ${response.type}]` : ""}`
     );
   }
 }
