@@ -7,6 +7,7 @@ export {
   ModelValidator,
   createModelValidator,
   modelToJsonSchema,
+  fieldToJsonSchema,
   type ModelField,
   type ModelDefinition,
   type YamaModels,

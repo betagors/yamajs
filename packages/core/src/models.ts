@@ -34,7 +34,7 @@ export interface ValidationResult {
 /**
  * Convert Yama model field to JSON Schema property
  */
-function fieldToJsonSchema(
+export function fieldToJsonSchema(
   field: ModelField,
   fieldName: string,
   models?: YamaModels,
@@ -189,6 +189,30 @@ export class ModelValidator {
     }
 
     return { valid: true };
+  }
+
+  /**
+   * Validate data against a JSON schema directly (without registering as a model)
+   */
+  validateSchema(schema: Record<string, unknown>, data: unknown): ValidationResult {
+    try {
+      const validator = this.ajv.compile(schema);
+      const valid = validator(data);
+
+      if (!valid) {
+        return {
+          valid: false,
+          errors: validator.errors || []
+        };
+      }
+
+      return { valid: true };
+    } catch (error) {
+      return {
+        valid: false,
+        errorMessage: error instanceof Error ? error.message : String(error)
+      };
+    }
   }
 
   /**

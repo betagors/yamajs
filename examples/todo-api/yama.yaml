@@ -47,6 +47,19 @@ endpoints:
     method: GET
     handler: getTodos
     description: Get all todos
+    query:
+      completed:
+        type: boolean
+        required: false
+      limit:
+        type: integer
+        required: false
+        min: 1
+        max: 100
+      offset:
+        type: integer
+        required: false
+        min: 0
     response:
       type: TodoList
   

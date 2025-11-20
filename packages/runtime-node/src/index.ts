@@ -1,5 +1,5 @@
 import Fastify, { FastifyRequest, FastifyReply } from "fastify";
-import { helloYamaCore, createModelValidator, type YamaModels, type ValidationResult } from "@yama/core";
+import { helloYamaCore, createModelValidator, type YamaModels, type ValidationResult, type ModelField, fieldToJsonSchema } from "@yama/core";
 import yaml from "js-yaml";
 import { readFileSync, readdirSync, existsSync } from "fs";
 import { join, dirname, extname, resolve } from "path";
@@ -17,6 +17,7 @@ interface YamaConfig {
     body?: {
       type: string;
     };
+    query?: Record<string, ModelField>;
     response?: {
       type: string;
     };
@@ -82,6 +83,89 @@ async function loadHandlers(handlersDir: string): Promise<Record<string, Handler
 }
 
 /**
+ * Build a JSON schema for query parameter validation
+ */
+function buildQuerySchema(
+  queryParams: Record<string, ModelField>,
+  models?: YamaModels
+): Record<string, unknown> {
+  const properties: Record<string, unknown> = {};
+  const required: string[] = [];
+
+  for (const [paramName, paramField] of Object.entries(queryParams)) {
+    // Convert the field directly to JSON schema
+    properties[paramName] = fieldToJsonSchema(paramField, paramName, models);
+    
+    if (paramField.required) {
+      required.push(paramName);
+    }
+  }
+
+  return {
+    type: "object",
+    properties,
+    required
+  };
+}
+
+/**
+ * Coerce query parameters to their proper types
+ * Query parameters come as strings from URLs, so we need to convert them
+ */
+function coerceQueryParams(
+  query: Record<string, unknown>,
+  queryParams: Record<string, ModelField>,
+  models?: YamaModels
+): Record<string, unknown> {
+  const coerced: Record<string, unknown> = {};
+
+  for (const [key, value] of Object.entries(query)) {
+    const paramDef = queryParams[key];
+    if (!paramDef) {
+      // Unknown query param, pass through as-is
+      coerced[key] = value;
+      continue;
+    }
+
+    // Handle type coercion
+    if (value === undefined || value === null || value === "") {
+      if (paramDef.default !== undefined) {
+        coerced[key] = paramDef.default;
+      } else if (!paramDef.required) {
+        // Optional param with no value, skip it
+        continue;
+      }
+      coerced[key] = value;
+      continue;
+    }
+
+    const type = paramDef.$ref ? 
+      (models?.[paramDef.$ref]?.fields ? "object" : undefined) : 
+      paramDef.type;
+
+    switch (type) {
+      case "boolean":
+        // Handle string "true"/"false" or actual booleans
+        if (typeof value === "string") {
+          coerced[key] = value.toLowerCase() === "true" || value === "1";
+        } else {
+          coerced[key] = Boolean(value);
+        }
+        break;
+      case "integer":
+      case "number":
+        const num = typeof value === "string" ? parseFloat(value) : Number(value);
+        coerced[key] = isNaN(num) ? value : num;
+        break;
+      default:
+        coerced[key] = value;
+    }
+  }
+
+  return coerced;
+}
+
+/**
  * Register routes from YAML config with validation
  */
 function registerRoutes(
@@ -95,7 +179,7 @@ function registerRoutes(
   }
 
   for (const endpoint of config.endpoints) {
-    const { path, method, handler: handlerName, description, body, response } = endpoint;
+    const { path, method, handler: handlerName, description, body, query, response } = endpoint;
     const handlerFn = handlers[handlerName];
 
     if (!handlerFn) {
@@ -117,6 +201,28 @@ function registerRoutes(
     // Register the route with Fastify
     app[methodLower](path, async (request: FastifyRequest, reply: FastifyReply) => {
       try {
+        // Validate and coerce query parameters if specified
+        if (query && Object.keys(query).length > 0) {
+          const queryParams = request.query as Record<string, unknown>;
+          const coercedQuery = coerceQueryParams(queryParams, query, config.models);
+          
+          // Build a temporary schema for query validation
+          const querySchema = buildQuerySchema(query, config.models);
+          const queryValidation = validator.validateSchema(querySchema, coercedQuery);
+          
+          if (!queryValidation.valid) {
+            reply.status(400).send({
+              error: "Query parameter validation failed",
+              message: validator.formatErrors(queryValidation.errors || []),
+              errors: queryValidation.errors
+            });
+            return;
+          }
+          
+          // Replace query with coerced values
+          request.query = coercedQuery as typeof request.query;
+        }
+
         // Validate request body if model is specified
         if (body?.type && request.body) {
           const validation = validator.validate(body.type, request.body);
@@ -168,7 +274,7 @@ function registerRoutes(
     });
 
     console.log(
-      `✅ Registered route: ${method.toUpperCase()} ${path} -> ${handlerName}${description ? ` (${description})` : ""}${body?.type ? ` [validates body: ${body.type}]` : ""}${response?.type ? ` [validates response: ${response.type}]` : ""}`
+      `✅ Registered route: ${method.toUpperCase()} ${path} -> ${handlerName}${description ? ` (${description})` : ""}${query ? ` [validates query params]` : ""}${body?.type ? ` [validates body: ${body.type}]` : ""}${response?.type ? ` [validates response: ${response.type}]` : ""}`
     );
   }
 }
