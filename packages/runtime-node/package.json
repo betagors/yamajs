@@ -1,0 +1,25 @@
+{
+  "name": "@yama/runtime-node",
+  "version": "0.0.1",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsc -w -p tsconfig.build.json",
+    "lint": "echo \"no lint yet\"",
+    "test": "echo \"no tests yet\"",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "@yama/core": "workspace:*",
+    "fastify": "^5.0.0",
+    "js-yaml": "^4.1.1"
+  },
+  "devDependencies": {
+    "rimraf": "^5.0.0",
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^20.0.0"
+  }
+}
+

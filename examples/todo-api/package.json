@@ -1,0 +1,15 @@
+{
+  "name": "yama-example-todo-api",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "node dev-server.mjs",
+    "start": "node dev-server.mjs",
+    "build": "echo \"Example doesn't need building, but ensure dependencies are built: pnpm build:packages\""
+  },
+  "dependencies": {
+    "@yama/runtime-node": "workspace:*"
+  }
+}
+

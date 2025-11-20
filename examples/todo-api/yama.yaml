@@ -1,0 +1,32 @@
+name: todo-api
+version: 1.0.0
+
+models:
+  Todo:
+    fields:
+      id:
+        type: string
+        required: true
+      title:
+        type: string
+        required: true
+      completed:
+        type: boolean
+        default: false
+      createdAt:
+        type: string
+        format: date-time
+
+endpoints:
+  - path: /todos
+    method: GET
+    handler: getTodos
+    description: Get all todos
+  
+  - path: /todos
+    method: POST
+    handler: createTodo
+    description: Create a new todo
+    body:
+      type: Todo
+

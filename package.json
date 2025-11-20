@@ -1,19 +1,27 @@
 {
-  "name": "yama",
+  "name": "@betagors/yama-monorepo",
   "private": true,
+  "version": "0.0.1",
+  "packageManager": "pnpm@9.0.0",
   "scripts": {
     "build": "turbo run build",
-    "dev": "turbo run dev",
+    "build:packages": "turbo run build --filter='./packages/*'",
+    "build:example": "pnpm build:packages",
+    "dev": "turbo run dev --parallel",
+    "dev:packages": "turbo run dev --parallel --filter='./packages/*'",
+    "dev:example": "pnpm build:packages && pnpm --filter yama-example-todo-api dev",
+    "start:example": "pnpm --filter yama-example-todo-api dev",
     "lint": "turbo run lint",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "check-types": "turbo run check-types"
+    "test": "turbo run test",
+    "clean": "turbo run clean",
+    "clean:all": "turbo run clean && rimraf node_modules packages/*/node_modules examples/*/node_modules"
   },
   "devDependencies": {
-    "prettier": "^3.6.2",
-    "turbo": "^2.6.1",
-    "typescript": "5.9.2"
+    "turbo": "latest",
+    "typescript": "^5.6.0",
+    "eslint": "^9.0.0",
+    "prettier": "^3.0.0"
   },
-  "packageManager": "pnpm@9.0.0",
   "engines": {
     "node": ">=18"
   }
