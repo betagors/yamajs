@@ -14,7 +14,7 @@ interface YamaConfig {
   endpoints?: Array<{
     path: string;
     method: string;
-    handler: string;
+    handler?: string; // Optional - if not provided, uses default handler
     description?: string;
     params?: Record<string, ModelField>;
     body?: {
@@ -175,6 +175,28 @@ function coerceParams(
 }
 
 /**
+ * Default handler for endpoints without custom handlers
+ */
+function createDefaultHandler(
+  endpoint: NonNullable<YamaConfig["endpoints"]>[number],
+  responseType?: string
+): HandlerFunction {
+  return async (request: FastifyRequest, reply: FastifyReply) => {
+    // If response type is specified, return an empty object (will be validated)
+    // Otherwise, return a simple success message
+    if (responseType) {
+      return {};
+    }
+    
+    return {
+      message: `Endpoint ${endpoint.method} ${endpoint.path} is configured but no handler is implemented`,
+      path: endpoint.path,
+      method: endpoint.method,
+    };
+  };
+}
+
+/**
  * Register routes from YAML config with validation
  */
 function registerRoutes(
@@ -189,13 +211,24 @@ function registerRoutes(
 
   for (const endpoint of config.endpoints) {
     const { path, method, handler: handlerName, description, params, body, query, response } = endpoint;
-    const handlerFn = handlers[handlerName];
-
-    if (!handlerFn) {
-      console.warn(
-        `⚠️  Handler "${handlerName}" not found for ${method} ${path}`
+    
+    // Use custom handler if provided, otherwise use default handler
+    let handlerFn: HandlerFunction;
+    
+    if (handlerName) {
+      handlerFn = handlers[handlerName];
+      if (!handlerFn) {
+        console.warn(
+          `⚠️  Handler "${handlerName}" not found for ${method} ${path}, using default handler`
+        );
+        handlerFn = createDefaultHandler(endpoint, response?.type);
+      }
+    } else {
+      // No handler specified - use default handler
+      handlerFn = createDefaultHandler(endpoint, response?.type);
+      console.log(
+        `ℹ️  No handler specified for ${method} ${path}, using default handler`
       );
-      continue;
     }
 
     const methodLower = method.toLowerCase() as
@@ -301,7 +334,8 @@ function registerRoutes(
           const responseValidation = validator.validate(response.type, result);
           
           if (!responseValidation.valid) {
-            console.error(`❌ Response validation failed for ${handlerName}:`, responseValidation.errors);
+            const handlerLabel = handlerName || "default";
+            console.error(`❌ Response validation failed for ${handlerLabel}:`, responseValidation.errors);
             // In development, return validation errors; in production, log and return generic error
             if (process.env.NODE_ENV === "development") {
               reply.status(500).send({
@@ -322,7 +356,8 @@ function registerRoutes(
 
         return result;
       } catch (error) {
-        console.error(`Error in handler ${handlerName}:`, error);
+        const handlerLabel = handlerName || "default";
+        console.error(`Error in handler ${handlerLabel}:`, error);
         reply.status(500).send({
           error: "Internal server error",
           message: error instanceof Error ? error.message : String(error)
@@ -330,8 +365,9 @@ function registerRoutes(
       }
     });
 
+    const handlerLabel = handlerName || "default";
     console.log(
-      `✅ Registered route: ${method.toUpperCase()} ${path} -> ${handlerName}${description ? ` (${description})` : ""}${params ? ` [validates path params]` : ""}${query ? ` [validates query params]` : ""}${body?.type ? ` [validates body: ${body.type}]` : ""}${response?.type ? ` [validates response: ${response.type}]` : ""}${endpoint.auth ? ` [auth: ${endpoint.auth.required !== false ? "required" : "optional"}${endpoint.auth.roles ? `, roles: ${endpoint.auth.roles.join(", ")}` : ""}]` : ""}`
+      `✅ Registered route: ${method.toUpperCase()} ${path} -> ${handlerLabel}${description ? ` (${description})` : ""}${params ? ` [validates path params]` : ""}${query ? ` [validates query params]` : ""}${body?.type ? ` [validates body: ${body.type}]` : ""}${response?.type ? ` [validates response: ${response.type}]` : ""}${endpoint.auth ? ` [auth: ${endpoint.auth.required !== false ? "required" : "optional"}${endpoint.auth.roles ? `, roles: ${endpoint.auth.roles.join(", ")}` : ""}]` : ""}`
     );
   }
 }

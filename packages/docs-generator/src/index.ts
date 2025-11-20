@@ -8,7 +8,7 @@ import { modelToJsonSchema, type YamaModels, type ModelDefinition } from "@yama/
 export interface EndpointDefinition {
   path: string;
   method: string;
-  handler?: string;
+  handler?: string; // Optional - endpoints can work without handlers
   description?: string;
   query?: Record<string, {
     type?: string;
