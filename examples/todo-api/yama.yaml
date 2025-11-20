@@ -17,6 +17,24 @@ models:
         type: string
         format: date-time
 
+  CreateTodoInput:
+    fields:
+      title:
+        type: string
+        required: true
+      completed:
+        type: boolean
+        default: false
+
+  UpdateTodoInput:
+    fields:
+      title:
+        type: string
+        required: false
+      completed:
+        type: boolean
+        required: false
+
 endpoints:
   - path: /todos
     method: GET
@@ -28,5 +46,22 @@ endpoints:
     handler: createTodo
     description: Create a new todo
     body:
-      type: Todo
+      type: CreateTodoInput
+  
+  - path: /todos/:id
+    method: GET
+    handler: getTodoById
+    description: Get a single todo by ID
+  
+  - path: /todos/:id
+    method: PUT
+    handler: updateTodo
+    description: Update a todo
+    body:
+      type: UpdateTodoInput
+  
+  - path: /todos/:id
+    method: DELETE
+    handler: deleteTodo
+    description: Delete a todo
 

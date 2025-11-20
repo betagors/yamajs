@@ -1,23 +1,21 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import { todoStorage } from "../storage.js";
 
+interface CreateTodoInput {
+  title: string;
+  completed?: boolean;
+}
+
 export async function createTodo(
-  request: FastifyRequest<{ Body: { title: string } }>,
+  request: FastifyRequest<{ Body: CreateTodoInput }>,
   reply: FastifyReply
 ) {
-  const { title } = request.body;
-  
-  if (!title || typeof title !== "string") {
-    reply.status(400).send({
-      error: "Bad request",
-      message: "Title is required and must be a string"
-    });
-    return;
-  }
+  // Validation is now automatic! Just use the data
+  const { title, completed = false } = request.body;
 
   const todo = todoStorage.create({
     title,
-    completed: false
+    completed
   });
 
   reply.status(201);

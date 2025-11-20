@@ -2,3 +2,14 @@ export function helloYamaCore() {
   return "Yama core online";
 }
 
+// Export model validation
+export {
+  ModelValidator,
+  createModelValidator,
+  modelToJsonSchema,
+  type ModelField,
+  type ModelDefinition,
+  type YamaModels,
+  type ValidationResult
+} from "./models.js";
+

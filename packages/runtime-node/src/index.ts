@@ -1,5 +1,5 @@
 import Fastify, { FastifyRequest, FastifyReply } from "fastify";
-import { helloYamaCore } from "@yama/core";
+import { helloYamaCore, createModelValidator, type YamaModels, type ValidationResult } from "@yama/core";
 import yaml from "js-yaml";
 import { readFileSync, readdirSync, existsSync } from "fs";
 import { join, dirname, extname, resolve } from "path";
@@ -8,13 +8,15 @@ import { pathToFileURL } from "url";
 interface YamaConfig {
   name?: string;
   version?: string;
-  models?: Record<string, unknown>;
+  models?: YamaModels;
   endpoints?: Array<{
     path: string;
     method: string;
     handler: string;
     description?: string;
-    body?: unknown;
+    body?: {
+      type: string;
+    };
   }>;
 }
 
@@ -77,19 +79,20 @@ async function loadHandlers(handlersDir: string): Promise<Record<string, Handler
 }
 
 /**
- * Register routes from YAML config
+ * Register routes from YAML config with validation
  */
 function registerRoutes(
   app: ReturnType<typeof Fastify>,
   config: YamaConfig,
-  handlers: Record<string, HandlerFunction>
+  handlers: Record<string, HandlerFunction>,
+  validator: ReturnType<typeof createModelValidator>
 ) {
   if (!config.endpoints) {
     return;
   }
 
   for (const endpoint of config.endpoints) {
-    const { path, method, handler: handlerName, description } = endpoint;
+    const { path, method, handler: handlerName, description, body } = endpoint;
     const handlerFn = handlers[handlerName];
 
     if (!handlerFn) {
@@ -111,7 +114,23 @@ function registerRoutes(
     // Register the route with Fastify
     app[methodLower](path, async (request: FastifyRequest, reply: FastifyReply) => {
       try {
+        // Validate request body if model is specified
+        if (body?.type && request.body) {
+          const validation = validator.validate(body.type, request.body);
+          
+          if (!validation.valid) {
+            reply.status(400).send({
+              error: "Validation failed",
+              message: validation.errorMessage || validator.formatErrors(validation.errors || []),
+              errors: validation.errors
+            });
+            return;
+          }
+        }
+
         const result = await handlerFn(request, reply);
+        
+        // TODO: Validate response if response model is specified
         return result;
       } catch (error) {
         console.error(`Error in handler ${handlerName}:`, error);
@@ -123,7 +142,7 @@ function registerRoutes(
     });
 
     console.log(
-      `✅ Registered route: ${method.toUpperCase()} ${path} -> ${handlerName}${description ? ` (${description})` : ""}`
+      `✅ Registered route: ${method.toUpperCase()} ${path} -> ${handlerName}${description ? ` (${description})` : ""}${body?.type ? ` [validates: ${body.type}]` : ""}`
     );
   }
 }
@@ -134,6 +153,9 @@ export async function startYamaNodeRuntime(
 ) {
   const app = Fastify();
 
+  // Create model validator
+  const validator = createModelValidator();
+
   // Load and parse YAML config if provided
   let config: YamaConfig | null = null;
   let handlersDir: string | null = null;
@@ -142,7 +164,13 @@ export async function startYamaNodeRuntime(
     try {
       const configFile = readFileSync(yamlConfigPath, "utf-8");
       config = yaml.load(configFile) as YamaConfig;
-      console.log("✅ Loaded YAML config:", JSON.stringify(config, null, 2));
+      console.log("✅ Loaded YAML config");
+
+      // Register models for validation
+      if (config.models) {
+        validator.registerModels(config.models);
+        console.log(`✅ Registered ${Object.keys(config.models).length} model(s) for validation`);
+      }
 
       // Determine handlers directory (src/handlers relative to YAML file)
       const configDir = dirname(yamlConfigPath);
@@ -166,7 +194,7 @@ export async function startYamaNodeRuntime(
   // Load handlers and register routes
   if (config?.endpoints && handlersDir) {
     const handlers = await loadHandlers(handlersDir);
-    registerRoutes(app, config, handlers);
+    registerRoutes(app, config, handlers, validator);
   }
 
   await app.listen({ port, host: "0.0.0.0" });
