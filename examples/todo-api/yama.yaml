@@ -76,6 +76,10 @@ endpoints:
     method: GET
     handler: getTodoById
     description: Get a single todo by ID
+    params:
+      id:
+        type: string
+        required: true
     response:
       type: Todo
   
@@ -83,6 +87,10 @@ endpoints:
     method: PUT
     handler: updateTodo
     description: Update a todo
+    params:
+      id:
+        type: string
+        required: true
     body:
       type: UpdateTodoInput
     response:
@@ -92,4 +100,8 @@ endpoints:
     method: DELETE
     handler: deleteTodo
     description: Delete a todo
+    params:
+      id:
+        type: string
+        required: true
 

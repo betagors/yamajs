@@ -14,6 +14,7 @@ interface YamaConfig {
     method: string;
     handler: string;
     description?: string;
+    params?: Record<string, ModelField>;
     body?: {
       type: string;
     };
@@ -101,26 +102,31 @@ function buildQuerySchema(
     }
   }
 
-  return {
+  const schema: Record<string, unknown> = {
     type: "object",
-    properties,
-    required
+    properties
   };
+  
+  if (required.length > 0) {
+    schema.required = required;
+  }
+  
+  return schema;
 }
 
 /**
- * Coerce query parameters to their proper types
- * Query parameters come as strings from URLs, so we need to convert them
+ * Coerce path/query parameters to their proper types
+ * Parameters come as strings from URLs, so we need to convert them
  */
-function coerceQueryParams(
-  query: Record<string, unknown>,
-  queryParams: Record<string, ModelField>,
+function coerceParams(
+  params: Record<string, unknown>,
+  paramDefs: Record<string, ModelField>,
   models?: YamaModels
 ): Record<string, unknown> {
   const coerced: Record<string, unknown> = {};
 
-  for (const [key, value] of Object.entries(query)) {
-    const paramDef = queryParams[key];
+  for (const [key, value] of Object.entries(params)) {
+    const paramDef = paramDefs[key];
     if (!paramDef) {
       // Unknown query param, pass through as-is
       coerced[key] = value;
@@ -179,7 +185,7 @@ function registerRoutes(
   }
 
   for (const endpoint of config.endpoints) {
-    const { path, method, handler: handlerName, description, body, query, response } = endpoint;
+    const { path, method, handler: handlerName, description, params, body, query, response } = endpoint;
     const handlerFn = handlers[handlerName];
 
     if (!handlerFn) {
@@ -201,10 +207,32 @@ function registerRoutes(
     // Register the route with Fastify
     app[methodLower](path, async (request: FastifyRequest, reply: FastifyReply) => {
       try {
+        // Validate and coerce path parameters if specified
+        if (params && Object.keys(params).length > 0) {
+          const pathParams = request.params as Record<string, unknown>;
+          const coercedParams = coerceParams(pathParams, params, config.models);
+          
+          // Build a temporary schema for path parameter validation
+          const paramsSchema = buildQuerySchema(params, config.models);
+          const paramsValidation = validator.validateSchema(paramsSchema, coercedParams);
+          
+          if (!paramsValidation.valid) {
+            reply.status(400).send({
+              error: "Path parameter validation failed",
+              message: validator.formatErrors(paramsValidation.errors || []),
+              errors: paramsValidation.errors
+            });
+            return;
+          }
+          
+          // Replace params with coerced values
+          request.params = coercedParams as typeof request.params;
+        }
+
         // Validate and coerce query parameters if specified
         if (query && Object.keys(query).length > 0) {
           const queryParams = request.query as Record<string, unknown>;
-          const coercedQuery = coerceQueryParams(queryParams, query, config.models);
+          const coercedQuery = coerceParams(queryParams, query, config.models);
           
           // Build a temporary schema for query validation
           const querySchema = buildQuerySchema(query, config.models);
@@ -274,7 +302,7 @@ function registerRoutes(
     });
 
     console.log(
-      `✅ Registered route: ${method.toUpperCase()} ${path} -> ${handlerName}${description ? ` (${description})` : ""}${query ? ` [validates query params]` : ""}${body?.type ? ` [validates body: ${body.type}]` : ""}${response?.type ? ` [validates response: ${response.type}]` : ""}`
+      `✅ Registered route: ${method.toUpperCase()} ${path} -> ${handlerName}${description ? ` (${description})` : ""}${params ? ` [validates path params]` : ""}${query ? ` [validates query params]` : ""}${body?.type ? ` [validates body: ${body.type}]` : ""}${response?.type ? ` [validates response: ${response.type}]` : ""}`
     );
   }
 }
