@@ -48,3 +48,4 @@ export async function schemasCommand(options: SchemasOptions): Promise<void> {
   }
 }
 
+
