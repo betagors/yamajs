@@ -44,3 +44,52 @@ Core values:
 3. **Deterministic AI over hallucination**
 4. **Open-source core, commercial cloud**
 5. **Real developer empowerment, not drag-and-drop illusions**
+
+## Development Plan
+
+### Phase 1: Core Platform & Deployment (Current)
+
+**Core Features:**
+- ✅ YAML-based configuration system
+- ✅ TypeScript handler system
+- ✅ Database adapters (PostgreSQL)
+- ✅ HTTP server adapters (Fastify)
+- ✅ Schema validation and code generation
+- ✅ CLI tooling
+
+**Deployment Strategy:**
+- **Phase 1.1: Serverless Deployment Support** (In Progress)
+  - Create `packages/runtime-serverless` package for serverless function wrappers
+  - Add serverless-compatible database connection pooling
+  - Support Vercel and Netlify deployment
+  - Add deployment configuration templates
+  - Update database adapter to support serverless-friendly PostgreSQL clients (`@vercel/postgres`, `@neondatabase/serverless`)
+  
+  **Benefits:**
+  - Lower barrier to entry for new users
+  - Proof of production readiness
+  - Competitive parity with other frameworks
+  - Community growth through easy deployment
+  - Foundation for future cloud platform
+
+### Phase 2: Enhanced Features & Cloud Platform
+
+**Platform Features:**
+- Team management and collaboration
+- Advanced analytics and monitoring
+- Enhanced authentication providers
+- Automated scaling and optimization
+- Integrated logging and debugging tools
+
+**Cloud Platform:**
+- Yama Cloud (hosted platform with premium features)
+- Self-hosted option remains available
+- Migration path from Vercel/Netlify to Yama Cloud
+
+### Phase 3: Full-Stack Expansion
+
+**Frontend Integration:**
+- Frontend-as-config ("vibe config")
+- AI-assisted frontend generation
+- Framework-specific SDKs (React, Next.js, Vue, etc.)
+- Real-time features and subscriptions
