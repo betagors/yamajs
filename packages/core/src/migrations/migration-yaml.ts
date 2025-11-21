@@ -1,3 +1,4 @@
+import yaml from "js-yaml";
 import type { MigrationStepUnion } from "./diff.js";
 
 // Re-export for convenience
@@ -26,7 +27,7 @@ export interface MigrationYAML {
  * Serialize migration to YAML string
  */
 export function serializeMigration(migration: MigrationYAML): string {
-  const yaml: Record<string, unknown> = {
+  const data: Record<string, unknown> = {
     type: migration.type,
     from_model: migration.from_model,
     to_model: migration.to_model,
@@ -34,30 +35,67 @@ export function serializeMigration(migration: MigrationYAML): string {
     metadata: migration.metadata,
   };
 
-  // Convert to YAML-like structure (we'll use JSON for now, can switch to js-yaml later)
-  return JSON.stringify(yaml, null, 2);
+  return yaml.dump(data, {
+    indent: 2,
+    lineWidth: -1, // No line wrapping
+    quotingType: '"',
+    forceQuotes: false,
+  });
 }
 
 /**
  * Deserialize migration from YAML/JSON string
+ * Supports both YAML and JSON formats for backward compatibility
  */
 export function deserializeMigration(content: string): MigrationYAML {
-  const parsed = JSON.parse(content);
+  let parsed: unknown;
+  
+  // Try to parse as YAML first (handles both YAML and JSON since JSON is valid YAML)
+  try {
+    parsed = yaml.load(content);
+  } catch (err) {
+    // Fallback to JSON.parse for backward compatibility with old JSON-only files
+    try {
+      parsed = JSON.parse(content);
+    } catch (jsonErr) {
+      throw new Error(
+        `Failed to parse migration file: ${err instanceof Error ? err.message : String(err)}`
+      );
+    }
+  }
   
   // Validate structure
-  if (!parsed.type || parsed.type !== "schema") {
+  if (!parsed || typeof parsed !== "object") {
+    throw new Error("Invalid migration format: expected object");
+  }
+  
+  const migration = parsed as Record<string, unknown>;
+  
+  if (!migration.type || migration.type !== "schema") {
     throw new Error("Invalid migration type");
   }
-  if (!parsed.from_model || parsed.from_model.hash === undefined) {
+  if (!migration.from_model || typeof migration.from_model !== "object") {
+    throw new Error("Missing or invalid from_model");
+  }
+  if (
+    !("hash" in migration.from_model) ||
+    migration.from_model.hash === undefined
+  ) {
     throw new Error("Missing from_model.hash");
   }
-  if (!parsed.to_model || !parsed.to_model.hash) {
+  if (!migration.to_model || typeof migration.to_model !== "object") {
+    throw new Error("Missing or invalid to_model");
+  }
+  if (
+    !("hash" in migration.to_model) ||
+    !migration.to_model.hash
+  ) {
     throw new Error("Missing to_model.hash");
   }
-  if (!Array.isArray(parsed.steps)) {
+  if (!Array.isArray(migration.steps)) {
     throw new Error("Missing or invalid steps array");
   }
-  if (!parsed.metadata) {
+  if (!migration.metadata) {
     throw new Error("Missing metadata");
   }
 

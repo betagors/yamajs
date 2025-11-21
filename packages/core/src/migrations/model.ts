@@ -130,11 +130,47 @@ export function entitiesToModel(entities: YamaEntities): Model {
     
     for (const [fieldName, field] of Object.entries(entityDef.fields)) {
       const dbColumnName = field.dbColumn || fieldName;
+      
+      // Convert entity type to SQL type if dbType not provided
+      let sqlType: string = field.dbType || "";
+      if (!sqlType) {
+        switch (field.type) {
+          case "uuid":
+            sqlType = "UUID";
+            break;
+          case "string":
+            sqlType = field.maxLength ? `VARCHAR(${field.maxLength})` : "VARCHAR(255)";
+            break;
+          case "text":
+            sqlType = "TEXT";
+            break;
+          case "number":
+          case "integer":
+            sqlType = "INTEGER";
+            break;
+          case "boolean":
+            sqlType = "BOOLEAN";
+            break;
+          case "timestamp":
+            sqlType = "TIMESTAMP";
+            break;
+          case "jsonb":
+            sqlType = "JSONB";
+            break;
+          default:
+            sqlType = String(field.type).toUpperCase();
+        }
+      }
+      
+      // Primary keys are always NOT NULL
+      const isPrimary = field.primary || false;
+      const nullable = isPrimary ? false : (field.nullable !== false && !field.required);
+      
       columns.set(dbColumnName, {
         name: dbColumnName,
-        type: field.dbType || field.type,
-        nullable: field.nullable !== false && !field.required,
-        primary: field.primary || false,
+        type: sqlType,
+        nullable: nullable,
+        primary: isPrimary,
         default: field.default,
         generated: field.generated,
       });

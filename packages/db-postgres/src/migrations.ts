@@ -262,7 +262,8 @@ export function generateSQLFromSteps(steps: MigrationStepUnion[]): string {
 
       case "drop_column":
         statements.push(`-- Drop column: ${step.table}.${step.column}`);
-        statements.push(`ALTER TABLE ${step.table} DROP COLUMN IF EXISTS ${step.column};`);
+        // Use CASCADE to automatically drop indexes, constraints, and other dependencies
+        statements.push(`ALTER TABLE ${step.table} DROP COLUMN IF EXISTS ${step.column} CASCADE;`);
         break;
 
       case "modify_column":

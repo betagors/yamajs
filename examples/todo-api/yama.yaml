@@ -23,20 +23,10 @@ entities:
       title:
         type: string
         required: true
-        maxLength: 255
+        maxLength: 500
       completed:
         type: boolean
         default: false
-        index: true
-      createdAt:
-        type: timestamp
-        dbColumn: created_at
-        default: now()
-        apiFormat: date-time
-      description:
-        type: text
-        required: false
-        nullable: true
 
 schemas:
   CreateTodoInput:
@@ -129,4 +119,3 @@ endpoints:
       id:
         type: string
         required: true
-

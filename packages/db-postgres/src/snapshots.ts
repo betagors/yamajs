@@ -8,13 +8,24 @@ import { initDatabase, getSQL, closeDatabase } from "./client.js";
 export async function createDataSnapshot(
   tableName: string,
   config: DatabaseConfig,
-  snapshotName?: string
+  snapshotName?: string,
+  useExistingConnection?: boolean
 ): Promise<{ snapshotTable: string; rowCount: number }> {
   const timestamp = Date.now();
   const name = snapshotName || `${tableName}_snapshot_${timestamp}`;
   
-  initDatabase(config);
-  const sql = getSQL();
+  let shouldClose = false;
+  let sql: ReturnType<typeof getSQL>;
+  
+  if (useExistingConnection) {
+    // Use existing connection (don't close it)
+    sql = getSQL();
+  } else {
+    // Create new connection (will close it)
+    initDatabase(config);
+    sql = getSQL();
+    shouldClose = true;
+  }
 
   try {
     // Create snapshot table with data
@@ -37,7 +48,9 @@ export async function createDataSnapshot(
       rowCount,
     };
   } finally {
-    await closeDatabase();
+    if (shouldClose) {
+      await closeDatabase();
+    }
   }
 }
 

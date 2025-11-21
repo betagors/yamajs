@@ -261,8 +261,23 @@ export function computeDiff(from: Model, to: Model): DiffResult {
       }
 
       // Removed indexes
-      for (const [indexName] of fromIndexMap) {
+      for (const [indexName, index] of fromIndexMap) {
         if (!toIndexMap.has(indexName)) {
+          result.removed.indexes.push({ table: tableName, index: indexName });
+        }
+      }
+      
+      // Also detect indexes that should be removed because their columns are being removed
+      // Check if any index columns are in the removed columns list
+      for (const [indexName, index] of fromIndexMap) {
+        // If index is on a column that's being removed, mark it for removal
+        const hasRemovedColumn = index.columns.some((col: string) => {
+          return result.removed.columns.some((removed: { table: string; column: string }) => 
+            removed.table === tableName && removed.column === col
+          );
+        });
+        // Only add if not already in removed list
+        if (hasRemovedColumn && !result.removed.indexes.some(r => r.table === tableName && r.index === indexName)) {
           result.removed.indexes.push({ table: tableName, index: indexName });
         }
       }

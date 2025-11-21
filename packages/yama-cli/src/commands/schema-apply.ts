@@ -109,10 +109,18 @@ export async function schemaApplyCommand(options: SchemaApplyOptions): Promise<v
     // Process pending migrations
     let appliedCount = 0;
     const startTime = Date.now();
+    let lastAppliedHash: string | null = currentHash;
 
     for (const file of migrationFiles) {
       if (appliedNames.has(file)) {
         info(`Skipping ${file} (already applied)`);
+        // Update lastAppliedHash from database for already applied migrations
+        const appliedMigration = (appliedMigrations as unknown as Array<{ name: string; to_model_hash: string }>).find(
+          (m) => m.name === file
+        );
+        if (appliedMigration?.to_model_hash) {
+          lastAppliedHash = appliedMigration.to_model_hash;
+        }
         continue;
       }
 
@@ -120,11 +128,43 @@ export async function schemaApplyCommand(options: SchemaApplyOptions): Promise<v
       const yamlContent = readFileSync(filePath, "utf-8");
       const migration = deserializeMigration(yamlContent);
 
+      // Auto-fix empty from_model.hash by inferring from previous migration
+      if (!migration.from_model.hash || migration.from_model.hash === "") {
+        // First, try to use lastAppliedHash (database state) - most reliable
+        if (lastAppliedHash) {
+          migration.from_model.hash = lastAppliedHash;
+          warning(
+            `Migration ${file} has empty from_model.hash. Auto-fixing from database state (${lastAppliedHash.substring(0, 8)}...)`
+          );
+        } else {
+          // If no database state, try to get from previous migration file
+          const currentIndex = migrationFiles.indexOf(file);
+          if (currentIndex > 0) {
+            const prevFile = migrationFiles[currentIndex - 1];
+            const prevFilePath = join(migrationsDir, prevFile);
+            if (existsSync(prevFilePath)) {
+              try {
+                const prevYamlContent = readFileSync(prevFilePath, "utf-8");
+                const prevMigration = deserializeMigration(prevYamlContent);
+                if (prevMigration.to_model.hash) {
+                  migration.from_model.hash = prevMigration.to_model.hash;
+                  warning(
+                    `Migration ${file} has empty from_model.hash. Auto-fixing from previous migration ${prevFile} (${prevMigration.to_model.hash.substring(0, 8)}...)`
+                  );
+                }
+              } catch (err) {
+                // Failed to read previous migration, continue with other checks
+              }
+            }
+          }
+        }
+      }
+
       // Validate migration hash
       // Empty hash means first migration (empty database)
-      if (migration.from_model.hash && currentHash && migration.from_model.hash !== currentHash) {
+      if (migration.from_model.hash && lastAppliedHash && migration.from_model.hash !== lastAppliedHash) {
         error(
-          `Migration ${file} from_model.hash (${migration.from_model.hash.substring(0, 8)}...) does not match current database state (${currentHash.substring(0, 8)}...)`
+          `Migration ${file} from_model.hash (${migration.from_model.hash.substring(0, 8)}...) does not match current database state (${lastAppliedHash.substring(0, 8)}...)`
         );
         printError(
           new Error("Migration hash mismatch"),
@@ -135,8 +175,8 @@ export async function schemaApplyCommand(options: SchemaApplyOptions): Promise<v
       }
       
       // If migration has empty from_model.hash, it's the first migration
-      // Allow it if currentHash is also empty/null
-      if (!migration.from_model.hash && currentHash) {
+      // Allow it if lastAppliedHash is also empty/null
+      if (!migration.from_model.hash && lastAppliedHash) {
         error(
           `Migration ${file} is marked as first migration (empty from_model.hash) but database already has migrations applied`
         );
@@ -157,7 +197,8 @@ export async function schemaApplyCommand(options: SchemaApplyOptions): Promise<v
               const snapshot = await createDataSnapshot(
                 step.table,
                 config.database!,
-                `${step.table}_before_${file.replace(".yaml", "")}`
+                `${step.table}_before_${file.replace(".yaml", "")}`,
+                true // Use existing connection, don't close it
               );
               info(`Snapshot created: ${snapshot.snapshotTable} (${snapshot.rowCount} rows)`);
             } catch (err) {
@@ -251,6 +292,8 @@ export async function schemaApplyCommand(options: SchemaApplyOptions): Promise<v
         const duration = Date.now() - runStart;
         spinner.succeed(`Applied ${file} (${formatDuration(duration)})`);
         appliedCount++;
+        // Update lastAppliedHash for next migration
+        lastAppliedHash = migration.to_model.hash;
       } catch (err) {
         spinner.fail(`Failed to apply ${file}`);
 

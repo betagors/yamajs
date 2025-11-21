@@ -12,12 +12,204 @@ import {
   createMigration,
   serializeMigration,
   getCurrentModelHashFromDB,
+  type Model,
+  type TableModel,
+  type ColumnModel,
+  type IndexModel,
+  type YamaEntities,
 } from "@yama/core";
 import { initDatabase, getSQL, closeDatabase, generateSQLFromSteps } from "@yama/db-postgres";
 import { success, error, info, warning, printBox, printHints } from "../utils/cli-utils.js";
 import { promptMigrationName, confirm, hasDestructiveOperation } from "../utils/interactive.js";
 import { generateMigrationNameFromBranch } from "../utils/git-utils.js";
-import type { YamaEntities } from "@yama/core";
+
+/**
+ * Read current database schema and convert to Model
+ */
+async function readCurrentModelFromDB(sql: any): Promise<Model> {
+  // Get all tables (excluding system tables, migration tables, and snapshot tables)
+  const tablesResult = await sql`
+    SELECT table_name 
+    FROM information_schema.tables 
+    WHERE table_schema = 'public' 
+      AND table_type = 'BASE TABLE'
+      AND table_name NOT LIKE '_yama_%'
+      AND table_name NOT LIKE '%_before_%'
+      AND table_name NOT LIKE '%_snapshot_%'
+    ORDER BY table_name
+  `;
+
+  const tables = new Map<string, TableModel>();
+
+  for (const row of tablesResult as Array<{ table_name: string }>) {
+    const tableName = row.table_name;
+
+    // Get columns
+    const columnsResult = await sql`
+      SELECT 
+        column_name,
+        data_type,
+        character_maximum_length,
+        is_nullable,
+        column_default,
+        is_identity
+      FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = ${tableName}
+      ORDER BY ordinal_position
+    `;
+
+    const columns = new Map<string, ColumnModel>();
+    let primaryKeyColumn: string | null = null;
+
+    // Get primary key
+    const pkResult = await sql`
+      SELECT column_name
+      FROM information_schema.table_constraints tc
+      JOIN information_schema.constraint_column_usage ccu ON tc.constraint_name = ccu.constraint_name
+      WHERE tc.table_schema = 'public' 
+        AND tc.table_name = ${tableName}
+        AND tc.constraint_type = 'PRIMARY KEY'
+    `;
+
+    if (pkResult && pkResult.length > 0) {
+      primaryKeyColumn = (pkResult[0] as { column_name: string }).column_name;
+    }
+
+    for (const col of columnsResult as Array<{
+      column_name: string;
+      data_type: string;
+      character_maximum_length: number | null;
+      is_nullable: string;
+      column_default: string | null;
+      is_identity: string;
+    }>) {
+      // Normalize PostgreSQL data types to SQL types
+      let sqlType: string;
+      if (col.data_type === "character varying" || col.data_type === "varchar") {
+        sqlType = col.character_maximum_length 
+          ? `VARCHAR(${col.character_maximum_length})`
+          : "VARCHAR(255)";
+      } else if (col.data_type === "character" || col.data_type === "char") {
+        sqlType = col.character_maximum_length
+          ? `CHAR(${col.character_maximum_length})`
+          : "CHAR(1)";
+      } else {
+        // Map other types to uppercase SQL types
+        sqlType = col.data_type.toUpperCase();
+        if (col.character_maximum_length && !sqlType.includes("(")) {
+          sqlType = `${sqlType}(${col.character_maximum_length})`;
+        }
+      }
+
+      // Parse default value
+      let defaultValue: unknown = undefined;
+      if (col.column_default) {
+        const defaultStr = col.column_default;
+        if (defaultStr.includes("gen_random_uuid()")) {
+          defaultValue = undefined; // Generated, not a default
+        } else if (defaultStr.includes("now()")) {
+          defaultValue = "now()";
+        } else if (defaultStr === "'false'::boolean" || defaultStr === "false") {
+          defaultValue = false;
+        } else if (defaultStr === "'true'::boolean" || defaultStr === "true") {
+          defaultValue = true;
+        } else if (defaultStr.match(/^'\d+'::integer$/)) {
+          // Integer default like '0'::integer
+          defaultValue = parseInt(defaultStr.match(/^'(\d+)'/)?.[1] || "0", 10);
+        } else if (defaultStr.startsWith("'") && defaultStr.endsWith("'")) {
+          defaultValue = defaultStr.slice(1, -1);
+        } else {
+          defaultValue = defaultStr;
+        }
+      }
+
+      const isPrimary = col.column_name === primaryKeyColumn;
+      const isGenerated = col.is_identity === "YES" || (isPrimary && sqlType === "UUID" && col.column_default?.includes("gen_random_uuid"));
+
+      // Primary keys are always NOT NULL in PostgreSQL, regardless of what is_nullable says
+      const nullable = isPrimary ? false : col.is_nullable === "YES";
+
+      columns.set(col.column_name, {
+        name: col.column_name,
+        type: sqlType,
+        nullable: nullable,
+        primary: isPrimary,
+        default: defaultValue,
+        generated: isGenerated,
+      });
+    }
+
+    // Get indexes
+    const indexesResult = await sql`
+      SELECT
+        i.indexname,
+        i.indexdef,
+        ix.indisunique
+      FROM pg_indexes i
+      JOIN pg_index ix ON i.indexname = (SELECT relname FROM pg_class WHERE oid = ix.indexrelid)
+      WHERE i.schemaname = 'public' 
+        AND i.tablename = ${tableName}
+        AND i.indexname NOT LIKE '%_pkey'
+    `;
+
+    const indexes: IndexModel[] = [];
+    for (const idx of indexesResult as Array<{
+      indexname: string;
+      indexdef: string;
+      indisunique: boolean;
+    }>) {
+      // Extract column names from index definition
+      const match = idx.indexdef.match(/\(([^)]+)\)/);
+      const columnNames = match
+        ? match[1].split(",").map((c) => c.trim().replace(/"/g, ""))
+        : [];
+
+      indexes.push({
+        name: idx.indexname,
+        columns: columnNames,
+        unique: idx.indisunique,
+      });
+    }
+
+    tables.set(tableName, {
+      name: tableName,
+      columns,
+      indexes,
+      foreignKeys: [], // Foreign keys not yet implemented in schema reading
+    });
+  }
+
+  // Compute hash from tables structure
+  const normalized = JSON.stringify(
+    Array.from(tables.entries()).map(([name, table]) => ({
+      name,
+      columns: Array.from(table.columns.entries()).map(([colName, col]) => ({
+        name: colName,
+        type: col.type,
+        nullable: col.nullable,
+        primary: col.primary,
+        default: col.default,
+        generated: col.generated,
+      })),
+      indexes: table.indexes.map((idx) => ({
+        name: idx.name,
+        columns: idx.columns,
+        unique: idx.unique,
+      })),
+    })),
+    null,
+    0
+  );
+
+  const { createHash } = await import("crypto");
+  const hash = createHash("sha256").update(normalized).digest("hex");
+
+  return {
+    hash,
+    entities: {}, // Empty since we're reading from DB, not entities
+    tables,
+  };
+}
 
 interface SchemaGenerateOptions {
   config?: string;
@@ -102,12 +294,6 @@ export async function schemaGenerateCommand(options: SchemaGenerateOptions): Pro
 
     // If no current hash, start from empty
     const fromHash = currentHash || ""; // Empty string means first migration
-
-    // Check if there are changes
-    if (fromHash && fromHash === targetHash) {
-      info("Schema is already in sync. No migration needed.");
-      process.exit(0);
-    }
 
     // Generate migration name
     let migrationName = options.name;
@@ -210,15 +396,50 @@ export async function schemaGenerateCommand(options: SchemaGenerateOptions): Pro
         }
       }
     } else {
-      // TODO: For subsequent migrations, we need to:
-      // 1. Reconstruct current model from applied migrations
+      // Subsequent migrations - use diff-based generation
+      // 1. Reconstruct current model from database schema
       // 2. Compute diff between current and target
       // 3. Generate steps from diff
-      // For v0, we'll show a message that diff-based generation needs the current model
-      warning("Diff-based migration generation requires current model reconstruction.");
-      warning("This will be implemented in a future version.");
-      info("For now, please manually create migration steps or use schema:apply with existing migrations.");
-      process.exit(1);
+      
+      if (!config.database) {
+        error("Database configuration required for diff-based migration generation");
+        process.exit(1);
+      }
+
+      try {
+        initDatabase(config.database);
+        const sql = getSQL();
+
+        // Read current database schema
+        const currentModel = await readCurrentModelFromDB(sql);
+        await closeDatabase();
+
+        // Check if database schema matches target (after reading actual schema)
+        if (currentModel.hash === targetHash) {
+          info("Schema is already in sync. No migration needed.");
+          process.exit(0);
+        }
+
+        // Compute target model from yama.yaml
+        const targetModel = entitiesToModel(config.entities);
+
+        // Compute diff
+        const diff = computeDiff(currentModel, targetModel);
+
+        // Convert diff to steps
+        steps = diffToSteps(diff, currentModel, targetModel);
+
+        if (steps.length === 0) {
+          info("No changes detected. Schema is already in sync.");
+          process.exit(0);
+        }
+
+        info(`Detected ${steps.length} change(s) to apply`);
+      } catch (err) {
+        await closeDatabase().catch(() => {});
+        error(`Failed to read current database schema: ${err instanceof Error ? err.message : String(err)}`);
+        process.exit(1);
+      }
     }
 
     const migration = createMigration(fromHash, targetHash, steps, migrationName);
