@@ -1,7 +1,8 @@
 import { existsSync, writeFileSync } from "fs";
 import { join, dirname, relative } from "path";
-import { generateTypes } from "@yama/core";
+import { generateTypes, type YamaEntities } from "@yama/core";
 import { generateSDK } from "@yama/sdk-ts";
+import { generateDrizzleSchema, generateMapper } from "@yama/db-postgres";
 import { readYamaConfig, ensureDir, getConfigDir } from "../utils/file-utils.js";
 import { findYamaConfig, detectProjectType, inferOutputPath } from "../utils/project-detection.js";
 import { generateFrameworkHelpers, updateFrameworkConfig } from "../utils/framework-helpers.js";
@@ -38,16 +39,30 @@ export async function generateCommand(options: GenerateOptions): Promise<void> {
 
 export async function generateOnce(configPath: string, options: GenerateOptions): Promise<void> {
   try {
-    const config = readYamaConfig(configPath) as { schemas?: unknown; endpoints?: unknown };
+    const config = readYamaConfig(configPath) as { 
+      schemas?: unknown; 
+      entities?: YamaEntities;
+      endpoints?: unknown;
+    };
     const configDir = getConfigDir(configPath);
     const projectType = detectProjectType(configDir);
 
     let typesOutput: string | undefined;
 
-    // Generate types
-    if (!options.sdkOnly && config.schemas) {
+    // Generate types (from both schemas and entities)
+    if (!options.sdkOnly && (config.schemas || config.entities)) {
       typesOutput = getTypesOutputPath(configPath, options);
-      await generateTypesFile(config.schemas, typesOutput, configDir);
+      await generateTypesFile(
+        config.schemas as Parameters<typeof generateTypes>[0],
+        config.entities,
+        typesOutput,
+        configDir
+      );
+    }
+
+    // Generate database code (Drizzle schemas and mappers)
+    if (!options.sdkOnly && !options.typesOnly && config.entities) {
+      await generateDatabaseCode(config.entities, configDir, typesOutput);
     }
 
     // Generate SDK
@@ -118,11 +133,15 @@ function getSdkOutputPath(configPath: string, options: GenerateOptions): string 
 
 async function generateTypesFile(
   schemas: unknown,
+  entities: YamaEntities | undefined,
   outputPath: string,
   configDir: string
 ): Promise<void> {
   try {
-    const types = generateTypes(schemas as Parameters<typeof generateTypes>[0]);
+    const types = generateTypes(
+      schemas as Parameters<typeof generateTypes>[0],
+      entities
+    );
     const absoluteOutputPath = join(configDir, outputPath);
     const outputDir = dirname(absoluteOutputPath);
     
@@ -132,6 +151,42 @@ async function generateTypesFile(
     console.log(`✅ Generated types: ${outputPath}`);
   } catch (error) {
     console.error("❌ Failed to generate types:", error instanceof Error ? error.message : String(error));
+    throw error;
+  }
+}
+
+async function generateDatabaseCode(
+  entities: YamaEntities,
+  configDir: string,
+  typesOutputPath?: string
+): Promise<void> {
+  try {
+    const dbOutputDir = join(configDir, "src", "generated", "db");
+    ensureDir(dbOutputDir);
+
+    // Generate Drizzle schema
+    const drizzleSchema = generateDrizzleSchema(entities);
+    const drizzleSchemaPath = join(dbOutputDir, "schema.ts");
+    writeFileSync(drizzleSchemaPath, drizzleSchema, "utf-8");
+    console.log(`✅ Generated Drizzle schema: src/generated/db/schema.ts`);
+
+    // Generate mapper
+    let typesImportPath = "../types";
+    if (typesOutputPath) {
+      const absoluteTypesPath = join(configDir, typesOutputPath);
+      const relativePath = relative(dbOutputDir, absoluteTypesPath);
+      typesImportPath = relativePath.replace(/\\/g, "/").replace(/\.ts$/, "");
+      if (!typesImportPath.startsWith(".")) {
+        typesImportPath = "../" + typesImportPath;
+      }
+    }
+
+    const mapper = generateMapper(entities, typesImportPath);
+    const mapperPath = join(dbOutputDir, "mapper.ts");
+    writeFileSync(mapperPath, mapper, "utf-8");
+    console.log(`✅ Generated mapper: src/generated/db/mapper.ts`);
+  } catch (error) {
+    console.error("❌ Failed to generate database code:", error instanceof Error ? error.message : String(error));
     throw error;
   }
 }

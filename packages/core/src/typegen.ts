@@ -1,4 +1,6 @@
 import type { SchemaField, SchemaDefinition, YamaSchemas } from "./schemas.js";
+import type { YamaEntities } from "./entities.js";
+import { entitiesToSchemas, mergeSchemas } from "./entities.js";
 
 /**
  * Convert a Yama schema field to TypeScript type string
@@ -103,18 +105,25 @@ function generateSchemaType(
 }
 
 /**
- * Generate TypeScript types from Yama schemas
+ * Generate TypeScript types from Yama schemas and entities
  */
-export function generateTypes(schemas: YamaSchemas): string {
+export function generateTypes(
+  schemas?: YamaSchemas,
+  entities?: YamaEntities
+): string {
   const imports = `// This file is auto-generated from yama.yaml
 // Do not edit manually - your changes will be overwritten
 
 `;
 
+  // Convert entities to schemas and merge with explicit schemas
+  const entitySchemas = entities ? entitiesToSchemas(entities) : {};
+  const allSchemas = mergeSchemas(schemas, entitySchemas);
+
   const typeDefinitions: string[] = [];
   
-  for (const [schemaName, schemaDef] of Object.entries(schemas)) {
-    typeDefinitions.push(generateSchemaType(schemaName, schemaDef, schemas));
+  for (const [schemaName, schemaDef] of Object.entries(allSchemas)) {
+    typeDefinitions.push(generateSchemaType(schemaName, schemaDef, allSchemas));
   }
   
   return imports + typeDefinitions.join("\n\n") + "\n";

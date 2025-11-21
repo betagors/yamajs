@@ -1,5 +1,5 @@
 import { FastifyRequest, FastifyReply } from "fastify";
-import { todoStorage } from "../storage.js";
+import { getTodoById as dbGetTodoById } from "../db.js";
 import type { Todo } from "../types.js"; // Generated types!
 
 export async function getTodoById(
@@ -7,7 +7,7 @@ export async function getTodoById(
   reply: FastifyReply
 ): Promise<Todo | void> {
   const { id } = request.params;
-  const todo = todoStorage.getById(id);
+  const todo = await dbGetTodoById(id);
 
   if (!todo) {
     reply.status(404).send({

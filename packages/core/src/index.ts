@@ -35,3 +35,23 @@ export {
 // Export type generation
 export { generateTypes } from "./typegen.js";
 
+// Export entity types and functions
+export {
+  type EntityField,
+  type EntityFieldType,
+  type EntityDefinition,
+  type EntityIndex,
+  type YamaEntities,
+  type DatabaseConfig,
+  entityToSchema,
+  entitiesToSchemas,
+  mergeSchemas,
+} from "./entities.js";
+
+// Export environment utilities
+export {
+  loadEnvFile,
+  resolveEnvVar,
+  resolveEnvVars,
+} from "./env.js";
+

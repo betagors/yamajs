@@ -1,6 +1,7 @@
 import Fastify, { FastifyRequest, FastifyReply } from "fastify";
-import { helloYamaCore, createSchemaValidator, type YamaSchemas, type ValidationResult, type SchemaField, fieldToJsonSchema, type AuthConfig, type EndpointAuth, authenticateAndAuthorize } from "@yama/core";
+import { helloYamaCore, createSchemaValidator, type YamaSchemas, type ValidationResult, type SchemaField, fieldToJsonSchema, type AuthConfig, type EndpointAuth, authenticateAndAuthorize, type YamaEntities, type DatabaseConfig, entitiesToSchemas, mergeSchemas, loadEnvFile, resolveEnvVars } from "@yama/core";
 import { generateOpenAPI } from "@yama/docs-generator";
+import { initDatabase, closeDatabase } from "@yama/db-postgres";
 import yaml from "js-yaml";
 import { readFileSync, readdirSync, existsSync } from "fs";
 import { join, dirname, extname, resolve } from "path";
@@ -10,6 +11,8 @@ interface YamaConfig {
   name?: string;
   version?: string;
   schemas?: YamaSchemas;
+  entities?: YamaEntities;
+  database?: DatabaseConfig;
   auth?: AuthConfig;
   endpoints?: Array<{
     path: string;
@@ -392,14 +395,35 @@ export async function startYamaNodeRuntime(
 
   if (yamlConfigPath) {
     try {
+      // Load .env file before parsing config
+      loadEnvFile(yamlConfigPath);
+      
       const configFile = readFileSync(yamlConfigPath, "utf-8");
       config = yaml.load(configFile) as YamaConfig;
+      
+      // Resolve environment variables in config
+      config = resolveEnvVars(config) as YamaConfig;
+      
       console.log("✅ Loaded YAML config");
 
+      // Initialize database if configured
+      if (config.database) {
+        try {
+          initDatabase(config.database);
+          console.log("✅ Database connection initialized");
+        } catch (error) {
+          console.error("❌ Failed to initialize database:", error);
+        }
+      }
+
+      // Convert entities to schemas and merge with explicit schemas
+      const entitySchemas = config.entities ? entitiesToSchemas(config.entities) : {};
+      const allSchemas = mergeSchemas(config.schemas, entitySchemas);
+
       // Register schemas for validation
-      if (config.schemas) {
-        validator.registerSchemas(config.schemas);
-        console.log(`✅ Registered ${Object.keys(config.schemas).length} schema(s) for validation`);
+      if (Object.keys(allSchemas).length > 0) {
+        validator.registerSchemas(allSchemas);
+        console.log(`✅ Registered ${Object.keys(allSchemas).length} schema(s) for validation`);
       }
 
       // Determine handlers directory (src/handlers relative to YAML file)
@@ -502,6 +526,7 @@ export async function startYamaNodeRuntime(
   return {
     stop: async () => {
       await app.close();
+      await closeDatabase();
     },
     port
   };

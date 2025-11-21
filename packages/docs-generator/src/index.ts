@@ -3,7 +3,7 @@
  * Generates OpenAPI 3.0 specifications and other documentation formats from yama.yaml
  */
 
-import { schemaToJsonSchema, type YamaSchemas, type SchemaDefinition } from "@yama/core";
+import { schemaToJsonSchema, type YamaSchemas, type SchemaDefinition, type YamaEntities, type DatabaseConfig, entitiesToSchemas, mergeSchemas } from "@yama/core";
 
 export interface EndpointDefinition {
   path: string;
@@ -38,6 +38,8 @@ export interface YamaConfig {
   name?: string;
   version?: string;
   schemas?: YamaSchemas;
+  entities?: YamaEntities;
+  database?: DatabaseConfig;
   auth?: {
     providers?: Array<{
       type: "jwt" | "api-key";
@@ -330,15 +332,17 @@ export function generateOpenAPI(config: YamaConfig): OpenAPISpec {
     }
   };
 
-  // Convert schemas to OpenAPI schemas
-  if (config.schemas) {
-    for (const [schemaName, schemaDef] of Object.entries(config.schemas)) {
-      try {
-        const schema = schemaToJsonSchema(schemaName, schemaDef, config.schemas);
-        spec.components.schemas[schemaName] = schema;
-      } catch (error) {
-        console.warn(`Warning: Failed to convert schema "${schemaName}" to OpenAPI schema:`, error);
-      }
+  // Convert entities to schemas and merge with explicit schemas
+  const entitySchemas = config.entities ? entitiesToSchemas(config.entities) : {};
+  const allSchemas = mergeSchemas(config.schemas, entitySchemas);
+
+  // Convert all schemas to OpenAPI schemas
+  for (const [schemaName, schemaDef] of Object.entries(allSchemas)) {
+    try {
+      const schema = schemaToJsonSchema(schemaName, schemaDef, allSchemas);
+      spec.components.schemas[schemaName] = schema;
+    } catch (error) {
+      console.warn(`Warning: Failed to convert schema "${schemaName}" to OpenAPI schema:`, error);
     }
   }
 
@@ -353,7 +357,7 @@ export function generateOpenAPI(config: YamaConfig): OpenAPISpec {
       }
 
       const method = endpoint.method.toLowerCase();
-      spec.paths[openAPIPath][method] = endpointToOpenAPIOperation(endpoint, config.schemas, config.auth);
+      spec.paths[openAPIPath][method] = endpointToOpenAPIOperation(endpoint, allSchemas, config.auth);
     }
   }
 

@@ -2,7 +2,7 @@
 // Do not edit manually - your changes will be overwritten
 
 export interface Todo {
-  id: string;
+  id?: string;
   title: string;
   completed?: boolean;
   createdAt?: string;

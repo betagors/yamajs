@@ -1,5 +1,5 @@
 import { FastifyRequest, FastifyReply } from "fastify";
-import { todoStorage } from "../storage.js";
+import { createTodo as dbCreateTodo } from "../db.js";
 import type { CreateTodoInput } from "../types.js"; // Generated types!
 
 export async function createTodo(
@@ -7,12 +7,7 @@ export async function createTodo(
   reply: FastifyReply
 ) {
   // Validation is now automatic! Just use the data
-  const { title, completed = false } = request.body;
-
-  const todo = todoStorage.create({
-    title,
-    completed
-  });
+  const todo = await dbCreateTodo(request.body);
 
   reply.status(201);
   return todo;

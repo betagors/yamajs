@@ -1,5 +1,5 @@
 import { FastifyRequest, FastifyReply } from "fastify";
-import { todoStorage } from "../storage.js";
+import { updateTodo as dbUpdateTodo } from "../db.js";
 import type { UpdateTodoInput } from "../types.js"; // Generated types!
 
 export async function updateTodo(
@@ -10,9 +10,7 @@ export async function updateTodo(
   reply: FastifyReply
 ) {
   const { id } = request.params;
-  const updates = request.body;
-
-  const updated = todoStorage.update(id, updates);
+  const updated = await dbUpdateTodo(id, request.body);
 
   if (!updated) {
     reply.status(404).send({

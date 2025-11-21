@@ -9,6 +9,9 @@ import { configCommand } from "./commands/config.js";
 import { endpointsCommand } from "./commands/endpoints.js";
 import { schemasCommand } from "./commands/schemas.js";
 import { docsCommand } from "./commands/docs.js";
+import { migrateCommand } from "./commands/migrate.js";
+import { migrateApplyCommand } from "./commands/migrate-apply.js";
+import { migrateStatusCommand } from "./commands/migrate-status.js";
 
 const program = new Command();
 
@@ -106,6 +109,26 @@ program
   .option("-f, --format <format>", "Output format (openapi, json, yaml, swagger-ui, html, markdown, md)", "openapi")
   .option("-o, --output <path>", "Output path for generated documentation")
   .action(docsCommand);
+
+// Database migrations
+program
+  .command("db:migrate")
+  .description("Generate database migration from entities")
+  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
+  .option("-n, --name <name>", "Migration name", "migration")
+  .action(migrateCommand);
+
+program
+  .command("db:migrate:apply")
+  .description("Apply pending database migrations")
+  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
+  .action(migrateApplyCommand);
+
+program
+  .command("db:migrate:status")
+  .description("Check database migration status")
+  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
+  .action(migrateStatusCommand);
 
 program.parse();
 

@@ -5,6 +5,8 @@ import type { TodoList, CreateTodoInput, Todo, UpdateTodoInput } from "./types";
 
 export class YamaClient {
   private baseUrl: string;
+  private jwtToken: string | null = null;
+  private apiKey: string | null = null;
 
   constructor(baseUrl: string = "http://localhost:3000") {
     this.baseUrl = baseUrl.replace(/\/$/, "");
@@ -15,6 +17,34 @@ export class YamaClient {
    */
   setBaseUrl(baseUrl: string): void {
     this.baseUrl = baseUrl.replace(/\/$/, "");
+  }
+
+  /**
+   * Set JWT token for authentication
+   */
+  setToken(token: string): void {
+    this.jwtToken = token;
+  }
+
+  /**
+   * Clear JWT token
+   */
+  clearToken(): void {
+    this.jwtToken = null;
+  }
+
+  /**
+   * Set API key for authentication
+   */
+  setApiKey(apiKey: string): void {
+    this.apiKey = apiKey;
+  }
+
+  /**
+   * Clear API key
+   */
+  clearApiKey(): void {
+    this.apiKey = null;
   }
 
   /**
@@ -49,6 +79,8 @@ export class YamaClient {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
+        ...(this.jwtToken ? { "Authorization": `Bearer ${this.jwtToken}` } : {}),
+        ...(this.apiKey ? { "X-API-Key": this.apiKey } : {}),
         ...options?.headers,
       },
       ...options,
@@ -74,6 +106,8 @@ export class YamaClient {
       body: bodyStr,
       headers: {
         "Content-Type": "application/json",
+        ...(this.jwtToken ? { "Authorization": `Bearer ${this.jwtToken}` } : {}),
+        ...(this.apiKey ? { "X-API-Key": this.apiKey } : {}),
         ...options?.headers,
       },
       ...options,
@@ -100,6 +134,8 @@ export class YamaClient {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
+        ...(this.jwtToken ? { "Authorization": `Bearer ${this.jwtToken}` } : {}),
+        ...(this.apiKey ? { "X-API-Key": this.apiKey } : {}),
         ...options?.headers,
       },
       ...options,
@@ -129,6 +165,8 @@ export class YamaClient {
       body: bodyStr,
       headers: {
         "Content-Type": "application/json",
+        ...(this.jwtToken ? { "Authorization": `Bearer ${this.jwtToken}` } : {}),
+        ...(this.apiKey ? { "X-API-Key": this.apiKey } : {}),
         ...options?.headers,
       },
       ...options,
@@ -155,6 +193,8 @@ export class YamaClient {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",
+        ...(this.jwtToken ? { "Authorization": `Bearer ${this.jwtToken}` } : {}),
+        ...(this.apiKey ? { "X-API-Key": this.apiKey } : {}),
         ...options?.headers,
       },
       ...options,

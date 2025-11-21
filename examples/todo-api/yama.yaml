@@ -1,6 +1,10 @@
 name: todo-api
 version: 1.0.0
 
+database:
+  type: postgresql
+  url: ${DATABASE_URL}
+
 auth:
   providers:
     - type: jwt
@@ -8,22 +12,29 @@ auth:
     - type: api-key
       header: X-API-Key
 
-schemas:
+entities:
   Todo:
+    table: todos
     fields:
       id:
-        type: string
-        required: true
+        type: uuid
+        primary: true
+        generated: true
       title:
         type: string
         required: true
+        maxLength: 255
       completed:
         type: boolean
         default: false
+        index: true
       createdAt:
-        type: string
-        format: date-time
+        type: timestamp
+        dbColumn: created_at
+        default: now()
+        apiFormat: date-time
 
+schemas:
   CreateTodoInput:
     fields:
       title:

@@ -5,6 +5,7 @@ import type { FSWatcher } from "chokidar";
 import chokidar from "chokidar";
 import { findYamaConfig } from "../utils/project-detection.js";
 import { generateOnce } from "./generate.js";
+import { loadEnvFile } from "@yama/core";
 
 interface DevOptions {
   port?: string;
@@ -34,6 +35,9 @@ export async function devCommand(options: DevOptions): Promise<void> {
 
   currentPort = port;
   currentConfigPath = configPath;
+
+  // Load .env file
+  loadEnvFile(configPath);
 
   console.log(`🚀 Starting Yama dev server...\n`);
   console.log(`   Config: ${configPath}`);

@@ -1,12 +1,12 @@
 import { FastifyRequest, FastifyReply } from "fastify";
-import { todoStorage } from "../storage.js";
+import { deleteTodo as dbDeleteTodo } from "../db.js";
 
 export async function deleteTodo(
   request: FastifyRequest<{ Params: { id: string } }>,
   reply: FastifyReply
 ) {
   const { id } = request.params;
-  const deleted = todoStorage.delete(id);
+  const deleted = await dbDeleteTodo(id);
 
   if (!deleted) {
     reply.status(404).send({
