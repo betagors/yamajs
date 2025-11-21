@@ -89,3 +89,63 @@ export {
   loadPluginFromPackage,
 } from "./plugins/index.js";
 
+// Export migration types and functions
+export {
+  type Model,
+  type TableModel,
+  type ColumnModel,
+  type IndexModel,
+  type ForeignKeyModel,
+  type MigrationDiff,
+  computeModelHash,
+  entitiesToModel,
+  compareModels,
+} from "./migrations/model.js";
+
+export {
+  type DiffResult,
+  type MigrationStepType,
+  type MigrationStep,
+  type AddTableStep,
+  type DropTableStep,
+  type AddColumnStep,
+  type DropColumnStep,
+  type ModifyColumnStep,
+  type AddIndexStep,
+  type DropIndexStep,
+  type AddForeignKeyStep,
+  type DropForeignKeyStep,
+  type MigrationStepUnion,
+  computeDiff,
+  diffToSteps,
+} from "./migrations/diff.js";
+
+export {
+  type MigrationYAML,
+  serializeMigration,
+  deserializeMigration,
+  createMigration,
+} from "./migrations/migration-yaml.js";
+
+export {
+  type ValidationError,
+  validateMigrationYAML,
+  validateMigrationHash,
+  validateStepDependencies,
+  validateMigration,
+} from "./migrations/validator.js";
+
+export {
+  replayMigrations,
+  getCurrentModelHashFromDB,
+} from "./migrations/replay.js";
+
+// Export trash/recycle bin types
+export {
+  type TrashEntry,
+  type TrashStatus,
+  DEFAULT_RETENTION_DAYS,
+  calculateExpirationDate,
+  isExpired,
+} from "./migrations/trash.js";
+

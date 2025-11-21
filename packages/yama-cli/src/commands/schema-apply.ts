@@ -1,0 +1,297 @@
+import { existsSync, readdirSync, readFileSync } from "fs";
+import { join } from "path";
+import { findYamaConfig } from "../utils/project-detection.js";
+import { readYamaConfig, getConfigDir } from "../utils/file-utils.js";
+import { loadEnvFile, resolveEnvVars } from "@yama/core";
+import type { DatabaseConfig } from "@yama/core";
+import {
+  deserializeMigration,
+  validateMigration,
+  entitiesToModel,
+  getCurrentModelHashFromDB,
+} from "@yama/core";
+import {
+  initDatabase,
+  getSQL,
+  closeDatabase,
+  generateSQLFromSteps,
+  computeMigrationChecksum,
+  getMigrationTableSQL,
+  getMigrationRunsTableSQL,
+} from "@yama/db-postgres";
+import {
+  success,
+  error,
+  info,
+  warning,
+  pending,
+  printBox,
+  createSpinner,
+  formatDuration,
+  printHints,
+} from "../utils/cli-utils.js";
+import { printError } from "../utils/error-handler.js";
+import { confirmMigration, hasDestructiveOperation } from "../utils/interactive.js";
+import { TrashManager } from "../utils/trash-manager.js";
+import { createDataSnapshot } from "@yama/db-postgres";
+
+interface SchemaApplyOptions {
+  config?: string;
+  env?: string;
+  noApply?: boolean;
+  interactive?: boolean;
+  allowDestructive?: boolean;
+}
+
+export async function schemaApplyCommand(options: SchemaApplyOptions): Promise<void> {
+  const configPath = options.config || findYamaConfig() || "yama.yaml";
+
+  if (!existsSync(configPath)) {
+    error(`Config file not found: ${configPath}`);
+    process.exit(1);
+  }
+
+  try {
+    loadEnvFile(configPath);
+    let config = readYamaConfig(configPath) as { database?: DatabaseConfig };
+    config = resolveEnvVars(config) as { database?: DatabaseConfig };
+    const configDir = getConfigDir(configPath);
+
+    if (!config.database) {
+      error("No database configuration found in yama.yaml");
+      process.exit(1);
+    }
+
+    const migrationsDir = join(configDir, "migrations");
+
+    if (!existsSync(migrationsDir)) {
+      info("No migrations directory found. Run 'yama schema:generate' first.");
+      return;
+    }
+
+    // Get all migration YAML files
+    const migrationFiles = readdirSync(migrationsDir)
+      .filter((f) => f.endsWith(".yaml"))
+      .sort();
+
+    if (migrationFiles.length === 0) {
+      info("No migration files found.");
+      return;
+    }
+
+    // Initialize database
+    initDatabase(config.database);
+    const sql = getSQL();
+
+    // Create migration tables
+    await sql.unsafe(getMigrationTableSQL());
+    await sql.unsafe(getMigrationRunsTableSQL());
+
+    // Get applied migrations
+    const appliedMigrations = await sql`
+      SELECT name, to_model_hash FROM _yama_migrations ORDER BY applied_at
+    `;
+    const appliedNames = new Set(
+      (appliedMigrations as unknown as Array<{ name: string }>).map((m) => m.name)
+    );
+
+    // Get current model hash
+    const currentHash = await getCurrentModelHashFromDB(async (query) => {
+      return (await sql.unsafe(query)) as Array<{ to_model_hash: string }>;
+    });
+
+    // Load target model for validation
+    const configWithEntities = readYamaConfig(configPath) as { entities?: any };
+    const targetModel = configWithEntities.entities
+      ? entitiesToModel(configWithEntities.entities)
+      : null;
+
+    // Process pending migrations
+    let appliedCount = 0;
+    const startTime = Date.now();
+
+    for (const file of migrationFiles) {
+      if (appliedNames.has(file)) {
+        info(`Skipping ${file} (already applied)`);
+        continue;
+      }
+
+      const filePath = join(migrationsDir, file);
+      const yamlContent = readFileSync(filePath, "utf-8");
+      const migration = deserializeMigration(yamlContent);
+
+      // Validate migration hash
+      // Empty hash means first migration (empty database)
+      if (migration.from_model.hash && currentHash && migration.from_model.hash !== currentHash) {
+        error(
+          `Migration ${file} from_model.hash (${migration.from_model.hash.substring(0, 8)}...) does not match current database state (${currentHash.substring(0, 8)}...)`
+        );
+        printError(
+          new Error("Migration hash mismatch"),
+          { migration: file }
+        );
+        await closeDatabase();
+        process.exit(1);
+      }
+      
+      // If migration has empty from_model.hash, it's the first migration
+      // Allow it if currentHash is also empty/null
+      if (!migration.from_model.hash && currentHash) {
+        error(
+          `Migration ${file} is marked as first migration (empty from_model.hash) but database already has migrations applied`
+        );
+        await closeDatabase();
+        process.exit(1);
+      }
+
+      // Check for destructive operations
+      const hasDestructive = migration.steps.some(hasDestructiveOperation);
+      
+      // Create data snapshots before destructive operations
+      if (hasDestructive) {
+        const destructiveSteps = migration.steps.filter(hasDestructiveOperation);
+        for (const step of destructiveSteps) {
+          if (step.type === "drop_table" || step.type === "drop_column" || step.type === "modify_column") {
+            try {
+              info(`Creating snapshot for ${step.table}...`);
+              const snapshot = await createDataSnapshot(
+                step.table,
+                config.database!,
+                `${step.table}_before_${file.replace(".yaml", "")}`
+              );
+              info(`Snapshot created: ${snapshot.snapshotTable} (${snapshot.rowCount} rows)`);
+            } catch (err) {
+              warning(`Failed to create snapshot for ${step.table}: ${err instanceof Error ? err.message : String(err)}`);
+            }
+          }
+        }
+      }
+      
+      if (hasDestructive && !options.allowDestructive) {
+        if (options.interactive) {
+          const confirmed = await confirmMigration(
+            file,
+            migration.steps,
+            hasDestructive
+          );
+          if (!confirmed) {
+            info(`Skipping ${file} (user cancelled)`);
+            continue;
+          }
+        } else {
+          error(
+            `Migration ${file} contains destructive operations. Use --allow-destructive to apply.`
+          );
+          await closeDatabase();
+          process.exit(1);
+        }
+      }
+
+      if (options.noApply) {
+        info(`Would apply: ${file}`);
+        continue;
+      }
+
+      // Load SQL file
+      const sqlFile = file.replace(".yaml", ".sql");
+      const sqlPath = join(migrationsDir, sqlFile);
+      let sqlContent: string;
+
+      if (existsSync(sqlPath)) {
+        sqlContent = readFileSync(sqlPath, "utf-8");
+      } else {
+        // Generate SQL from steps if file doesn't exist
+        sqlContent = generateSQLFromSteps(migration.steps);
+      }
+
+      // Compute checksum
+      const checksum = computeMigrationChecksum(yamlContent, sqlContent);
+
+      const spinner = createSpinner(`Applying ${file}...`);
+
+      try {
+        const runStart = Date.now();
+
+        // Start migration run
+        const runResult = await sql`
+          INSERT INTO _yama_migration_runs (migration_id, status, started_at)
+          VALUES (NULL, 'running', NOW())
+          RETURNING id
+        `;
+        const runId = runResult[0]?.id;
+
+        // Execute migration in transaction
+        await sql.begin(async (tx) => {
+          await tx.unsafe(sqlContent);
+
+          // Record migration
+          await tx`
+            INSERT INTO _yama_migrations (
+              name, type, from_model_hash, to_model_hash, checksum, description
+            ) VALUES (
+              ${file},
+              ${migration.type},
+              ${migration.from_model.hash},
+              ${migration.to_model.hash},
+              ${checksum},
+              ${migration.metadata.description || null}
+            )
+          `;
+
+          // Update run status
+          if (runId) {
+            await tx`
+              UPDATE _yama_migration_runs
+              SET status = 'completed', finished_at = NOW()
+              WHERE id = ${runId}
+            `;
+          }
+        });
+
+        const duration = Date.now() - runStart;
+        spinner.succeed(`Applied ${file} (${formatDuration(duration)})`);
+        appliedCount++;
+      } catch (err) {
+        spinner.fail(`Failed to apply ${file}`);
+
+        // Update run status
+        try {
+          await sql`
+            UPDATE _yama_migration_runs
+            SET status = 'failed', finished_at = NOW(), error_message = ${err instanceof Error ? err.message : String(err)}
+            WHERE id = (SELECT id FROM _yama_migration_runs ORDER BY started_at DESC LIMIT 1)
+          `;
+        } catch {
+          // Ignore update errors
+        }
+
+        printError(err, { migration: file });
+        await closeDatabase();
+        process.exit(1);
+      }
+    }
+
+    if (appliedCount === 0) {
+      info("All migrations are already applied.");
+    } else {
+      const totalDuration = Date.now() - startTime;
+      printBox(
+        `Applied ${appliedCount} migration(s)\nDuration: ${formatDuration(totalDuration)}`,
+        { borderColor: "green" }
+      );
+    }
+
+    await closeDatabase();
+
+    if (appliedCount > 0) {
+      printHints([
+        "Run 'yama schema:check' to verify schema is in sync",
+        "Run 'yama schema:status' to see migration status",
+      ]);
+    }
+  } catch (err) {
+    error(`Failed to apply migrations: ${err instanceof Error ? err.message : String(err)}`);
+    process.exit(1);
+  }
+}
+

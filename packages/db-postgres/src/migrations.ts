@@ -1,6 +1,7 @@
-import type { YamaEntities, EntityDefinition, EntityField } from "@yama/core";
+import type { YamaEntities, EntityDefinition, EntityField, MigrationStepUnion } from "@yama/core";
 import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync } from "fs";
 import { join } from "path";
+import { createHash } from "crypto";
 
 /**
  * Generate SQL column definition from entity field
@@ -198,5 +199,170 @@ export function generateMigrationFile(
   writeFileSync(filePath, sql, "utf-8");
 
   return filePath;
+}
+
+/**
+ * Generate SQL from migration steps
+ */
+export function generateSQLFromSteps(steps: MigrationStepUnion[]): string {
+  const statements: string[] = [];
+
+  for (const step of steps) {
+    switch (step.type) {
+      case "add_table":
+        statements.push(`-- Add table: ${step.table}`);
+        const columns = step.columns.map((col) => {
+          const parts: string[] = [`  ${col.name} ${col.type}`];
+          if (col.primary) {
+            parts.push("PRIMARY KEY");
+          }
+          if (col.generated && col.type === "UUID") {
+            parts.push("DEFAULT gen_random_uuid()");
+          } else if (col.default !== undefined) {
+            if (col.default === "now()" || col.default === "now") {
+              parts.push("DEFAULT NOW()");
+            } else if (typeof col.default === "string") {
+              parts.push(`DEFAULT '${String(col.default).replace(/'/g, "''")}'`);
+            } else {
+              parts.push(`DEFAULT ${col.default}`);
+            }
+          }
+          if (!col.nullable) {
+            parts.push("NOT NULL");
+          }
+          return parts.join(" ");
+        });
+        statements.push(`CREATE TABLE IF NOT EXISTS ${step.table} (\n${columns.join(",\n")}\n);`);
+        break;
+
+      case "drop_table":
+        statements.push(`-- Drop table: ${step.table}`);
+        statements.push(`DROP TABLE IF EXISTS ${step.table};`);
+        break;
+
+      case "add_column":
+        statements.push(`-- Add column: ${step.table}.${step.column.name}`);
+        let columnDef = `ALTER TABLE ${step.table} ADD COLUMN ${step.column.name} ${step.column.type}`;
+        if (step.column.generated && step.column.type === "UUID") {
+          columnDef += " DEFAULT gen_random_uuid()";
+        } else if (step.column.default !== undefined) {
+          if (step.column.default === "now()" || step.column.default === "now") {
+            columnDef += " DEFAULT NOW()";
+          } else if (typeof step.column.default === "string") {
+            columnDef += ` DEFAULT '${String(step.column.default).replace(/'/g, "''")}'`;
+          } else {
+            columnDef += ` DEFAULT ${step.column.default}`;
+          }
+        }
+        if (!step.column.nullable) {
+          columnDef += " NOT NULL";
+        }
+        statements.push(columnDef + ";");
+        break;
+
+      case "drop_column":
+        statements.push(`-- Drop column: ${step.table}.${step.column}`);
+        statements.push(`ALTER TABLE ${step.table} DROP COLUMN IF EXISTS ${step.column};`);
+        break;
+
+      case "modify_column":
+        statements.push(`-- Modify column: ${step.table}.${step.column}`);
+        // PostgreSQL ALTER COLUMN syntax
+        if (step.changes.type) {
+          statements.push(`ALTER TABLE ${step.table} ALTER COLUMN ${step.column} TYPE ${step.changes.type};`);
+        }
+        if (step.changes.nullable !== undefined) {
+          if (step.changes.nullable) {
+            statements.push(`ALTER TABLE ${step.table} ALTER COLUMN ${step.column} DROP NOT NULL;`);
+          } else {
+            statements.push(`ALTER TABLE ${step.table} ALTER COLUMN ${step.column} SET NOT NULL;`);
+          }
+        }
+        if (step.changes.default !== undefined) {
+          if (step.changes.default === null) {
+            statements.push(`ALTER TABLE ${step.table} ALTER COLUMN ${step.column} DROP DEFAULT;`);
+          } else {
+            const defaultVal = step.changes.default === "now()" || step.changes.default === "now"
+              ? "NOW()"
+              : typeof step.changes.default === "string"
+              ? `'${String(step.changes.default).replace(/'/g, "''")}'`
+              : String(step.changes.default);
+            statements.push(`ALTER TABLE ${step.table} ALTER COLUMN ${step.column} SET DEFAULT ${defaultVal};`);
+          }
+        }
+        break;
+
+      case "add_index":
+        statements.push(`-- Add index: ${step.index.name} on ${step.table}`);
+        const unique = step.index.unique ? "UNIQUE " : "";
+        statements.push(
+          `CREATE ${unique}INDEX IF NOT EXISTS ${step.index.name} ON ${step.table} (${step.index.columns.join(", ")});`
+        );
+        break;
+
+      case "drop_index":
+        statements.push(`-- Drop index: ${step.index} on ${step.table}`);
+        statements.push(`DROP INDEX IF EXISTS ${step.index};`);
+        break;
+
+      case "add_foreign_key":
+        statements.push(`-- Add foreign key: ${step.foreignKey.name} on ${step.table}`);
+        statements.push(
+          `ALTER TABLE ${step.table} ADD CONSTRAINT ${step.foreignKey.name} ` +
+          `FOREIGN KEY (${step.foreignKey.columns.join(", ")}) ` +
+          `REFERENCES ${step.foreignKey.references.table} (${step.foreignKey.references.columns.join(", ")});`
+        );
+        break;
+
+      case "drop_foreign_key":
+        statements.push(`-- Drop foreign key: ${step.foreignKey} on ${step.table}`);
+        statements.push(`ALTER TABLE ${step.table} DROP CONSTRAINT IF EXISTS ${step.foreignKey};`);
+        break;
+    }
+  }
+
+  return statements.join("\n");
+}
+
+/**
+ * Compute checksum for migration content
+ */
+export function computeMigrationChecksum(yamlContent: string, sqlContent: string): string {
+  const combined = yamlContent + "\n" + sqlContent;
+  return createHash("sha256").update(combined).digest("hex");
+}
+
+/**
+ * Get migration table creation SQL with enhanced schema
+ */
+export function getMigrationTableSQL(): string {
+  return `
+    CREATE TABLE IF NOT EXISTS _yama_migrations (
+      id SERIAL PRIMARY KEY,
+      name VARCHAR(255) NOT NULL UNIQUE,
+      type VARCHAR(50) DEFAULT 'schema',
+      from_model_hash VARCHAR(64),
+      to_model_hash VARCHAR(64),
+      checksum VARCHAR(64),
+      description TEXT,
+      applied_at TIMESTAMP DEFAULT NOW()
+    );
+  `;
+}
+
+/**
+ * Get migration runs table creation SQL
+ */
+export function getMigrationRunsTableSQL(): string {
+  return `
+    CREATE TABLE IF NOT EXISTS _yama_migration_runs (
+      id SERIAL PRIMARY KEY,
+      migration_id INTEGER REFERENCES _yama_migrations(id) ON DELETE CASCADE,
+      started_at TIMESTAMP DEFAULT NOW(),
+      finished_at TIMESTAMP,
+      status VARCHAR(20) DEFAULT 'running',
+      error_message TEXT
+    );
+  `;
 }
 

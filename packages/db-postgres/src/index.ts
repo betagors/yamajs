@@ -8,11 +8,26 @@ export {
 
 // Export generators
 export { generateDrizzleSchema } from "./drizzle-schema.js";
-export { generateMigrationSQL, generateMigrationFile } from "./migrations.js";
+export {
+  generateMigrationSQL,
+  generateMigrationFile,
+  generateSQLFromSteps,
+  computeMigrationChecksum,
+  getMigrationTableSQL,
+  getMigrationRunsTableSQL,
+} from "./migrations.js";
 export { generateMapper } from "./mapper.js";
 export { generateRepository } from "./repository.js";
 
 // Export adapter
 export { postgresqlAdapter } from "./adapter.js";
+
+// Export snapshot functions
+export {
+  createDataSnapshot,
+  restoreFromSnapshot,
+  deleteSnapshot,
+  listSnapshots,
+} from "./snapshots.js";
 
 

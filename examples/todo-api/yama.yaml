@@ -33,6 +33,10 @@ entities:
         dbColumn: created_at
         default: now()
         apiFormat: date-time
+      description:
+        type: text
+        required: false
+        nullable: true
 
 schemas:
   CreateTodoInput:

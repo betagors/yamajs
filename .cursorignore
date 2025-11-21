@@ -1,0 +1,6 @@
+# Cursor ignore file
+# Note: .env files are NOT ignored here, so Cursor can see them
+# This overrides .gitignore for Cursor's file visibility
+
+# You can add other patterns here if needed, but .env files will be visible
+
