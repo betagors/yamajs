@@ -1,0 +1,16 @@
+type: schema
+from_model:
+  hash: f00cebbc35c7ee95b0209fe1b66cd0f73fe7f8b1302000f332104caea44f2069
+to_model:
+  hash: ee34fce43c4fccc5d4a265e4bd40aca5e567e2e66cafb3375675edd63a0f1c3f
+steps:
+  - type: add_column
+    table: todos
+    column:
+      name: description
+      type: TEXT
+      nullable: true
+metadata:
+  generated_at: "2025-11-21T20:21:37.282Z"
+  generated_by: yama-cli
+  description: add_description_column

@@ -1,5 +1,5 @@
 import type { HttpRequest, HttpResponse } from "@yama/core";
-import { todoRepository } from "../db.js";
+import { todoRepository } from "@yama/db";
 
 export async function deleteTodo(
   request: HttpRequest,

@@ -2,11 +2,13 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { createTodo } from "./createTodo.js";
 import type { HttpRequest, HttpResponse } from "@yama/core";
 import type { CreateTodoInput } from "../types.js";
-import * as db from "../db.js";
+import { todoRepository } from "../generated/db/repository.js";
 
-// Mock the database module
-vi.mock("../db.js", () => ({
-  createTodo: vi.fn(),
+// Mock the repository
+vi.mock("../generated/db/repository.js", () => ({
+  todoRepository: {
+    create: vi.fn(),
+  },
 }));
 
 describe("createTodo Handler", () => {
@@ -36,14 +38,14 @@ describe("createTodo Handler", () => {
       createdAt: new Date().toISOString(),
     };
 
-    vi.mocked(db.createTodo).mockResolvedValue(mockTodo);
+    vi.mocked(todoRepository.create).mockResolvedValue(mockTodo);
 
     const result = await createTodo(
       mockRequest as HttpRequest,
       mockReply as HttpResponse
     );
 
-    expect(db.createTodo).toHaveBeenCalledWith(mockRequest.body);
+    expect(todoRepository.create).toHaveBeenCalledWith(mockRequest.body);
     expect(mockReply.status).toHaveBeenCalledWith(201);
     expect(result).toEqual(mockTodo);
   });
@@ -58,14 +60,14 @@ describe("createTodo Handler", () => {
     };
 
     mockRequest.body = input;
-    vi.mocked(db.createTodo).mockResolvedValue(mockTodo);
+    vi.mocked(todoRepository.create).mockResolvedValue(mockTodo);
 
     const result = await createTodo(
       mockRequest as HttpRequest,
       mockReply as HttpResponse
     );
 
-    expect(db.createTodo).toHaveBeenCalledWith(input);
+    expect(todoRepository.create).toHaveBeenCalledWith(input);
     expect(result).toEqual(mockTodo);
   });
 
@@ -94,7 +96,7 @@ describe("createTodo Handler", () => {
 
   it("should propagate database errors", async () => {
     const error = new Error("Database connection failed");
-    vi.mocked(db.createTodo).mockRejectedValue(error);
+    vi.mocked(todoRepository.create).mockRejectedValue(error);
 
     await expect(
       createTodo(

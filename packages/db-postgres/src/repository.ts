@@ -59,6 +59,262 @@ function capitalize(str: string): string {
 }
 
 /**
+ * Generate explicit query methods for repository
+ */
+function generateExplicitMethods(
+  entityName: string,
+  entityDef: EntityDefinition,
+  tableName: string,
+  apiSchemaName: string,
+  mapperFromEntity: string,
+  queryableFields: Array<{ fieldName: string; apiFieldName: string; dbColumnName: string; field: EntityField }>,
+  primaryFieldName: string,
+  primaryDbColumn: string
+): string {
+  const methods: string[] = [];
+  
+  // Single field queries
+  for (const field of queryableFields) {
+    const fieldType = field.field.type === 'boolean' ? 'boolean' : 
+                     field.field.type === 'number' || field.field.type === 'integer' ? 'number' : 'string';
+    const fieldCapitalized = capitalize(field.apiFieldName);
+    const dbColumn = field.dbColumnName;
+    
+    // findBy{Field}
+    methods.push(`  /**
+   * Find ${apiSchemaName} by ${field.apiFieldName}
+   */
+  async findBy${fieldCapitalized}(value: ${fieldType}): Promise<${apiSchemaName}[]> {
+    const db = getDb();
+    const entities = await db.select()
+      .from(${tableName})
+      .where(eq(${tableName}.${dbColumn}, value));
+    return entities.map(${mapperFromEntity});
+  }`);
+    
+    // findBy{Field}Equals
+    methods.push(`  /**
+   * Find ${apiSchemaName} where ${field.apiFieldName} equals value
+   */
+  async findBy${fieldCapitalized}Equals(value: ${fieldType}): Promise<${apiSchemaName}[]> {
+    const db = getDb();
+    const entities = await db.select()
+      .from(${tableName})
+      .where(eq(${tableName}.${dbColumn}, value));
+    return entities.map(${mapperFromEntity});
+  }`);
+    
+    // Boolean operations
+    if (field.field.type === 'boolean') {
+      methods.push(`  /**
+   * Find ${apiSchemaName} where ${field.apiFieldName} is true
+   */
+  async findBy${fieldCapitalized}IsTrue(): Promise<${apiSchemaName}[]> {
+    const db = getDb();
+    const entities = await db.select()
+      .from(${tableName})
+      .where(eq(${tableName}.${dbColumn}, true));
+    return entities.map(${mapperFromEntity});
+  }`);
+      
+      methods.push(`  /**
+   * Find ${apiSchemaName} where ${field.apiFieldName} is false
+   */
+  async findBy${fieldCapitalized}IsFalse(): Promise<${apiSchemaName}[]> {
+    const db = getDb();
+    const entities = await db.select()
+      .from(${tableName})
+      .where(eq(${tableName}.${dbColumn}, false));
+    return entities.map(${mapperFromEntity});
+  }`);
+    }
+    
+    // String operations
+    if (field.field.type === 'string' || field.field.type === 'text') {
+      methods.push(`  /**
+   * Find ${apiSchemaName} where ${field.apiFieldName} contains value
+   */
+  async findBy${fieldCapitalized}Contains(value: string): Promise<${apiSchemaName}[]> {
+    const db = getDb();
+    const entities = await db.select()
+      .from(${tableName})
+      .where(ilike(${tableName}.${dbColumn}, \`%\${value}%\`));
+    return entities.map(${mapperFromEntity});
+  }`);
+      
+      methods.push(`  /**
+   * Find ${apiSchemaName} where ${field.apiFieldName} starts with value
+   */
+  async findBy${fieldCapitalized}StartsWith(value: string): Promise<${apiSchemaName}[]> {
+    const db = getDb();
+    const entities = await db.select()
+      .from(${tableName})
+      .where(ilike(${tableName}.${dbColumn}, \`\${value}%\`));
+    return entities.map(${mapperFromEntity});
+  }`);
+      
+      methods.push(`  /**
+   * Find ${apiSchemaName} where ${field.apiFieldName} ends with value
+   */
+  async findBy${fieldCapitalized}EndsWith(value: string): Promise<${apiSchemaName}[]> {
+    const db = getDb();
+    const entities = await db.select()
+      .from(${tableName})
+      .where(ilike(${tableName}.${dbColumn}, \`%\${value}\`));
+    return entities.map(${mapperFromEntity});
+  }`);
+    }
+    
+    // Date/number comparisons
+    if (field.field.type === 'timestamp' || field.field.type === 'number' || field.field.type === 'integer') {
+      const dateType = field.field.type === 'timestamp' ? 'string' : 'number';
+      methods.push(`  /**
+   * Find ${apiSchemaName} where ${field.apiFieldName} is after value
+   */
+  async findBy${fieldCapitalized}After(value: ${dateType}): Promise<${apiSchemaName}[]> {
+    const db = getDb();
+    const entities = await db.select()
+      .from(${tableName})
+      .where(gt(${tableName}.${dbColumn}, value));
+    return entities.map(${mapperFromEntity});
+  }`);
+      
+      methods.push(`  /**
+   * Find ${apiSchemaName} where ${field.apiFieldName} is before value
+   */
+  async findBy${fieldCapitalized}Before(value: ${dateType}): Promise<${apiSchemaName}[]> {
+    const db = getDb();
+    const entities = await db.select()
+      .from(${tableName})
+      .where(lt(${tableName}.${dbColumn}, value));
+    return entities.map(${mapperFromEntity});
+  }`);
+    }
+    
+    // findByIdAnd{Field}
+    if (field.apiFieldName.toLowerCase() !== primaryFieldName.toLowerCase()) {
+      methods.push(`  /**
+   * Find ${apiSchemaName} by ID and ${field.apiFieldName}
+   */
+  async findByIdAnd${fieldCapitalized}(id: string, value: ${fieldType}): Promise<${apiSchemaName} | null> {
+    const db = getDb();
+    const [entity] = await db.select()
+      .from(${tableName})
+      .where(and(eq(${tableName}.${primaryDbColumn}, id), eq(${tableName}.${dbColumn}, value)))
+      .limit(1);
+    if (!entity) return null;
+    return ${mapperFromEntity}(entity);
+  }`);
+      
+      if (field.field.type === 'boolean') {
+        methods.push(`  /**
+   * Find ${apiSchemaName} by ID where ${field.apiFieldName} is true
+   */
+  async findByIdAnd${fieldCapitalized}IsTrue(id: string): Promise<${apiSchemaName} | null> {
+    const db = getDb();
+    const [entity] = await db.select()
+      .from(${tableName})
+      .where(and(eq(${tableName}.${primaryDbColumn}, id), eq(${tableName}.${dbColumn}, true)))
+      .limit(1);
+    if (!entity) return null;
+    return ${mapperFromEntity}(entity);
+  }`);
+        
+        methods.push(`  /**
+   * Find ${apiSchemaName} by ID where ${field.apiFieldName} is false
+   */
+  async findByIdAnd${fieldCapitalized}IsFalse(id: string): Promise<${apiSchemaName} | null> {
+    const db = getDb();
+    const [entity] = await db.select()
+      .from(${tableName})
+      .where(and(eq(${tableName}.${primaryDbColumn}, id), eq(${tableName}.${dbColumn}, false)))
+      .limit(1);
+    if (!entity) return null;
+    return ${mapperFromEntity}(entity);
+  }`);
+      }
+    }
+  }
+  
+  // Two field combinations (limit to avoid explosion)
+  for (let i = 0; i < queryableFields.length && i < 5; i++) {
+    for (let j = i + 1; j < queryableFields.length && j < 5; j++) {
+      const field1 = queryableFields[i];
+      const field2 = queryableFields[j];
+      const type1 = field1.field.type === 'boolean' ? 'boolean' : 
+                   field1.field.type === 'number' || field1.field.type === 'integer' ? 'number' : 'string';
+      const type2 = field2.field.type === 'boolean' ? 'boolean' : 
+                   field2.field.type === 'number' || field2.field.type === 'integer' ? 'number' : 'string';
+      const field1Capitalized = capitalize(field1.apiFieldName);
+      const field2Capitalized = capitalize(field2.apiFieldName);
+      
+      methods.push(`  /**
+   * Find ${apiSchemaName} by ${field1.apiFieldName} and ${field2.apiFieldName}
+   */
+  async findBy${field1Capitalized}And${field2Capitalized}(value1: ${type1}, value2: ${type2}): Promise<${apiSchemaName}[]> {
+    const db = getDb();
+    const entities = await db.select()
+      .from(${tableName})
+      .where(and(eq(${tableName}.${field1.dbColumnName}, value1), eq(${tableName}.${field2.dbColumnName}, value2)));
+    return entities.map(${mapperFromEntity});
+  }`);
+      
+      if (field2.field.type === 'boolean') {
+        methods.push(`  /**
+   * Find ${apiSchemaName} by ${field1.apiFieldName} where ${field2.apiFieldName} is true
+   */
+  async findBy${field1Capitalized}And${field2Capitalized}IsTrue(value1: ${type1}): Promise<${apiSchemaName}[]> {
+    const db = getDb();
+    const entities = await db.select()
+      .from(${tableName})
+      .where(and(eq(${tableName}.${field1.dbColumnName}, value1), eq(${tableName}.${field2.dbColumnName}, true)));
+    return entities.map(${mapperFromEntity});
+  }`);
+        
+        methods.push(`  /**
+   * Find ${apiSchemaName} by ${field1.apiFieldName} where ${field2.apiFieldName} is false
+   */
+  async findBy${field1Capitalized}And${field2Capitalized}IsFalse(value1: ${type1}): Promise<${apiSchemaName}[]> {
+    const db = getDb();
+    const entities = await db.select()
+      .from(${tableName})
+      .where(and(eq(${tableName}.${field1.dbColumnName}, value1), eq(${tableName}.${field2.dbColumnName}, false)));
+    return entities.map(${mapperFromEntity});
+  }`);
+      }
+    }
+  }
+  
+  // OrderBy variants
+  for (const field of queryableFields.slice(0, 5)) {
+    const fieldCapitalized = capitalize(field.apiFieldName);
+    methods.push(`  /**
+   * Find all ${apiSchemaName} ordered by ${field.apiFieldName} ascending
+   */
+  async findAllOrderBy${fieldCapitalized}Asc(): Promise<${apiSchemaName}[]> {
+    const db = getDb();
+    const entities = await db.select()
+      .from(${tableName})
+      .orderBy(asc(${tableName}.${field.dbColumnName}));
+    return entities.map(${mapperFromEntity});
+  }`);
+    
+    methods.push(`  /**
+   * Find all ${apiSchemaName} ordered by ${field.apiFieldName} descending
+   */
+  async findAllOrderBy${fieldCapitalized}Desc(): Promise<${apiSchemaName}[]> {
+    const db = getDb();
+    const entities = await db.select()
+      .from(${tableName})
+      .orderBy(desc(${tableName}.${field.dbColumnName}));
+    return entities.map(${mapperFromEntity});
+  }`);
+  }
+  
+  return methods.join('\n\n');
+}
+
+/**
  * Generate repository class for a single entity
  */
 function generateRepositoryClass(
@@ -78,20 +334,25 @@ function generateRepositoryClass(
   const primaryField = Object.entries(entityDef.fields).find(([, f]) => f.primary);
   const primaryFieldName = primaryField ? primaryField[0] : 'id';
   const primaryDbColumn = primaryField ? getDbColumnName(primaryField[0], primaryField[1]) : 'id';
-  const primaryApiField = primaryField ? getApiFieldName(primaryField[0], primaryField[1]) || primaryField[0] : 'id';
   
-  // Generate field metadata for runtime parsing
-  const fieldMetadata = queryableFields.map(f => ({
-    apiName: f.apiFieldName,
-    dbColumn: f.dbColumnName,
-    type: f.field.type
-  }));
+  const explicitMethods = generateExplicitMethods(
+    entityName,
+    entityDef,
+    tableName,
+    apiSchemaName,
+    mapperFromEntity,
+    queryableFields,
+    primaryFieldName,
+    primaryDbColumn
+  );
   
   return `import { postgresqlAdapter } from "@yama/db-postgres";
 import { ${tableName} } from "./schema.js";
 import { ${mapperToEntity}, ${mapperFromEntity} } from "./mapper.js";
-import { eq, and, or, like, ilike, gt, lt, gte, lte, desc, asc } from "drizzle-orm";
+import { eq, and, ilike, gt, lt, desc, asc } from "drizzle-orm";
+import type { SQL } from "drizzle-orm";
 import type { ${apiSchemaName}, ${createInputName}, ${updateInputName} } from "${typesImportPath}";
+import type { ${entityName}RepositoryMethods } from "./repository-types.js";
 import type { ReturnType } from "drizzle-orm";
 import type { drizzle } from "drizzle-orm/postgres-js";
 
@@ -105,224 +366,13 @@ function getDb(): Database {
   }
 }
 
-// Field metadata for dynamic query parsing
-const FIELD_METADATA = ${JSON.stringify(fieldMetadata, null, 2)};
-const PRIMARY_FIELD = ${JSON.stringify({ apiName: primaryApiField, dbColumn: primaryDbColumn })};
-
-/**
- * Parse method name into query conditions
- */
-function parseMethodName(methodName: string): { conditions: any[]; orderBy?: any; returnsArray: boolean } | null {
-  if (!methodName.startsWith('find')) {
-    return null;
-  }
-  
-  const conditions: any[] = [];
-  let orderBy: any = undefined;
-  let returnsArray = true;
-  
-  // Check if returns single item
-  if (methodName.includes('One') || methodName.includes('First') || methodName.includes('ById')) {
-    returnsArray = false;
-  }
-  
-  // Extract query part
-  let queryPart = methodName.replace(/^find/, '');
-  
-  // Parse OrderBy
-  const orderByMatch = queryPart.match(/OrderBy(\\w+)(Desc|Asc)/i);
-  if (orderByMatch) {
-    const orderField = orderByMatch[1];
-    const direction = orderByMatch[2].toLowerCase() === 'desc' ? 'desc' : 'asc';
-    const fieldInfo = FIELD_METADATA.find(f => 
-      f.apiName.toLowerCase() === orderField.toLowerCase()
-    );
-    if (fieldInfo) {
-      orderBy = { field: fieldInfo.apiName, dbColumn: fieldInfo.dbColumn, direction };
-    }
-    queryPart = queryPart.replace(/OrderBy\\w+(Desc|Asc)/i, '');
-  }
-  
-  // Split by And
-  const parts = queryPart.split(/And/);
-  
-  for (const part of parts) {
-    if (!part) continue;
-    
-    // IsTrue/IsFalse
-    const isTrueMatch = part.match(/^(\\w+)IsTrue$/i);
-    const isFalseMatch = part.match(/^(\\w+)IsFalse$/i);
-    
-    if (isTrueMatch) {
-      const fieldName = isTrueMatch[1];
-      const fieldInfo = FIELD_METADATA.find(f => f.apiName.toLowerCase() === fieldName.toLowerCase());
-      if (fieldInfo && fieldInfo.type === 'boolean') {
-        conditions.push({ field: fieldInfo.apiName, dbColumn: fieldInfo.dbColumn, operator: '=', value: true });
-        continue;
-      }
-    }
-    
-    if (isFalseMatch) {
-      const fieldName = isFalseMatch[1];
-      const fieldInfo = FIELD_METADATA.find(f => f.apiName.toLowerCase() === fieldName.toLowerCase());
-      if (fieldInfo && fieldInfo.type === 'boolean') {
-        conditions.push({ field: fieldInfo.apiName, dbColumn: fieldInfo.dbColumn, operator: '=', value: false });
-        continue;
-      }
-    }
-    
-    // Contains
-    const containsMatch = part.match(/^(\\w+)Contains$/i);
-    if (containsMatch) {
-      const fieldName = containsMatch[1];
-      const fieldInfo = FIELD_METADATA.find(f => f.apiName.toLowerCase() === fieldName.toLowerCase());
-      if (fieldInfo) {
-        conditions.push({ field: fieldInfo.apiName, dbColumn: fieldInfo.dbColumn, operator: 'ilike', isParameter: true });
-        continue;
-      }
-    }
-    
-    // StartsWith
-    const startsWithMatch = part.match(/^(\\w+)StartsWith$/i);
-    if (startsWithMatch) {
-      const fieldName = startsWithMatch[1];
-      const fieldInfo = FIELD_METADATA.find(f => f.apiName.toLowerCase() === fieldName.toLowerCase());
-      if (fieldInfo) {
-        conditions.push({ field: fieldInfo.apiName, dbColumn: fieldInfo.dbColumn, operator: 'startsWith', isParameter: true });
-        continue;
-      }
-    }
-    
-    // EndsWith
-    const endsWithMatch = part.match(/^(\\w+)EndsWith$/i);
-    if (endsWithMatch) {
-      const fieldName = endsWithMatch[1];
-      const fieldInfo = FIELD_METADATA.find(f => f.apiName.toLowerCase() === fieldName.toLowerCase());
-      if (fieldInfo) {
-        conditions.push({ field: fieldInfo.apiName, dbColumn: fieldInfo.dbColumn, operator: 'endsWith', isParameter: true });
-        continue;
-      }
-    }
-    
-    // After/Before
-    const afterMatch = part.match(/^(\\w+)After$/i);
-    const beforeMatch = part.match(/^(\\w+)Before$/i);
-    
-    if (afterMatch) {
-      const fieldName = afterMatch[1];
-      const fieldInfo = FIELD_METADATA.find(f => f.apiName.toLowerCase() === fieldName.toLowerCase());
-      if (fieldInfo) {
-        conditions.push({ field: fieldInfo.apiName, dbColumn: fieldInfo.dbColumn, operator: '>', isParameter: true });
-        continue;
-      }
-    }
-    
-    if (beforeMatch) {
-      const fieldName = beforeMatch[1];
-      const fieldInfo = FIELD_METADATA.find(f => f.apiName.toLowerCase() === fieldName.toLowerCase());
-      if (fieldInfo) {
-        conditions.push({ field: fieldInfo.apiName, dbColumn: fieldInfo.dbColumn, operator: '<', isParameter: true });
-        continue;
-      }
-    }
-    
-    // Equals or just field name
-    const equalsMatch = part.match(/^(\\w+)Equals$/i);
-    const fieldName = equalsMatch ? equalsMatch[1] : part;
-    const fieldInfo = FIELD_METADATA.find(f => f.apiName.toLowerCase() === fieldName.toLowerCase());
-    
-    if (fieldInfo) {
-      conditions.push({ field: fieldInfo.apiName, dbColumn: fieldInfo.dbColumn, operator: '=', isParameter: true });
-    }
-  }
-  
-  if (conditions.length === 0) {
-    return null;
-  }
-  
-  return { conditions, orderBy, returnsArray };
-}
-
-/**
- * Execute dynamic query
- */
-async function executeDynamicQuery(methodName: string, args: any[]): Promise<any> {
-  const parsed = parseMethodName(methodName);
-  if (!parsed) {
-    throw new Error(\`Method \${methodName} not found\`);
-  }
-  
-  const db = getDb();
-  let query = db.select().from(${tableName});
-  
-  const drizzleConditions: any[] = [];
-  let argIndex = 0;
-  
-  for (const condition of parsed.conditions) {
-    const column = ${tableName}[condition.dbColumn];
-    if (!column) continue;
-    
-    if (condition.value !== undefined) {
-      // Fixed value (IsTrue/IsFalse)
-      drizzleConditions.push(eq(column, condition.value));
-    } else if (condition.isParameter) {
-      // Parameter value
-      if (argIndex >= args.length) {
-        throw new Error(\`Method \${methodName} requires \${parsed.conditions.filter(c => c.isParameter).length} argument(s)\`);
-      }
-      const value = args[argIndex++];
-      
-      switch (condition.operator) {
-        case '=':
-          drizzleConditions.push(eq(column, value));
-          break;
-        case '>':
-          drizzleConditions.push(gt(column, value));
-          break;
-        case '<':
-          drizzleConditions.push(lt(column, value));
-          break;
-        case 'ilike':
-          drizzleConditions.push(ilike(column, \`%\${value}%\`));
-          break;
-        case 'startsWith':
-          drizzleConditions.push(ilike(column, \`\${value}%\`));
-          break;
-        case 'endsWith':
-          drizzleConditions.push(ilike(column, \`%\${value}\`));
-          break;
-        default:
-          drizzleConditions.push(eq(column, value));
-      }
-    }
-  }
-  
-  if (drizzleConditions.length > 0) {
-    query = query.where(and(...drizzleConditions)) as any;
-  }
-  
-  if (parsed.orderBy) {
-    const orderColumn = ${tableName}[parsed.orderBy.dbColumn] || ${tableName}.${primaryDbColumn};
-    query = query.orderBy(parsed.orderBy.direction === 'desc' ? desc(orderColumn) : asc(orderColumn)) as any;
-  }
-  
-  if (!parsed.returnsArray) {
-    query = query.limit(1) as any;
-  }
-  
-  const entities = await query;
-  const results = entities.map(${mapperFromEntity});
-  
-  return parsed.returnsArray ? results : (results[0] || null);
-}
-
 export class ${entityName}Repository {
   /**
    * Create a new ${apiSchemaName}
    */
   async create(input: ${createInputName}): Promise<${apiSchemaName}> {
     const db = getDb();
-    const entityData = ${mapperToEntity}(input as any);
+    const entityData = ${mapperToEntity}(input);
     const [entity] = await db.insert(${tableName}).values(entityData).returning();
     return ${mapperFromEntity}(entity);
   }
@@ -353,7 +403,7 @@ ${queryableFields.map(f => {
     const db = getDb();
     let query = db.select().from(${tableName});
     
-    const conditions: any[] = [];
+    const conditions: SQL[] = [];
 ${queryableFields.map(f => {
   const dbCol = f.dbColumnName;
   return `    if (options?.${f.apiFieldName} !== undefined) {
@@ -362,20 +412,22 @@ ${queryableFields.map(f => {
 }).join('\n')}
     
     if (conditions.length > 0) {
-      query = query.where(and(...conditions)) as any;
+      query = query.where(and(...conditions));
     }
     
     if (options?.orderBy) {
       const orderField = ${tableName}[options.orderBy.field] || ${tableName}.${primaryDbColumn};
-      query = query.orderBy(options.orderBy.direction === 'desc' ? desc(orderField) : asc(orderField)) as any;
+      if (orderField) {
+        query = query.orderBy(options.orderBy.direction === 'desc' ? desc(orderField) : asc(orderField));
+      }
     }
     
     if (options?.limit !== undefined) {
-      query = query.limit(options.limit) as any;
+      query = query.limit(options.limit);
     }
     
     if (options?.offset !== undefined) {
-      query = query.offset(options.offset) as any;
+      query = query.offset(options.offset);
     }
     
     const entities = await query;
@@ -387,7 +439,7 @@ ${queryableFields.map(f => {
    */
   async update(id: string, input: ${updateInputName}): Promise<${apiSchemaName} | null> {
     const db = getDb();
-    const entityData = ${mapperToEntity}(input as any);
+    const entityData = ${mapperToEntity}(input);
     const [entity] = await db.update(${tableName})
       .set(entityData)
       .where(eq(${tableName}.${primaryDbColumn}, id))
@@ -405,27 +457,11 @@ ${queryableFields.map(f => {
     const result = await db.delete(${tableName}).where(eq(${tableName}.${primaryDbColumn}, id)).returning();
     return result.length > 0;
   }
+
+${explicitMethods}
 }
 
-// Create proxied instance to handle dynamic method calls
-const baseRepository = new ${entityName}Repository();
-export const ${entityName.toLowerCase()}Repository = new Proxy(baseRepository, {
-  get(target: any, prop: string | symbol) {
-    // If method exists on the class, use it
-    if (target[prop] && typeof target[prop] === 'function') {
-      return target[prop].bind(target);
-    }
-    
-    // Otherwise, try to parse as dynamic query method
-    if (typeof prop === 'string' && prop.startsWith('find')) {
-      return async (...args: any[]) => {
-        return executeDynamicQuery(prop, args);
-      };
-    }
-    
-    return target[prop];
-  }
-});
+export const ${entityName.toLowerCase()}Repository: ${entityName}RepositoryMethods = new ${entityName}Repository();
 `;
 }
 

@@ -1,6 +1,6 @@
 import type { HttpRequest, HttpResponse } from "@yama/core";
-import { todoRepository } from "../db.js";
-import type { Todo } from "../types.js"; // Generated types!
+import { todoRepository } from "@yama/db";
+import type { Todo } from "@yama/types";
 
 export async function getTodoById(
   request: HttpRequest,

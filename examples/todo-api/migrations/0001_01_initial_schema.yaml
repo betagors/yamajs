@@ -1,0 +1,27 @@
+type: schema
+from_model:
+  hash: ""
+to_model:
+  hash: f00cebbc35c7ee95b0209fe1b66cd0f73fe7f8b1302000f332104caea44f2069
+steps:
+  - type: add_table
+    table: todos
+    columns:
+      - name: id
+        type: UUID
+        nullable: true
+        primary: true
+        generated: true
+      - name: title
+        type: VARCHAR(255)
+        nullable: false
+        primary: false
+      - name: completed
+        type: BOOLEAN
+        nullable: true
+        primary: false
+        default: false
+metadata:
+  generated_at: "2025-11-21T20:13:43.417Z"
+  generated_by: yama-cli
+  description: 01_initial_schema

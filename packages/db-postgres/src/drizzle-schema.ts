@@ -189,15 +189,23 @@ export function generateDrizzleSchema(entities: YamaEntities): string {
     }
   }
 
-  const importStatement = `import { ${Array.from(allImports).sort().join(", ")} } from "drizzle-orm/pg-core";\n\n`;
+  const importStatement = `import { ${Array.from(allImports).sort().join(", ")} } from "drizzle-orm/pg-core";
+import type { InferSelectModel, InferInsertModel } from "drizzle-orm";\n\n`;
 
   const tableDefinitions: string[] = [];
+  const typeExports: string[] = [];
 
   for (const [entityName, entityDef] of Object.entries(entities)) {
     const tableCode = generateDrizzleTable(entityName, entityDef, allImports);
     tableDefinitions.push(tableCode);
+    
+    const tableName = entityName.toLowerCase();
+    typeExports.push(`export type ${entityName}Entity = InferSelectModel<typeof ${tableName}>;`);
+    typeExports.push(`export type New${entityName}Entity = InferInsertModel<typeof ${tableName}>;`);
   }
 
-  return header + importStatement + tableDefinitions.join("\n\n") + "\n";
+  const typeExportsSection = typeExports.length > 0 ? `\n\n${typeExports.join("\n")}\n` : "";
+
+  return header + importStatement + tableDefinitions.join("\n\n") + typeExportsSection;
 }
 

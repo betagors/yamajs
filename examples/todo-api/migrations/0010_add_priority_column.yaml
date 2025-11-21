@@ -1,0 +1,23 @@
+type: schema
+from_model:
+  hash: c0d830b9062879103f337fe03b66c20467657e342a42aacef7c41265cee8cb8b
+to_model:
+  hash: da7bdba2ff456ed2b391591b213c203f619b7e09dde69c31ebbd37fed03b9873
+steps:
+  - type: add_column
+    table: todos
+    column:
+      name: priority
+      type: INTEGER
+      nullable: true
+  - type: add_index
+    table: todos
+    index:
+      name: todos_priority_idx
+      columns:
+        - priority
+      unique: false
+metadata:
+  generated_at: "2025-11-21T20:35:32.153Z"
+  generated_by: yama-cli
+  description: add_priority_column

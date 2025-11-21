@@ -1,1 +1,7 @@
-migrations/
+# Yama generated files
+.yama/
+
+# Old generated files (can be removed after migration)
+src/generated/
+lib/generated/
+src/types.ts

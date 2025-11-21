@@ -1,0 +1,20 @@
+type: schema
+from_model:
+  hash: ee34fce43c4fccc5d4a265e4bd40aca5e567e2e66cafb3375675edd63a0f1c3f
+to_model:
+  hash: c0d830b9062879103f337fe03b66c20467657e342a42aacef7c41265cee8cb8b
+steps:
+  - type: modify_column
+    table: todos
+    column: title
+    changes:
+      type: VARCHAR(500)
+  - type: drop_column
+    table: todos
+    column: description
+  - type: drop_table
+    table: todos_before_0003_delete_description_column
+metadata:
+  generated_at: "2025-11-21T20:27:27.780Z"
+  generated_by: yama-cli
+  description: verify_current_state

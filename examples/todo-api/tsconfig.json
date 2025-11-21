@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "Node",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": {
+      "@yama/db": [
+        ".yama/db"
+      ],
+      "@yama/sdk": [
+        ".yama/sdk"
+      ],
+      "@yama/types": [
+        ".yama/types.ts"
+      ]
+    }
+  },
+  "include": [
+    "src/**/*",
+    ".yama/**/*"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}

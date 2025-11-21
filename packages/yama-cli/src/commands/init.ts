@@ -1,6 +1,7 @@
 import { writeFileSync, existsSync, readFileSync, appendFileSync } from "fs";
 import { join, basename } from "path";
 import { ensureDir, readPackageJson, writePackageJson } from "../utils/file-utils.js";
+import { getYamaDir, getDbDir, getSdkDir } from "../utils/paths.js";
 
 interface InitOptions {
   name?: string;
@@ -41,15 +42,6 @@ export async function initCommand(options: InitOptions): Promise<void> {
   const yamlContent = `name: ${projectName}
 version: ${version}
 
-# Database configuration (optional)
-# database:
-#   dialect: postgresql
-#   url: "\${DATABASE_URL}"
-
-# Server configuration (optional, defaults to fastify)
-# server:
-#   engine: fastify
-
 schemas:
   Example:
     fields:
@@ -81,15 +73,22 @@ endpoints:
   ensureDir(handlersDir);
   console.log("✅ Created src/handlers/ directory");
 
+  // Create .yama directory structure
+  const yamaDir = getYamaDir(cwd);
+  ensureDir(yamaDir);
+  ensureDir(getDbDir(cwd));
+  ensureDir(getSdkDir(cwd));
+  console.log("✅ Created .yama/ directory structure");
+
   // Create example handler
   const exampleHandlerPath = join(handlersDir, "getExamples.ts");
   if (!existsSync(exampleHandlerPath)) {
-    const handlerContent = `import type { FastifyRequest, FastifyReply } from "fastify";
-import type { Example } from "../generated/types.js";
+    const handlerContent = `import type { HttpRequest, HttpResponse } from "@yama/core";
+import type { Example } from "@yama/types";
 
 export async function getExamples(
-  request: FastifyRequest,
-  reply: FastifyReply
+  request: HttpRequest,
+  reply: HttpResponse
 ): Promise<Example> {
   return {
     id: "1",
@@ -134,22 +133,21 @@ export async function getExamples(
 
   // Update .gitignore
   const gitignorePath = join(cwd, ".gitignore");
-  const gitignoreEntries = [
-    "",
-    "# Yama generated files",
-    "src/generated/",
-    "lib/generated/",
-    "generated/"
-  ];
+  const gitignoreEntry = "\n# Yama generated files\n.yama/\n";
 
   if (existsSync(gitignorePath)) {
     const currentContent = readFileSync(gitignorePath, "utf-8");
-    if (!currentContent.includes("generated/")) {
-      appendFileSync(gitignorePath, gitignoreEntries.join("\n"));
+    // Remove old entries if they exist
+    const cleanedContent = currentContent
+      .replace(/\n# Yama generated files\n.*generated\/.*\n/g, "")
+      .replace(/\n\.yama\/\n/g, "");
+    
+    if (!cleanedContent.includes(".yama/")) {
+      writeFileSync(gitignorePath, cleanedContent + gitignoreEntry, "utf-8");
       console.log("✅ Updated .gitignore");
     }
   } else {
-    writeFileSync(gitignorePath, gitignoreEntries.join("\n"), "utf-8");
+    writeFileSync(gitignorePath, gitignoreEntry.trimStart(), "utf-8");
     console.log("✅ Created .gitignore");
   }
 

@@ -1,11 +1,13 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { getTodos } from "./getTodos.js";
 import type { HttpRequest, HttpResponse } from "@yama/core";
-import * as db from "../db.js";
+import { todoRepository } from "../generated/db/repository.js";
 
-// Mock the database module
-vi.mock("../db.js", () => ({
-  getAllTodos: vi.fn(),
+// Mock the repository
+vi.mock("../generated/db/repository.js", () => ({
+  todoRepository: {
+    findAll: vi.fn(),
+  },
 }));
 
 describe("getTodos Handler", () => {
@@ -38,14 +40,14 @@ describe("getTodos Handler", () => {
       },
     ];
 
-    vi.mocked(db.getAllTodos).mockResolvedValue(mockTodos);
+    vi.mocked(todoRepository.findAll).mockResolvedValue(mockTodos);
 
     const result = await getTodos(
       mockRequest as HttpRequest,
       mockReply as HttpResponse
     );
 
-    expect(db.getAllTodos).toHaveBeenCalledWith(undefined, undefined, 0);
+    expect(todoRepository.findAll).toHaveBeenCalledWith({ completed: undefined, limit: undefined, offset: 0 });
     expect(result).toEqual({ todos: mockTodos });
   });
 
@@ -60,14 +62,14 @@ describe("getTodos Handler", () => {
     ];
 
     mockRequest.query = { completed: true };
-    vi.mocked(db.getAllTodos).mockResolvedValue(mockTodos);
+    vi.mocked(todoRepository.findAll).mockResolvedValue(mockTodos);
 
     const result = await getTodos(
       mockRequest as HttpRequest,
       mockReply as HttpResponse
     );
 
-    expect(db.getAllTodos).toHaveBeenCalledWith(true, undefined, 0);
+    expect(todoRepository.findAll).toHaveBeenCalledWith({ completed: true, limit: undefined, offset: 0 });
     expect(result.todos).toHaveLength(1);
     expect(result.todos![0].completed).toBe(true);
   });
@@ -83,14 +85,14 @@ describe("getTodos Handler", () => {
     ];
 
     mockRequest.query = { completed: false };
-    vi.mocked(db.getAllTodos).mockResolvedValue(mockTodos);
+    vi.mocked(todoRepository.findAll).mockResolvedValue(mockTodos);
 
     const result = await getTodos(
       mockRequest as HttpRequest,
       mockReply as HttpResponse
     );
 
-    expect(db.getAllTodos).toHaveBeenCalledWith(false, undefined, 0);
+    expect(todoRepository.findAll).toHaveBeenCalledWith({ completed: false, limit: undefined, offset: 0 });
     expect(result.todos![0].completed).toBe(false);
   });
 
@@ -105,28 +107,28 @@ describe("getTodos Handler", () => {
     ];
 
     mockRequest.query = { limit: 10 };
-    vi.mocked(db.getAllTodos).mockResolvedValue(mockTodos);
+    vi.mocked(todoRepository.findAll).mockResolvedValue(mockTodos);
 
     await getTodos(
       mockRequest as HttpRequest,
       mockReply as HttpResponse
     );
 
-    expect(db.getAllTodos).toHaveBeenCalledWith(undefined, 10, 0);
+    expect(todoRepository.findAll).toHaveBeenCalledWith({ completed: undefined, limit: 10, offset: 0 });
   });
 
   it("should apply offset", async () => {
     const mockTodos: any[] = [];
 
     mockRequest.query = { offset: 5 };
-    vi.mocked(db.getAllTodos).mockResolvedValue(mockTodos);
+    vi.mocked(todoRepository.findAll).mockResolvedValue(mockTodos);
 
     await getTodos(
       mockRequest as HttpRequest,
       mockReply as HttpResponse
     );
 
-    expect(db.getAllTodos).toHaveBeenCalledWith(undefined, undefined, 5);
+    expect(todoRepository.findAll).toHaveBeenCalledWith({ completed: undefined, limit: undefined, offset: 5 });
   });
 
   it("should combine query parameters", async () => {
@@ -137,18 +139,18 @@ describe("getTodos Handler", () => {
       limit: 20,
       offset: 10,
     };
-    vi.mocked(db.getAllTodos).mockResolvedValue(mockTodos);
+    vi.mocked(todoRepository.findAll).mockResolvedValue(mockTodos);
 
     await getTodos(
       mockRequest as HttpRequest,
       mockReply as HttpResponse
     );
 
-    expect(db.getAllTodos).toHaveBeenCalledWith(true, 20, 10);
+    expect(todoRepository.findAll).toHaveBeenCalledWith({ completed: true, limit: 20, offset: 10 });
   });
 
   it("should return empty array when no todos exist", async () => {
-    vi.mocked(db.getAllTodos).mockResolvedValue([]);
+    vi.mocked(todoRepository.findAll).mockResolvedValue([]);
 
     const result = await getTodos(
       mockRequest as HttpRequest,
@@ -160,7 +162,7 @@ describe("getTodos Handler", () => {
 
   it("should propagate database errors", async () => {
     const error = new Error("Database query failed");
-    vi.mocked(db.getAllTodos).mockRejectedValue(error);
+    vi.mocked(todoRepository.findAll).mockRejectedValue(error);
 
     await expect(
       getTodos(

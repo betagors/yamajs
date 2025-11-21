@@ -1,11 +1,13 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { deleteTodo } from "./deleteTodo.js";
 import type { HttpRequest, HttpResponse } from "@yama/core";
-import * as db from "../db.js";
+import { todoRepository } from "../generated/db/repository.js";
 
-// Mock the database module
-vi.mock("../db.js", () => ({
-  deleteTodo: vi.fn(),
+// Mock the repository
+vi.mock("../generated/db/repository.js", () => ({
+  todoRepository: {
+    delete: vi.fn(),
+  },
 }));
 
 describe("deleteTodo Handler", () => {
@@ -28,27 +30,27 @@ describe("deleteTodo Handler", () => {
   });
 
   it("should delete a todo successfully and return 204", async () => {
-    vi.mocked(db.deleteTodo).mockResolvedValue(true);
+    vi.mocked(todoRepository.delete).mockResolvedValue(true);
 
     await deleteTodo(
       mockRequest as HttpRequest,
       mockReply as HttpResponse
     );
 
-    expect(db.deleteTodo).toHaveBeenCalledWith("123");
+    expect(todoRepository.delete).toHaveBeenCalledWith("123");
     expect(mockReply.status).toHaveBeenCalledWith(204);
     expect(mockReply.send).toHaveBeenCalled();
   });
 
   it("should return 404 when todo not found", async () => {
-    vi.mocked(db.deleteTodo).mockResolvedValue(false);
+    vi.mocked(todoRepository.delete).mockResolvedValue(false);
 
     await deleteTodo(
       mockRequest as HttpRequest,
       mockReply as HttpResponse
     );
 
-    expect(db.deleteTodo).toHaveBeenCalledWith("123");
+    expect(todoRepository.delete).toHaveBeenCalledWith("123");
     expect(mockReply.status).toHaveBeenCalledWith(404);
     expect(mockReply.send).toHaveBeenCalledWith({
       error: "Not found",
@@ -71,7 +73,7 @@ describe("deleteTodo Handler", () => {
 
   it("should propagate database errors", async () => {
     const error = new Error("Database delete failed");
-    vi.mocked(db.deleteTodo).mockRejectedValue(error);
+    vi.mocked(todoRepository.delete).mockRejectedValue(error);
 
     await expect(
       deleteTodo(

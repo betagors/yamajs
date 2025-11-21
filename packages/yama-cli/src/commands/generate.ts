@@ -1,4 +1,4 @@
-import { existsSync, writeFileSync } from "fs";
+import { existsSync, writeFileSync, readFileSync } from "fs";
 import { join, dirname, relative } from "path";
 import { generateTypes, type YamaEntities } from "@yama/core";
 import { generateSDK } from "@yama/sdk-ts";
@@ -6,6 +6,9 @@ import { generateDrizzleSchema, generateMapper, generateRepository } from "@yama
 import { readYamaConfig, ensureDir, getConfigDir } from "../utils/file-utils.js";
 import { findYamaConfig, detectProjectType, inferOutputPath } from "../utils/project-detection.js";
 import { generateFrameworkHelpers, updateFrameworkConfig } from "../utils/framework-helpers.js";
+import { getDbDir, getSdkDir, getTypesPath, getCacheDir } from "../utils/paths.js";
+import { getConfigCacheKey, getCachedFile, setCachedFile } from "../utils/cache.js";
+import { updateTypeScriptPaths } from "../utils/tsconfig.js";
 import chokidar from "chokidar";
 
 interface GenerateOptions {
@@ -15,6 +18,7 @@ interface GenerateOptions {
   typesOnly?: boolean;
   sdkOnly?: boolean;
   framework?: string;
+  noCache?: boolean;
 }
 
 export async function generateCommand(options: GenerateOptions): Promise<void> {
@@ -46,6 +50,11 @@ export async function generateOnce(configPath: string, options: GenerateOptions)
     };
     const configDir = getConfigDir(configPath);
     const projectType = detectProjectType(configDir);
+    const cacheDir = getCacheDir(configDir);
+    const useCache = !options.noCache;
+
+    // Generate cache key for this config
+    const cacheKey = useCache ? getConfigCacheKey(configPath, config) : null;
 
     let typesOutput: string | undefined;
 
@@ -56,7 +65,9 @@ export async function generateOnce(configPath: string, options: GenerateOptions)
         config.schemas as Parameters<typeof generateTypes>[0],
         config.entities,
         typesOutput,
-        configDir
+        configDir,
+        useCache ? cacheDir : undefined,
+        cacheKey || undefined
       );
     }
 
@@ -76,6 +87,9 @@ export async function generateOnce(configPath: string, options: GenerateOptions)
       await generateFrameworkHelpers(projectType, options.framework, configDir);
       await updateFrameworkConfig(projectType, options.framework, configDir);
     }
+
+    // Update TypeScript paths
+    updateTypeScriptPaths(configDir);
 
     console.log("\n✅ Generation complete!");
   } catch (error) {
@@ -113,10 +127,7 @@ function getTypesOutputPath(configPath: string, options: GenerateOptions): strin
   }
 
   const configDir = getConfigDir(configPath);
-  const projectType = detectProjectType(configDir);
-  const inferredPath = inferOutputPath(projectType, "types");
-  
-  return join(configDir, inferredPath);
+  return getTypesPath(configDir);
 }
 
 function getSdkOutputPath(configPath: string, options: GenerateOptions): string {
@@ -125,30 +136,47 @@ function getSdkOutputPath(configPath: string, options: GenerateOptions): string 
   }
 
   const configDir = getConfigDir(configPath);
-  const projectType = detectProjectType(configDir);
-  const inferredPath = inferOutputPath(projectType, "sdk");
-  
-  return join(configDir, inferredPath);
+  return join(getSdkDir(configDir), "client.ts");
 }
 
 async function generateTypesFile(
   schemas: unknown,
   entities: YamaEntities | undefined,
   outputPath: string,
-  configDir: string
+  configDir: string,
+  cacheDir?: string,
+  cacheKey?: string
 ): Promise<void> {
   try {
+    // Check cache
+    if (cacheDir && cacheKey) {
+      const cacheKeyForTypes = `${cacheKey}_types`;
+      const cached = getCachedFile(cacheDir, cacheKeyForTypes);
+      if (cached) {
+        const absoluteOutputPath = outputPath.startsWith(configDir) ? outputPath : join(configDir, outputPath);
+        ensureDir(dirname(absoluteOutputPath));
+        writeFileSync(absoluteOutputPath, cached, "utf-8");
+        return;
+      }
+    }
+
     const types = generateTypes(
       schemas as Parameters<typeof generateTypes>[0],
       entities
     );
-    const absoluteOutputPath = join(configDir, outputPath);
+    const absoluteOutputPath = outputPath.startsWith(configDir) ? outputPath : join(configDir, outputPath);
     const outputDir = dirname(absoluteOutputPath);
     
     ensureDir(outputDir);
     writeFileSync(absoluteOutputPath, types, "utf-8");
     
-    console.log(`✅ Generated types: ${outputPath}`);
+    // Save to cache
+    if (cacheDir && cacheKey) {
+      const cacheKeyForTypes = `${cacheKey}_types`;
+      setCachedFile(cacheDir, cacheKeyForTypes, types);
+    }
+    
+    console.log(`✅ Generated types: ${outputPath.replace(configDir + "/", "")}`);
   } catch (error) {
     console.error("❌ Failed to generate types:", error instanceof Error ? error.message : String(error));
     throw error;
@@ -161,40 +189,51 @@ async function generateDatabaseCode(
   typesOutputPath?: string
 ): Promise<void> {
   try {
-    const dbOutputDir = join(configDir, "src", "generated", "db");
+    const dbOutputDir = getDbDir(configDir);
     ensureDir(dbOutputDir);
+
+    // Calculate types import path (from .yama/db/ to .yama/types.ts)
+    const typesImportPath = "../types";
 
     // Generate Drizzle schema
     const drizzleSchema = generateDrizzleSchema(entities);
     const drizzleSchemaPath = join(dbOutputDir, "schema.ts");
     writeFileSync(drizzleSchemaPath, drizzleSchema, "utf-8");
-    console.log(`✅ Generated Drizzle schema: src/generated/db/schema.ts`);
+    console.log(`✅ Generated Drizzle schema: .yama/db/schema.ts`);
 
     // Generate mapper
-    let typesImportPath = "../types";
-    if (typesOutputPath) {
-      const absoluteTypesPath = join(configDir, typesOutputPath);
-      const relativePath = relative(dbOutputDir, absoluteTypesPath);
-      typesImportPath = relativePath.replace(/\\/g, "/").replace(/\.ts$/, "");
-      if (!typesImportPath.startsWith(".")) {
-        typesImportPath = "../" + typesImportPath;
-      }
-    }
-
     const mapper = generateMapper(entities, typesImportPath);
     const mapperPath = join(dbOutputDir, "mapper.ts");
     writeFileSync(mapperPath, mapper, "utf-8");
-    console.log(`✅ Generated mapper: src/generated/db/mapper.ts`);
+    console.log(`✅ Generated mapper: .yama/db/mapper.ts`);
 
     // Generate repository
     const { repository, types } = generateRepository(entities, typesImportPath);
     const repositoryPath = join(dbOutputDir, "repository.ts");
     writeFileSync(repositoryPath, repository, "utf-8");
-    console.log(`✅ Generated repository: src/generated/db/repository.ts`);
+    console.log(`✅ Generated repository: .yama/db/repository.ts`);
 
     const repositoryTypesPath = join(dbOutputDir, "repository-types.ts");
     writeFileSync(repositoryTypesPath, types, "utf-8");
-    console.log(`✅ Generated repository types: src/generated/db/repository-types.ts`);
+    console.log(`✅ Generated repository types: .yama/db/repository-types.ts`);
+
+    // Generate index.ts with exports
+    const entityNames = Object.keys(entities);
+    const indexContent = `// Auto-generated - do not edit
+export * from "./schema";
+export * from "./mapper";
+export * from "./repository";
+export * from "./repository-types";
+
+// Re-export repository instances (already created in repository.ts)
+${entityNames.map(name => {
+  const camelName = name.charAt(0).toLowerCase() + name.slice(1);
+  return `export { ${camelName}Repository } from "./repository";`;
+}).join("\n")}
+`;
+    const indexPath = join(dbOutputDir, "index.ts");
+    writeFileSync(indexPath, indexContent, "utf-8");
+    console.log(`✅ Generated index: .yama/db/index.ts`);
   } catch (error) {
     console.error("❌ Failed to generate database code:", error instanceof Error ? error.message : String(error));
     throw error;
@@ -209,21 +248,12 @@ async function generateSdkFile(
   framework?: string
 ): Promise<void> {
   try {
-    const absoluteOutputPath = join(configDir, outputPath);
+    const absoluteOutputPath = outputPath.startsWith(configDir) ? outputPath : join(configDir, outputPath);
     const outputDir = dirname(absoluteOutputPath);
     
     // Calculate relative path from SDK to types file for import
-    let typesImportPath = "./types";
-    if (typesOutputPath) {
-      const absoluteTypesPath = join(configDir, typesOutputPath);
-      const relativePath = relative(outputDir, absoluteTypesPath);
-      // Remove .ts extension and normalize path separators
-      typesImportPath = relativePath.replace(/\\/g, "/").replace(/\.ts$/, "");
-      // Ensure it starts with ./ or ../
-      if (!typesImportPath.startsWith(".")) {
-        typesImportPath = "./" + typesImportPath;
-      }
-    }
+    // From .yama/sdk/ to .yama/types.ts
+    const typesImportPath = "../types";
 
     const sdkContent = generateSDK(
       config as Parameters<typeof generateSDK>[0],
@@ -236,8 +266,16 @@ async function generateSdkFile(
 
     ensureDir(outputDir);
     writeFileSync(absoluteOutputPath, sdkContent, "utf-8");
-    
-    console.log(`✅ Generated SDK: ${outputPath}`);
+    console.log(`✅ Generated SDK: ${outputPath.replace(configDir + "/", "")}`);
+
+    // Generate index.ts for SDK
+    const sdkDir = getSdkDir(configDir);
+    const indexContent = `// Auto-generated - do not edit
+export * from "./client";
+`;
+    const indexPath = join(sdkDir, "index.ts");
+    writeFileSync(indexPath, indexContent, "utf-8");
+    console.log(`✅ Generated index: .yama/sdk/index.ts`);
   } catch (error) {
     console.error("❌ Failed to generate SDK:", error instanceof Error ? error.message : String(error));
     throw error;

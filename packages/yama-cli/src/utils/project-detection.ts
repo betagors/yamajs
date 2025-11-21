@@ -36,54 +36,50 @@ export function detectProjectType(cwd: string = process.cwd()): ProjectType {
 
 /**
  * Infer the output path for generated files based on project type
+ * Now uses .yama/ directory structure
  */
 export function inferOutputPath(
   projectType: ProjectType,
   type: "types" | "sdk" = "types"
 ): string {
-  switch (projectType) {
-    case "nextjs":
-      return type === "types" 
-        ? "lib/generated/types.ts"
-        : "lib/generated/sdk.ts";
-    
-    case "vite":
-    case "react":
-      return type === "types"
-        ? "src/lib/generated/types.ts"
-        : "src/lib/generated/sdk.ts";
-    
-    case "node":
-      return type === "types"
-        ? "lib/generated/types.ts"
-        : "lib/generated/sdk.ts";
-    
-    default:
-      return type === "types"
-        ? "generated/types.ts"
-        : "generated/sdk.ts";
-  }
+  // All projects now use .yama/ structure
+  return type === "types"
+    ? ".yama/types.ts"
+    : ".yama/sdk/client.ts";
 }
 
 /**
- * Find yama.yaml in the current directory or parent directories
+ * Find yama.yaml or yama.yml in the current directory or parent directories
  */
 export function findYamaConfig(startPath: string = process.cwd()): string | null {
   let current = startPath;
   const startDir = current;
   
   while (current !== dirname(current)) {
-    const configPath = join(current, "yama.yaml");
-    if (existsSync(configPath)) {
-      return configPath;
+    // Try yama.yml first (preferred)
+    const configPathYml = join(current, "yama.yml");
+    if (existsSync(configPathYml)) {
+      return configPathYml;
     }
+    
+    // Fall back to yama.yaml (backward compat)
+    const configPathYaml = join(current, "yama.yaml");
+    if (existsSync(configPathYaml)) {
+      return configPathYaml;
+    }
+    
     current = dirname(current);
   }
   
   // Check current directory one more time
-  const configPath = join(startDir, "yama.yaml");
-  if (existsSync(configPath)) {
-    return configPath;
+  const configPathYml = join(startDir, "yama.yml");
+  if (existsSync(configPathYml)) {
+    return configPathYml;
+  }
+  
+  const configPathYaml = join(startDir, "yama.yaml");
+  if (existsSync(configPathYaml)) {
+    return configPathYaml;
   }
   
   return null;

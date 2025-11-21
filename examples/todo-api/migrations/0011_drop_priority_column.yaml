@@ -1,0 +1,16 @@
+type: schema
+from_model:
+  hash: da7bdba2ff456ed2b391591b213c203f619b7e09dde69c31ebbd37fed03b9873
+to_model:
+  hash: c0d830b9062879103f337fe03b66c20467657e342a42aacef7c41265cee8cb8b
+steps:
+  - type: drop_index
+    table: todos
+    index: todos_priority_idx
+  - type: drop_column
+    table: todos
+    column: priority
+metadata:
+  generated_at: "2025-11-21T20:36:09.438Z"
+  generated_by: yama-cli
+  description: drop_priority_column

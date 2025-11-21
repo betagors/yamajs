@@ -64,6 +64,7 @@ program
   .option("--types-only", "Generate types only")
   .option("--sdk-only", "Generate SDK only")
   .option("--framework <framework>", "Framework type (nextjs, react, node)")
+  .option("--no-cache", "Disable caching")
   .action(generateCommand);
 
 program

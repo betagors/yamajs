@@ -2,11 +2,13 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { updateTodo } from "./updateTodo.js";
 import type { HttpRequest, HttpResponse } from "@yama/core";
 import type { UpdateTodoInput } from "../types.js";
-import * as db from "../db.js";
+import { todoRepository } from "../generated/db/repository.js";
 
-// Mock the database module
-vi.mock("../db.js", () => ({
-  updateTodo: vi.fn(),
+// Mock the repository
+vi.mock("../generated/db/repository.js", () => ({
+  todoRepository: {
+    update: vi.fn(),
+  },
 }));
 
 describe("updateTodo Handler", () => {
@@ -40,33 +42,27 @@ describe("updateTodo Handler", () => {
       createdAt: new Date().toISOString(),
     };
 
-    vi.mocked(db.updateTodo).mockResolvedValue(mockTodo);
+    vi.mocked(todoRepository.update).mockResolvedValue(mockTodo);
 
     const result = await updateTodo(
-      mockRequest as HttpRequest
-        Params: { id: string };
-        Body: UpdateTodoInput;
-      }>,
+      mockRequest as HttpRequest,
       mockReply as HttpResponse
     );
 
-    expect(db.updateTodo).toHaveBeenCalledWith("123", mockRequest.body);
+    expect(todoRepository.update).toHaveBeenCalledWith("123", mockRequest.body);
     expect(result).toEqual(mockTodo);
     expect(mockReply.status).not.toHaveBeenCalled();
   });
 
   it("should return 404 when todo not found", async () => {
-    vi.mocked(db.updateTodo).mockResolvedValue(null);
+    vi.mocked(todoRepository.update).mockResolvedValue(null);
 
     const result = await updateTodo(
-      mockRequest as HttpRequest
-        Params: { id: string };
-        Body: UpdateTodoInput;
-      }>,
+      mockRequest as HttpRequest,
       mockReply as HttpResponse
     );
 
-    expect(db.updateTodo).toHaveBeenCalledWith("123", mockRequest.body);
+    expect(todoRepository.update).toHaveBeenCalledWith("123", mockRequest.body);
     expect(result).toBeUndefined();
     expect(mockReply.status).toHaveBeenCalledWith(404);
     expect(mockReply.send).toHaveBeenCalledWith({
@@ -85,17 +81,14 @@ describe("updateTodo Handler", () => {
     };
 
     mockRequest.body = input;
-    vi.mocked(db.updateTodo).mockResolvedValue(mockTodo);
+    vi.mocked(todoRepository.update).mockResolvedValue(mockTodo);
 
     const result = await updateTodo(
-      mockRequest as HttpRequest
-        Params: { id: string };
-        Body: UpdateTodoInput;
-      }>,
+      mockRequest as HttpRequest,
       mockReply as HttpResponse
     );
 
-    expect(db.updateTodo).toHaveBeenCalledWith("123", input);
+    expect(todoRepository.update).toHaveBeenCalledWith("123", input);
     expect(result?.title).toBe("New Title");
   });
 
@@ -109,17 +102,14 @@ describe("updateTodo Handler", () => {
     };
 
     mockRequest.body = input;
-    vi.mocked(db.updateTodo).mockResolvedValue(mockTodo);
+    vi.mocked(todoRepository.update).mockResolvedValue(mockTodo);
 
     const result = await updateTodo(
-      mockRequest as HttpRequest
-        Params: { id: string };
-        Body: UpdateTodoInput;
-      }>,
+      mockRequest as HttpRequest,
       mockReply as HttpResponse
     );
 
-    expect(db.updateTodo).toHaveBeenCalledWith("123", input);
+    expect(todoRepository.update).toHaveBeenCalledWith("123", input);
     expect(result?.completed).toBe(true);
   });
 
@@ -133,30 +123,24 @@ describe("updateTodo Handler", () => {
     };
 
     mockRequest.body = input;
-    vi.mocked(db.updateTodo).mockResolvedValue(mockTodo);
+    vi.mocked(todoRepository.update).mockResolvedValue(mockTodo);
 
     const result = await updateTodo(
-      mockRequest as HttpRequest
-        Params: { id: string };
-        Body: UpdateTodoInput;
-      }>,
+      mockRequest as HttpRequest,
       mockReply as HttpResponse
     );
 
-    expect(db.updateTodo).toHaveBeenCalledWith("123", input);
+    expect(todoRepository.update).toHaveBeenCalledWith("123", input);
     expect(result).toEqual(mockTodo);
   });
 
   it("should propagate database errors", async () => {
     const error = new Error("Database update failed");
-    vi.mocked(db.updateTodo).mockRejectedValue(error);
+    vi.mocked(todoRepository.update).mockRejectedValue(error);
 
     await expect(
       updateTodo(
-        mockRequest as HttpRequest
-          Params: { id: string };
-          Body: UpdateTodoInput;
-        }>,
+        mockRequest as HttpRequest,
         mockReply as HttpResponse
       )
     ).rejects.toThrow("Database update failed");

@@ -1,11 +1,13 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { getTodoById } from "./getTodoById.js";
 import type { HttpRequest, HttpResponse } from "@yama/core";
-import * as db from "../db.js";
+import { todoRepository } from "../generated/db/repository.js";
 
-// Mock the database module
-vi.mock("../db.js", () => ({
-  getTodoById: vi.fn(),
+// Mock the repository
+vi.mock("../generated/db/repository.js", () => ({
+  todoRepository: {
+    findById: vi.fn(),
+  },
 }));
 
 describe("getTodoById Handler", () => {
@@ -35,20 +37,20 @@ describe("getTodoById Handler", () => {
       createdAt: new Date().toISOString(),
     };
 
-    vi.mocked(db.getTodoById).mockResolvedValue(mockTodo);
+    vi.mocked(todoRepository.findById).mockResolvedValue(mockTodo);
 
     const result = await getTodoById(
       mockRequest as HttpRequest,
       mockReply as HttpResponse
     );
 
-    expect(db.getTodoById).toHaveBeenCalledWith("123");
+    expect(todoRepository.findById).toHaveBeenCalledWith("123");
     expect(result).toEqual(mockTodo);
     expect(mockReply.status).not.toHaveBeenCalled();
   });
 
   it("should return 404 when todo not found", async () => {
-    vi.mocked(db.getTodoById).mockResolvedValue(null);
+    vi.mocked(todoRepository.findById).mockResolvedValue(null);
 
     const result = await getTodoById(
       mockRequest as HttpRequest,
@@ -86,7 +88,7 @@ describe("getTodoById Handler", () => {
 
   it("should propagate database errors", async () => {
     const error = new Error("Database query failed");
-    vi.mocked(db.getTodoById).mockRejectedValue(error);
+    vi.mocked(todoRepository.findById).mockRejectedValue(error);
 
     await expect(
       getTodoById(
