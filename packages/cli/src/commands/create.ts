@@ -376,7 +376,7 @@ export async function createCommand(projectName?: string, options: CreateOptions
     // Use node to directly run @yama/cli from node_modules
     // This works reliably after package installation creates the node_modules structure
     // Works for both workspace and non-workspace projects
-    const yamaExec = "node node_modules/@yama/cli/dist/cli/src/cli.js";
+    const yamaExec = "yama";
     
     const packageJson: Record<string, unknown> = {
       name: finalProjectName,

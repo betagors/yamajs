@@ -58,7 +58,7 @@ let metrics: PerformanceMetrics = {
 };
 
 // File extensions to watch
-const WATCHED_EXTENSIONS = new Set([".ts", ".ts", ".yaml", ".yml", ".json", ".mjs", ".cjs"]);
+const WATCHED_EXTENSIONS = new Set([".ts", ".js", ".yaml", ".yml", ".json", ".mjs", ".cjs"]);
 
 // Comprehensive ignore patterns (based on common .gitignore patterns)
 const IGNORE_PATTERNS = [
@@ -241,6 +241,7 @@ function getDebounceDelay(fileType: "config" | "handler", changeCount: number): 
 
 /**
  * Check if file actually changed (by comparing mtime)
+ * On Windows, file modification times might be cached, so we use a more lenient check
  */
 function hasFileChanged(filePath: string): boolean {
   try {
@@ -253,14 +254,17 @@ function hasFileChanged(filePath: string): boolean {
     const lastMtime = fileModTimes.get(filePath) || 0;
     
     // Only trigger if mtime actually changed (avoid duplicate events)
-    if (currentMtime === lastMtime) {
+    // Use a small threshold (10ms) to account for filesystem timestamp precision issues
+    const timeDiff = Math.abs(currentMtime - lastMtime);
+    if (timeDiff < 10) {
       return false;
     }
     
     fileModTimes.set(filePath, currentMtime);
     return true;
   } catch {
-    return false;
+    // If we can't stat the file, assume it changed (safer to restart)
+    return true;
   }
 }
 
@@ -275,24 +279,32 @@ function setupWatchMode(configPath: string): void {
   console.log("👀 Watching for changes...\n");
 
   // Build watch patterns - consolidated single watcher
-  const watchPatterns: string[] = [configPath];
+  // Normalize paths for cross-platform compatibility (chokidar works better with forward slashes)
+  const normalizedConfigPath = configPath.replace(/\\/g, "/");
+  const watchPatterns: string[] = [normalizedConfigPath];
   
   // Add handlers directory if it exists
   if (existsSync(handlersDir)) {
-    watchPatterns.push(join(handlersDir, "**", "*"));
+    const normalizedHandlersPattern = handlersDir.replace(/\\/g, "/") + "/**/*";
+    watchPatterns.push(normalizedHandlersPattern);
   }
   
   // Also watch for new handler files being added
-  if (existsSync(join(configDir, "src"))) {
-    watchPatterns.push(join(configDir, "src", "**", "*"));
+  const srcDir = join(configDir, "src");
+  if (existsSync(srcDir)) {
+    const normalizedSrcPattern = srcDir.replace(/\\/g, "/") + "/**/*";
+    watchPatterns.push(normalizedSrcPattern);
   }
 
+  // On Windows, use polling as fallback for better reliability
+  const isWindows = process.platform === "win32";
+  
   // Create optimized watcher with ignore patterns
   watcher = chokidar.watch(watchPatterns, {
     ignoreInitial: true,
     persistent: true,
     ignorePermissionErrors: true,
-    usePolling: false, // Use native events when available (faster)
+    usePolling: isWindows, // Use polling on Windows for better reliability
     atomic: true,      // Wait for atomic writes to complete
     alwaysStat: false, // Only stat when needed (performance)
     // Only watch specific file extensions
@@ -313,6 +325,9 @@ function setupWatchMode(configPath: string): void {
 
   // Handle file changes
   watcher.on("change", (filePath: string) => {
+    // Normalize path for consistent comparison
+    const normalizedFilePath = filePath.replace(/\\/g, "/");
+    
     if (!shouldWatchFile(filePath)) {
       return;
     }
@@ -322,7 +337,7 @@ function setupWatchMode(configPath: string): void {
     }
     
     const relativePath = relative(projectRoot, filePath);
-    const isConfig = filePath === configPath || filePath.endsWith(".yaml") || filePath.endsWith(".yml");
+    const isConfig = normalizedFilePath === normalizedConfigPath || filePath.endsWith(".yaml") || filePath.endsWith(".yml");
     const changeType: "config" | "handler" = isConfig ? "config" : "handler";
     
     console.log(`\n📝 ${relativePath} changed...`);
@@ -331,12 +346,15 @@ function setupWatchMode(configPath: string): void {
 
   // Handle new files being added
   watcher.on("add", (filePath: string) => {
+    // Normalize path for consistent comparison
+    const normalizedFilePath = filePath.replace(/\\/g, "/");
+    
     if (!shouldWatchFile(filePath)) {
       return;
     }
     
     const relativePath = relative(projectRoot, filePath);
-    const isConfig = filePath === configPath || filePath.endsWith(".yaml") || filePath.endsWith(".yml");
+    const isConfig = normalizedFilePath === normalizedConfigPath || filePath.endsWith(".yaml") || filePath.endsWith(".yml");
     const changeType: "config" | "handler" = isConfig ? "config" : "handler";
     
     console.log(`\n➕ ${relativePath} added...`);

@@ -1,5 +1,5 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync, renameSync, unlinkSync, statSync } from "fs";
-import { join } from "path";
+import { join, basename } from "path";
 import type { TrashEntry } from "@yama/core";
 import { calculateExpirationDate, isExpired, DEFAULT_RETENTION_DAYS } from "@yama/core";
 
@@ -28,7 +28,7 @@ export class TrashManager {
     type: TrashEntry["type"],
     metadata?: TrashEntry["metadata"]
   ): TrashEntry {
-    const fileName = require("path").basename(filePath);
+    const fileName = basename(filePath);
     const timestamp = Date.now();
     const trashFileName = `${timestamp}_${fileName}`;
     const trashPath = join(this.trashDir, trashFileName);
