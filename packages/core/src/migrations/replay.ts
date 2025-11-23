@@ -1,6 +1,6 @@
-import type { Model } from "./model.js";
-import type { YamaEntities } from "../entities.js";
-import { entitiesToModel } from "./model.js";
+import type { Model } from "./model";
+import type { YamaEntities } from "../entities";
+import { entitiesToModel } from "./model";
 
 /**
  * Replay applied migrations to reconstruct CurrentModel

@@ -1,6 +1,6 @@
-import type { SchemaField, SchemaDefinition, YamaSchemas } from "./schemas.js";
-import type { YamaEntities } from "./entities.js";
-import { entitiesToSchemas, mergeSchemas } from "./entities.js";
+import type { SchemaField, SchemaDefinition, YamaSchemas } from "./schemas";
+import type { YamaEntities } from "./entities";
+import { entitiesToSchemas, mergeSchemas } from "./entities";
 
 /**
  * Convert a Yama schema field to TypeScript type string

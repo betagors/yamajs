@@ -12,7 +12,7 @@ export {
   type SchemaDefinition,
   type YamaSchemas,
   type ValidationResult
-} from "./schemas.js";
+} from "./schemas";
 
 // Export auth types from schemas
 export {
@@ -23,17 +23,17 @@ export {
   type AuthProviderType,
   type JwtAuthProvider,
   type ApiKeyAuthProvider,
-} from "./schemas.js";
+} from "./schemas";
 
 // Export auth functions
 export {
   authenticateRequest,
   authorizeRequest,
   authenticateAndAuthorize,
-} from "./auth.js";
+} from "./auth";
 
 // Export type generation
-export { generateTypes } from "./typegen.js";
+export { generateTypes } from "./typegen";
 
 // Export entity types and functions
 export {
@@ -46,14 +46,14 @@ export {
   entityToSchema,
   entitiesToSchemas,
   mergeSchemas,
-} from "./entities.js";
+} from "./entities";
 
 // Export environment utilities
 export {
   loadEnvFile,
   resolveEnvVar,
   resolveEnvVars,
-} from "./env.js";
+} from "./env";
 
 // Export infrastructure adapters
 export {
@@ -61,7 +61,7 @@ export {
   type DatabaseConnection,
   createDatabaseAdapter,
   registerDatabaseAdapter,
-} from "./infrastructure/database.js";
+} from "./infrastructure/database";
 
 export {
   type HttpServerAdapter,
@@ -71,12 +71,12 @@ export {
   type HttpServerInstance,
   createHttpServerAdapter,
   registerHttpServerAdapter,
-} from "./infrastructure/server.js";
+} from "./infrastructure/server";
 
 // Export updated config types
 export {
   type ServerConfig,
-} from "./entities.js";
+} from "./entities";
 
 // Export plugin system
 export {
@@ -95,7 +95,7 @@ export {
   loadServicePlugin,
   getServicePlugin,
   getServicePluginByType,
-} from "./plugins/index.js";
+} from "./plugins/index";
 
 // Export migration types and functions
 export {
@@ -108,7 +108,7 @@ export {
   computeModelHash,
   entitiesToModel,
   compareModels,
-} from "./migrations/model.js";
+} from "./migrations/model";
 
 export {
   type DiffResult,
@@ -126,14 +126,14 @@ export {
   type MigrationStepUnion,
   computeDiff,
   diffToSteps,
-} from "./migrations/diff.js";
+} from "./migrations/diff";
 
 export {
   type MigrationYAML,
   serializeMigration,
   deserializeMigration,
   createMigration,
-} from "./migrations/migration-yaml.js";
+} from "./migrations/migration-yaml";
 
 export {
   type ValidationError,
@@ -141,12 +141,12 @@ export {
   validateMigrationHash,
   validateStepDependencies,
   validateMigration,
-} from "./migrations/validator.js";
+} from "./migrations/validator";
 
 export {
   replayMigrations,
   getCurrentModelHashFromDB,
-} from "./migrations/replay.js";
+} from "./migrations/replay";
 
 // Export trash/recycle bin types
 export {
@@ -155,5 +155,5 @@ export {
   DEFAULT_RETENTION_DAYS,
   calculateExpirationDate,
   isExpired,
-} from "./migrations/trash.js";
+} from "./migrations/trash";
 

@@ -36,7 +36,6 @@ interface YamaConfig {
   version?: string;
   schemas?: YamaSchemas;
   entities?: YamaEntities;
-  database?: DatabaseConfig;
   server?: ServerConfig;
   auth?: AuthConfig;
   plugins?: Record<string, Record<string, unknown>> | string[]; // Plugin configs or list of plugin names
@@ -73,7 +72,7 @@ async function loadHandlers(handlersDir: string): Promise<Record<string, Handler
   try {
     const files = readdirSync(handlersDir);
     const tsFiles = files.filter(
-      (file) => extname(file) === ".ts" || extname(file) === ".js"
+      (file) => extname(file) === ".ts" || extname(file) === ".ts"
     );
 
     for (const file of tsFiles) {
@@ -461,54 +460,58 @@ export async function startYamaNodeRuntime(
             }
             
             console.log(`✅ Loaded plugin: ${pluginName}`);
+            
+            // If this is a database plugin, initialize the database connection
+            if (plugin.category === "database" && pluginApi && typeof pluginApi === "object" && "adapter" in pluginApi) {
+              try {
+                // Determine dialect from plugin name
+                let dialect: string;
+                if (pluginName.includes("pglite")) {
+                  dialect = "pglite";
+                } else if (pluginName.includes("postgres")) {
+                  dialect = "postgresql";
+                } else {
+                  // Try to infer from plugin name or use a default
+                  dialect = "postgresql";
+                }
+                
+                // Build database config from plugin config
+                // Resolve environment variables in URL if present
+                const dbConfig: DatabaseConfig = {
+                  dialect: dialect as "postgresql" | "pglite",
+                  ...pluginConfig,
+                };
+                
+                if (typeof dbConfig.url === "string" && dbConfig.url.includes("${")) {
+                  dbConfig.url = resolveEnvVars(dbConfig.url) as string;
+                }
+                
+                // Initialize database adapter
+                // For PGlite, URL is optional (defaults to in-memory)
+                // For PostgreSQL, URL is required
+                if (dialect === "pglite") {
+                  // PGlite can work without URL - defaults to in-memory
+                  dbAdapter = createDatabaseAdapter(dialect, dbConfig);
+                  await dbAdapter.init(dbConfig);
+                  console.log("✅ Database connection initialized (pglite - in-memory)");
+                } else if (dbConfig.url && !dbConfig.url.includes("user:password")) {
+                  // PostgreSQL requires URL
+                  dbAdapter = createDatabaseAdapter(dialect, dbConfig);
+                  await dbAdapter.init(dbConfig);
+                  console.log("✅ Database connection initialized (postgresql)");
+                } else {
+                  console.log("⚠️  Database URL not configured - running without database");
+                }
+              } catch (error) {
+                console.warn("⚠️  Failed to initialize database (continuing without DB):", error instanceof Error ? error.message : String(error));
+              }
+            }
           } catch (error) {
             console.warn(`⚠️  Failed to load plugin ${pluginName}:`, error instanceof Error ? error.message : String(error));
           }
         }
       }
 
-      // Initialize database if configured
-      if (config.database) {
-        try {
-          // Resolve environment variables in database URL
-          const dbConfig = { ...config.database };
-          if (typeof dbConfig.url === "string" && dbConfig.url.includes("${")) {
-            dbConfig.url = resolveEnvVars(dbConfig.url) as string;
-          }
-          
-          // For PostgreSQL, URL is required
-          if (dbConfig.url && !dbConfig.url.includes("user:password")) {
-            if (dbConfig.dialect !== "postgresql") {
-              throw new Error(`Unsupported database dialect: ${dbConfig.dialect}. Supported dialects: "postgresql"`);
-            }
-            try {
-              dbAdapter = createDatabaseAdapter("postgresql", dbConfig);
-              await dbAdapter.init(dbConfig);
-            } catch (adapterError) {
-              // If adapter creation fails, it might be because the plugin didn't load
-              if (adapterError instanceof Error && adapterError.message.includes("Unsupported database dialect")) {
-                const pluginName = config.plugins && typeof config.plugins === "object" && !Array.isArray(config.plugins)
-                  ? Object.keys(config.plugins).find(name => name.includes("db-postgres")) || "@yama/db-postgres"
-                  : "@yama/db-postgres";
-                throw new Error(`Database adapter not registered. The database plugin (${pluginName}) may have failed to load. Check the plugin loading errors above.`);
-              }
-              throw adapterError;
-            }
-            
-            // Detect if using in-memory PGlite
-            const isInMemory = dbConfig.url === ":memory:" || dbConfig.url === "pglite";
-            if (isInMemory) {
-              console.log("✅ Database connection initialized (postgresql via PGlite - in-memory)");
-            } else {
-              console.log("✅ Database connection initialized (postgresql)");
-            }
-          } else {
-            console.log("⚠️  Database URL not configured or invalid - running without database");
-          }
-        } catch (error) {
-          console.warn("⚠️  Failed to initialize database (continuing without DB):", error instanceof Error ? error.message : String(error));
-        }
-      }
 
       // Convert entities to schemas and merge with explicit schemas
       const entitySchemas = config.entities ? entitiesToSchemas(config.entities) : {};
@@ -590,8 +593,8 @@ export async function startYamaNodeRuntime(
 </head>
 <body>
   <div id="swagger-ui"></div>
-  <script src="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-bundle.js"></script>
-  <script src="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-standalone-preset.js"></script>
+  <script src="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-bundle.ts"></script>
+  <script src="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-standalone-preset.ts"></script>
   <script>
     window.onload = function() {
       const spec = ${specJson};

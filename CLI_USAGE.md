@@ -39,19 +39,19 @@ chmod +x yama.sh
 
 From the root:
 ```bash
-node packages/yama-cli/dist/yama-cli/src/cli.js <command>
+node packages/cli/dist/cli/src/cli.js <command>
 ```
 
 From example project:
 ```bash
-node ../../packages/yama-cli/dist/yama-cli/src/cli.js <command>
+node ../../packages/cli/dist/cli/src/cli.js <command>
 ```
 
 ## Option 4: Global installation (for production)
 
 Once published, you can install globally:
 ```bash
-npm install -g yama-cli
+npm install -g @yama/cli
 yama <command>
 ```
 
@@ -78,5 +78,5 @@ pnpm yama schema:history
 
 - The `pnpm yama` script is the easiest way during development
 - Wrapper scripts (`.cmd`, `.ps1`, `.sh`) work from the project root
-- Make sure to build the CLI first: `pnpm build:packages` or `cd packages/yama-cli && pnpm build`
+- Make sure to build the CLI first: `pnpm build:packages` or `cd packages/cli && pnpm build`
 

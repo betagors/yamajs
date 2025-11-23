@@ -3,8 +3,8 @@ import {
   validateManifest,
   validateYamaPlugin,
   validateServicePlugin,
-} from "./validator.js";
-import type { PluginManifest, YamaPlugin, ServicePlugin } from "./base.js";
+} from "./validator.ts";
+import type { PluginManifest, YamaPlugin, ServicePlugin } from "./base.ts";
 
 describe("Plugin Validator", () => {
   describe("validateManifest", () => {
@@ -41,7 +41,7 @@ describe("Plugin Validator", () => {
   describe("validateYamaPlugin", () => {
     it("should validate correct plugin", () => {
       const plugin: YamaPlugin = {
-        name: "@yama/plugin-db-postgres",
+        name: "@yama/plugin-postgres",
         version: "1.0.0",
         category: "database",
         init: async () => ({ adapter: {} }),

@@ -1,6 +1,6 @@
-import type { YamaPlugin, PluginManifest, ServicePlugin } from "./base.js";
-import { loadPluginFromPackage, importPlugin } from "./loader.js";
-import { validateYamaPlugin, validateServicePlugin, validatePluginVersion } from "./validator.js";
+import type { YamaPlugin, PluginManifest, ServicePlugin } from "./base";
+import { loadPluginFromPackage, importPlugin } from "./loader";
+import { validateYamaPlugin, validateServicePlugin, validatePluginVersion } from "./validator";
 
 /**
  * Plugin registry
@@ -11,18 +11,20 @@ class PluginRegistry {
 
   /**
    * Load and register a plugin
+   * @param packageName - Name of the package to load
+   * @param projectDir - Optional project directory to resolve packages from
    */
-  async loadPlugin(packageName: string): Promise<YamaPlugin> {
+  async loadPlugin(packageName: string, projectDir?: string): Promise<YamaPlugin> {
     // Check if already loaded
     if (this.plugins.has(packageName)) {
       return this.plugins.get(packageName)!;
     }
 
     // Load manifest
-    const manifest = await loadPluginFromPackage(packageName);
+    const manifest = await loadPluginFromPackage(packageName, projectDir);
 
     // Import plugin
-    const plugin = await importPlugin(manifest, packageName);
+    const plugin = await importPlugin(manifest, packageName, projectDir);
 
     // Validate plugin
     const validation = validateYamaPlugin(plugin);
@@ -116,18 +118,20 @@ class ServicePluginRegistry {
 
   /**
    * Load and register a service plugin
+   * @param packageName - Name of the package to load
+   * @param projectDir - Optional project directory to resolve packages from
    */
-  async loadServicePlugin(packageName: string): Promise<ServicePlugin> {
+  async loadServicePlugin(packageName: string, projectDir?: string): Promise<ServicePlugin> {
     // Check if already loaded
     if (this.plugins.has(packageName)) {
       return this.plugins.get(packageName)!;
     }
 
     // Load manifest
-    const manifest = await loadPluginFromPackage(packageName);
+    const manifest = await loadPluginFromPackage(packageName, projectDir);
 
     // Import plugin
-    const plugin = await importPlugin(manifest, packageName);
+    const plugin = await importPlugin(manifest, packageName, projectDir);
 
     // Validate plugin
     const validation = validateServicePlugin(plugin);
@@ -192,9 +196,11 @@ export const servicePluginRegistry = new ServicePluginRegistry();
 
 /**
  * Load a plugin
+ * @param packageName - Name of the package to load
+ * @param projectDir - Optional project directory to resolve packages from
  */
-export async function loadPlugin(packageName: string): Promise<YamaPlugin> {
-  return pluginRegistry.loadPlugin(packageName);
+export async function loadPlugin(packageName: string, projectDir?: string): Promise<YamaPlugin> {
+  return pluginRegistry.loadPlugin(packageName, projectDir);
 }
 
 /**

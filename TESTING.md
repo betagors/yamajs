@@ -44,7 +44,7 @@ packages/
     src/
       server/
         fastify-adapter.test.ts
-  db-postgres/
+  postgres/
     src/
       adapter.test.ts
 ```

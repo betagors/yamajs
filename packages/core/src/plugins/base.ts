@@ -7,7 +7,7 @@ export interface PluginManifest {
   category?: string; // Plugin category (e.g., "database", "payments", "email")
   type?: string; // Service type (e.g., "payment", "email", "sms")
   service?: string; // Specific service name (e.g., "stripe", "sendgrid")
-  entryPoint?: string; // Entry point file (default: "./dist/plugin.js")
+  entryPoint?: string; // Entry point file (default: "./dist/plugin.ts")
   [key: string]: unknown; // Allow additional metadata
 }
 

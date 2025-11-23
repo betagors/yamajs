@@ -1,0 +1,53 @@
+{
+  "name": "@yama/cli",
+  "version": "0.0.1",
+  "type": "module",
+  "description": "Global CLI tool for Yama - API framework",
+  "bin": {
+    "yama": "src/cli.ts"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json && node scripts/copy-schema.js",
+    "dev": "tsc -w -p tsconfig.build.json",
+    "lint": "echo \"no lint yet\"",
+    "test": "echo \"no tests yet\"",
+    "clean": "rimraf dist",
+    "link": "pnpm link --global",
+    "unlink": "pnpm unlink --global yama",
+    "link:dev": "pnpm link --global",
+    "start": "ts-node src/cli.ts"
+  },
+  "files": [
+    "dist",
+    "src/yama.schema.json",
+    "src/editor-configs"
+  ],
+  "dependencies": {
+    "@yama/core": "workspace:*",
+    "@yama/docs-generator": "workspace:*",
+    "@yama/postgres": "workspace:*",
+    "@yama/runtime-node": "workspace:*",
+    "@yama/sdk": "workspace:*",
+    "boxen": "^8.0.1",
+    "chalk": "^5.3.0",
+    "chokidar": "^4.0.0",
+    "commander": "^12.0.0",
+    "dotenv": "^16.4.5",
+    "inquirer": "^10.2.2",
+    "js-yaml": "^4.1.1",
+    "ora": "^8.1.1",
+    "table": "^6.8.1"
+  },
+  "devDependencies": {
+    "@types/inquirer": "^9.0.7",
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^20.19.25",
+    "rimraf": "^5.0.0",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.7.0",
+    "typescript": "^5.9.2"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

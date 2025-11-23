@@ -1,4 +1,4 @@
-import type { Model, TableModel, ColumnModel, IndexModel, ForeignKeyModel } from "./model.js";
+import type { Model, TableModel, ColumnModel, IndexModel, ForeignKeyModel } from "./model";
 
 /**
  * Result of comparing two models

@@ -1,0 +1,15 @@
+# Yama generated files
+.yama/
+
+# Dependencies
+node_modules/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Database
+
+# Logs
+*.log

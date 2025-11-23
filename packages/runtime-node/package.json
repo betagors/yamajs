@@ -16,7 +16,7 @@
   "dependencies": {
     "@yama/core": "workspace:*",
     "@yama/docs-generator": "workspace:*",
-    "@yama/db-postgres": "workspace:*",
+    "@yama/postgres": "workspace:*",
     "@yama/http-fastify": "workspace:*",
     "js-yaml": "^4.1.1",
     "dotenv": "^16.4.5"

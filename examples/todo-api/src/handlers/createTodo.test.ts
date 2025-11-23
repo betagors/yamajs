@@ -1,11 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { createTodo } from "./createTodo.js";
+import { createTodo } from "./createTodo.ts";
 import type { HttpRequest, HttpResponse } from "@yama/core";
-import type { CreateTodoInput } from "../types.js";
-import { todoRepository } from "../generated/db/repository.js";
+import type { CreateTodoInput } from "../types.ts";
+import { todoRepository } from "../generated/db/repository.ts";
 
 // Mock the repository
-vi.mock("../generated/db/repository.js", () => ({
+vi.mock("../generated/db/repository.ts", () => ({
   todoRepository: {
     create: vi.fn(),
   },

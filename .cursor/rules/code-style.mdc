@@ -1,0 +1,11 @@
+---
+description: TypeScript code style and best practices
+globs: ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"]
+alwaysApply: true
+---
+
+## Code Style
+- Prefer modern TypeScript patterns
+- Use clear, descriptive function and variable names
+- Break down complex functions into smaller, focused utilities
+- Don't hesitate to refactor for better structure and readability

@@ -15,7 +15,7 @@ async function loadHandlers(handlersDir) {
     }
     try {
         const files = readdirSync(handlersDir);
-        const tsFiles = files.filter((file) => extname(file) === ".ts" || extname(file) === ".js");
+        const tsFiles = files.filter((file) => extname(file) === ".ts" || extname(file) === ".ts");
         for (const file of tsFiles) {
             const handlerName = file.replace(/\.(ts|js)$/, "");
             const handlerPath = join(handlersDir, file);

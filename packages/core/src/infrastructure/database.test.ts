@@ -4,8 +4,8 @@ import {
   registerDatabaseAdapter,
   type DatabaseAdapter,
   type DatabaseConnection,
-} from "./database.js";
-import type { DatabaseConfig } from "../entities.js";
+} from "./database.ts";
+import type { DatabaseConfig } from "../entities.ts";
 
 describe("Database Adapter", () => {
   beforeEach(() => {

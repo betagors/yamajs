@@ -1,0 +1,21 @@
+# yaml-language-server: $schema=../packages/cli/src/yama.schema.json
+name: test-app
+version: 0.1.0
+plugins:
+  "@yama/pglite":
+schemas:
+  Example:
+    fields:
+      id:
+        type: string
+        required: true
+      name:
+        type: string
+        required: true
+
+endpoints:
+  - path: /examples
+    method: GET
+    handler: getExamples
+    response:
+      type: Example

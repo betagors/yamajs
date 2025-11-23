@@ -1,4 +1,4 @@
-import type { SchemaField, SchemaDefinition, YamaSchemas } from "./schemas.js";
+import type { SchemaField, SchemaDefinition, YamaSchemas } from "./schemas";
 
 /**
  * Entity field types supported by Yama
@@ -62,11 +62,12 @@ export interface YamaEntities {
  * Database connection configuration
  */
 export interface DatabaseConfig {
-  dialect: "postgresql";
+  dialect: "postgresql" | "pglite";
   /**
    * Database connection URL.
    * For PostgreSQL: use a standard postgresql:// connection string.
-   * For in-memory testing (PGlite): use ":memory:" or "pglite" to enable zero-setup in-memory database.
+   * For PGlite: use "pglite" for in-memory, or a path for persistent storage.
+   * Optional for PGlite (defaults to in-memory).
    */
   url?: string;
   pool?: {

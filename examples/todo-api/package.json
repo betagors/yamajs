@@ -11,7 +11,7 @@
     "test": "vitest",
     "test:watch": "vitest --watch",
     "test:coverage": "vitest --coverage",
-    "yama": "node ../../packages/yama-cli/dist/yama-cli/src/cli.js"
+    "yama": "node ../../packages/cli/dist/cli/src/cli.js"
   },
   "dependencies": {
     "@yama/runtime-node": "workspace:*",

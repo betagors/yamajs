@@ -6,7 +6,7 @@ import {
   type AuthContext,
   type JwtAuthProvider,
   type ApiKeyAuthProvider,
-} from "./schemas.js";
+} from "./schemas";
 
 /**
  * Resolve environment variable references in strings

@@ -1,21 +1,37 @@
 import { readFileSync, existsSync } from "fs";
-import { join, dirname } from "path";
+import { join, dirname, resolve } from "path";
 import { pathToFileURL } from "url";
-import type { PluginManifest, YamaPlugin } from "./base.js";
+import type { PluginManifest, YamaPlugin } from "./base";
 
 /**
  * Load plugin manifest from package.json
+ * @param packageName - Name of the package to load
+ * @param projectDir - Optional project directory to resolve packages from (defaults to process.cwd())
  */
 export async function loadPluginFromPackage(
-  packageName: string
+  packageName: string,
+  projectDir?: string
 ): Promise<PluginManifest> {
   // Try to resolve the package
   let packagePath: string;
   try {
-    // Use require.resolve to find the package
     const { createRequire } = await import("module");
-    const require = createRequire(import.meta.url);
-    packagePath = require.resolve(packageName);
+    
+    // Try to resolve from project directory (use process.cwd() if not provided)
+    const projectRoot = projectDir || process.cwd();
+    try {
+      const projectRequire = createRequire(resolve(projectRoot, "package.json"));
+      packagePath = projectRequire.resolve(packageName);
+    } catch {
+      // If that fails, try from current context (for workspace scenarios)
+      try {
+        const require = createRequire(import.meta.url);
+        packagePath = require.resolve(packageName);
+      } catch {
+        // Re-throw the original error
+        throw new Error(`Cannot find module '${packageName}'`);
+      }
+    }
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
     throw new Error(
@@ -61,29 +77,44 @@ export async function loadPluginFromPackage(
     category: yamaMetadata.category,
     type: yamaMetadata.type || "",
     service: yamaMetadata.service,
-    entryPoint: yamaMetadata.entryPoint || "./dist/plugin.js",
+    entryPoint: yamaMetadata.entryPoint || "./dist/plugin.ts",
     ...yamaMetadata,
   };
 }
 
 /**
  * Import plugin from manifest
+ * @param manifest - Plugin manifest
+ * @param packageName - Name of the package
+ * @param projectDir - Optional project directory to resolve packages from (defaults to process.cwd())
  */
 export async function importPlugin(
   manifest: PluginManifest,
-  packageName: string
+  packageName: string,
+  projectDir?: string
 ): Promise<YamaPlugin> {
   // Resolve entry point
   let entryPoint: string;
   let packageJson: { version?: string } = {};
   try {
     const { createRequire } = await import("module");
-    const require = createRequire(import.meta.url);
-    const packagePath = require.resolve(packageName);
+    
+    // Try to resolve from project directory (use process.cwd() if not provided)
+    const projectRoot = projectDir || process.cwd();
+    let packagePath: string;
+    try {
+      const projectRequire = createRequire(resolve(projectRoot, "package.json"));
+      packagePath = projectRequire.resolve(packageName);
+    } catch {
+      // If that fails, try from current context (for workspace scenarios)
+      const require = createRequire(import.meta.url);
+      packagePath = require.resolve(packageName);
+    }
+    
     const packageDir = dirname(
       packagePath.replace(/\/[^/]+$/, "").replace(/\\[^\\]+$/, "")
     );
-    entryPoint = join(packageDir, manifest.entryPoint || "./dist/plugin.js");
+    entryPoint = join(packageDir, manifest.entryPoint || "./dist/plugin.ts");
     
     // Try to read package.json for version
     const packageJsonPath = join(packageDir, "package.json");

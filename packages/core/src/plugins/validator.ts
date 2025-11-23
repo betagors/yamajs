@@ -1,4 +1,4 @@
-import type { YamaPlugin, PluginManifest, ServicePlugin } from "./base.js";
+import type { YamaPlugin, PluginManifest, ServicePlugin } from "./base";
 
 /**
  * Validation result

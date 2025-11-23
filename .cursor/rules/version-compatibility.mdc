@@ -1,0 +1,11 @@
+---
+description: Version and compatibility guidelines for v0 project
+globs: []
+alwaysApply: true
+---
+
+## Version & Compatibility
+- This is a v0 project - **backward compatibility is NOT a concern**
+- Feel free to refactor, update, and improve code without maintaining old APIs
+- Focus on clean, modern code rather than supporting legacy patterns
+- Breaking changes are acceptable - prioritize code quality and maintainability

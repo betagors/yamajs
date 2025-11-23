@@ -1,0 +1,25 @@
+---
+description: Critical rules for ensuring YAMA remains portable for end users
+globs: []
+alwaysApply: true
+---
+
+## User Portability & Project Structure
+- **CRITICAL**: End users will use YAMA as a library/framework in their own projects
+- **NEVER assume** users have a `packages/` folder or monorepo structure
+- **NEVER assume** users are developing YAMA itself - they are using it as a dependency
+- Users' project structure will differ from the development structure (this repo has `packages/` but users won't)
+- Always default to published package versions (e.g., `"latest"` or specific versions) for end users
+- Workspace detection should only be used for development convenience, never required for functionality
+- When generating code or solutions:
+  - Use standard npm/pnpm/yarn package installation patterns
+  - Reference packages by their published names (e.g., `@yama/core`, `yama-cli`)
+  - Never hardcode paths to `packages/` folder
+  - Never assume workspace structure exists
+  - Keep solutions generic and portable across different project structures
+- Avoid custom solutions that:
+  - Reduce portability
+  - Assume specific project layouts
+  - Require monorepo structure
+  - Make assumptions about directory structure beyond standard conventions
+- When in doubt, prefer the solution that works for standalone projects over workspace-specific optimizations

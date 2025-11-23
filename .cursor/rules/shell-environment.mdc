@@ -1,0 +1,12 @@
+---
+description: PowerShell environment configuration for Windows
+globs: []
+alwaysApply: true
+---
+
+## Shell Environment
+- The user uses PowerShell on this machine
+- PowerShell version: 7.5.4
+- When running terminal commands, use PowerShell syntax and commands
+- Use `pwsh` or `powershell` commands as appropriate
+- Path separators should use backslashes for Windows paths when needed

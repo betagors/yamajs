@@ -1,4 +1,4 @@
-import type { YamaModels } from "./models.js";
+import type { YamaModels } from "./models.ts";
 /**
  * Generate TypeScript types from Yama models
  */

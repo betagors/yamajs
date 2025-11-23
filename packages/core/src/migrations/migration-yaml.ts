@@ -1,8 +1,8 @@
 import yaml from "js-yaml";
-import type { MigrationStepUnion } from "./diff.js";
+import type { MigrationStepUnion } from "./diff";
 
 // Re-export for convenience
-export type { MigrationStepUnion } from "./diff.js";
+export type { MigrationStepUnion } from "./diff";
 
 /**
  * Migration YAML structure
@@ -122,7 +122,7 @@ export function createMigration(
     steps,
     metadata: {
       generated_at: new Date().toISOString(),
-      generated_by: "yama-cli",
+      generated_by: "@yama/cli",
       description,
     },
   };
