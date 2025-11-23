@@ -16,15 +16,15 @@ import {
   loadEnvFile,
   resolveEnvVars,
   createDatabaseAdapter,
-  registerDatabaseAdapter,
   createHttpServerAdapter,
   registerHttpServerAdapter,
   type HttpRequest,
   type HttpResponse,
   type RouteHandler,
+  loadPlugin,
+  type YamaPlugin,
 } from "@yama/core";
 import { generateOpenAPI } from "@yama/docs-generator";
-import { postgresqlAdapter } from "@yama/db-postgres";
 import { createFastifyAdapter } from "@yama/http-fastify";
 import yaml from "js-yaml";
 import { readFileSync, readdirSync, existsSync } from "fs";
@@ -39,6 +39,7 @@ interface YamaConfig {
   database?: DatabaseConfig;
   server?: ServerConfig;
   auth?: AuthConfig;
+  plugins?: Record<string, Record<string, unknown>> | string[]; // Plugin configs or list of plugin names
   endpoints?: Array<{
     path: string;
     method: string;
@@ -403,14 +404,17 @@ export interface YamaServer {
 
 export async function startYamaNodeRuntime(
   port = 3000,
-  yamlConfigPath?: string
+  yamlConfigPath?: string,
+  environment?: string
 ): Promise<YamaServer> {
-  // Register default adapters
-  registerDatabaseAdapter("postgresql", () => postgresqlAdapter);
+  // Register HTTP server adapter (always needed)
   registerHttpServerAdapter("fastify", (options) => createFastifyAdapter(options));
 
   // Create schema validator
   const validator = createSchemaValidator();
+  
+  // Store loaded plugins
+  const loadedPlugins = new Map<string, YamaPlugin>();
 
   // Load and parse YAML config if provided
   let config: YamaConfig | null = null;
@@ -421,8 +425,8 @@ export async function startYamaNodeRuntime(
 
   if (yamlConfigPath) {
     try {
-      // Load .env file before parsing config
-      loadEnvFile(yamlConfigPath);
+      // Load .env file before parsing config (with environment support)
+      loadEnvFile(yamlConfigPath, environment);
       
       const configFile = readFileSync(yamlConfigPath, "utf-8");
       config = yaml.load(configFile) as YamaConfig;
@@ -431,6 +435,37 @@ export async function startYamaNodeRuntime(
       config = resolveEnvVars(config) as YamaConfig;
       
       console.log("✅ Loaded YAML config");
+
+      // Load plugins from config
+      if (config.plugins) {
+        const pluginList = Array.isArray(config.plugins) 
+          ? config.plugins 
+          : Object.keys(config.plugins);
+        
+        for (const pluginName of pluginList) {
+          try {
+            const plugin = await loadPlugin(pluginName);
+            const pluginConfig = typeof config.plugins === "object" && !Array.isArray(config.plugins)
+              ? config.plugins[pluginName] || {}
+              : {};
+            
+            // Initialize plugin (this registers adapters, etc.)
+            const pluginApi = await plugin.init(pluginConfig);
+            
+            // Store plugin and its API
+            loadedPlugins.set(pluginName, plugin);
+            
+            // Call onInit lifecycle hook if present
+            if (plugin.onInit) {
+              await plugin.onInit(pluginConfig);
+            }
+            
+            console.log(`✅ Loaded plugin: ${pluginName}`);
+          } catch (error) {
+            console.warn(`⚠️  Failed to load plugin ${pluginName}:`, error instanceof Error ? error.message : String(error));
+          }
+        }
+      }
 
       // Initialize database if configured
       if (config.database) {
@@ -441,14 +476,32 @@ export async function startYamaNodeRuntime(
             dbConfig.url = resolveEnvVars(dbConfig.url) as string;
           }
           
-          // Only initialize if URL is valid (not a placeholder)
+          // For PostgreSQL, URL is required
           if (dbConfig.url && !dbConfig.url.includes("user:password")) {
             if (dbConfig.dialect !== "postgresql") {
-              throw new Error(`Unsupported database dialect: ${dbConfig.dialect}. Only "postgresql" is supported.`);
+              throw new Error(`Unsupported database dialect: ${dbConfig.dialect}. Supported dialects: "postgresql"`);
             }
-            dbAdapter = createDatabaseAdapter("postgresql", dbConfig);
-            await dbAdapter.init(dbConfig);
-            console.log("✅ Database connection initialized (postgresql)");
+            try {
+              dbAdapter = createDatabaseAdapter("postgresql", dbConfig);
+              await dbAdapter.init(dbConfig);
+            } catch (adapterError) {
+              // If adapter creation fails, it might be because the plugin didn't load
+              if (adapterError instanceof Error && adapterError.message.includes("Unsupported database dialect")) {
+                const pluginName = config.plugins && typeof config.plugins === "object" && !Array.isArray(config.plugins)
+                  ? Object.keys(config.plugins).find(name => name.includes("db-postgres")) || "@yama/db-postgres"
+                  : "@yama/db-postgres";
+                throw new Error(`Database adapter not registered. The database plugin (${pluginName}) may have failed to load. Check the plugin loading errors above.`);
+              }
+              throw adapterError;
+            }
+            
+            // Detect if using in-memory PGlite
+            const isInMemory = dbConfig.url === ":memory:" || dbConfig.url === "pglite";
+            if (isInMemory) {
+              console.log("✅ Database connection initialized (postgresql via PGlite - in-memory)");
+            } else {
+              console.log("✅ Database connection initialized (postgresql)");
+            }
           } else {
             console.log("⚠️  Database URL not configured or invalid - running without database");
           }
@@ -569,11 +622,33 @@ export async function startYamaNodeRuntime(
     registerRoutes(serverAdapter, server, config, handlers, validator);
   }
 
+  // Call onStart lifecycle hooks for all plugins
+  for (const plugin of loadedPlugins.values()) {
+    if (plugin.onStart) {
+      try {
+        await plugin.onStart();
+      } catch (error) {
+        console.warn(`⚠️  Plugin ${plugin.name} onStart hook failed:`, error instanceof Error ? error.message : String(error));
+      }
+    }
+  }
+
   await serverAdapter.start(server, port, "0.0.0.0");
   console.log(`Yama runtime listening on http://localhost:${port} (${serverEngine})`);
 
   return {
     stop: async () => {
+      // Call onStop lifecycle hooks for all plugins
+      for (const plugin of loadedPlugins.values()) {
+        if (plugin.onStop) {
+          try {
+            await plugin.onStop();
+          } catch (error) {
+            console.warn(`⚠️  Plugin ${plugin.name} onStop hook failed:`, error instanceof Error ? error.message : String(error));
+          }
+        }
+      }
+      
       await serverAdapter?.stop(server);
       if (dbAdapter) {
         await dbAdapter.close();

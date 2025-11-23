@@ -11,15 +11,6 @@ import {
   getCurrentModelHashFromDB,
 } from "@yama/core";
 import {
-  initDatabase,
-  getSQL,
-  closeDatabase,
-  generateSQLFromSteps,
-  computeMigrationChecksum,
-  getMigrationTableSQL,
-  getMigrationRunsTableSQL,
-} from "@yama/db-postgres";
-import {
   success,
   error,
   info,
@@ -33,7 +24,7 @@ import {
 import { printError } from "../utils/error-handler.js";
 import { confirmMigration, hasDestructiveOperation } from "../utils/interactive.js";
 import { TrashManager } from "../utils/trash-manager.js";
-import { createDataSnapshot } from "@yama/db-postgres";
+import { getDatabasePlugin } from "../utils/db-plugin.js";
 
 interface SchemaApplyOptions {
   config?: string;
@@ -52,7 +43,8 @@ export async function schemaApplyCommand(options: SchemaApplyOptions): Promise<v
   }
 
   try {
-    loadEnvFile(configPath);
+    const environment = options.env || process.env.NODE_ENV || "development";
+    loadEnvFile(configPath, environment);
     let config = readYamaConfig(configPath) as { database?: DatabaseConfig };
     config = resolveEnvVars(config) as { database?: DatabaseConfig };
     const configDir = getConfigDir(configPath);
@@ -80,12 +72,13 @@ export async function schemaApplyCommand(options: SchemaApplyOptions): Promise<v
     }
 
     // Initialize database
-    initDatabase(config.database);
-    const sql = getSQL();
+    const dbPlugin = await getDatabasePlugin();
+    dbPlugin.client.initDatabase(config.database);
+    const sql = dbPlugin.client.getSQL();
 
     // Create migration tables
-    await sql.unsafe(getMigrationTableSQL());
-    await sql.unsafe(getMigrationRunsTableSQL());
+    await sql.unsafe(dbPlugin.migrations.getMigrationTableSQL());
+    await sql.unsafe(dbPlugin.migrations.getMigrationRunsTableSQL());
 
     // Get applied migrations
     const appliedMigrations = await sql`
@@ -170,7 +163,7 @@ export async function schemaApplyCommand(options: SchemaApplyOptions): Promise<v
           new Error("Migration hash mismatch"),
           { migration: file }
         );
-        await closeDatabase();
+        dbPlugin.client.closeDatabase();
         process.exit(1);
       }
       
@@ -180,7 +173,7 @@ export async function schemaApplyCommand(options: SchemaApplyOptions): Promise<v
         error(
           `Migration ${file} is marked as first migration (empty from_model.hash) but database already has migrations applied`
         );
-        await closeDatabase();
+        dbPlugin.client.closeDatabase();
         process.exit(1);
       }
 
@@ -194,7 +187,7 @@ export async function schemaApplyCommand(options: SchemaApplyOptions): Promise<v
           if (step.type === "drop_table" || step.type === "drop_column" || step.type === "modify_column") {
             try {
               info(`Creating snapshot for ${step.table}...`);
-              const snapshot = await createDataSnapshot(
+              const snapshot = await dbPlugin.snapshots.create(
                 step.table,
                 config.database!,
                 `${step.table}_before_${file.replace(".yaml", "")}`,
@@ -223,7 +216,7 @@ export async function schemaApplyCommand(options: SchemaApplyOptions): Promise<v
           error(
             `Migration ${file} contains destructive operations. Use --allow-destructive to apply.`
           );
-          await closeDatabase();
+          dbPlugin.client.closeDatabase();
           process.exit(1);
         }
       }
@@ -242,11 +235,11 @@ export async function schemaApplyCommand(options: SchemaApplyOptions): Promise<v
         sqlContent = readFileSync(sqlPath, "utf-8");
       } else {
         // Generate SQL from steps if file doesn't exist
-        sqlContent = generateSQLFromSteps(migration.steps);
+        sqlContent = dbPlugin.migrations.generateFromSteps(migration.steps);
       }
 
       // Compute checksum
-      const checksum = computeMigrationChecksum(yamlContent, sqlContent);
+      const checksum = dbPlugin.migrations.computeChecksum(yamlContent, sqlContent);
 
       const spinner = createSpinner(`Applying ${file}...`);
 
@@ -262,7 +255,7 @@ export async function schemaApplyCommand(options: SchemaApplyOptions): Promise<v
         const runId = runResult[0]?.id;
 
         // Execute migration in transaction
-        await sql.begin(async (tx) => {
+        await sql.begin(async (tx: any) => {
           await tx.unsafe(sqlContent);
 
           // Record migration
@@ -309,7 +302,7 @@ export async function schemaApplyCommand(options: SchemaApplyOptions): Promise<v
         }
 
         printError(err, { migration: file });
-        await closeDatabase();
+        dbPlugin.client.closeDatabase();
         process.exit(1);
       }
     }
@@ -324,7 +317,7 @@ export async function schemaApplyCommand(options: SchemaApplyOptions): Promise<v
       );
     }
 
-    await closeDatabase();
+    dbPlugin.client.closeDatabase();
 
     if (appliedCount > 0) {
       printHints([

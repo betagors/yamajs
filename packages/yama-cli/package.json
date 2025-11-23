@@ -9,12 +9,17 @@
     "yama": "./dist/yama-cli/src/cli.js"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "build": "tsc -p tsconfig.build.json && node scripts/copy-schema.js",
     "dev": "tsc -w -p tsconfig.build.json",
     "lint": "echo \"no lint yet\"",
     "test": "echo \"no tests yet\"",
     "clean": "rimraf dist"
   },
+  "files": [
+    "dist",
+    "src/yama.schema.json",
+    "src/editor-configs"
+  ],
   "dependencies": {
     "@yama/core": "workspace:*",
     "@yama/runtime-node": "workspace:*",

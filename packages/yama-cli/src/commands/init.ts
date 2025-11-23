@@ -1,7 +1,35 @@
 import { writeFileSync, existsSync, readFileSync, appendFileSync } from "fs";
-import { join, basename } from "path";
+import { join, basename, relative, dirname } from "path";
 import { ensureDir, readPackageJson, writePackageJson } from "../utils/file-utils.js";
-import { getYamaDir, getDbDir, getSdkDir } from "../utils/paths.js";
+import { getYamaDir, getDbDir, getSdkDir, getYamaSchemaPath } from "../utils/paths.js";
+import inquirer from "inquirer";
+import { execSync } from "child_process";
+
+/**
+ * Find workspace root by looking for pnpm-workspace.yaml or package.json with workspaces
+ */
+function findWorkspaceRoot(startDir: string): string | null {
+  let current = startDir;
+  const root = join(current, "..", "..", ".."); // Go up a few levels max
+  
+  while (current !== root && current !== dirname(current)) {
+    if (existsSync(join(current, "pnpm-workspace.yaml"))) {
+      return current;
+    }
+    if (existsSync(join(current, "package.json"))) {
+      try {
+        const pkg = JSON.parse(readFileSync(join(current, "package.json"), "utf-8"));
+        if (pkg.workspaces || pkg.workspace) {
+          return current;
+        }
+      } catch {
+        // Ignore
+      }
+    }
+    current = dirname(current);
+  }
+  return null;
+}
 
 interface InitOptions {
   name?: string;
@@ -15,33 +43,46 @@ export async function initCommand(options: InitOptions): Promise<void> {
 
   console.log("🚀 Initializing Yama project...\n");
 
-  // Create yama.yaml
-  const yamaConfig = {
-    name: projectName,
-    version: version,
-    schemas: {
-      Example: {
-        fields: {
-          id: { type: "string", required: true },
-          name: { type: "string", required: true }
-        }
-      }
+  // Ask about plugins
+  const pluginAnswers = await inquirer.prompt([
+    {
+      type: "list",
+      name: "database",
+      message: "Which database would you like to use?",
+      choices: [
+        { name: "PostgreSQL", value: "@yama/db-postgres" },
+        { name: "None (add later)", value: null },
+      ],
+      default: "@yama/db-postgres",
     },
-    endpoints: [
-      {
-        path: "/examples",
-        method: "GET",
-        handler: "getExamples",
-        response: {
-          type: "Example"
-        }
-      }
-    ]
-  };
+  ]);
+
+  const selectedPlugins: string[] = [];
+  if (pluginAnswers.database) {
+    selectedPlugins.push(pluginAnswers.database);
+  }
+
+  // Build plugins config
+  let pluginsConfig = "";
+  if (selectedPlugins.length > 0) {
+    pluginsConfig = "\nplugins:\n";
+    for (const plugin of selectedPlugins) {
+      pluginsConfig += `  ${plugin}: {}\n`;
+    }
+  }
+
+  // Build database config if database plugin selected
+  let databaseConfig = "";
+  if (pluginAnswers.database === "@yama/db-postgres") {
+    databaseConfig = `
+database:
+  dialect: postgresql
+  url: \${DATABASE_URL}
+`;
+  }
 
   const yamlContent = `name: ${projectName}
-version: ${version}
-
+version: ${version}${pluginsConfig}${databaseConfig}
 schemas:
   Example:
     fields:
@@ -60,13 +101,94 @@ endpoints:
       type: Example
 `;
 
+  // Create yama.yaml FIRST (always create it)
   const yamaPath = join(cwd, "yama.yaml");
   if (existsSync(yamaPath)) {
     console.log("⚠️  yama.yaml already exists, skipping...");
   } else {
-    writeFileSync(yamaPath, yamlContent, "utf-8");
+    // Add schema reference for autocomplete
+    const schemaPath = getYamaSchemaPath(yamaPath);
+    const yamlWithSchema = `# yaml-language-server: $schema=${schemaPath}
+${yamlContent}`;
+    writeFileSync(yamaPath, yamlWithSchema, "utf-8");
     console.log("✅ Created yama.yaml");
   }
+
+  // Check if we're in a workspace (monorepo)
+  const workspaceRoot = findWorkspaceRoot(cwd);
+  const isInWorkspace = workspaceRoot !== null;
+  
+  // Install selected plugins
+  if (selectedPlugins.length > 0) {
+    console.log("\n📦 Installing plugins...");
+    try {
+      // Detect package manager
+      const hasPnpm = existsSync(join(cwd, "pnpm-lock.yaml")) || existsSync(join(cwd, "../pnpm-workspace.yaml")) || isInWorkspace;
+      const hasYarn = existsSync(join(cwd, "yarn.lock"));
+      const packageManager = hasPnpm ? "pnpm" : hasYarn ? "yarn" : "npm";
+
+      for (const plugin of selectedPlugins) {
+        console.log(`  Installing ${plugin}...`);
+        
+        // Check if plugin exists as workspace package
+        let pluginPath: string | null = null;
+        if (isInWorkspace && workspaceRoot) {
+          const possiblePaths = [
+            join(workspaceRoot, "packages", plugin.replace("@yama/", "")),
+            join(workspaceRoot, plugin.replace("@yama/", "")),
+          ];
+          for (const path of possiblePaths) {
+            if (existsSync(join(path, "package.json"))) {
+              pluginPath = path;
+              break;
+            }
+          }
+        }
+
+        if (pluginPath) {
+          // Use workspace protocol or file path
+          // For pnpm workspace, use the package name directly if in workspace
+          // For file paths, use relative path
+          if (hasPnpm && isInWorkspace) {
+            // In pnpm workspace, just use the package name - pnpm will resolve it
+            execSync(`${packageManager} add ${plugin}`, { cwd, stdio: "inherit" });
+          } else {
+            const relativePath = relative(cwd, pluginPath).replace(/\\/g, "/");
+            const pluginSpec = `file:${relativePath}`;
+            execSync(`${packageManager} add ${pluginSpec}`, { cwd, stdio: "inherit" });
+          }
+        } else {
+          // Try to install from npm
+          try {
+            execSync(`${packageManager} add ${plugin}`, { cwd, stdio: "inherit" });
+          } catch (error) {
+            // If npm install fails and we're in workspace, try workspace path
+            if (isInWorkspace && workspaceRoot) {
+              const fallbackPath = join(workspaceRoot, "packages", plugin.replace("@yama/", ""));
+              if (existsSync(join(fallbackPath, "package.json"))) {
+                // In pnpm workspace, just use package name
+                if (hasPnpm) {
+                  execSync(`${packageManager} add ${plugin}`, { cwd, stdio: "inherit" });
+                } else {
+                  const relativePath = relative(cwd, fallbackPath).replace(/\\/g, "/");
+                  execSync(`${packageManager} add file:${relativePath}`, { cwd, stdio: "inherit" });
+                }
+              } else {
+                throw error;
+              }
+            } else {
+              throw error;
+            }
+          }
+        }
+      }
+      console.log("✅ Plugins installed successfully");
+    } catch (error) {
+      console.warn(`⚠️  Failed to install plugins: ${error instanceof Error ? error.message : String(error)}`);
+      console.log("   You can install them manually later");
+    }
+  }
+
 
   // Create src/handlers directory
   const handlersDir = join(cwd, "src", "handlers");

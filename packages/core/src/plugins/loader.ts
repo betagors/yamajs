@@ -1,7 +1,7 @@
 import { readFileSync, existsSync } from "fs";
 import { join, dirname } from "path";
 import { pathToFileURL } from "url";
-import type { PluginManifest, ServicePlugin } from "./base.js";
+import type { PluginManifest, YamaPlugin } from "./base.js";
 
 /**
  * Load plugin manifest from package.json
@@ -17,8 +17,9 @@ export async function loadPluginFromPackage(
     const require = createRequire(import.meta.url);
     packagePath = require.resolve(packageName);
   } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
     throw new Error(
-      `Plugin package not found: ${packageName}. Install it with: npm install ${packageName}`
+      `Plugin package not found: ${packageName}. Install it with: npm install ${packageName}${errorMsg ? ` (Original error: ${errorMsg})` : ""}`
     );
   }
 
@@ -51,21 +52,8 @@ export async function loadPluginFromPackage(
     );
   }
 
-  // Validate required fields
-  if (!yamaMetadata.pluginApi) {
-    throw new Error(`Plugin ${packageName} missing "pluginApi" in yama metadata`);
-  }
-  if (!yamaMetadata.yamaCore) {
-    throw new Error(`Plugin ${packageName} missing "yamaCore" in yama metadata`);
-  }
-  if (!yamaMetadata.category) {
-    throw new Error(`Plugin ${packageName} missing "category" in yama metadata`);
-  }
-  if (yamaMetadata.category !== "service") {
-    throw new Error(
-      `Plugin ${packageName} has invalid category: ${yamaMetadata.category}. Expected "service"`
-    );
-  }
+  // Validate optional but recommended fields (warn only)
+  // All fields are now optional to allow future-proof plugins
 
   return {
     pluginApi: yamaMetadata.pluginApi,
@@ -84,9 +72,10 @@ export async function loadPluginFromPackage(
 export async function importPlugin(
   manifest: PluginManifest,
   packageName: string
-): Promise<ServicePlugin> {
+): Promise<YamaPlugin> {
   // Resolve entry point
   let entryPoint: string;
+  let packageJson: { version?: string } = {};
   try {
     const { createRequire } = await import("module");
     const require = createRequire(import.meta.url);
@@ -95,6 +84,12 @@ export async function importPlugin(
       packagePath.replace(/\/[^/]+$/, "").replace(/\\[^\\]+$/, "")
     );
     entryPoint = join(packageDir, manifest.entryPoint || "./dist/plugin.js");
+    
+    // Try to read package.json for version
+    const packageJsonPath = join(packageDir, "package.json");
+    if (existsSync(packageJsonPath)) {
+      packageJson = JSON.parse(readFileSync(packageJsonPath, "utf-8"));
+    }
   } catch (error) {
     throw new Error(
       `Could not resolve entry point for plugin ${packageName}: ${error instanceof Error ? error.message : String(error)}`
@@ -128,12 +123,28 @@ export async function importPlugin(
       plugin.manifest = manifest;
     }
 
-    // Attach name and version if not present
+    // Attach name if not present
     if (!plugin.name) {
       plugin.name = packageName;
     }
 
-    return plugin as ServicePlugin;
+    // Attach version from package.json if not present
+    if (!plugin.version && packageJson.version) {
+      plugin.version = packageJson.version;
+    }
+
+    // Attach metadata from manifest if not present
+    if (manifest.category && !plugin.category) {
+      plugin.category = manifest.category;
+    }
+    if (manifest.pluginApi && !plugin.pluginApi) {
+      plugin.pluginApi = manifest.pluginApi;
+    }
+    if (manifest.yamaCore && !plugin.yamaCore) {
+      plugin.yamaCore = manifest.yamaCore;
+    }
+
+    return plugin as YamaPlugin;
   } catch (error) {
     throw new Error(
       `Failed to import plugin ${packageName}: ${error instanceof Error ? error.message : String(error)}`

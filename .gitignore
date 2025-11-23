@@ -23,9 +23,6 @@ secrets.yaml
 secrets.yml
 config.local.*
 *.secret
-
-# Yama generated files
-src/generated/
 lib/generated/
 generated/
 *.tsbuildinfo
@@ -76,3 +73,13 @@ lerna-debug.log*
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Yama generated files
+# Yama generated files
+# Yama generated files
+# Yama generated files
+.yama/
+
+# Test projects (for CLI development/testing)
+.yamatest/
+test-projects/

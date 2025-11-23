@@ -3,7 +3,7 @@ import { findYamaConfig } from "../utils/project-detection.js";
 import { readYamaConfig, getConfigDir } from "../utils/file-utils.js";
 import { loadEnvFile, resolveEnvVars } from "@yama/core";
 import type { DatabaseConfig } from "@yama/core";
-import { initDatabase, getSQL, closeDatabase } from "@yama/db-postgres";
+import { getDatabasePlugin } from "../utils/db-plugin.js";
 import { success, error, info, printTable, colors } from "../utils/cli-utils.js";
 
 interface SchemaHistoryOptions {
@@ -21,7 +21,8 @@ export async function schemaHistoryCommand(options: SchemaHistoryOptions): Promi
   }
 
   try {
-    loadEnvFile(configPath);
+    const environment = options.env || process.env.NODE_ENV || "development";
+    loadEnvFile(configPath, environment);
     let config = readYamaConfig(configPath) as { database?: DatabaseConfig };
     config = resolveEnvVars(config) as { database?: DatabaseConfig };
 
@@ -30,8 +31,9 @@ export async function schemaHistoryCommand(options: SchemaHistoryOptions): Promi
       process.exit(1);
     }
 
-    initDatabase(config.database);
-    const sql = getSQL();
+    const dbPlugin = await getDatabasePlugin();
+    dbPlugin.client.initDatabase(config.database);
+    const sql = dbPlugin.client.getSQL();
 
     // Get migration history
     let migrations: Array<{
@@ -53,13 +55,13 @@ export async function schemaHistoryCommand(options: SchemaHistoryOptions): Promi
       migrations = result as unknown as typeof migrations;
     } catch {
       info("No migration history found.");
-      await closeDatabase();
+      dbPlugin.client.closeDatabase();
       return;
     }
 
     if (migrations.length === 0) {
       info("No migrations in history.");
-      await closeDatabase();
+      dbPlugin.client.closeDatabase();
       return;
     }
 
@@ -95,7 +97,7 @@ export async function schemaHistoryCommand(options: SchemaHistoryOptions): Promi
       printTable(tableData);
     }
 
-    await closeDatabase();
+    dbPlugin.client.closeDatabase();
   } catch (err) {
     error(`Failed to get migration history: ${err instanceof Error ? err.message : String(err)}`);
     process.exit(1);

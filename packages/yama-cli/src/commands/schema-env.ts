@@ -22,7 +22,8 @@ export async function schemaEnvCommand(
   }
 
   try {
-    loadEnvFile(configPath);
+    const environment = options.env || process.env.NODE_ENV || "development";
+    loadEnvFile(configPath, environment);
     const config = readYamaConfig(configPath) as { database?: DatabaseConfig };
 
     if (action === "list" || !action) {

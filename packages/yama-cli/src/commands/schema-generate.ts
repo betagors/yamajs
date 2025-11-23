@@ -18,10 +18,10 @@ import {
   type IndexModel,
   type YamaEntities,
 } from "@yama/core";
-import { initDatabase, getSQL, closeDatabase, generateSQLFromSteps } from "@yama/db-postgres";
 import { success, error, info, warning, printBox, printHints } from "../utils/cli-utils.js";
 import { promptMigrationName, confirm, hasDestructiveOperation } from "../utils/interactive.js";
 import { generateMigrationNameFromBranch } from "../utils/git-utils.js";
+import { getDatabasePlugin } from "../utils/db-plugin.js";
 
 /**
  * Read current database schema and convert to Model
@@ -227,7 +227,8 @@ export async function schemaGenerateCommand(options: SchemaGenerateOptions): Pro
   }
 
   try {
-    loadEnvFile(configPath);
+    const environment = process.env.NODE_ENV || "development";
+    loadEnvFile(configPath, environment);
     let config = readYamaConfig(configPath) as {
       entities?: YamaEntities;
       database?: DatabaseConfig;
@@ -250,8 +251,9 @@ export async function schemaGenerateCommand(options: SchemaGenerateOptions): Pro
     let currentHash: string | null = null;
     if (config.database) {
       try {
-        initDatabase(config.database);
-        const sql = getSQL();
+        const dbPlugin = await getDatabasePlugin();
+        dbPlugin.client.initDatabase(config.database);
+        const sql = dbPlugin.client.getSQL();
 
         // Ensure migration tables exist
         await sql.unsafe(`
@@ -283,11 +285,14 @@ export async function schemaGenerateCommand(options: SchemaGenerateOptions): Pro
           currentHash = null;
         }
 
-        await closeDatabase();
+        dbPlugin.client.closeDatabase();
       } catch (err) {
         // Database connection failed - assume empty database
         info("Database connection failed, assuming empty database for first migration");
-        await closeDatabase().catch(() => {});
+        try {
+          const dbPlugin = await getDatabasePlugin();
+          await dbPlugin.client.closeDatabase();
+        } catch {}
         currentHash = null;
       }
     }
@@ -407,12 +412,13 @@ export async function schemaGenerateCommand(options: SchemaGenerateOptions): Pro
       }
 
       try {
-        initDatabase(config.database);
-        const sql = getSQL();
+        const dbPlugin = await getDatabasePlugin();
+        dbPlugin.client.initDatabase(config.database);
+        const sql = dbPlugin.client.getSQL();
 
         // Read current database schema
         const currentModel = await readCurrentModelFromDB(sql);
-        await closeDatabase();
+        dbPlugin.client.closeDatabase();
 
         // Check if database schema matches target (after reading actual schema)
         if (currentModel.hash === targetHash) {
@@ -436,7 +442,10 @@ export async function schemaGenerateCommand(options: SchemaGenerateOptions): Pro
 
         info(`Detected ${steps.length} change(s) to apply`);
       } catch (err) {
-        await closeDatabase().catch(() => {});
+        try {
+          const dbPlugin = await getDatabasePlugin();
+          await dbPlugin.client.closeDatabase();
+        } catch {}
         error(`Failed to read current database schema: ${err instanceof Error ? err.message : String(err)}`);
         process.exit(1);
       }
@@ -445,7 +454,8 @@ export async function schemaGenerateCommand(options: SchemaGenerateOptions): Pro
     const migration = createMigration(fromHash, targetHash, steps, migrationName);
 
     // Generate SQL from steps
-    const sqlContent = generateSQLFromSteps(steps);
+    const dbPlugin = await getDatabasePlugin();
+    const sqlContent = dbPlugin.migrations.generateFromSteps(steps);
 
     if (options.preview) {
       printBox(

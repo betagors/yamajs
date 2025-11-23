@@ -3,7 +3,7 @@ import { findYamaConfig } from "../utils/project-detection.js";
 import { readYamaConfig, getConfigDir } from "../utils/file-utils.js";
 import { loadEnvFile, resolveEnvVars } from "@yama/core";
 import type { DatabaseConfig } from "@yama/core";
-import { restoreFromSnapshot, listSnapshots, deleteSnapshot } from "@yama/db-postgres";
+import { getDatabasePlugin } from "../utils/db-plugin.js";
 import { success, error, info, printTable } from "../utils/cli-utils.js";
 import { confirm } from "../utils/interactive.js";
 
@@ -23,7 +23,8 @@ export async function schemaRestoreCommand(options: SchemaRestoreOptions): Promi
   }
 
   try {
-    loadEnvFile(configPath);
+    const environment = process.env.NODE_ENV || "development";
+    loadEnvFile(configPath, environment);
     let config = readYamaConfig(configPath) as { database?: DatabaseConfig };
     config = resolveEnvVars(config) as { database?: DatabaseConfig };
 
@@ -32,9 +33,11 @@ export async function schemaRestoreCommand(options: SchemaRestoreOptions): Promi
       process.exit(1);
     }
 
+    const dbPlugin = await getDatabasePlugin();
+    
     if (options.list) {
       // List available snapshots
-      const snapshots = await listSnapshots(config.database);
+      const snapshots = await dbPlugin.snapshots.list(config.database);
 
       if (snapshots.length === 0) {
         info("No snapshots found");
@@ -67,7 +70,7 @@ export async function schemaRestoreCommand(options: SchemaRestoreOptions): Promi
         return;
       }
 
-      await restoreFromSnapshot(options.snapshot, options.table, config.database);
+      await dbPlugin.snapshots.restore(options.snapshot, options.table, config.database);
       success(`Restored ${options.table} from snapshot ${options.snapshot}`);
     } else {
       error("Usage: yama schema:restore --list");

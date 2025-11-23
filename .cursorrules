@@ -1,9 +1,21 @@
 # Cursor Rules for this project
 
+## Version & Compatibility
+- This is a v0 project - **backward compatibility is NOT a concern**
+- Feel free to refactor, update, and improve code without maintaining old APIs
+- Focus on clean, modern code rather than supporting legacy patterns
+- Breaking changes are acceptable - prioritize code quality and maintainability
+
 ## Shell Environment
 - The user uses PowerShell on this machine
 - PowerShell version: 7.5.4
 - When running terminal commands, use PowerShell syntax and commands
 - Use `pwsh` or `powershell` commands as appropriate
 - Path separators should use backslashes for Windows paths when needed
+
+## Code Style
+- Prefer modern TypeScript patterns
+- Use clear, descriptive function and variable names
+- Break down complex functions into smaller, focused utilities
+- Don't hesitate to refactor for better structure and readability
 

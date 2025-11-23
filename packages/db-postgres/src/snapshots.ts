@@ -22,7 +22,7 @@ export async function createDataSnapshot(
     sql = getSQL();
   } else {
     // Create new connection (will close it)
-    initDatabase(config);
+    await initDatabase(config);
     sql = getSQL();
     shouldClose = true;
   }
@@ -62,7 +62,7 @@ export async function restoreFromSnapshot(
   targetTable: string,
   config: DatabaseConfig
 ): Promise<void> {
-  initDatabase(config);
+  await initDatabase(config);
   const sql = getSQL();
 
   try {
@@ -95,7 +95,7 @@ export async function deleteSnapshot(
   snapshotTable: string,
   config: DatabaseConfig
 ): Promise<void> {
-  initDatabase(config);
+  await initDatabase(config);
   const sql = getSQL();
 
   try {
@@ -113,7 +113,7 @@ export async function listSnapshots(config: DatabaseConfig): Promise<Array<{
   created_at: string;
   row_count: number;
 }>> {
-  initDatabase(config);
+  await initDatabase(config);
   const sql = getSQL();
 
   try {

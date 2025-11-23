@@ -30,4 +30,7 @@ export {
   listSnapshots,
 } from "./snapshots.js";
 
+// Export plugin (default export)
+export { default as plugin } from "./plugin.js";
+export { default } from "./plugin.js";
 

@@ -4,6 +4,12 @@
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "yama": {
+    "pluginApi": "1.0",
+    "yamaCore": "^0.1.0",
+    "category": "database",
+    "entryPoint": "./dist/plugin.js"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "dev": "tsc -w -p tsconfig.build.json",
@@ -17,6 +23,9 @@
     "@yama/core": "workspace:*",
     "drizzle-orm": "^0.29.0",
     "postgres": "^3.4.3"
+  },
+  "optionalDependencies": {
+    "@electric-sql/pglite": "^0.2.0"
   },
   "devDependencies": {
     "rimraf": "^5.0.0",

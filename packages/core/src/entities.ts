@@ -62,8 +62,13 @@ export interface YamaEntities {
  * Database connection configuration
  */
 export interface DatabaseConfig {
-  dialect: "postgresql"; // Only postgresql supported for now
-  url: string;
+  dialect: "postgresql";
+  /**
+   * Database connection URL.
+   * For PostgreSQL: use a standard postgresql:// connection string.
+   * For in-memory testing (PGlite): use ":memory:" or "pglite" to enable zero-setup in-memory database.
+   */
+  url?: string;
   pool?: {
     min?: number;
     max?: number;

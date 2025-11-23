@@ -13,6 +13,7 @@ export const colors = {
   info: chalk.blue,
   dim: chalk.dim,
   bold: chalk.bold,
+  cyan: chalk.cyan,
 };
 
 /**

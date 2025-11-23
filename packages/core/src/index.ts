@@ -78,15 +78,23 @@ export {
   type ServerConfig,
 } from "./entities.js";
 
-// Export service plugin system
+// Export plugin system
 export {
   type PluginManifest,
+  type YamaPlugin,
   type ServicePlugin,
   type PluginContext,
+  loadPlugin,
+  getPlugin,
+  getAllPlugins,
+  getPluginByCategory,
+  getPluginsByCategory,
+  getPluginByType,
+  loadPluginFromPackage,
+  // Backward compatibility exports
   loadServicePlugin,
   getServicePlugin,
   getServicePluginByType,
-  loadPluginFromPackage,
 } from "./plugins/index.js";
 
 // Export migration types and functions

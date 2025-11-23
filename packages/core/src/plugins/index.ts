@@ -2,6 +2,7 @@
 export {
   type PluginManifest,
   type PluginLifecycle,
+  type YamaPlugin,
   type ServicePlugin,
   type PluginContext,
 } from "./base.js";
@@ -16,12 +17,21 @@ export {
 export {
   type ValidationResult,
   validateManifest,
+  validateYamaPlugin,
   validateServicePlugin,
   validatePluginVersion,
 } from "./validator.js";
 
 // Export plugin registry
 export {
+  pluginRegistry,
+  loadPlugin,
+  getPlugin,
+  getAllPlugins,
+  getPluginByCategory,
+  getPluginsByCategory,
+  getPluginByType,
+  // Backward compatibility exports
   servicePluginRegistry,
   loadServicePlugin,
   getServicePlugin,

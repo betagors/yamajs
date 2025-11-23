@@ -4,7 +4,7 @@ import { findYamaConfig } from "../utils/project-detection.js";
 import { readYamaConfig, getConfigDir } from "../utils/file-utils.js";
 import { loadEnvFile, resolveEnvVars } from "@yama/core";
 import type { DatabaseConfig } from "@yama/core";
-import { initDatabase, getSQL, closeDatabase } from "@yama/db-postgres";
+import { getDatabasePlugin } from "../utils/db-plugin.js";
 import { success, error, info, printTable, colors } from "../utils/cli-utils.js";
 
 interface SchemaStatusOptions {
@@ -22,7 +22,8 @@ export async function schemaStatusCommand(options: SchemaStatusOptions): Promise
   }
 
   try {
-    loadEnvFile(configPath);
+    const environment = options.env || process.env.NODE_ENV || "development";
+    loadEnvFile(configPath, environment);
     let config = readYamaConfig(configPath) as { database?: DatabaseConfig };
     config = resolveEnvVars(config) as { database?: DatabaseConfig };
     const configDir = getConfigDir(configPath);
@@ -70,8 +71,9 @@ export async function schemaStatusCommand(options: SchemaStatusOptions): Promise
     }
 
     // Initialize database
-    initDatabase(config.database);
-    const sql = getSQL();
+    const dbPlugin = await getDatabasePlugin();
+    dbPlugin.client.initDatabase(config.database);
+    const sql = dbPlugin.client.getSQL();
 
     // Get applied migrations
     let appliedMigrations: Array<{
@@ -102,7 +104,7 @@ export async function schemaStatusCommand(options: SchemaStatusOptions): Promise
       const appliedCount = sortedMigrations.filter((m) => appliedNames.has(m.file)).length;
 
       console.log(`${pendingCount} pending, ${appliedCount} applied`);
-      await closeDatabase();
+      dbPlugin.client.closeDatabase();
       return;
     }
 
@@ -145,7 +147,7 @@ export async function schemaStatusCommand(options: SchemaStatusOptions): Promise
       info(`\n${pendingCount} migration(s) pending. Apply with: yama schema:apply`);
     }
 
-    await closeDatabase();
+    dbPlugin.client.closeDatabase();
   } catch (err) {
     error(`Failed to check migration status: ${err instanceof Error ? err.message : String(err)}`);
     process.exit(1);

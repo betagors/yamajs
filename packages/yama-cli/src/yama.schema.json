@@ -1,0 +1,457 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Yama Configuration Schema",
+  "description": "Schema for Yama YAML configuration files",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Project name"
+    },
+    "version": {
+      "type": "string",
+      "description": "Project version (e.g., '1.0.0')"
+    },
+    "plugins": {
+      "description": "Plugin configurations. Can be a map of plugin names to their configs, or an array of plugin names.",
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object"
+          }
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+    "database": {
+      "type": "object",
+      "description": "Database configuration",
+      "properties": {
+        "dialect": {
+          "type": "string",
+          "enum": ["postgresql"],
+          "description": "Database dialect"
+        },
+        "url": {
+          "type": "string",
+          "description": "Database connection URL. Use ':memory:' for in-memory testing (PGlite)"
+        },
+        "pool": {
+          "type": "object",
+          "properties": {
+            "min": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "max": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        },
+        "options": {
+          "type": "object",
+          "description": "Dialect-specific options",
+          "additionalProperties": true
+        }
+      },
+      "required": ["dialect"]
+    },
+    "server": {
+      "type": "object",
+      "description": "HTTP server configuration",
+      "properties": {
+        "engine": {
+          "type": "string",
+          "enum": ["fastify"],
+          "default": "fastify",
+          "description": "Server engine (currently only 'fastify' is supported)"
+        },
+        "options": {
+          "type": "object",
+          "description": "Engine-specific options",
+          "additionalProperties": true
+        }
+      }
+    },
+    "auth": {
+      "type": "object",
+      "description": "Authentication configuration",
+      "properties": {
+        "providers": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": ["jwt"]
+                  },
+                  "secret": {
+                    "type": "string",
+                    "description": "JWT secret key"
+                  },
+                  "algorithm": {
+                    "type": "string",
+                    "description": "JWT algorithm (e.g., 'HS256')"
+                  },
+                  "issuer": {
+                    "type": "string",
+                    "description": "JWT issuer"
+                  },
+                  "audience": {
+                    "type": "string",
+                    "description": "JWT audience"
+                  }
+                },
+                "required": ["type", "secret"]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": ["api-key"]
+                  },
+                  "header": {
+                    "type": "string",
+                    "description": "Header name for API key (e.g., 'X-API-Key')"
+                  }
+                },
+                "required": ["type", "header"]
+              }
+            ]
+          }
+        }
+      },
+      "required": ["providers"]
+    },
+    "entities": {
+      "type": "object",
+      "description": "Entity definitions (database models)",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "table": {
+            "type": "string",
+            "description": "Database table name"
+          },
+          "fields": {
+            "type": "object",
+            "description": "Entity fields",
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": ["uuid", "string", "number", "boolean", "timestamp", "text", "jsonb", "integer"],
+                  "description": "Field type"
+                },
+                "dbType": {
+                  "type": "string",
+                  "description": "PostgreSQL-specific type override (e.g., 'varchar(255)')"
+                },
+                "dbColumn": {
+                  "type": "string",
+                  "description": "Explicit DB column name (for snake_case mapping)"
+                },
+                "primary": {
+                  "type": "boolean",
+                  "description": "Primary key field"
+                },
+                "generated": {
+                  "type": "boolean",
+                  "description": "Auto-generate value (UUID, serial, etc.)"
+                },
+                "nullable": {
+                  "type": "boolean",
+                  "description": "Allow null values"
+                },
+                "default": {
+                  "description": "Default value or function name (e.g., 'now()')"
+                },
+                "index": {
+                  "type": "boolean",
+                  "description": "Create index on this field"
+                },
+                "api": {
+                  "oneOf": [
+                    {
+                      "type": "string",
+                      "description": "API field name"
+                    },
+                    {
+                      "type": "boolean",
+                      "enum": [false],
+                      "description": "Set to false to exclude from API"
+                    }
+                  ]
+                },
+                "apiFormat": {
+                  "type": "string",
+                  "description": "Format hint for API (e.g., 'date-time')"
+                },
+                "required": {
+                  "type": "boolean",
+                  "description": "Required field in API"
+                },
+                "minLength": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "maxLength": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "min": {
+                  "type": "number"
+                },
+                "max": {
+                  "type": "number"
+                },
+                "pattern": {
+                  "type": "string",
+                  "description": "Regex pattern for validation"
+                },
+                "enum": {
+                  "type": "array",
+                  "description": "Allowed enum values"
+                }
+              },
+              "required": ["type"]
+            }
+          },
+          "indexes": {
+            "type": "array",
+            "description": "Database indexes",
+            "items": {
+              "type": "object",
+              "properties": {
+                "fields": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "name": {
+                  "type": "string",
+                  "description": "Index name"
+                },
+                "unique": {
+                  "type": "boolean",
+                  "description": "Unique index"
+                }
+              },
+              "required": ["fields"]
+            }
+          },
+          "apiSchema": {
+            "type": "string",
+            "description": "Optional custom API schema name (default: entity name)"
+          }
+        },
+        "required": ["table", "fields"]
+      }
+    },
+    "schemas": {
+      "type": "object",
+      "description": "API schema definitions",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "fields": {
+            "type": "object",
+            "description": "Schema fields",
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": ["string", "number", "boolean", "integer", "array", "object"],
+                  "description": "Field type"
+                },
+                "required": {
+                  "type": "boolean",
+                  "description": "Required field"
+                },
+                "default": {
+                  "description": "Default value"
+                },
+                "format": {
+                  "type": "string",
+                  "description": "Format (e.g., 'date-time', 'email', 'uri')"
+                },
+                "items": {
+                  "description": "Item schema for array types",
+                  "$ref": "#/definitions/schemaField"
+                },
+                "properties": {
+                  "type": "object",
+                  "description": "Properties for object types",
+                  "additionalProperties": {
+                    "$ref": "#/definitions/schemaField"
+                  }
+                },
+                "min": {
+                  "type": "number",
+                  "description": "Minimum value (for numbers) or length (for strings)"
+                },
+                "max": {
+                  "type": "number",
+                  "description": "Maximum value (for numbers) or length (for strings)"
+                },
+                "pattern": {
+                  "type": "string",
+                  "description": "Regex pattern for validation"
+                },
+                "enum": {
+                  "type": "array",
+                  "description": "Allowed enum values"
+                },
+                "$ref": {
+                  "type": "string",
+                  "description": "Reference to another schema name"
+                }
+              }
+            }
+          }
+        },
+        "required": ["fields"]
+      }
+    },
+    "endpoints": {
+      "type": "array",
+      "description": "API endpoint definitions",
+      "items": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Endpoint path (e.g., '/todos' or '/todos/:id')"
+          },
+          "method": {
+            "type": "string",
+            "enum": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"],
+            "description": "HTTP method"
+          },
+          "handler": {
+            "type": "string",
+            "description": "Handler function name (file in src/handlers without extension)"
+          },
+          "description": {
+            "type": "string",
+            "description": "Endpoint description"
+          },
+          "params": {
+            "type": "object",
+            "description": "Path parameters",
+            "additionalProperties": {
+              "$ref": "#/definitions/schemaField"
+            }
+          },
+          "query": {
+            "type": "object",
+            "description": "Query parameters",
+            "additionalProperties": {
+              "$ref": "#/definitions/schemaField"
+            }
+          },
+          "body": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "description": "Schema name for request body"
+              }
+            },
+            "required": ["type"]
+          },
+          "response": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "description": "Schema name for response"
+              }
+            },
+            "required": ["type"]
+          },
+          "auth": {
+            "type": "object",
+            "properties": {
+              "required": {
+                "type": "boolean",
+                "description": "Authentication required"
+              },
+              "roles": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Required roles"
+              },
+              "provider": {
+                "type": "string",
+                "description": "Provider type or name to use"
+              }
+            }
+          }
+        },
+        "required": ["path", "method"]
+      }
+    }
+  },
+  "definitions": {
+    "schemaField": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["string", "number", "boolean", "integer", "array", "object"]
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "default": {
+          "description": "Default value"
+        },
+        "format": {
+          "type": "string"
+        },
+        "items": {
+          "$ref": "#/definitions/schemaField"
+        },
+        "properties": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/schemaField"
+          }
+        },
+        "min": {
+          "type": "number"
+        },
+        "max": {
+          "type": "number"
+        },
+        "pattern": {
+          "type": "string"
+        },
+        "enum": {
+          "type": "array"
+        },
+        "$ref": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
+

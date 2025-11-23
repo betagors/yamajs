@@ -2,7 +2,7 @@ import { existsSync, writeFileSync, readFileSync } from "fs";
 import { join, dirname, relative } from "path";
 import { generateTypes, type YamaEntities } from "@yama/core";
 import { generateSDK } from "@yama/sdk-ts";
-import { generateDrizzleSchema, generateMapper, generateRepository } from "@yama/db-postgres";
+import { getDatabasePlugin } from "../utils/db-plugin.js";
 import { readYamaConfig, ensureDir, getConfigDir } from "../utils/file-utils.js";
 import { findYamaConfig, detectProjectType, inferOutputPath } from "../utils/project-detection.js";
 import { generateFrameworkHelpers, updateFrameworkConfig } from "../utils/framework-helpers.js";
@@ -196,19 +196,20 @@ async function generateDatabaseCode(
     const typesImportPath = "../types";
 
     // Generate Drizzle schema
-    const drizzleSchema = generateDrizzleSchema(entities);
+    const dbPlugin = await getDatabasePlugin();
+    const drizzleSchema = dbPlugin.schema.generateDrizzleSchema(entities);
     const drizzleSchemaPath = join(dbOutputDir, "schema.ts");
     writeFileSync(drizzleSchemaPath, drizzleSchema, "utf-8");
     console.log(`✅ Generated Drizzle schema: .yama/db/schema.ts`);
 
     // Generate mapper
-    const mapper = generateMapper(entities, typesImportPath);
+    const mapper = dbPlugin.codegen.generateMapper(entities, typesImportPath);
     const mapperPath = join(dbOutputDir, "mapper.ts");
     writeFileSync(mapperPath, mapper, "utf-8");
     console.log(`✅ Generated mapper: .yama/db/mapper.ts`);
 
     // Generate repository
-    const { repository, types } = generateRepository(entities, typesImportPath);
+    const { repository, types } = dbPlugin.codegen.generateRepository(entities, typesImportPath);
     const repositoryPath = join(dbOutputDir, "repository.ts");
     writeFileSync(repositoryPath, repository, "utf-8");
     console.log(`✅ Generated repository: .yama/db/repository.ts`);

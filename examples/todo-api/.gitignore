@@ -5,3 +5,8 @@
 src/generated/
 lib/generated/
 src/types.ts
+
+# Environment files (keep .env.example files, ignore actual .env files)
+.env
+.env.local
+.env.*.local

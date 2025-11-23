@@ -1,4 +1,4 @@
-import type { ServicePlugin, PluginManifest } from "./base.js";
+import type { YamaPlugin, PluginManifest, ServicePlugin } from "./base.js";
 
 /**
  * Validation result
@@ -9,28 +9,43 @@ export interface ValidationResult {
 }
 
 /**
- * Validate plugin manifest
+ * Validate plugin manifest (all fields are optional now)
  */
 export function validateManifest(manifest: PluginManifest): ValidationResult {
+  // Manifest validation is now lenient - all fields are optional
+  // This allows future-proof plugins that don't need all metadata
+  return {
+    valid: true,
+  };
+}
+
+/**
+ * Validate YamaPlugin interface
+ */
+export function validateYamaPlugin(plugin: unknown): ValidationResult {
   const errors: string[] = [];
 
-  if (!manifest.pluginApi) {
-    errors.push("Missing pluginApi field");
+  if (!plugin || typeof plugin !== "object") {
+    return {
+      valid: false,
+      errors: ["Plugin must be an object"],
+    };
   }
 
-  if (!manifest.yamaCore) {
-    errors.push("Missing yamaCore field");
+  const p = plugin as Partial<YamaPlugin>;
+
+  // Name is required
+  if (!p.name || typeof p.name !== "string") {
+    errors.push("Plugin must have a name property (string)");
   }
 
-  if (!manifest.category) {
-    errors.push("Missing category field");
-  } else if (manifest.category !== "service") {
-    errors.push(`Invalid category: ${manifest.category}. Expected "service"`);
+  // Init method is required
+  if (!p.init || typeof p.init !== "function") {
+    errors.push("Plugin must implement init() method");
   }
 
-  if (!manifest.type) {
-    errors.push("Missing type field");
-  }
+  // Version, category, manifest are all optional but recommended
+  // No validation errors for missing optional fields
 
   return {
     valid: errors.length === 0,
@@ -39,7 +54,8 @@ export function validateManifest(manifest: PluginManifest): ValidationResult {
 }
 
 /**
- * Validate service plugin interface
+ * @deprecated Use validateYamaPlugin instead
+ * Validate service plugin interface (kept for backward compatibility)
  */
 export function validateServicePlugin(plugin: unknown): ValidationResult {
   const errors: string[] = [];
@@ -84,23 +100,27 @@ export function validateServicePlugin(plugin: unknown): ValidationResult {
  * Validate plugin version compatibility
  */
 export function validatePluginVersion(
-  plugin: ServicePlugin,
+  plugin: YamaPlugin | ServicePlugin,
   coreVersion: string
 ): ValidationResult {
   // Simple semver check - in a real implementation, use a semver library
   const errors: string[] = [];
 
-  // For now, just check that yamaCore is specified
-  if (!plugin.manifest.yamaCore) {
-    errors.push("Plugin manifest missing yamaCore compatibility version");
+  // Check yamaCore if available (optional but recommended)
+  const yamaCore = (plugin as YamaPlugin).yamaCore || ((plugin as ServicePlugin).manifest?.yamaCore);
+  if (!yamaCore) {
+    // Warning only, not an error
+    return {
+      valid: true,
+      errors: ["Plugin missing yamaCore compatibility version (recommended)"],
+    };
   }
 
   // TODO: Implement proper semver range checking
   // This would require a semver library like semver
 
   return {
-    valid: errors.length === 0,
-    errors: errors.length > 0 ? errors : undefined,
+    valid: true,
   };
 }
 

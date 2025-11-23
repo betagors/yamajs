@@ -1,0 +1,13 @@
+{
+  "yaml": {
+    "schemas": {
+      "node_modules/@yama/yama-cli/dist/yama-cli/src/yama.schema.json": [
+        "yama.yaml",
+        "yama.yml",
+        "*.yama.yaml",
+        "*.yama.yml"
+      ]
+    }
+  }
+}
+

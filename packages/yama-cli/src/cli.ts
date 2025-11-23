@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 import { Command } from "commander";
-import { initCommand } from "./commands/init.js";
-import { setupCommand } from "./commands/setup.js";
+import { createCommand } from "./commands/create.js";
 import { devCommand } from "./commands/dev.js";
 import { generateCommand } from "./commands/generate.js";
 import { validateCommand } from "./commands/validate.js";
@@ -29,19 +28,17 @@ program
   .description("Yama CLI - API framework toolkit")
   .version("0.0.1");
 
-// Setup & initialization
+// Project creation
 program
-  .command("init")
-  .description("Initialize a new Yama project")
-  .option("--name <name>", "Project name")
-  .option("--version <version>", "Project version", "1.0.0")
-  .action(initCommand);
-
-program
-  .command("setup")
-  .description("Setup Yama in an existing project")
-  .option("--skip-scripts", "Skip adding scripts to package.json")
-  .action(setupCommand);
+  .command("create")
+  .alias("new")
+  .description("Create a new Yama project (like Next.js)")
+  .argument("[project-name]", "Project name or '.' for current directory")
+  .option("--database <database>", "Database type (postgresql, none)")
+  .option("-y, --yes", "Use default options (non-interactive mode)")
+  .action(async (projectName, options) => {
+    await createCommand(projectName, options);
+  });
 
 // Development
 program
@@ -51,6 +48,7 @@ program
   .option("--no-watch", "Disable watch mode")
   .option("--config <path>", "Path to yama.yaml", "yama.yaml")
   .option("--generate", "Auto-generate SDK and types on startup and changes")
+  .option("--env <env>", "Environment (development, production, staging, etc.)", "development")
   .action(devCommand);
 
 // Generation

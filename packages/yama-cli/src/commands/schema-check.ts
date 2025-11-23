@@ -10,7 +10,7 @@ import {
   diffToSteps,
   getCurrentModelHashFromDB,
 } from "@yama/core";
-import { initDatabase, getSQL, closeDatabase } from "@yama/db-postgres";
+import { getDatabasePlugin } from "../utils/db-plugin.js";
 import { colors, success, error, printBox, printTable } from "../utils/cli-utils.js";
 import type { YamaEntities } from "@yama/core";
 
@@ -30,7 +30,8 @@ export async function schemaCheckCommand(options: SchemaCheckOptions): Promise<v
   }
 
   try {
-    loadEnvFile(configPath);
+    const environment = options.env || process.env.NODE_ENV || "development";
+    loadEnvFile(configPath, environment);
     let config = readYamaConfig(configPath) as {
       entities?: YamaEntities;
       database?: DatabaseConfig;
@@ -52,8 +53,9 @@ export async function schemaCheckCommand(options: SchemaCheckOptions): Promise<v
     // Get current model hash from database
     let currentHash: string | null = null;
     if (config.database) {
-      initDatabase(config.database);
-      const sql = getSQL();
+      const dbPlugin = await getDatabasePlugin();
+      dbPlugin.client.initDatabase(config.database);
+      const sql = dbPlugin.client.getSQL();
 
       // Ensure migration tables exist
       await sql.unsafe(`
@@ -85,7 +87,7 @@ export async function schemaCheckCommand(options: SchemaCheckOptions): Promise<v
         currentHash = null;
       }
 
-      await closeDatabase();
+      dbPlugin.client.closeDatabase();
     }
 
     // If no current hash, assume empty database

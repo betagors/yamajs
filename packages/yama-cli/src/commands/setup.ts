@@ -1,9 +1,73 @@
-import { existsSync } from "fs";
+import { existsSync, readFileSync, writeFileSync } from "fs";
 import { join } from "path";
-import { readPackageJson, writePackageJson } from "../utils/file-utils.js";
+import { readPackageJson, writePackageJson, ensureDir } from "../utils/file-utils.js";
+import { getYamaSchemaPath } from "../utils/paths.js";
 
 interface SetupOptions {
   skipScripts?: boolean;
+  skipEditorConfig?: boolean;
+}
+
+/**
+ * Setup VS Code settings for Yama YAML autocomplete
+ */
+function setupVSCodeSettings(cwd: string, schemaPath: string): void {
+  const vscodeDir = join(cwd, ".vscode");
+  const settingsPath = join(vscodeDir, "settings.json");
+  
+  let settings: Record<string, unknown> = {};
+  
+  // Read existing settings if they exist
+  if (existsSync(settingsPath)) {
+    try {
+      const content = readFileSync(settingsPath, "utf-8");
+      settings = JSON.parse(content);
+    } catch {
+      // If parsing fails, start fresh
+      settings = {};
+    }
+  }
+  
+  // Ensure yaml.schemas exists
+  if (!settings["yaml.schemas"]) {
+    settings["yaml.schemas"] = {};
+  }
+  
+  const yamlSchemas = settings["yaml.schemas"] as Record<string, string[]>;
+  
+  // Add Yama schema mapping
+  yamlSchemas[schemaPath] = [
+    "yama.yaml",
+    "yama.yml",
+    "*.yama.yaml",
+    "*.yama.yml"
+  ];
+  
+  // Write settings
+  ensureDir(vscodeDir);
+  writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + "\n", "utf-8");
+}
+
+/**
+ * Setup YAML Language Server config
+ */
+function setupYamlLSConfig(cwd: string, schemaPath: string): void {
+  const configPath = join(cwd, ".yamlls-config.json");
+  
+  const config = {
+    yaml: {
+      schemas: {
+        [schemaPath]: [
+          "yama.yaml",
+          "yama.yml",
+          "*.yama.yaml",
+          "*.yama.yml"
+        ]
+      }
+    }
+  };
+  
+  writeFileSync(configPath, JSON.stringify(config, null, 2) + "\n", "utf-8");
 }
 
 export async function setupCommand(options: SetupOptions): Promise<void> {
@@ -54,6 +118,32 @@ export async function setupCommand(options: SetupOptions): Promise<void> {
       console.log("   Install it with: npm install @yama/runtime-node");
     } else {
       console.log("✅ Found @yama/runtime-node");
+    }
+
+    // Setup editor configuration
+    if (!options.skipEditorConfig) {
+      try {
+        // Get schema path (use a dummy path to find the schema)
+        const dummyYamlPath = join(cwd, "yama.yaml");
+        const schemaPath = getYamaSchemaPath(dummyYamlPath);
+        
+        // Setup VS Code settings
+        setupVSCodeSettings(cwd, schemaPath);
+        console.log("✅ Configured VS Code settings for Yama YAML autocomplete");
+        
+        // Setup YAML Language Server config
+        setupYamlLSConfig(cwd, schemaPath);
+        console.log("✅ Created .yamlls-config.json for YAML Language Server");
+        
+        console.log("\n💡 Editor autocomplete is now configured for:");
+        console.log("   - yama.yaml");
+        console.log("   - yama.yml");
+        console.log("   - *.yama.yaml");
+        console.log("   - *.yama.yml");
+      } catch (error) {
+        console.warn("⚠️  Failed to setup editor configuration:", error instanceof Error ? error.message : String(error));
+        console.log("   You can manually configure it - see docs in node_modules/@yama/yama-cli/src/editor-configs/");
+      }
     }
 
     console.log("\n✨ Setup complete!");
