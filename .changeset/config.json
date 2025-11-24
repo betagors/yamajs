@@ -8,8 +8,6 @@
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
   "ignore": [
-    "@betagors/yama-docs-generator",
-    "@betagors/yama-sdk",
     "@betagors/yama-docs"
   ]
 }
