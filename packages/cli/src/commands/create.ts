@@ -359,12 +359,6 @@ export async function createCommand(projectName?: string, options: CreateOptions
                 dependencies[dep] = version as string;
               }
             }
-            // Add node-gyp as dev dependency for building native modules on Windows
-            if (nativeModulePatterns.some(pattern => 
-              Object.keys(pluginDeps).some(dep => dep.includes(pattern))
-            )) {
-              devDependencies["node-gyp"] = "latest";
-            }
           } catch {
             // Ignore errors
           }
@@ -630,10 +624,9 @@ The server will start on [http://localhost:4000](http://localhost:4000).
   // Users should run `pnpm install` or `npm install` manually
   // This ensures native modules are built correctly with the .npmrc configuration
   // 
-  // Important: For native dependencies to build correctly, users may need:
-  // - Python (for node-gyp on Windows)
-  // - Visual Studio Build Tools (for node-gyp on Windows)
-  // - Or use a prebuilt binary if available
+  // Note: Modern package managers (npm/pnpm/yarn) automatically handle native module
+  // compilation. Build tools (Python, Visual Studio Build Tools) are only needed
+  // if prebuilt binaries aren't available for the user's platform.
 
   // Success message
   console.log();
