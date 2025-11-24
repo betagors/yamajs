@@ -1,11 +1,33 @@
 {
-  "name": "@yama/cli",
-  "version": "0.0.1",
+  "name": "@betagors/yama-cli",
+  "version": "0.1.0-alpha.0",
   "type": "module",
-  "description": "Global CLI tool for Yama - API framework",
+  "description": "Yama CLI — global CLI tool for Yama framework",
   "bin": {
     "yama": "dist/cli/src/cli.js"
   },
+  "files": [
+    "dist",
+    "src/yama.schema.json",
+    "src/editor-configs"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/betagors/yama.git",
+    "directory": "packages/cli"
+  },
+  "keywords": [
+    "yama",
+    "cli",
+    "backend",
+    "framework",
+    "yaml",
+    "config"
+  ],
+  "license": "MPL-2.0",
   "scripts": {
     "build": "tsc -p tsconfig.build.json && node scripts/build.mjs",
     "dev": "tsc -w -p tsconfig.build.json",
@@ -17,17 +39,12 @@
     "link:dev": "pnpm link --global",
     "start": "ts-node src/cli.ts"
   },
-  "files": [
-    "dist",
-    "src/yama.schema.json",
-    "src/editor-configs"
-  ],
   "dependencies": {
-    "@yama/core": "workspace:*",
-    "@yama/docs-generator": "workspace:*",
-    "@yama/postgres": "workspace:*",
-    "@yama/runtime-node": "workspace:*",
-    "@yama/sdk": "workspace:*",
+    "@betagors/yama-core": "workspace:*",
+    "@betagors/yama-docs-generator": "workspace:*",
+    "@betagors/yama-postgres": "workspace:*",
+    "@betagors/yama-runtime-node": "workspace:*",
+    "@betagors/yama-sdk": "workspace:*",
     "boxen": "^8.0.1",
     "chalk": "^5.3.0",
     "chokidar": "^4.0.0",

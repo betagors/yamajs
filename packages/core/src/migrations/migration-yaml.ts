@@ -122,7 +122,7 @@ export function createMigration(
     steps,
     metadata: {
       generated_at: new Date().toISOString(),
-      generated_by: "@yama/cli",
+      generated_by: "@betagors/yama-cli",
       description,
     },
   };

@@ -292,9 +292,9 @@ export async function createCommand(projectName?: string, options: CreateOptions
   const selectedPlugins: Record<string, Record<string, unknown>> = {};
   
   if (databaseChoice === "pglite") {
-    selectedPlugins["@yama/pglite"] = {};
+    selectedPlugins["@betagors/yama-pglite"] = {};
   } else if (databaseChoice === "postgresql") {
-    selectedPlugins["@yama/postgres"] = {
+    selectedPlugins["@betagors/yama-postgres"] = {
       url: "${DATABASE_URL}"
     };
   }
@@ -311,21 +311,21 @@ export async function createCommand(projectName?: string, options: CreateOptions
     // Core dependencies
     if (isInWorkspace && workspaceRootForProject) {
       // Use file: protocol for workspace packages
-      dependencies["@yama/core"] = `file:${relative(projectPath, join(workspaceRootForProject, "packages", "core")).replace(/\\/g, "/")}`;
-      dependencies["@yama/runtime-node"] = `file:${relative(projectPath, join(workspaceRootForProject, "packages", "runtime-node")).replace(/\\/g, "/")}`;
-      devDependencies["@yama/cli"] = `file:${relative(projectPath, join(workspaceRootForProject, "packages", "cli")).replace(/\\/g, "/")}`;
+      dependencies["@betagors/yama-core"] = `file:${relative(projectPath, join(workspaceRootForProject, "packages", "core")).replace(/\\/g, "/")}`;
+      dependencies["@betagors/yama-runtime-node"] = `file:${relative(projectPath, join(workspaceRootForProject, "packages", "runtime-node")).replace(/\\/g, "/")}`;
+      devDependencies["@betagors/yama-cli"] = `file:${relative(projectPath, join(workspaceRootForProject, "packages", "cli")).replace(/\\/g, "/")}`;
     } else {
-      dependencies["@yama/core"] = "latest";
-      dependencies["@yama/runtime-node"] = "latest";
-      // Note: @yama/cli should be installed globally, not as a project dependency
-      // Users should run: npm install -g @yama/cli (once published)
-      // Or use: npx @yama/cli <command>
+      dependencies["@betagors/yama-core"] = "latest";
+      dependencies["@betagors/yama-runtime-node"] = "latest";
+      // Note: @betagors/yama-cli should be installed globally, not as a project dependency
+      // Users should run: npm install -g @betagors/yama-cli (once published)
+      // Or use: npx @betagors/yama-cli <command>
     }
     
     // Add plugins
     for (const plugin of Object.keys(selectedPlugins)) {
       if (isInWorkspace && workspaceRootForProject) {
-        const packageName = plugin.replace("@yama/", "");
+        const packageName = plugin.replace("@betagors/yama-", "");
         dependencies[plugin] = `file:${relative(projectPath, join(workspaceRootForProject, "packages", packageName)).replace(/\\/g, "/")}`;
       } else {
         dependencies[plugin] = "latest";
@@ -335,7 +335,7 @@ export async function createCommand(projectName?: string, options: CreateOptions
     // Add native dependencies from plugins
     if (isInWorkspace && workspaceRootForProject) {
       for (const plugin of Object.keys(selectedPlugins)) {
-        const packageName = plugin.replace("@yama/", "");
+        const packageName = plugin.replace("@betagors/yama-", "");
         const pluginPath = join(workspaceRootForProject, "packages", packageName);
         const pluginPackageJson = join(pluginPath, "package.json");
         if (existsSync(pluginPackageJson)) {
@@ -369,7 +369,7 @@ export async function createCommand(projectName?: string, options: CreateOptions
     // Create package.json
     const packageManager = detectPackageManager(workspaceRootForProject || cwd);
     
-    // Use node to directly run @yama/cli from node_modules
+    // Use node to directly run @betagors/yama-cli from node_modules
     // This works reliably after package installation creates the node_modules structure
     // Works for both workspace and non-workspace projects
     const yamaExec = "yama";
@@ -492,7 +492,7 @@ ${yamlContent}`;
   // Create example handler
   const handlerSpinner = createSpinner("Creating example handler...");
   try {
-    const handlerContent = `import type { HttpRequest, HttpResponse } from "@yama/core";
+    const handlerContent = `import type { HttpRequest, HttpResponse } from "@betagors/yama-core";
 import type { Example } from "@gen/types";
 
 export async function getExamples(
@@ -647,8 +647,8 @@ The server will start on [http://localhost:4000](http://localhost:4000).
   
   // Note about CLI installation
   if (!isInWorkspace) {
-    console.log(colors.dim(`   2. Install Yama CLI globally: npm install -g @yama/cli`));
-    console.log(colors.dim(`      (Or use: npx @yama/cli <command> for each command)`));
+    console.log(colors.dim(`   2. Install Yama CLI globally: npm install -g @betagors/yama-cli`));
+    console.log(colors.dim(`      (Or use: npx @betagors/yama-cli <command> for each command)`));
     console.log(colors.dim(`   3. ${packageManager} install`));
     console.log(colors.dim(`   4. ${packageManager} dev`));
   } else {
@@ -660,8 +660,8 @@ The server will start on [http://localhost:4000](http://localhost:4000).
   if (databaseChoice === "none") {
     console.log();
     info("💡 Tip: Add a database later with:");
-    console.log(colors.dim(`   yama plugin install @yama/pglite     # In-memory, no setup needed`));
-    console.log(colors.dim(`   yama plugin install @yama/postgres   # Pure JS PostgreSQL`));
+    console.log(colors.dim(`   yama plugin install @betagors/yama-pglite     # In-memory, no setup needed`));
+    console.log(colors.dim(`   yama plugin install @betagors/yama-postgres   # Pure JS PostgreSQL`));
   }
   console.log();
 }

@@ -1,4 +1,4 @@
-import type { YamaEntities, EntityDefinition, EntityField } from "@yama/core";
+import type { YamaEntities, EntityDefinition, EntityField } from "@betagors/yama-core";
 
 /**
  * Generate Drizzle table definition for a single entity

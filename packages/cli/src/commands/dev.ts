@@ -1,11 +1,11 @@
 import { existsSync, statSync } from "fs";
 import { dirname, join, relative, extname } from "path";
-import { startYamaNodeRuntime, type YamaServer } from "@yama/runtime-node";
+import { startYamaNodeRuntime, type YamaServer } from "@betagors/yama-runtime-node";
 import type { FSWatcher } from "chokidar";
 import chokidar from "chokidar";
 import { findYamaConfig } from "../utils/project-detection.ts";
 import { generateOnce } from "./generate.ts";
-import { loadEnvFile } from "@yama/core";
+import { loadEnvFile } from "@betagors/yama-core";
 import { readYamaConfig } from "../utils/file-utils.ts";
 
 interface DevOptions {

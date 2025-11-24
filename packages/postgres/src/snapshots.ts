@@ -1,4 +1,4 @@
-import type { DatabaseConfig } from "@yama/core";
+import type { DatabaseConfig } from "@betagors/yama-core";
 import { initDatabase, getSQL, closeDatabase } from "./client.ts";
 
 /**

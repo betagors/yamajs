@@ -12,10 +12,11 @@
     "sourceMap": true,
     "baseUrl": ".",
     "paths": {
-      "@yama/core": ["packages/core/src"],
-      "@yama/runtime-node": ["packages/runtime-node/src"],
-      "@yama/sdk": ["packages/sdk/src"],
-      "@yama/docs-generator": ["packages/docs-generator/src"]
+      "@betagors/yama-core": ["packages/core/src"],
+      "@betagors/yama-runtime-node": ["packages/runtime-node/src"],
+      "@betagors/yama-sdk": ["packages/sdk/src"],
+      "@betagors/yama-docs-generator": ["packages/docs-generator/src"],
+      "@betagors/yama": ["packages/yama/src"]
     }
   }
 }

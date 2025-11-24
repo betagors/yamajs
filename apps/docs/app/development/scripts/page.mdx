@@ -16,7 +16,7 @@ pnpm build
 ```
 
 #### `pnpm build:packages`
-Builds only the core packages (e.g., `@yama/core`, `@yama/runtime-node`) without building examples.
+Builds only the core packages (e.g., `@betagors/yama-core`, `@betagors/yama-runtime-node`) without building examples.
 
 ```bash
 pnpm build:packages
@@ -171,13 +171,13 @@ pnpm build
 
 ## Package-Specific Scripts
 
-### `@yama/core`
+### `@betagors/yama-core`
 
 - `pnpm build` - Compiles TypeScript to `dist/`
 - `pnpm dev` - Watch mode for TypeScript compilation
 - `pnpm clean` - Removes `dist/` folder
 
-### `@yama/runtime-node`
+### `@betagors/yama-runtime-node`
 
 - `pnpm build` - Compiles TypeScript to `dist/`
 - `pnpm dev` - Watch mode for TypeScript compilation

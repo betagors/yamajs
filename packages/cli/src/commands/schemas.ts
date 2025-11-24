@@ -1,7 +1,7 @@
 import { existsSync } from "fs";
 import { readYamaConfig } from "../utils/file-utils.ts";
 import { findYamaConfig } from "../utils/project-detection.ts";
-import type { YamaSchemas } from "@yama/core";
+import type { YamaSchemas } from "@betagors/yama-core";
 
 interface SchemasOptions {
   config?: string;

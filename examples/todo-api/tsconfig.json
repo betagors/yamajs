@@ -9,13 +9,13 @@
     "resolveJsonModule": true,
     "baseUrl": ".",
     "paths": {
-      "@yama/db": [
+      "@betagors/yama-db": [
         ".yama/db"
       ],
-      "@yama/sdk": [
+      "@betagors/yama-sdk": [
         ".yama/sdk"
       ],
-      "@yama/types": [
+      "@betagors/yama-types": [
         ".yama/types.ts"
       ]
     }

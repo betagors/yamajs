@@ -1,4 +1,4 @@
-import type { YamaEntities, EntityDefinition, EntityField, MigrationStepUnion } from "@yama/core";
+import type { YamaEntities, EntityDefinition, EntityField, MigrationStepUnion } from "@betagors/yama-core";
 import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync } from "fs";
 import { join } from "path";
 import { createHash } from "crypto";

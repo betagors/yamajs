@@ -1,6 +1,6 @@
 import { existsSync, writeFileSync, mkdirSync } from "fs";
 import { join, dirname, extname } from "path";
-import { generateOpenAPI } from "@yama/docs-generator";
+import { generateOpenAPI } from "@betagors/yama-docs-generator";
 import { readYamaConfig, ensureDir, getConfigDir } from "../utils/file-utils.ts";
 import { findYamaConfig } from "../utils/project-detection.ts";
 import yaml from "js-yaml";

@@ -1,7 +1,8 @@
 {
-  "name": "@yama/docs",
-  "version": "0.0.1",
+  "name": "@betagors/yama-docs",
+  "version": "0.1.0-alpha.0",
   "private": true,
+  "description": "Yama documentation site",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

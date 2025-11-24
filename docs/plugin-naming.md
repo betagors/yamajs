@@ -5,33 +5,34 @@ This document outlines the naming conventions for Yama packages and plugins.
 ## Package Naming Structure
 
 ### Core Packages
-- **`@yama/core`** - Core types, interfaces, and utilities
-- **`@yama/runtime-*`** - Runtime implementations
-  - `@yama/runtime-node` - Node.js runtime
-  - `@yama/runtime-bun` - Bun runtime (future)
-  - `@yama/runtime-deno` - Deno runtime (future)
+- **`@betagors/yama-core`** - Core types, interfaces, and utilities
+- **`@betagors/yama-runtime-*`** - Runtime implementations
+  - `@betagors/yama-runtime-node` - Node.js runtime
+  - `@betagors/yama-runtime-bun` - Bun runtime (future)
+  - `@betagors/yama-runtime-deno` - Deno runtime (future)
 
 ### Plugins
 All installable packages that extend Yama functionality:
-- **`@yama/plugin-*`** - User-installable plugins
-  - `@yama/postgres` - PostgreSQL database plugin
-  - `@yama/plugin-db-mysql` - MySQL database plugin (future)
-  - `@yama/plugin-http-fastify` - Fastify HTTP server plugin
-  - `@yama/plugin-http-express` - Express HTTP server plugin (future)
-  - `@yama/plugin-payments-stripe` - Stripe payments plugin (future)
-  - `@yama/plugin-email-sendgrid` - SendGrid email plugin (future)
-  - `@yama/plugin-storage-s3` - AWS S3 storage plugin (future)
-  - `@yama/plugin-auth-clerk` - Clerk authentication plugin (future)
+- **`@betagors/yama-*`** - User-installable plugins
+  - `@betagors/yama-postgres` - PostgreSQL database plugin
+  - `@betagors/yama-pglite` - PGLite database plugin
+  - `@betagors/yama-http-fastify` - Fastify HTTP server plugin
+  - `@betagors/yama-plugin-db-mysql` - MySQL database plugin (future)
+  - `@betagors/yama-plugin-http-express` - Express HTTP server plugin (future)
+  - `@betagors/yama-plugin-payments-stripe` - Stripe payments plugin (future)
+  - `@betagors/yama-plugin-email-sendgrid` - SendGrid email plugin (future)
+  - `@betagors/yama-plugin-storage-s3` - AWS S3 storage plugin (future)
+  - `@betagors/yama-plugin-auth-clerk` - Clerk authentication plugin (future)
 
 ### Tools
 Build-time utilities:
-- **`@yama/tool-*`** - Build-time tools
-  - `@yama/tool-docs-generator` - OpenAPI docs generator
-  - `@yama/sdk` - TypeScript SDK generator
-  - `@yama/tool-sdk-js` - JavaScript SDK generator (future)
+- **`@betagors/yama-*`** - Build-time tools
+  - `@betagors/yama-docs-generator` - OpenAPI docs generator
+  - `@betagors/yama-sdk` - TypeScript SDK generator
+  - `@betagors/yama-sdk-js` - JavaScript SDK generator (future)
 
 ### CLI
-- **`@yama/cli`** - Global CLI tool
+- **`@betagors/yama-cli`** - Global CLI tool
 
 ## Plugin Package.json Metadata
 
@@ -39,7 +40,7 @@ All plugins must include `yama` metadata in their `package.json`:
 
 ```json
 {
-  "name": "@yama/postgres",
+  "name": "@betagors/yama-postgres",
   "version": "0.0.1",
   "yama": {
     "pluginApi": "1.0",
@@ -84,8 +85,8 @@ export interface YamaPlugin {
 
 The following packages may be renamed in the future to follow the new convention:
 
-- `@yama/postgres` → `@yama/postgres` (already renamed)
-- `@yama/http-fastify` → `@yama/plugin-http-fastify`
+- `@betagors/yama-postgres` → `@betagors/yama-postgres` (already renamed)
+- `@betagors/yama-http-fastify` - Fastify HTTP server adapter
 
 These changes are optional and backward compatibility will be maintained.
 

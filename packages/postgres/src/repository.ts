@@ -1,4 +1,4 @@
-import type { YamaEntities, EntityDefinition, EntityField } from "@yama/core";
+import type { YamaEntities, EntityDefinition, EntityField } from "@betagors/yama-core";
 
 /**
  * Convert snake_case to camelCase
@@ -357,7 +357,7 @@ function generateRepositoryClass(
     }`
     : '';
   
-  return `import { postgresqlAdapter } from "@yama/postgres";
+  return `import { postgresqlAdapter } from "@betagors/yama-postgres";
 import { ${tableName} } from "./schema.ts";
 import { ${mapperToEntity}, ${mapperFromEntity} } from "./mapper.ts";
 import { eq, and, ilike, gt, lt, desc, asc } from "drizzle-orm";

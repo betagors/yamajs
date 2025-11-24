@@ -2,14 +2,14 @@ import { existsSync, readdirSync, readFileSync } from "fs";
 import { join } from "path";
 import { findYamaConfig } from "../utils/project-detection.ts";
 import { readYamaConfig, getConfigDir } from "../utils/file-utils.ts";
-import { loadEnvFile, resolveEnvVars } from "@yama/core";
-import type { DatabaseConfig } from "@yama/core";
+import { loadEnvFile, resolveEnvVars } from "@betagors/yama-core";
+import type { DatabaseConfig } from "@betagors/yama-core";
 import {
   deserializeMigration,
   validateMigration,
   entitiesToModel,
   getCurrentModelHashFromDB,
-} from "@yama/core";
+} from "@betagors/yama-core";
 import {
   success,
   error,

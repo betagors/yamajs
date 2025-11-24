@@ -5,7 +5,7 @@ import type {
   HttpRequest,
   HttpResponse,
   RouteHandler,
-} from "@yama/core";
+} from "@betagors/yama-core";
 
 /**
  * Fastify HTTP server adapter

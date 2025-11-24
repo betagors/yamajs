@@ -1,18 +1,18 @@
 import { existsSync } from "fs";
 import { findYamaConfig } from "../utils/project-detection.ts";
 import { readYamaConfig, getConfigDir } from "../utils/file-utils.ts";
-import { loadEnvFile, resolveEnvVars } from "@yama/core";
-import type { DatabaseConfig } from "@yama/core";
+import { loadEnvFile, resolveEnvVars } from "@betagors/yama-core";
+import type { DatabaseConfig } from "@betagors/yama-core";
 import {
   entitiesToModel,
   computeModelHash,
   computeDiff,
   diffToSteps,
   getCurrentModelHashFromDB,
-} from "@yama/core";
+} from "@betagors/yama-core";
 import { getDatabasePlugin } from "../utils/db-plugin.ts";
 import { colors, success, error, printBox, printTable } from "../utils/cli-utils.ts";
-import type { YamaEntities } from "@yama/core";
+import type { YamaEntities } from "@betagors/yama-core";
 
 interface SchemaCheckOptions {
   config?: string;

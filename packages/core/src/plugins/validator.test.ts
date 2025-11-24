@@ -41,7 +41,7 @@ describe("Plugin Validator", () => {
   describe("validateYamaPlugin", () => {
     it("should validate correct plugin", () => {
       const plugin: YamaPlugin = {
-        name: "@yama/plugin-postgres",
+        name: "@betagors/yama-plugin-postgres",
         version: "1.0.0",
         category: "database",
         init: async () => ({ adapter: {} }),
@@ -53,7 +53,7 @@ describe("Plugin Validator", () => {
 
     it("should validate plugin without optional fields", () => {
       const plugin: YamaPlugin = {
-        name: "@yama/plugin-test",
+        name: "@betagors/yama-plugin-test",
         init: async () => ({}),
       };
 
@@ -63,7 +63,7 @@ describe("Plugin Validator", () => {
 
     it("should reject plugin without init method", () => {
       const plugin = {
-        name: "@yama/plugin-test",
+        name: "@betagors/yama-plugin-test",
       } as YamaPlugin;
 
       const result = validateYamaPlugin(plugin);
@@ -91,7 +91,7 @@ describe("Plugin Validator", () => {
   describe("validateServicePlugin (backward compatibility)", () => {
     it("should validate correct plugin", () => {
       const plugin: ServicePlugin = {
-        name: "@yama/service-stripe",
+        name: "@betagors/yama-service-stripe",
         version: "1.0.0",
         manifest: {
           pluginApi: "1.0",
@@ -108,7 +108,7 @@ describe("Plugin Validator", () => {
 
     it("should reject plugin without init method", () => {
       const plugin = {
-        name: "@yama/service-stripe",
+        name: "@betagors/yama-service-stripe",
         version: "1.0.0",
         manifest: {
           pluginApi: "1.0",

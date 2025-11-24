@@ -1,7 +1,7 @@
 {
   "yaml": {
     "schemas": {
-      "node_modules/@yama/cli/dist/cli/src/yama.schema.json": [
+      "node_modules/@betagors/yama-cli/dist/cli/src/yama.schema.json": [
         "yama.yaml",
         "yama.yml",
         "*.yama.yaml",

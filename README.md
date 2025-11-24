@@ -28,7 +28,7 @@ This approach dramatically reduces boilerplate, prevents AI hallucinations, and 
 ### Installation
 
 ```bash
-npm install -g @yama/cli
+npm install -g @betagors/yama-cli
 ```
 
 ### Create a New Project
@@ -88,7 +88,7 @@ endpoints:
 
 ```typescript
 // src/handlers/listTodos.ts
-import { HandlerContext } from '@yama/core';
+import { HandlerContext } from '@betagors/yama-core';
 
 export async function listTodos(context: HandlerContext) {
   // Your business logic here

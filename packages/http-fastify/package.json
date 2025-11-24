@@ -1,9 +1,30 @@
 {
-  "name": "@yama/http-fastify",
-  "version": "0.0.1",
+  "name": "@betagors/yama-http-fastify",
+  "version": "0.1.0-alpha.0",
   "type": "module",
+  "description": "Yama Fastify HTTP server adapter",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/betagors/yama.git",
+    "directory": "packages/http-fastify"
+  },
+  "keywords": [
+    "yama",
+    "fastify",
+    "http",
+    "server",
+    "adapter",
+    "plugin"
+  ],
+  "license": "MPL-2.0",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "dev": "tsc -w -p tsconfig.build.json",
@@ -14,13 +35,16 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
-    "@yama/core": "workspace:*",
+    "@betagors/yama-core": "workspace:*",
     "fastify": "^5.0.0"
   },
   "devDependencies": {
     "rimraf": "^5.0.0",
     "@types/node": "^20.0.0",
     "vitest": "^1.0.0"
+  },
+  "engines": {
+    "node": ">=18"
   }
 }
 

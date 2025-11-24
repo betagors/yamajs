@@ -1,6 +1,6 @@
 import postgres from "postgres";
 import { drizzle as drizzlePostgres } from "drizzle-orm/postgres-js";
-import type { DatabaseConfig } from "@yama/core";
+import type { DatabaseConfig } from "@betagors/yama-core";
 
 type DrizzlePostgres = ReturnType<typeof drizzlePostgres>;
 

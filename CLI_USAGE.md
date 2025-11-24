@@ -51,7 +51,7 @@ node ../../packages/cli/dist/cli/src/cli.js <command>
 
 Once published, you can install globally:
 ```bash
-npm install -g @yama/cli
+npm install -g @betagors/yama-cli
 yama <command>
 ```
 
