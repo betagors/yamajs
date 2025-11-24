@@ -1,9 +1,13 @@
 {
-  "name": "@yama/sdk",
-  "version": "0.0.1",
+  "name": "@betagors/yama-sdk",
+  "version": "0.1.0-alpha.0",
   "type": "module",
+  "description": "Yama TypeScript SDK generator (internal tool)",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "dev": "tsc -w -p tsconfig.build.json",
@@ -15,6 +19,9 @@
   "devDependencies": {
     "rimraf": "^5.0.0",
     "@types/node": "^20.0.0"
+  },
+  "engines": {
+    "node": ">=18"
   }
 }
 

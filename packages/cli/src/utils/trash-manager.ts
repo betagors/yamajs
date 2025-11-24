@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync, renameSync, unlinkSync, statSync } from "fs";
 import { join, basename } from "path";
-import type { TrashEntry } from "@yama/core";
-import { calculateExpirationDate, isExpired, DEFAULT_RETENTION_DAYS } from "@yama/core";
+import type { TrashEntry } from "@betagors/yama-core";
+import { calculateExpirationDate, isExpired, DEFAULT_RETENTION_DAYS } from "@betagors/yama-core";
 
 /**
  * Trash manager for migrations and data snapshots

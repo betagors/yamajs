@@ -111,13 +111,13 @@ export async function setupCommand(options: SetupOptions): Promise<void> {
     const deps = (pkg.dependencies || {}) as Record<string, string>;
     const devDeps = (pkg.devDependencies || {}) as Record<string, string>;
     
-    const hasRuntime = "@yama/runtime-node" in deps || "@yama/runtime-node" in devDeps;
+    const hasRuntime = "@betagors/yama-runtime-node" in deps || "@betagors/yama-runtime-node" in devDeps;
     
     if (!hasRuntime) {
-      console.log("\n⚠️  @yama/runtime-node not found in dependencies.");
-      console.log("   Install it with: npm install @yama/runtime-node");
+      console.log("\n⚠️  @betagors/yama-runtime-node not found in dependencies.");
+      console.log("   Install it with: npm install @betagors/yama-runtime-node");
     } else {
-      console.log("✅ Found @yama/runtime-node");
+      console.log("✅ Found @betagors/yama-runtime-node");
     }
 
     // Setup editor configuration
@@ -142,7 +142,7 @@ export async function setupCommand(options: SetupOptions): Promise<void> {
         console.log("   - *.yama.yml");
       } catch (error) {
         console.warn("⚠️  Failed to setup editor configuration:", error instanceof Error ? error.message : String(error));
-        console.log("   You can manually configure it - see docs in node_modules/@yama/cli/src/editor-configs/");
+        console.log("   You can manually configure it - see docs in node_modules/@betagors/yama-cli/src/editor-configs/");
       }
     }
 

@@ -50,10 +50,10 @@ export async function initCommand(options: InitOptions): Promise<void> {
       name: "database",
       message: "Which database would you like to use?",
       choices: [
-        { name: "PostgreSQL", value: "@yama/postgres" },
+        { name: "PostgreSQL", value: "@betagors/yama-postgres" },
         { name: "None (add later)", value: null },
       ],
-      default: "@yama/postgres",
+      default: "@betagors/yama-postgres",
     },
   ]);
 
@@ -73,7 +73,7 @@ export async function initCommand(options: InitOptions): Promise<void> {
 
   // Build database config if database plugin selected
   let databaseConfig = "";
-  if (pluginAnswers.database === "@yama/postgres") {
+  if (pluginAnswers.database === "@betagors/yama-postgres") {
     databaseConfig = `
 database:
   dialect: postgresql
@@ -134,8 +134,8 @@ ${yamlContent}`;
         let pluginPath: string | null = null;
         if (isInWorkspace && workspaceRoot) {
           const possiblePaths = [
-            join(workspaceRoot, "packages", plugin.replace("@yama/", "")),
-            join(workspaceRoot, plugin.replace("@yama/", "")),
+            join(workspaceRoot, "packages", plugin.replace("@betagors/yama-", "")),
+            join(workspaceRoot, plugin.replace("@betagors/yama-", "")),
           ];
           for (const path of possiblePaths) {
             if (existsSync(join(path, "package.json"))) {
@@ -164,7 +164,7 @@ ${yamlContent}`;
           } catch (error) {
             // If npm install fails and we're in workspace, try workspace path
             if (isInWorkspace && workspaceRoot) {
-              const fallbackPath = join(workspaceRoot, "packages", plugin.replace("@yama/", ""));
+              const fallbackPath = join(workspaceRoot, "packages", plugin.replace("@betagors/yama-", ""));
               if (existsSync(join(fallbackPath, "package.json"))) {
                 // In pnpm workspace, just use package name
                 if (hasPnpm) {
@@ -205,7 +205,7 @@ ${yamlContent}`;
   // Create example handler
   const exampleHandlerPath = join(handlersDir, "getExamples.ts");
   if (!existsSync(exampleHandlerPath)) {
-    const handlerContent = `import type { HttpRequest, HttpResponse } from "@yama/core";
+    const handlerContent = `import type { HttpRequest, HttpResponse } from "@betagors/yama-core";
 import type { Example } from "@gen/types";
 
 export async function getExamples(
@@ -357,7 +357,7 @@ export async function getExamples(
 
   console.log("\n✨ Yama project initialized!");
   console.log("\nNext steps:");
-  console.log("  1. Install dependencies: npm install @yama/runtime-node");
+  console.log("  1. Install dependencies: npm install @betagors/yama-runtime-node");
   console.log("  2. Start dev server: yama dev");
   console.log("  3. Generate types: yama generate");
 }

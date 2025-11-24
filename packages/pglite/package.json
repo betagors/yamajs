@@ -1,9 +1,29 @@
 {
-  "name": "@yama/pglite",
-  "version": "0.0.1",
+  "name": "@betagors/yama-pglite",
+  "version": "0.1.0-alpha.0",
   "type": "module",
+  "description": "Yama PGLite database adapter",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/betagors/yama.git",
+    "directory": "packages/pglite"
+  },
+  "keywords": [
+    "yama",
+    "pglite",
+    "database",
+    "adapter",
+    "plugin"
+  ],
+  "license": "MPL-2.0",
   "yama": {
     "pluginApi": "1.0",
     "yamaCore": "^0.1.0",
@@ -20,7 +40,7 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
-    "@yama/core": "workspace:*",
+    "@betagors/yama-core": "workspace:*",
     "drizzle-orm": "^0.30.0",
     "@electric-sql/pglite": "^0.2.0"
   },
@@ -29,6 +49,9 @@
     "@types/node": "^20.0.0",
     "vitest": "^1.0.0",
     "esbuild": "^0.27.0"
+  },
+  "engines": {
+    "node": ">=18"
   }
 }
 

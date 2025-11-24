@@ -13,6 +13,11 @@ const navbar = (
     logo={<b>Yama JS</b>}
   />
 );
+const banner = (
+  <Banner storageKey="yama-alpha-banner" dismissible={false}>
+    🚀 <strong>Alpha Release</strong> - Yama JS is currently in alpha. APIs may change without notice.
+  </Banner>
+);
 const footer = <Footer>MIT {new Date().getFullYear()} © Yama JS.</Footer>;
 
 export default async function RootLayout({ children }) {
@@ -28,6 +33,7 @@ export default async function RootLayout({ children }) {
       <body>
         <Layout
           navbar={navbar}
+          banner={banner}
           pageMap={await getPageMap()}
           docsRepositoryBase="https://github.com/betagors/yama/tree/main/apps/docs"
           footer={footer}

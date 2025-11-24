@@ -1,9 +1,29 @@
 {
-  "name": "@yama/runtime-node",
-  "version": "0.0.1",
+  "name": "@betagors/yama-runtime-node",
+  "version": "0.1.0-alpha.0",
   "type": "module",
+  "description": "Yama Node.js runtime adapter",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/betagors/yama.git",
+    "directory": "packages/runtime-node"
+  },
+  "keywords": [
+    "yama",
+    "runtime",
+    "node",
+    "adapter",
+    "backend"
+  ],
+  "license": "MPL-2.0",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "dev": "tsc -w -p tsconfig.build.json",
@@ -14,10 +34,10 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
-    "@yama/core": "workspace:*",
-    "@yama/docs-generator": "workspace:*",
-    "@yama/postgres": "workspace:*",
-    "@yama/http-fastify": "workspace:*",
+    "@betagors/yama-core": "workspace:*",
+    "@betagors/yama-docs-generator": "workspace:*",
+    "@betagors/yama-postgres": "workspace:*",
+    "@betagors/yama-http-fastify": "workspace:*",
     "js-yaml": "^4.1.1",
     "dotenv": "^16.4.5"
   },
@@ -26,6 +46,9 @@
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^20.0.0",
     "vitest": "^1.0.0"
+  },
+  "engines": {
+    "node": ">=18"
   }
 }
 

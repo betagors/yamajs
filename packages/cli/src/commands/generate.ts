@@ -1,7 +1,7 @@
 import { existsSync, writeFileSync, readFileSync } from "fs";
 import { join, dirname, relative } from "path";
-import { generateTypes, type YamaEntities } from "@yama/core";
-import { generateSDK } from "@yama/sdk";
+import { generateTypes, type YamaEntities } from "@betagors/yama-core";
+import { generateSDK } from "@betagors/yama-sdk";
 import { getDatabasePlugin } from "../utils/db-plugin.ts";
 import { readYamaConfig, ensureDir, getConfigDir } from "../utils/file-utils.ts";
 import { findYamaConfig, detectProjectType, inferOutputPath } from "../utils/project-detection.ts";

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { getTodoById } from "./getTodoById.ts";
-import type { HttpRequest, HttpResponse } from "@yama/core";
+import type { HttpRequest, HttpResponse } from "@betagors/yama-core";
 import { todoRepository } from "../generated/db/repository.ts";
 
 // Mock the repository

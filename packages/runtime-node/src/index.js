@@ -1,5 +1,5 @@
 import Fastify from "fastify";
-import { helloYamaCore, createModelValidator, fieldToJsonSchema } from "@yama/core";
+import { helloYamaCore, createModelValidator, fieldToJsonSchema } from "@betagors/yama-core";
 import yaml from "js-yaml";
 import { readFileSync, readdirSync, existsSync } from "fs";
 import { join, dirname, extname, resolve } from "path";

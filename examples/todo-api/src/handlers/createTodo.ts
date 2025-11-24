@@ -1,4 +1,4 @@
-import type { HttpRequest, HttpResponse } from "@yama/core";
+import type { HttpRequest, HttpResponse } from "@betagors/yama-core";
 import { todoRepository } from "@yama/db";
 import type { CreateTodoInput } from "@yama/types";
 

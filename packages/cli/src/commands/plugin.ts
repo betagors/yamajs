@@ -1,6 +1,6 @@
 import { execSync } from "child_process";
 import { readPackageJson } from "../utils/file-utils.ts";
-import { loadServicePlugin, getServicePlugin } from "@yama/core";
+import { loadServicePlugin, getServicePlugin } from "@betagors/yama-core";
 
 interface PluginOptions {
   package?: string;
@@ -121,7 +121,7 @@ export async function pluginValidateCommand(): Promise<void> {
         // Check if it's a Yama plugin that failed validation
         try {
           // Try to load manifest to see if it's a Yama plugin
-          const { loadPluginFromPackage } = await import("@yama/core");
+          const { loadPluginFromPackage } = await import("@betagors/yama-core");
           await loadPluginFromPackage(packageName);
           // If we get here, it's a Yama plugin but failed validation
           console.log(`❌ ${packageName} - Invalid: ${error instanceof Error ? error.message : String(error)}`);

@@ -3,7 +3,7 @@
  * Generates OpenAPI 3.0 specifications and other documentation formats from yama.yaml
  */
 
-import { schemaToJsonSchema, type YamaSchemas, type SchemaDefinition, type YamaEntities, type DatabaseConfig, entitiesToSchemas, mergeSchemas } from "@yama/core";
+import { schemaToJsonSchema, type YamaSchemas, type SchemaDefinition, type YamaEntities, type DatabaseConfig, entitiesToSchemas, mergeSchemas } from "@betagors/yama-core";
 
 export interface EndpointDefinition {
   path: string;

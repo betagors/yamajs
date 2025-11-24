@@ -7,7 +7,7 @@ This directory contains editor configuration files to enable autocomplete and va
 **The easiest way** - Add a schema reference comment at the top of any Yama YAML file:
 
 ```yaml
-# yaml-language-server: $schema=node_modules/@yama/cli/dist/cli/src/yama.schema.json
+# yaml-language-server: $schema=node_modules/@betagors/yama-cli/dist/cli/src/yama.schema.json
 name: my-app
 version: 1.0.0
 # ... rest of config
@@ -38,7 +38,7 @@ Add this to your workspace `.vscode/settings.json`:
 ```json
 {
   "yaml.schemas": {
-    "node_modules/@yama/cli/dist/cli/src/yama.schema.json": [
+    "node_modules/@betagors/yama-cli/dist/cli/src/yama.schema.json": [
       "yama.yaml",
       "yama.yml",
       "*.yama.yaml",
@@ -65,7 +65,7 @@ Add to your `coc-settings.json` (in project root or `~/.config/nvim/coc-settings
 ```json
 {
   "yaml.schemas": {
-    "node_modules/@yama/cli/dist/cli/src/yama.schema.json": [
+    "node_modules/@betagors/yama-cli/dist/cli/src/yama.schema.json": [
       "yama.yaml",
       "yama.yml",
       "*.yama.yaml",
@@ -84,7 +84,7 @@ require('lspconfig').yamlls.setup({
   settings = {
     yaml = {
       schemas = {
-        ["node_modules/@yama/cli/dist/cli/src/yama.schema.json"] = {
+        ["node_modules/@betagors/yama-cli/dist/cli/src/yama.schema.json"] = {
           "yama.yaml",
           "yama.yml",
           "*.yama.yaml",
@@ -102,7 +102,7 @@ Add to your `.dir-locals.el` or `lsp-yaml` configuration:
 
 ```elisp
 (setq lsp-yaml-schemas
-      '(("node_modules/@yama/cli/dist/cli/src/yama.schema.json"
+      '(("node_modules/@betagors/yama-cli/dist/cli/src/yama.schema.json"
          "yama.yaml"
          "yama.yml"
          "*.yama.yaml"
@@ -119,7 +119,7 @@ Add to your LSP settings:
     "yamlls": {
       "settings": {
         "yaml.schemas": {
-          "node_modules/@yama/cli/dist/cli/src/yama.schema.json": [
+          "node_modules/@betagors/yama-cli/dist/cli/src/yama.schema.json": [
             "yama.yaml",
             "yama.yml",
             "*.yama.yaml",
@@ -140,7 +140,7 @@ Alternatively, create a `.yamlls-config.json` file in your project root (works w
 {
   "yaml": {
     "schemas": {
-      "node_modules/@yama/cli/dist/cli/src/yama.schema.json": [
+      "node_modules/@betagors/yama-cli/dist/cli/src/yama.schema.json": [
         "yama.yaml",
         "yama.yml",
         "*.yama.yaml",

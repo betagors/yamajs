@@ -3,8 +3,8 @@ import { drizzle as drizzlePostgres } from "drizzle-orm/postgres-js";
 import type {
   DatabaseAdapter,
   DatabaseConnection,
-} from "@yama/core";
-import type { DatabaseConfig, YamaEntities } from "@yama/core";
+} from "@betagors/yama-core";
+import type { DatabaseConfig, YamaEntities } from "@betagors/yama-core";
 import { generateDrizzleSchema } from "./drizzle-schema.ts";
 import { generateMigrationSQL } from "./migrations.ts";
 

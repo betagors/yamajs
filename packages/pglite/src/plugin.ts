@@ -1,5 +1,5 @@
-import type { YamaPlugin } from "@yama/core";
-import { registerDatabaseAdapter } from "@yama/core";
+import type { YamaPlugin } from "@betagors/yama-core";
+import { registerDatabaseAdapter } from "@betagors/yama-core";
 import { pgliteAdapter } from "./adapter.ts";
 import {
   initDatabase,
@@ -29,7 +29,7 @@ import {
  * PGlite database plugin
  */
 const plugin: YamaPlugin = {
-  name: "@yama/pglite",
+  name: "@betagors/yama-pglite",
   category: "database",
   pluginApi: "1.0",
   yamaCore: "^0.1.0",

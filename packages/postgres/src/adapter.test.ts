@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { postgresqlAdapter } from "./adapter.ts";
-import type { DatabaseConfig } from "@yama/core";
+import type { DatabaseConfig } from "@betagors/yama-core";
 
 describe("PostgreSQL Adapter", () => {
   const mockConfig: DatabaseConfig = {

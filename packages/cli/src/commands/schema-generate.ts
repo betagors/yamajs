@@ -2,8 +2,8 @@ import { existsSync, writeFileSync, mkdirSync, readdirSync } from "fs";
 import { join } from "path";
 import { findYamaConfig } from "../utils/project-detection.ts";
 import { readYamaConfig, getConfigDir } from "../utils/file-utils.ts";
-import { loadEnvFile, resolveEnvVars } from "@yama/core";
-import type { DatabaseConfig } from "@yama/core";
+import { loadEnvFile, resolveEnvVars } from "@betagors/yama-core";
+import type { DatabaseConfig } from "@betagors/yama-core";
 import {
   entitiesToModel,
   computeModelHash,
@@ -17,7 +17,7 @@ import {
   type ColumnModel,
   type IndexModel,
   type YamaEntities,
-} from "@yama/core";
+} from "@betagors/yama-core";
 import { success, error, info, warning, printBox, printHints } from "../utils/cli-utils.ts";
 import { promptMigrationName, confirm, hasDestructiveOperation } from "../utils/interactive.ts";
 import { generateMigrationNameFromBranch } from "../utils/git-utils.ts";

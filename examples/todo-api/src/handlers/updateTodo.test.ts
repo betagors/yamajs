@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { updateTodo } from "./updateTodo.ts";
-import type { HttpRequest, HttpResponse } from "@yama/core";
+import type { HttpRequest, HttpResponse } from "@betagors/yama-core";
 import type { UpdateTodoInput } from "../types.ts";
 import { todoRepository } from "../generated/db/repository.ts";
 

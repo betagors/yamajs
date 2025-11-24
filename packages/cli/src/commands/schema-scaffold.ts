@@ -3,7 +3,7 @@ import { join } from "path";
 import { findYamaConfig } from "../utils/project-detection.ts";
 import { readYamaConfig, getConfigDir } from "../utils/file-utils.ts";
 import { success, error, info } from "../utils/cli-utils.ts";
-import type { YamaEntities } from "@yama/core";
+import type { YamaEntities } from "@betagors/yama-core";
 
 interface SchemaScaffoldOptions {
   config?: string;

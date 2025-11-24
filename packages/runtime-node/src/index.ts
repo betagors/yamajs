@@ -23,9 +23,9 @@ import {
   type RouteHandler,
   loadPlugin,
   type YamaPlugin,
-} from "@yama/core";
-import { generateOpenAPI } from "@yama/docs-generator";
-import { createFastifyAdapter } from "@yama/http-fastify";
+} from "@betagors/yama-core";
+import { generateOpenAPI } from "@betagors/yama-docs-generator";
+import { createFastifyAdapter } from "@betagors/yama-http-fastify";
 import yaml from "js-yaml";
 import { readFileSync, readdirSync, existsSync, writeFileSync, mkdirSync } from "fs";
 import { join, dirname, extname, resolve, relative } from "path";
@@ -61,7 +61,7 @@ interface YamaConfig {
 type HandlerFunction = RouteHandler;
 
 /**
- * Resolve @yama/* and @gen/* imports using package.json exports
+ * Resolve @betagors/yama-* and @gen/* imports using package.json exports
  */
 function resolveYamaImports(handlerContent: string, projectRoot: string, fromPath: string): string {
   try {
@@ -73,10 +73,10 @@ function resolveYamaImports(handlerContent: string, projectRoot: string, fromPat
     const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf-8"));
     const exports = packageJson.exports || {};
 
-    // Replace @yama/* and @gen/* imports with resolved paths
+    // Replace @betagors/yama-* and @gen/* imports with resolved paths
     let resolvedContent = handlerContent;
     for (const [exportPath, exportValue] of Object.entries(exports)) {
-      if (exportPath.startsWith("@yama/") || exportPath.startsWith("@gen/")) {
+      if (exportPath.startsWith("@betagors/yama-") || exportPath.startsWith("@gen/")) {
         let resolvedPath: string;
         if (typeof exportValue === "string") {
           resolvedPath = exportValue;
@@ -154,7 +154,7 @@ async function loadHandlers(handlersDir: string, projectRoot?: string): Promise<
         let handlerContent = readFileSync(handlerPath, "utf-8");
         let importPath = handlerPath;
         
-        // Resolve @yama/* and @gen/* imports if package.json exists
+        // Resolve @betagors/yama-* and @gen/* imports if package.json exists
         if (existsSync(packageJsonPath)) {
           // Determine where the file will be located (temp file or original)
           const tempDir = join(tmpdir(), "yama-handlers");

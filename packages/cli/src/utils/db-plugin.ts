@@ -1,4 +1,4 @@
-import { getPluginByCategory, loadPlugin } from "@yama/core";
+import { getPluginByCategory, loadPlugin } from "@betagors/yama-core";
 import { getConfigDir } from "./file-utils.ts";
 
 /**
@@ -46,7 +46,7 @@ export async function getDatabasePlugin(
   
   // If not found, try to load common database plugins
   if (!dbPlugin) {
-    const commonPlugins = ["@yama/pglite", "@yama/postgres"];
+    const commonPlugins = ["@betagors/yama-pglite", "@betagors/yama-postgres"];
     for (const pluginName of commonPlugins) {
       try {
         dbPlugin = await loadPlugin(pluginName, projectDir);
@@ -60,7 +60,7 @@ export async function getDatabasePlugin(
   }
   
   if (!dbPlugin) {
-    throw new Error("No database plugin found. Please install @yama/pglite or @yama/postgres");
+    throw new Error("No database plugin found. Please install @betagors/yama-pglite or @betagors/yama-postgres");
   }
   
   // Initialize plugin and get API

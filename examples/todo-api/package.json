@@ -14,8 +14,8 @@
     "yama": "node ../../packages/cli/dist/cli/src/cli.js"
   },
   "dependencies": {
-    "@yama/runtime-node": "workspace:*",
-    "@yama/core": "workspace:*"
+    "@betagors/yama-runtime-node": "workspace:*",
+    "@betagors/yama-core": "workspace:*"
   },
   "devDependencies": {
     "tsx": "^4.7.0",

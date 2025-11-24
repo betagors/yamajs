@@ -19,10 +19,14 @@
     "yama:dev": "yama dev",
     "yama:generate": "yama generate",
     "yama:validate": "yama validate",
-    "dev:docs": "turbo run dev --filter=@yama/docs",
-    "build:docs": "turbo run build --filter=@yama/docs"
+    "dev:docs": "turbo run dev --filter=@betagors/yama-docs",
+    "build:docs": "turbo run build --filter=@betagors/yama-docs",
+    "changeset": "changeset",
+    "changeset:version": "changeset version",
+    "changeset:publish": "changeset publish"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.27.1",
     "@types/node": "^20.0.0",
     "eslint": "^9.0.0",
     "prettier": "^3.0.0",
