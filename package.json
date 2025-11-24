@@ -18,7 +18,9 @@
     "yama": "node packages/cli/dist/cli/src/cli.js",
     "yama:dev": "yama dev",
     "yama:generate": "yama generate",
-    "yama:validate": "yama validate"
+    "yama:validate": "yama validate",
+    "dev:docs": "turbo run dev --filter=@yama/docs",
+    "build:docs": "turbo run build --filter=@yama/docs"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
