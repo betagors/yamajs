@@ -100,6 +100,16 @@ pnpm changeset publish --tag alpha
 
 ## Troubleshooting
 
+### "404 Not Found" when publishing scoped packages
+
+This error typically means the npm organization doesn't exist or the token doesn't have access:
+
+- **Create the organization first:** Go to https://www.npmjs.com/org/create and create an organization named `betagors`
+- **Verify organization exists:** Visit https://www.npmjs.com/org/betagors to confirm it exists
+- **Check token permissions:** Ensure the automation token was created from the organization's token page (https://www.npmjs.com/settings/betagors/tokens), not your personal account
+- **Verify token scope:** The token must have publish permissions for the `@betagors` scope
+- **Ensure publishConfig is set:** All packages must have `"publishConfig": { "access": "public" }` in their `package.json`
+
 ### "You do not have permission to publish"
 
 - Ensure you're a member of the `@betagors` organization
