@@ -1,13 +1,28 @@
 import nextra from 'nextra';
+import { fileURLToPath } from 'url';
+import { dirname, resolve } from 'path';
 
-// Set up Nextra with its configuration
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
 const withNextra = nextra({
-  theme: 'nextra-theme-docs',
-  themeConfig: './theme.config.tsx',
+  // Nextra 4.0 configuration
+  // Theme configuration is now done in layout.jsx
 });
 
-// Export the final Next.js config with Nextra included
 export default withNextra({
-  // Add regular Next.js options here if needed
+  // Next.js configuration
+  experimental: {
+    mdxRs: false,
+  },
+  // Configure MDX import source
+  pageExtensions: ['js', 'jsx', 'mdx', 'ts', 'tsx'],
+  webpack: (config) => {
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      'next-mdx-import-source-file': resolve(__dirname, 'mdx-components.tsx'),
+    };
+    return config;
+  },
 });
 
