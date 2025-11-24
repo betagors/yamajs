@@ -4,10 +4,10 @@ export {
   getDatabase,
   getSQL,
   closeDatabase,
-} from "./client.ts";
+} from "./client";
 
 // Export generators
-export { generateDrizzleSchema } from "./drizzle-schema.ts";
+export { generateDrizzleSchema } from "./drizzle-schema";
 export {
   generateMigrationSQL,
   generateMigrationFile,
@@ -15,12 +15,12 @@ export {
   computeMigrationChecksum,
   getMigrationTableSQL,
   getMigrationRunsTableSQL,
-} from "./migrations.ts";
-export { generateMapper } from "./mapper.ts";
-export { generateRepository } from "./repository.ts";
+} from "./migrations";
+export { generateMapper } from "./mapper";
+export { generateRepository } from "./repository";
 
 // Export adapter
-export { postgresqlAdapter } from "./adapter.ts";
+export { postgresqlAdapter } from "./adapter";
 
 // Export snapshot functions
 export {
@@ -28,9 +28,9 @@ export {
   restoreFromSnapshot,
   deleteSnapshot,
   listSnapshots,
-} from "./snapshots.ts";
+} from "./snapshots";
 
 // Export plugin (default export)
-export { default as plugin } from "./plugin.ts";
-export { default } from "./plugin.ts";
+export { default as plugin } from "./plugin";
+export { default } from "./plugin";
 

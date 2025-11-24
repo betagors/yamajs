@@ -1,13 +1,13 @@
 import type { YamaPlugin } from "@betagors/yama-core";
 import { registerDatabaseAdapter } from "@betagors/yama-core";
-import { postgresqlAdapter } from "./adapter.ts";
+import { postgresqlAdapter } from "./adapter";
 import {
   initDatabase,
   getDatabase,
   getSQL,
   closeDatabase,
-} from "./client.ts";
-import { generateDrizzleSchema } from "./drizzle-schema.ts";
+} from "./client";
+import { generateDrizzleSchema } from "./drizzle-schema";
 import {
   generateMigrationSQL,
   generateMigrationFile,
@@ -15,15 +15,15 @@ import {
   computeMigrationChecksum,
   getMigrationTableSQL,
   getMigrationRunsTableSQL,
-} from "./migrations.ts";
-import { generateMapper } from "./mapper.ts";
-import { generateRepository } from "./repository.ts";
+} from "./migrations";
+import { generateMapper } from "./mapper";
+import { generateRepository } from "./repository";
 import {
   createDataSnapshot,
   restoreFromSnapshot,
   deleteSnapshot,
   listSnapshots,
-} from "./snapshots.ts";
+} from "./snapshots";
 
 /**
  * PostgreSQL database plugin

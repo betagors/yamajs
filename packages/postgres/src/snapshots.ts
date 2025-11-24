@@ -1,5 +1,5 @@
 import type { DatabaseConfig } from "@betagors/yama-core";
-import { initDatabase, getSQL, closeDatabase } from "./client.ts";
+import { initDatabase, getSQL, closeDatabase } from "./client";
 
 /**
  * Create a data snapshot before destructive operations

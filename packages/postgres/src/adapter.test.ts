@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { postgresqlAdapter } from "./adapter.ts";
+import { postgresqlAdapter } from "./adapter";
 import type { DatabaseConfig } from "@betagors/yama-core";
 
 describe("PostgreSQL Adapter", () => {
