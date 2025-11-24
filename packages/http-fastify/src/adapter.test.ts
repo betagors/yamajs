@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { createFastifyAdapter } from "./adapter.ts";
+import { createFastifyAdapter } from "./adapter";
 import type { HttpRequest, HttpResponse, RouteHandler } from "@betagors/yama-core";
 
 describe("Fastify Adapter", () => {

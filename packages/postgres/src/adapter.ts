@@ -5,8 +5,8 @@ import type {
   DatabaseConnection,
 } from "@betagors/yama-core";
 import type { DatabaseConfig, YamaEntities } from "@betagors/yama-core";
-import { generateDrizzleSchema } from "./drizzle-schema.ts";
-import { generateMigrationSQL } from "./migrations.ts";
+import { generateDrizzleSchema } from "./drizzle-schema";
+import { generateMigrationSQL } from "./migrations";
 
 type DrizzlePostgres = ReturnType<typeof drizzlePostgres>;
 

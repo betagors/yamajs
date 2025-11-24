@@ -336,8 +336,8 @@ function generateRepositoryClass(
   const primaryDbColumn = primaryField ? getDbColumnName(primaryField[0], primaryField[1]) : 'id';
   
   // Check if we should generate ID: field exists and is string/uuid type
-  const idField = primaryField || entityDef.fields['id'];
-  const shouldGenerateId = idField && (idField.type === 'string' || idField.type === 'uuid') && !idField.generated;
+  const idField = primaryField ? primaryField[1] : entityDef.fields['id'];
+  const shouldGenerateId = idField && typeof idField === 'object' && !Array.isArray(idField) && (idField.type === 'string' || idField.type === 'uuid') && !idField.generated;
   
   const explicitMethods = generateExplicitMethods(
     entityName,
