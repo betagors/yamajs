@@ -44,25 +44,25 @@ export async function schemaStatusCommand(options: SchemaStatusOptions): Promise
     const migrationFiles = readdirSync(migrationsDir)
       .filter((f) => f.endsWith(".yaml") || f.endsWith(".sql"))
       .map((f) => {
-        // Extract base name (without extension)
-        const match = f.match(/^(\d+)_(.+)\.(yaml|sql)$/);
+        // Extract timestamp and name (format: YYYYMMDDHHmmss_name.yaml)
+        const match = f.match(/^(\d{14})_(.+)\.(yaml|sql)$/);
         if (match) {
-          return { number: parseInt(match[1], 10), name: match[2], file: f };
+          return { timestamp: match[1], name: match[2], file: f };
         }
         return null;
       })
-      .filter((f): f is { number: number; name: string; file: string } => f !== null)
-      .sort((a, b) => a.number - b.number);
+      .filter((f): f is { timestamp: string; name: string; file: string } => f !== null)
+      .sort((a, b) => a.timestamp.localeCompare(b.timestamp));
 
     // Remove duplicates (keep YAML files, ignore SQL files if YAML exists)
-    const uniqueMigrations = new Map<number, { number: number; name: string; file: string }>();
+    const uniqueMigrations = new Map<string, { timestamp: string; name: string; file: string }>();
     for (const migration of migrationFiles) {
-      if (!uniqueMigrations.has(migration.number) || migration.file.endsWith(".yaml")) {
-        uniqueMigrations.set(migration.number, migration);
+      if (!uniqueMigrations.has(migration.timestamp) || migration.file.endsWith(".yaml")) {
+        uniqueMigrations.set(migration.timestamp, migration);
       }
     }
     const sortedMigrations = Array.from(uniqueMigrations.values()).sort(
-      (a, b) => a.number - b.number
+      (a, b) => a.timestamp.localeCompare(b.timestamp)
     );
 
     if (sortedMigrations.length === 0) {
@@ -72,8 +72,12 @@ export async function schemaStatusCommand(options: SchemaStatusOptions): Promise
 
     // Initialize database
     const dbPlugin = await getDatabasePlugin();
-    dbPlugin.client.initDatabase(config.database);
+    await dbPlugin.client.initDatabase(config.database);
     const sql = dbPlugin.client.getSQL();
+
+    // Create migration tables if they don't exist
+    await sql.unsafe(dbPlugin.migrations.getMigrationTableSQL());
+    await sql.unsafe(dbPlugin.migrations.getMigrationRunsTableSQL());
 
     // Get applied migrations
     let appliedMigrations: Array<{
@@ -82,14 +86,14 @@ export async function schemaStatusCommand(options: SchemaStatusOptions): Promise
       to_model_hash?: string;
     }> = [];
     try {
-      const result = await sql`
+      const result = await sql.unsafe(`
         SELECT name, applied_at, to_model_hash
         FROM _yama_migrations
         ORDER BY applied_at
-      `;
+      `);
       appliedMigrations = result as unknown as typeof appliedMigrations;
     } catch {
-      // Table doesn't exist yet
+      // Table doesn't exist yet (shouldn't happen after creating it, but handle gracefully)
     }
 
     const appliedNames = new Set(appliedMigrations.map((m) => m.name));
@@ -104,7 +108,7 @@ export async function schemaStatusCommand(options: SchemaStatusOptions): Promise
       const appliedCount = sortedMigrations.filter((m) => appliedNames.has(m.file)).length;
 
       console.log(`${pendingCount} pending, ${appliedCount} applied`);
-      dbPlugin.client.closeDatabase();
+      await dbPlugin.client.closeDatabase();
       return;
     }
 
@@ -147,7 +151,7 @@ export async function schemaStatusCommand(options: SchemaStatusOptions): Promise
       info(`\n${pendingCount} migration(s) pending. Apply with: yama schema:apply`);
     }
 
-    dbPlugin.client.closeDatabase();
+    await dbPlugin.client.closeDatabase();
   } catch (err) {
     error(`Failed to check migration status: ${err instanceof Error ? err.message : String(err)}`);
     process.exit(1);

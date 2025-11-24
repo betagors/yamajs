@@ -55,8 +55,8 @@ export async function dbInspectCommand(
 
       if (tableExistsResult.length === 0) {
         error(`Table '${tableName}' does not exist in the database.`);
-        info(`Use 'yama db:list' to see available tables.`);
-        dbPlugin.client.closeDatabase();
+        info(`Use 'yama db list' to see available tables.`);
+        await dbPlugin.client.closeDatabase();
         process.exit(1);
       }
 
@@ -95,7 +95,13 @@ export async function dbInspectCommand(
 
       // Get row count
       const countResult = await sql.unsafe(`SELECT COUNT(*) as count FROM ${quotedTableName}`);
-      const rowCount = Number((countResult[0] as { count: bigint }).count);
+      const countValue = (countResult[0] as { count: bigint | number | string }).count;
+      // Handle bigint properly
+      const rowCount = typeof countValue === 'bigint' 
+        ? Number(countValue) 
+        : typeof countValue === 'string' 
+        ? parseInt(countValue, 10) 
+        : countValue;
 
       // Display schema information
       console.log(`\n📋 Table: ${colors.bold(tableName)}\n`);
@@ -178,7 +184,7 @@ export async function dbInspectCommand(
 
       success("\nInspection complete.");
     } finally {
-      dbPlugin.client.closeDatabase();
+      await dbPlugin.client.closeDatabase();
     }
   } catch (err) {
     error(`Failed to inspect table: ${err instanceof Error ? err.message : String(err)}`);

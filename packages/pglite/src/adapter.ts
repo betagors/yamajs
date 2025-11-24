@@ -6,12 +6,24 @@ import type {
 import type { DatabaseConfig, YamaEntities } from "@yama/core";
 import { generateDrizzleSchema } from "./drizzle-schema.ts";
 import { generateMigrationSQL } from "./migrations.ts";
+import { join } from "path";
+import { existsSync, mkdirSync } from "fs";
+import { dirname } from "path";
 
 type PGliteClient = InstanceType<typeof import("@electric-sql/pglite").PGlite>;
 type DrizzlePGlite = ReturnType<typeof drizzle>;
 
 let dbClient: DrizzlePGlite | null = null;
 let sqlClient: PGliteClient | null = null;
+
+/**
+ * Get default database path (.yama/data/db/pglite)
+ */
+function getDefaultDbPath(): string {
+  // Use current working directory - .yama should be in the project root
+  // where yama.yaml is located
+  return join(process.cwd(), ".yama", "data", "db", "pglite");
+}
 
 /**
  * PGlite database adapter
@@ -28,10 +40,40 @@ export const pgliteAdapter: DatabaseAdapter = {
       const { PGlite } = await import("@electric-sql/pglite");
 
       // Create PGlite client
-      // If config.url is provided and not ":memory:" or "pglite", use it as data directory
       const options: { dataDir?: string } = {};
-      if (config.url && config.url !== ":memory:" && config.url !== "pglite") {
+      
+      if (config.url === ":memory:") {
+        // Explicitly in-memory - don't set dataDir
+        // options.dataDir is undefined, which means in-memory
+      } else if (config.url && config.url !== "pglite") {
+        // Custom path provided
         options.dataDir = config.url;
+      } else {
+        // Default: use persistent storage at .yama/data/db/pglite
+        const defaultPath = getDefaultDbPath();
+        // Ensure the entire directory path exists (PGlite needs the parent directory)
+        // Create .yama/data/db directory structure
+        const yamaDir = join(process.cwd(), ".yama");
+        const dataDir = join(yamaDir, "data");
+        const dbDir = join(dataDir, "db");
+        
+        try {
+          // Create directories recursively if they don't exist
+          if (!existsSync(yamaDir)) {
+            mkdirSync(yamaDir, { recursive: true });
+          }
+          if (!existsSync(dataDir)) {
+            mkdirSync(dataDir, { recursive: true });
+          }
+          if (!existsSync(dbDir)) {
+            mkdirSync(dbDir, { recursive: true });
+          }
+        } catch (err) {
+          throw new Error(
+            `Failed to create database directory at ${dbDir}: ${err instanceof Error ? err.message : String(err)}`
+          );
+        }
+        options.dataDir = defaultPath;
       }
 
       const pgliteClient = new PGlite(options);

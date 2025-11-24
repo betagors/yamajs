@@ -55,13 +55,13 @@ export async function schemaHistoryCommand(options: SchemaHistoryOptions): Promi
       migrations = result as unknown as typeof migrations;
     } catch {
       info("No migration history found.");
-      dbPlugin.client.closeDatabase();
+      await dbPlugin.client.closeDatabase();
       return;
     }
 
     if (migrations.length === 0) {
       info("No migrations in history.");
-      dbPlugin.client.closeDatabase();
+      await dbPlugin.client.closeDatabase();
       return;
     }
 
@@ -97,7 +97,7 @@ export async function schemaHistoryCommand(options: SchemaHistoryOptions): Promi
       printTable(tableData);
     }
 
-    dbPlugin.client.closeDatabase();
+    await dbPlugin.client.closeDatabase();
   } catch (err) {
     error(`Failed to get migration history: ${err instanceof Error ? err.message : String(err)}`);
     process.exit(1);

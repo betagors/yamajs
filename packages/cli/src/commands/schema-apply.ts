@@ -61,10 +61,15 @@ export async function schemaApplyCommand(options: SchemaApplyOptions): Promise<v
       return;
     }
 
-    // Get all migration YAML files
+    // Get all migration YAML files and sort by timestamp
     const migrationFiles = readdirSync(migrationsDir)
       .filter((f) => f.endsWith(".yaml"))
-      .sort();
+      .sort((a, b) => {
+        // Extract timestamp from filename (first 14 digits)
+        const timestampA = a.match(/^(\d{14})_/)?.[1] || '';
+        const timestampB = b.match(/^(\d{14})_/)?.[1] || '';
+        return timestampA.localeCompare(timestampB);
+      });
 
     if (migrationFiles.length === 0) {
       info("No migration files found.");
@@ -163,7 +168,7 @@ export async function schemaApplyCommand(options: SchemaApplyOptions): Promise<v
           new Error("Migration hash mismatch"),
           { migration: file }
         );
-        dbPlugin.client.closeDatabase();
+        await dbPlugin.client.closeDatabase();
         process.exit(1);
       }
       
@@ -173,7 +178,7 @@ export async function schemaApplyCommand(options: SchemaApplyOptions): Promise<v
         error(
           `Migration ${file} is marked as first migration (empty from_model.hash) but database already has migrations applied`
         );
-        dbPlugin.client.closeDatabase();
+        await dbPlugin.client.closeDatabase();
         process.exit(1);
       }
 
@@ -216,7 +221,7 @@ export async function schemaApplyCommand(options: SchemaApplyOptions): Promise<v
           error(
             `Migration ${file} contains destructive operations. Use --allow-destructive to apply.`
           );
-          dbPlugin.client.closeDatabase();
+          await dbPlugin.client.closeDatabase();
           process.exit(1);
         }
       }
@@ -256,21 +261,30 @@ export async function schemaApplyCommand(options: SchemaApplyOptions): Promise<v
 
         // Execute migration in transaction
         await sql.begin(async (tx: any) => {
-          await tx.unsafe(sqlContent);
+          // Execute the migration SQL first
+          if (sqlContent.trim()) {
+            await tx.unsafe(sqlContent);
+          }
 
           // Record migration
-          await tx.unsafe(`
+          const insertResult = await tx.unsafe(`
             INSERT INTO _yama_migrations (
               name, type, from_model_hash, to_model_hash, checksum, description
             ) VALUES (
-              '${file}',
-              '${migration.type}',
-              '${migration.from_model.hash}',
-              '${migration.to_model.hash}',
-              '${checksum}',
-              ${migration.metadata.description ? `'${migration.metadata.description.replace(/'/g, "''")}'` : 'NULL'}
+              '${file.replace(/'/g, "''")}',
+              '${migration.type || 'schema'}',
+              ${migration.from_model.hash ? `'${migration.from_model.hash.replace(/'/g, "''")}'` : 'NULL'},
+              ${migration.to_model.hash ? `'${migration.to_model.hash.replace(/'/g, "''")}'` : 'NULL'},
+              '${checksum.replace(/'/g, "''")}',
+              ${migration.metadata?.description ? `'${migration.metadata.description.replace(/'/g, "''")}'` : 'NULL'}
             )
+            RETURNING name
           `);
+
+          // Verify migration was recorded
+          if (!insertResult || insertResult.length === 0) {
+            throw new Error("Failed to record migration in database");
+          }
 
           // Update run status
           if (runId) {
@@ -281,6 +295,14 @@ export async function schemaApplyCommand(options: SchemaApplyOptions): Promise<v
             `);
           }
         });
+
+        // Verify migration was actually applied by checking the database
+        const verifyResult = await sql.unsafe(`
+          SELECT name FROM _yama_migrations WHERE name = '${file.replace(/'/g, "''")}'
+        `);
+        if (!verifyResult || verifyResult.length === 0) {
+          throw new Error(`Migration ${file} was not recorded in database after transaction`);
+        }
 
         const duration = Date.now() - runStart;
         spinner.succeed(`Applied ${file} (${formatDuration(duration)})`);
@@ -302,7 +324,7 @@ export async function schemaApplyCommand(options: SchemaApplyOptions): Promise<v
         }
 
         printError(err, { migration: file });
-        dbPlugin.client.closeDatabase();
+        await dbPlugin.client.closeDatabase();
         process.exit(1);
       }
     }
@@ -317,7 +339,7 @@ export async function schemaApplyCommand(options: SchemaApplyOptions): Promise<v
       );
     }
 
-    dbPlugin.client.closeDatabase();
+    await dbPlugin.client.closeDatabase();
 
     if (appliedCount > 0) {
       printHints([

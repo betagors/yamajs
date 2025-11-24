@@ -76,10 +76,21 @@ function generateReverseMapper(entityName: string, entityDef: EntityDefinition):
   const mappings: string[] = [];
   const apiSchemaName = entityDef.apiSchema || entityName;
 
+  // Find primary field or id field to determine if we should skip it
+  const primaryField = Object.entries(entityDef.fields).find(([, f]) => f.primary);
+  const idField = primaryField || entityDef.fields['id'];
+  const shouldSkipId = idField && (idField.type === 'string' || idField.type === 'uuid') && !idField.generated;
+  const idFieldName = idField ? (primaryField ? primaryField[0] : 'id') : null;
+
   for (const [fieldName, field] of Object.entries(entityDef.fields)) {
     const apiFieldName = getApiFieldName(fieldName, field);
     if (!apiFieldName) {
       continue; // Skip excluded fields
+    }
+
+    // Skip id/primary fields that should be auto-generated
+    if (shouldSkipId && fieldName === idFieldName) {
+      continue;
     }
 
     const dbColumnName = field.dbColumn || fieldName;

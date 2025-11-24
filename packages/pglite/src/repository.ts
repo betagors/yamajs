@@ -335,6 +335,10 @@ function generateRepositoryClass(
   const primaryFieldName = primaryField ? primaryField[0] : 'id';
   const primaryDbColumn = primaryField ? getDbColumnName(primaryField[0], primaryField[1]) : 'id';
   
+  // Check if we should generate ID: field exists and is string/uuid type
+  const idField = primaryField || entityDef.fields['id'];
+  const shouldGenerateId = idField && (idField.type === 'string' || idField.type === 'uuid') && !idField.generated;
+  
   const explicitMethods = generateExplicitMethods(
     entityName,
     entityDef,
@@ -346,6 +350,13 @@ function generateRepositoryClass(
     primaryDbColumn
   );
   
+  const idGenerationCode = shouldGenerateId 
+    ? `    // Generate ID if not provided
+    if (!entityData.${primaryDbColumn} || entityData.${primaryDbColumn} === undefined) {
+      entityData.${primaryDbColumn} = randomUUID();
+    }`
+    : '';
+  
   return `import { pgliteAdapter } from "@yama/pglite";
 import { ${tableName} } from "./schema.ts";
 import { ${mapperToEntity}, ${mapperFromEntity} } from "./mapper.ts";
@@ -355,6 +366,7 @@ import type { ${apiSchemaName}, ${createInputName}, ${updateInputName} } from "$
 import type { ${entityName}RepositoryMethods } from "./repository-types.ts";
 import type { ReturnType } from "drizzle-orm";
 import type { drizzle } from "drizzle-orm/pglite";
+import { randomUUID } from "crypto";
 
 type Database = ReturnType<typeof drizzle>;
 
@@ -373,6 +385,7 @@ export class ${entityName}Repository {
   async create(input: ${createInputName}): Promise<${apiSchemaName}> {
     const db = getDb();
     const entityData = ${mapperToEntity}(input);
+${idGenerationCode}
     const [entity] = await db.insert(${tableName}).values(entityData).returning();
     return ${mapperFromEntity}(entity);
   }

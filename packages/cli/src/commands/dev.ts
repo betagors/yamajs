@@ -28,6 +28,7 @@ let restartTimeout: NodeJS.Timeout | null = null;
 let isRestarting = false;
 let restartQueue: Array<{ type: "config" | "handler"; path: string; timestamp: number }> = [];
 let consecutiveFailures = 0;
+let isShuttingDown = false;
 let lastRestartTime = 0;
 let restartCount = 0;
 
@@ -138,16 +139,36 @@ export async function devCommand(options: DevOptions): Promise<void> {
   }
 
   // Handle graceful shutdown
-  process.on("SIGINT", async () => {
-    console.log("\n\n🛑 Shutting down...");
-    await cleanup();
-    process.exit(0);
-  });
+  const shutdown = async (signal: string) => {
+    if (isShuttingDown) {
+      // Force exit if already shutting down
+      console.log("\n⚠️  Force exit...");
+      process.exit(1);
+      return;
+    }
+    
+    isShuttingDown = true;
+    console.log(`\n\n🛑 Shutting down (${signal})...`);
+    
+    // Set a timeout to force exit if cleanup takes too long
+    const forceExitTimeout = setTimeout(() => {
+      console.log("\n⚠️  Cleanup timeout - forcing exit...");
+      process.exit(1);
+    }, 5000); // 5 second timeout
+    
+    try {
+      await cleanup();
+      clearTimeout(forceExitTimeout);
+      process.exit(0);
+    } catch (error) {
+      clearTimeout(forceExitTimeout);
+      console.error("❌ Error during shutdown:", error instanceof Error ? error.message : String(error));
+      process.exit(1);
+    }
+  };
 
-  process.on("SIGTERM", async () => {
-    await cleanup();
-    process.exit(0);
-  });
+  process.on("SIGINT", () => shutdown("SIGINT"));
+  process.on("SIGTERM", () => shutdown("SIGTERM"));
 }
 
 async function startServer(port: number, configPath: string, environment?: string, isRestart = false): Promise<void> {
@@ -325,6 +346,10 @@ function setupWatchMode(configPath: string): void {
 
   // Handle file changes
   watcher.on("change", (filePath: string) => {
+    if (isShuttingDown) {
+      return;
+    }
+    
     // Normalize path for consistent comparison
     const normalizedFilePath = filePath.replace(/\\/g, "/");
     
@@ -346,6 +371,10 @@ function setupWatchMode(configPath: string): void {
 
   // Handle new files being added
   watcher.on("add", (filePath: string) => {
+    if (isShuttingDown) {
+      return;
+    }
+    
     // Normalize path for consistent comparison
     const normalizedFilePath = filePath.replace(/\\/g, "/");
     
@@ -363,6 +392,10 @@ function setupWatchMode(configPath: string): void {
 
   // Handle files being removed (might affect imports)
   watcher.on("unlink", (filePath: string) => {
+    if (isShuttingDown) {
+      return;
+    }
+    
     if (!shouldWatchFile(filePath)) {
       return;
     }
@@ -424,6 +457,11 @@ function queueRestart(change: { type: "config" | "handler"; path: string; timest
  * Process the restart queue with rate limiting
  */
 async function processRestartQueue(): Promise<void> {
+  // Don't process if shutting down
+  if (isShuttingDown) {
+    return;
+  }
+  
   // Clear timeout
   if (restartTimeout) {
     clearTimeout(restartTimeout);
@@ -468,7 +506,7 @@ async function processRestartQueue(): Promise<void> {
  * Perform the actual restart with error recovery and performance tracking
  */
 async function performRestart(regenerate: boolean, change: { type: "config" | "handler"; path: string; timestamp: number }): Promise<void> {
-  if (isRestarting) {
+  if (isRestarting || isShuttingDown) {
     return;
   }
   
@@ -527,6 +565,10 @@ async function performRestart(regenerate: boolean, change: { type: "config" | "h
  * Restart server with exponential backoff retry
  */
 async function restartServerWithRetry(): Promise<void> {
+  if (isShuttingDown) {
+    return;
+  }
+  
   if (!serverInstance) {
     console.log("   ⚠️  No server instance to restart");
     return;
@@ -596,17 +638,45 @@ async function cleanup(): Promise<void> {
     restartTimeout = null;
   }
   
-  // Wait for any in-progress restart to complete (with timeout)
+  // Set isRestarting to false to prevent new restarts
+  isRestarting = false;
+  
+  // Wait for any in-progress restart to complete (with shorter timeout)
   let waitCount = 0;
-  while (isRestarting && waitCount < 50) {
+  while (isRestarting && waitCount < 20) { // Reduced from 50 to 20 (2 seconds max)
     await new Promise(resolve => setTimeout(resolve, 100));
     waitCount++;
   }
   
-  // Close watcher
+  // Stop server first (most important)
+  const instance = serverInstance;
+  if (instance) {
+    try {
+      // Add timeout for server stop
+      await Promise.race([
+        instance.stop(),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error("Server stop timeout")), 2000)
+        )
+      ]);
+    } catch (error) {
+      // Ignore stop errors during cleanup
+      if (error instanceof Error && !error.message.includes("timeout")) {
+        console.warn("⚠️  Error stopping server:", error.message);
+      }
+    }
+    serverInstance = null;
+  }
+  
+  // Close watcher with timeout
   if (watcher) {
     try {
-      await watcher.close();
+      await Promise.race([
+        watcher.close(),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error("Watcher close timeout")), 1000)
+        )
+      ]);
     } catch (error) {
       // Ignore close errors
     }
@@ -615,17 +685,6 @@ async function cleanup(): Promise<void> {
   
   // Clear file modification time cache
   fileModTimes.clear();
-  
-  // Stop server
-  const instance = serverInstance;
-  if (instance) {
-    try {
-      await instance.stop();
-    } catch (error) {
-      // Ignore stop errors during cleanup
-    }
-    serverInstance = null;
-  }
   
   // Log performance summary if we had restarts
   if (metrics.totalRestarts > 0) {

@@ -46,6 +46,72 @@ function normalizeEntities(entities: YamaEntities): YamaEntities {
 }
 
 /**
+ * Generate descriptive migration name from steps
+ */
+function generateMigrationNameFromSteps(steps: any[]): string {
+  if (steps.length === 0) {
+    return "empty_migration";
+  }
+
+  // Count operations by type
+  const addTables = steps.filter(s => s.type === "add_table");
+  const dropTables = steps.filter(s => s.type === "drop_table");
+  const addColumns = steps.filter(s => s.type === "add_column");
+  const modifyColumns = steps.filter(s => s.type === "modify_column");
+  const addIndexes = steps.filter(s => s.type === "add_index");
+
+  // Single operation cases
+  if (addTables.length === 1 && steps.length === 1) {
+    return `create_${addTables[0].table}_table`;
+  }
+  
+  if (addTables.length === 1 && addIndexes.length > 0 && steps.length === addTables.length + addIndexes.length) {
+    return `create_${addTables[0].table}_table`;
+  }
+
+  if (dropTables.length === 1 && steps.length === 1) {
+    return `drop_${dropTables[0].table}_table`;
+  }
+
+  if (addColumns.length === 1 && steps.length === 1) {
+    return `add_${addColumns[0].column.name}_to_${addColumns[0].table}`;
+  }
+
+  if (modifyColumns.length === 1 && steps.length === 1) {
+    return `modify_${modifyColumns[0].column}_in_${modifyColumns[0].table}`;
+  }
+
+  // Multiple operations - create descriptive name
+  const parts: string[] = [];
+  
+  if (addTables.length > 0) {
+    if (addTables.length === 1) {
+      parts.push(`create_${addTables[0].table}`);
+    } else {
+      parts.push(`create_${addTables.length}_tables`);
+    }
+  }
+  
+  if (dropTables.length > 0) {
+    parts.push(`drop_${dropTables.length}_tables`);
+  }
+  
+  if (addColumns.length > 0) {
+    parts.push(`add_${addColumns.length}_columns`);
+  }
+  
+  if (modifyColumns.length > 0) {
+    parts.push(`modify_${modifyColumns.length}_columns`);
+  }
+  
+  if (addIndexes.length > 0) {
+    parts.push(`add_${addIndexes.length}_indexes`);
+  }
+
+  return parts.join("_") || "schema_update";
+}
+
+/**
  * Read current database schema and convert to Model
  */
 async function readCurrentModelFromDB(sql: any): Promise<Model> {
@@ -325,16 +391,6 @@ export async function schemaGenerateCommand(options: SchemaGenerateOptions): Pro
     // If no current hash, start from empty
     const fromHash = currentHash || ""; // Empty string means first migration
 
-    // Generate migration name
-    let migrationName = options.name;
-    if (!migrationName) {
-      if (options.interactive) {
-        migrationName = await promptMigrationName(generateMigrationNameFromBranch());
-      } else {
-        migrationName = generateMigrationNameFromBranch();
-      }
-    }
-
     // Compute diff between current and target models
     let steps: any[] = [];
     
@@ -443,7 +499,7 @@ export async function schemaGenerateCommand(options: SchemaGenerateOptions): Pro
 
         // Read current database schema
         const currentModel = await readCurrentModelFromDB(sql);
-        dbPlugin.client.closeDatabase();
+        await dbPlugin.client.closeDatabase();
 
         // Check if database schema matches target (after reading actual schema)
         if (currentModel.hash === targetHash) {
@@ -476,10 +532,22 @@ export async function schemaGenerateCommand(options: SchemaGenerateOptions): Pro
       }
     }
 
+    // Generate migration name from steps if not provided
+    let migrationName = options.name;
+    if (!migrationName) {
+      const descriptiveName = generateMigrationNameFromSteps(steps);
+      if (options.interactive) {
+        migrationName = await promptMigrationName(descriptiveName);
+      } else {
+        migrationName = descriptiveName;
+      }
+    }
+
     const migration = createMigration(fromHash, targetHash, steps, migrationName);
 
     // Generate SQL from steps
     const dbPlugin = await getDatabasePlugin();
+
     const sqlContent = dbPlugin.migrations.generateFromSteps(steps);
 
     if (options.preview) {
@@ -501,17 +569,14 @@ export async function schemaGenerateCommand(options: SchemaGenerateOptions): Pro
       mkdirSync(migrationsDir, { recursive: true });
     }
 
-    // Get next migration number
-    const migrationFiles = readdirSync(migrationsDir)
-      .filter((f) => f.endsWith(".yaml") || f.endsWith(".sql"))
-      .map((f) => {
-        const match = f.match(/^(\d+)_/);
-        return match ? parseInt(match[1], 10) : 0;
-      })
-      .filter((n) => n > 0);
-
-    const migrationNumber = migrationFiles.length > 0 ? Math.max(...migrationFiles) + 1 : 1;
-    const fileName = `${String(migrationNumber).padStart(4, "0")}_${migrationName}`;
+    // Generate timestamp-based migration name (YYYYMMDDHHmmss format)
+    const timestamp = new Date().toISOString()
+      .replace(/[-:]/g, '')
+      .replace(/\.\d{3}/, '')
+      .replace('T', '');
+    // Format: YYYYMMDDHHmmss (14 digits)
+    const timestampPrefix = timestamp.substring(0, 14);
+    const fileName = `${timestampPrefix}_${migrationName}`;
 
     // Check for destructive operations
     const hasDestructive = steps.some(hasDestructiveOperation);

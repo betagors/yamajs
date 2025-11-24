@@ -50,7 +50,7 @@ export async function dbListCommand(options: DbListOptions): Promise<void> {
 
       if (tablesResult.length === 0) {
         info("No tables found in database.");
-        dbPlugin.client.closeDatabase();
+        await dbPlugin.client.closeDatabase();
         return;
       }
 
@@ -63,10 +63,16 @@ export async function dbListCommand(options: DbListOptions): Promise<void> {
           // Quote table name for safe identifier usage (escape any quotes in the name)
           const quotedTableName = `"${tableName.replace(/"/g, '""')}"`;
           const countResult = await sql.unsafe(`SELECT COUNT(*) as count FROM ${quotedTableName}`);
-          const rowCount = Number((countResult[0] as { count: bigint }).count);
+          const countValue = (countResult[0] as { count: bigint | number | string }).count;
+          // Handle bigint properly
+          const rowCount = typeof countValue === 'bigint' 
+            ? Number(countValue) 
+            : typeof countValue === 'string' 
+            ? parseInt(countValue, 10) 
+            : countValue;
           tableData.push([
             tableName,
-            rowCount.toLocaleString(),
+            isFinite(rowCount) ? rowCount.toLocaleString() : String(countValue),
           ]);
         } catch (err) {
           // If we can't count rows, still show the table but with error
@@ -90,7 +96,7 @@ export async function dbListCommand(options: DbListOptions): Promise<void> {
 
       success(`\nFound ${tablesResult.length} table(s).`);
     } finally {
-      dbPlugin.client.closeDatabase();
+      await dbPlugin.client.closeDatabase();
     }
   } catch (err) {
     error(`Failed to list database tables: ${err instanceof Error ? err.message : String(err)}`);

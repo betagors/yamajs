@@ -54,7 +54,7 @@ export async function schemaCheckCommand(options: SchemaCheckOptions): Promise<v
     let currentHash: string | null = null;
     if (config.database) {
       const dbPlugin = await getDatabasePlugin();
-      dbPlugin.client.initDatabase(config.database);
+      await dbPlugin.client.initDatabase(config.database);
       const sql = dbPlugin.client.getSQL();
 
       // Ensure migration tables exist
@@ -72,13 +72,13 @@ export async function schemaCheckCommand(options: SchemaCheckOptions): Promise<v
       `);
 
       try {
-        const result = await sql`
+        const result = await sql.unsafe(`
           SELECT to_model_hash 
           FROM _yama_migrations 
           WHERE to_model_hash IS NOT NULL 
           ORDER BY applied_at DESC 
           LIMIT 1
-        `;
+        `);
         if (result && (result as unknown as Array<{ to_model_hash: string }>).length > 0) {
           currentHash = (result as unknown as Array<{ to_model_hash: string }>)[0].to_model_hash;
         }
@@ -87,7 +87,7 @@ export async function schemaCheckCommand(options: SchemaCheckOptions): Promise<v
         currentHash = null;
       }
 
-      dbPlugin.client.closeDatabase();
+      await dbPlugin.client.closeDatabase();
     }
 
     // If no current hash, assume empty database

@@ -66,8 +66,8 @@ export interface DatabaseConfig {
   /**
    * Database connection URL.
    * For PostgreSQL: use a standard postgresql:// connection string.
-   * For PGlite: use "pglite" for in-memory, or a path for persistent storage.
-   * Optional for PGlite (defaults to in-memory).
+   * For PGlite: use ":memory:" for in-memory, or a path for persistent storage.
+   * Optional for PGlite (defaults to .yama/data/db/pglite for persistent storage).
    */
   url?: string;
   pool?: {
