@@ -83,3 +83,4 @@ Thumbs.db
 # Test projects (for CLI development/testing)
 .yamatest/
 test-projects/
+test-app/
