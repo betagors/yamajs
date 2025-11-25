@@ -36,6 +36,13 @@ export interface RateLimitConfig {
    * - "cache": Use cache adapter from plugin (works with any cache implementation like Redis, Memcached, etc.)
    */
   store?: RateLimitStoreType;
+
+  /**
+   * Behavior when cache/store is unavailable
+   * - "fail-open" (default): Allow requests when cache fails (graceful degradation)
+   * - "fail-closed": Deny requests when cache fails (more secure, but can cause outages)
+   */
+  onFailure?: "fail-open" | "fail-closed";
 }
 
 /**

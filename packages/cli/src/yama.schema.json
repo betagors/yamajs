@@ -236,6 +236,12 @@
           "enum": ["memory", "cache"],
           "default": "memory",
           "description": "Storage backend: 'memory' (in-memory, single-instance) or 'cache' (uses cache adapter from plugin - works with Redis, Memcached, etc.)"
+        },
+        "onFailure": {
+          "type": "string",
+          "enum": ["fail-open", "fail-closed"],
+          "default": "fail-open",
+          "description": "Behavior when cache/store is unavailable: 'fail-open' (allow requests, graceful degradation) or 'fail-closed' (deny requests, more secure)"
         }
       },
       "required": ["maxRequests", "windowMs"]

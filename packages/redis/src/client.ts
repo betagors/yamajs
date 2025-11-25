@@ -7,6 +7,12 @@ export interface RedisClient {
   del(key: string): Promise<number>;
   exists(key: string): Promise<number>;
   ping(): Promise<string>;
+  // Sorted set operations (for optimized rate limiting)
+  zadd(key: string, score: number, member: string): Promise<number>;
+  zremrangebyscore(key: string, min: number, max: number): Promise<number>;
+  zcard(key: string): Promise<number>;
+  zrange(key: string, start: number, stop: number): Promise<string[]>;
+  expire(key: string, seconds: number): Promise<number>;
   quit(): Promise<void>;
   disconnect?(): Promise<void>;
   [key: string]: unknown; // Allow additional Redis methods

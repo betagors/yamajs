@@ -166,6 +166,34 @@ const tenantCache = context.cache?.namespace('tenant:123');
 await tenantCache?.set('user:42', userData); // Stores as "tenant:123:user:42"
 ```
 
+### Rate Limiting
+
+Yama provides configurable rate limiting with automatic Redis optimization:
+
+```typescript
+import { createRateLimiterFromConfig, type RateLimitConfig } from '@betagors/yama-core';
+
+const config: RateLimitConfig = {
+  maxRequests: 100,
+  windowMs: 60000, // 1 minute
+  store: 'cache', // Uses cache adapter
+  onFailure: 'fail-closed' // Deny when cache is down
+};
+
+const limiter = await createRateLimiterFromConfig(config, cacheAdapter);
+```
+
+**Performance:**
+- **Redis**: Automatically uses optimized sorted sets (atomic, no race conditions)
+- **Other caches**: Uses GET + SET operations (may have race conditions under high concurrency)
+- **Memory**: Fast, single-instance only
+
+**Fail Modes:**
+- `fail-open` (default): Allow requests when cache fails (graceful degradation)
+- `fail-closed`: Deny requests when cache fails (more secure)
+
+See [rate-limit/README.md](./src/rate-limit/README.md) for detailed documentation.
+
 ### Handler Functions (User Handlers)
 
 User handlers use `HandlerFunction` with `HandlerContext`:
@@ -262,6 +290,17 @@ const schemas = entitiesToSchemas(entities);
 - `CacheAdapter` - Cache adapter interface
 - Cache adapters are provided via plugins (e.g., `@betagors/yama-redis`)
 - Available in `HandlerContext.cache` when a cache plugin is loaded
+
+### Rate Limiting
+
+- `createRateLimiterFromConfig()` - Create rate limiter from configuration
+- `createRateLimiter()` - Create rate limiter with custom store
+- `formatRateLimitHeaders()` - Format rate limit headers (RFC 6585)
+- `RateLimitConfig` - Rate limit configuration type
+- `RateLimiter` - Rate limiter interface
+- `RateLimitStore` - Rate limit store interface
+- Automatically optimizes for Redis (uses sorted sets)
+- Supports fail-open and fail-closed modes
 
 ### Plugin System
 

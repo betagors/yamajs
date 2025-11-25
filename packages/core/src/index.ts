@@ -65,6 +65,8 @@ export {
   MemoryRateLimitStore,
   createCacheRateLimitStore,
   CacheRateLimitStore,
+  createRedisOptimizedRateLimitStore,
+  RedisOptimizedRateLimitStore,
 } from "./rate-limit";
 
 // Export auth provider types

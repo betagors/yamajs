@@ -14,6 +14,14 @@ export class RedisAdapter implements CacheAdapter {
   }
 
   /**
+   * Get the underlying Redis client (for optimized rate limiting)
+   * @internal
+   */
+  getRedisClient(): RedisClient {
+    return this.client;
+  }
+
+  /**
    * Prefix a key with the namespace prefix
    */
   private prefixKey(key: string): string {

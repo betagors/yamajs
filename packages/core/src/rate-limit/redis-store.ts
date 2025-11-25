@@ -3,7 +3,7 @@ import type { RateLimitStore, RateLimitResult, RateLimitConfig } from "./types";
 /**
  * Redis client interface (to avoid requiring redis as a direct dependency)
  */
-interface RedisClient {
+export interface RedisClient {
   get(key: string): Promise<string | null>;
   set(key: string, value: string, mode?: string, duration?: number): Promise<string | null>;
   eval(script: string, numKeys: number, ...keysAndArgs: (string | number)[]): Promise<unknown>;

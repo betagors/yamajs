@@ -6,6 +6,7 @@ import type {
 } from "./types";
 import { createMemoryRateLimitStore, MemoryRateLimitStore } from "./memory-store";
 import { createCacheRateLimitStore, CacheRateLimitStore } from "./cache-store";
+import { createRedisOptimizedRateLimitStore, RedisOptimizedRateLimitStore } from "./redis-optimized-store";
 import type { HttpRequest } from "../infrastructure/server";
 import type { AuthContext } from "../schemas";
 import type { CacheAdapter } from "../infrastructure/cache";
@@ -62,7 +63,8 @@ export async function createRateLimiterFromConfig(
   if (storeType === "cache") {
     // Use cache adapter (works with Redis, Memcached, or any cache implementation)
     if (cacheAdapter) {
-      store = createCacheRateLimitStore(cacheAdapter);
+      const failClosed = config.onFailure === "fail-closed";
+      store = createCacheRateLimitStore(cacheAdapter, undefined, failClosed);
     } else {
       console.warn(
         "⚠️  Rate limit store is set to 'cache' but no cache adapter is available. Falling back to memory."
@@ -165,4 +167,5 @@ export function formatRateLimitHeaders(result: RateLimitResult): Record<string, 
 export type { RateLimitConfig, RateLimitResult, RateLimitStore, RateLimitKeyStrategy } from "./types";
 export { createMemoryRateLimitStore, MemoryRateLimitStore } from "./memory-store";
 export { createCacheRateLimitStore, CacheRateLimitStore } from "./cache-store";
+export { createRedisOptimizedRateLimitStore, RedisOptimizedRateLimitStore } from "./redis-optimized-store";
 

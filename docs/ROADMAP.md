@@ -363,7 +363,283 @@ endpoints:
 
 ---
 
+## Plugin Ecosystem Development
+
+### Current State
+- ✅ Plugin system with `YamaPlugin` interface
+- ✅ Plugin loading from npm packages
+- ✅ Plugin registry and validation
+- ✅ CLI commands: `yama plugin install`, `yama plugin list`, `yama plugin validate`
+- ⚠️ No plugin creation guide or templates
+- ⚠️ No plugin discovery/search mechanism
+- ⚠️ No official plugin registry or marketplace
+- ⚠️ Limited documentation for plugin developers
+
+### Planned Features
+
+#### 1. Plugin Creation Guide & Templates
+**Priority: High**
+
+Create comprehensive documentation and tooling to help users build their own plugins.
+
+**Implementation:**
+- Create `docs/plugins/creating-plugins.md` with:
+  - Step-by-step plugin creation guide
+  - Plugin interface documentation
+  - Examples for different plugin types (database, HTTP, services)
+  - Best practices and conventions
+- Add `yama plugin create <name>` command that:
+  - Generates plugin scaffold with proper structure
+  - Includes TypeScript setup, build configuration
+  - Provides template based on plugin category
+  - Sets up testing framework
+- Create plugin templates for common categories:
+  - Database adapter plugin
+  - HTTP server plugin
+  - Service integration plugin (payments, email, etc.)
+
+**Example Usage:**
+```bash
+yama plugin create my-database-plugin --category database
+# Creates:
+# - my-database-plugin/
+#   - src/
+#     - plugin.ts (template)
+#     - adapter.ts (if database)
+#   - package.json (with yama metadata)
+#   - tsconfig.json
+#   - README.md
+```
+
+**Benefits:**
+- Lowers barrier to entry for plugin development
+- Ensures consistent plugin structure
+- Reduces boilerplate and setup time
+- Encourages community plugin development
+
+---
+
+#### 2. Plugin Discovery & Search
+**Priority: High**
+
+Enable users to discover and search for available plugins.
+
+**Implementation:**
+- Add `yama plugin search <query>` command:
+  - Searches npm registry for packages with `yama` keyword
+  - Filters by `yama` metadata in package.json
+  - Displays plugin information (name, version, category, description)
+  - Shows installation instructions
+- Add `yama plugin browse` command:
+  - Lists plugins by category
+  - Shows official vs community plugins
+  - Displays plugin popularity/usage metrics (if available)
+- Enhance `yama plugin list` to show:
+  - Plugin status (installed, outdated, compatible)
+  - Plugin metadata (category, version, description)
+  - Update availability
+
+**Example Usage:**
+```bash
+# Search for database plugins
+yama plugin search database
+
+# Browse all available plugins
+yama plugin browse
+
+# Browse by category
+yama plugin browse --category database
+```
+
+**Benefits:**
+- Makes plugin discovery easy
+- Helps users find the right plugin for their needs
+- Encourages plugin adoption
+- Increases visibility for community plugins
+
+---
+
+#### 3. Plugin Registry System
+**Priority: Medium**
+
+Create a centralized registry for official and community plugins.
+
+**Implementation:**
+- Create registry JSON file or API endpoint:
+  ```json
+  {
+    "official": [
+      {
+        "name": "@betagors/yama-postgres",
+        "version": "0.1.0",
+        "category": "database",
+        "description": "PostgreSQL database adapter",
+        "npm": "@betagors/yama-postgres",
+        "verified": true
+      }
+    ],
+    "community": [
+      {
+        "name": "yama-mysql",
+        "version": "1.0.0",
+        "category": "database",
+        "description": "MySQL database adapter",
+        "npm": "yama-mysql",
+        "author": "@username",
+        "verified": false,
+        "github": "https://github.com/username/yama-mysql"
+      }
+    ]
+  }
+  ```
+- Host registry at `registry.yama.dev` or in repository
+- Add `yama plugin registry` command to:
+  - Fetch and display registry contents
+  - Show plugin details from registry
+  - Install plugins from registry
+- Create submission process for community plugins:
+  - GitHub issue template for plugin submissions
+  - Review process for official listing
+  - Verification badges for tested plugins
+
+**Benefits:**
+- Centralized source of truth for available plugins
+- Quality control through verification
+- Better discoverability
+- Community engagement
+
+---
+
+#### 4. Plugin Documentation & Examples
+**Priority: Medium**
+
+Comprehensive documentation for plugin developers and users.
+
+**Implementation:**
+- Create `docs/plugins/` directory with:
+  - `creating-plugins.md` - Plugin development guide
+  - `plugin-api.md` - Plugin API reference
+  - `examples/` - Example plugins for different use cases
+  - `registry.md` - Official and community plugins list
+  - `best-practices.md` - Plugin development best practices
+- Add plugin examples:
+  - Database adapter example
+  - HTTP server adapter example
+  - Payment service integration example
+  - Email service integration example
+- Create plugin showcase page:
+  - Featured plugins
+  - Popular plugins
+  - Recently added plugins
+  - Plugin categories
+
+**Benefits:**
+- Better developer experience
+- Clear guidelines and examples
+- Reduced support burden
+- Higher quality plugins
+
+---
+
+#### 5. Plugin Validation & Testing Tools
+**Priority: Medium**
+
+Tools to help plugin developers validate and test their plugins.
+
+**Implementation:**
+- Enhance `yama plugin validate` to:
+  - Check plugin structure and interface compliance
+  - Validate plugin metadata
+  - Test plugin initialization
+  - Verify version compatibility
+  - Run plugin-specific tests
+- Add `yama plugin test` command:
+  - Run plugin test suite
+  - Validate against Yama core versions
+  - Check for common issues
+- Create plugin testing utilities:
+  - Mock Yama context for testing
+  - Plugin test helpers
+  - Integration test templates
+- Add CI/CD templates for plugins:
+  - GitHub Actions workflow
+  - Automated testing on Yama version updates
+  - Automated publishing
+
+**Benefits:**
+- Ensures plugin quality
+- Catches issues early
+- Reduces compatibility problems
+- Professional plugin development workflow
+
+---
+
+#### 6. Plugin Marketplace (Web Interface)
+**Priority: Low**
+
+Web-based plugin directory and marketplace.
+
+**Implementation:**
+- Create web interface at `plugins.yama.dev`:
+  - Browse plugins by category
+  - Search and filter plugins
+  - View plugin details, documentation, and examples
+  - Plugin ratings and reviews
+  - Installation instructions
+- Features:
+  - Plugin badges (official, verified, community)
+  - Download statistics
+  - Version history
+  - Compatibility matrix
+  - Plugin dependencies
+  - Screenshots/demos
+- Integration with CLI:
+  - `yama plugin open <name>` - Opens plugin page in browser
+  - `yama plugin info <name>` - Shows detailed plugin information
+
+**Benefits:**
+- Better user experience for plugin discovery
+- Visual plugin browsing
+- Community engagement
+- Plugin promotion
+
+---
+
+#### 7. Plugin Versioning & Compatibility
+**Priority: Medium**
+
+Better version management and compatibility checking.
+
+**Implementation:**
+- Enhance plugin version validation:
+  - Check `yamaCore` compatibility range
+  - Validate `pluginApi` version
+  - Warn about incompatible versions
+  - Suggest compatible alternatives
+- Add `yama plugin check-updates` command:
+  - Check for plugin updates
+  - Show compatibility with current Yama version
+  - Suggest update paths
+- Create plugin compatibility matrix:
+  - Track plugin compatibility across Yama versions
+  - Document breaking changes
+  - Migration guides for plugin updates
+- Add plugin deprecation system:
+  - Mark plugins as deprecated
+  - Suggest alternatives
+  - Show deprecation timeline
+
+**Benefits:**
+- Prevents compatibility issues
+- Easier plugin maintenance
+- Better upgrade experience
+- Clear migration paths
+
+---
+
 ## Implementation Priority
+
+### Backend-as-Config Features
 
 1. **Phase 1 (High Priority)**
    - Database access in handler context
@@ -381,6 +657,23 @@ endpoints:
    - SQL expression handler
    - Advanced template features
 
+### Plugin Ecosystem Features
+
+1. **Phase 1 (High Priority)**
+   - Plugin creation guide & templates
+   - Plugin discovery & search commands
+   - Plugin documentation & examples
+
+2. **Phase 2 (Medium Priority)**
+   - Plugin registry system
+   - Plugin validation & testing tools
+   - Plugin versioning & compatibility management
+
+3. **Phase 3 (Low Priority)**
+   - Plugin marketplace (web interface)
+   - Advanced plugin analytics
+   - Plugin monetization features (if needed)
+
 ## Related Features
 
 ### Schema Enhancements
@@ -397,6 +690,15 @@ endpoints:
 - Auto-generate handler documentation from config
 - Examples for each handler type
 - Migration guide from code-based to config-based handlers
+- Plugin development guides and API reference
+- Plugin registry and marketplace documentation
+
+### Plugin Ecosystem
+- Plugin creation templates and scaffolding
+- Plugin discovery and search capabilities
+- Official and community plugin registry
+- Plugin validation and testing tools
+- Plugin versioning and compatibility management
 
 ## Notes
 

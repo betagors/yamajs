@@ -1,28 +1,67 @@
-import type { RateLimitStore, RateLimitResult } from "./types";
+import type { RateLimitStore, RateLimitResult, RateLimitConfig } from "./types";
 import type { CacheAdapter } from "../infrastructure/cache";
+import { createRedisOptimizedRateLimitStore, type RedisOptimizedRateLimitStore } from "./redis-optimized-store";
+import type { RedisClient } from "./redis-store";
+
+/**
+ * Check if a cache adapter is a Redis adapter
+ * @internal
+ */
+function isRedisAdapter(cache: CacheAdapter): cache is CacheAdapter & { getRedisClient(): RedisClient } {
+  return typeof (cache as any).getRedisClient === "function";
+}
 
 /**
  * Cache-based rate limit store using sliding window algorithm
  * Works with any CacheAdapter implementation (Redis, Memcached, etc.)
+ * 
+ * Performance Note: 
+ * - For Redis adapters, automatically uses optimized sorted sets (ZADD, ZCARD) for atomic operations
+ * - For other adapters, uses GET + SET operations (2 round trips, potential race conditions)
  */
 export class CacheRateLimitStore implements RateLimitStore {
   private cache: CacheAdapter;
   private keyPrefix: string;
+  private failClosed: boolean;
+  private optimizedStore?: RedisOptimizedRateLimitStore;
 
-  constructor(cache: CacheAdapter, keyPrefix: string = "rate_limit") {
+  constructor(cache: CacheAdapter, keyPrefix: string = "rate_limit", failClosed: boolean = false) {
     this.cache = cache;
     this.keyPrefix = keyPrefix;
+    this.failClosed = failClosed;
+
+    // If this is a Redis adapter, use optimized store
+    if (isRedisAdapter(cache)) {
+      try {
+        const redisClient = cache.getRedisClient();
+        this.optimizedStore = createRedisOptimizedRateLimitStore(
+          redisClient,
+          keyPrefix,
+          failClosed
+        );
+      } catch {
+        // If getting client fails, fall back to generic cache store
+        this.optimizedStore = undefined;
+      }
+    }
   }
 
   /**
    * Check and increment rate limit for a key using sliding window
    * Stores request timestamps in cache
+   * Uses optimized Redis sorted sets if Redis adapter is available
    */
   async checkAndIncrement(
     key: string,
     maxRequests: number,
     windowMs: number
   ): Promise<RateLimitResult> {
+    // Use optimized store if available (Redis with sorted sets)
+    if (this.optimizedStore) {
+      return await this.optimizedStore.checkAndIncrement(key, maxRequests, windowMs);
+    }
+
+    // Fall back to generic cache store (GET + SET, works with any cache)
     const now = Date.now();
     const windowStart = now - windowMs;
     const cacheKey = `${this.keyPrefix}:${key}`;
@@ -65,20 +104,32 @@ export class CacheRateLimitStore implements RateLimitStore {
         resetAfter,
       };
     } catch (error) {
-      // If cache fails, allow the request but log the error
-      // This is a graceful degradation strategy
-      console.warn(
-        `Rate limit cache check failed for key ${key}: ${error instanceof Error ? error.message : String(error)}`
-      );
-      
-      // Return allowed=true as fallback to avoid blocking requests when cache is down
-      return {
-        allowed: true,
-        remaining: maxRequests - 1,
-        limit: maxRequests,
-        reset: Math.ceil((now + windowMs) / 1000),
-        resetAfter: windowMs,
-      };
+      // Handle cache failure based on fail-closed setting
+      if (this.failClosed) {
+        // Fail closed: deny the request when cache is down
+        console.error(
+          `Rate limit cache check failed for key ${key} (fail-closed mode): ${error instanceof Error ? error.message : String(error)}`
+        );
+        return {
+          allowed: false,
+          remaining: 0,
+          limit: maxRequests,
+          reset: Math.ceil((now + windowMs) / 1000),
+          resetAfter: windowMs,
+        };
+      } else {
+        // Fail open: allow the request but log the error (graceful degradation)
+        console.warn(
+          `Rate limit cache check failed for key ${key} (fail-open mode): ${error instanceof Error ? error.message : String(error)}`
+        );
+        return {
+          allowed: true,
+          remaining: maxRequests - 1,
+          limit: maxRequests,
+          reset: Math.ceil((now + windowMs) / 1000),
+          resetAfter: windowMs,
+        };
+      }
     }
   }
 
@@ -96,8 +147,9 @@ export class CacheRateLimitStore implements RateLimitStore {
  */
 export function createCacheRateLimitStore(
   cache: CacheAdapter,
-  keyPrefix?: string
+  keyPrefix?: string,
+  failClosed?: boolean
 ): CacheRateLimitStore {
-  return new CacheRateLimitStore(cache, keyPrefix);
+  return new CacheRateLimitStore(cache, keyPrefix, failClosed);
 }
 
