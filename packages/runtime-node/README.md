@@ -70,7 +70,7 @@ The runtime automatically loads and initializes plugins specified in `yama.yaml`
 # yama.yaml
 plugins:
   - @betagors/yama-postgres
-  - @betagors/yama-http-fastify
+  - @betagors/yama-fastify
 ```
 
 ### Handler Loading
@@ -144,6 +144,8 @@ server:
 
 plugins:
   - @betagors/yama-postgres
+  - @betagors/yama-redis:
+      url: redis://localhost:6379
 
 database:
   url: ${DATABASE_URL}
@@ -189,16 +191,21 @@ export async function myHandler(context: HandlerContext) {
   // Access request body
   const data = context.body;
   
+  // Access cache (if cache plugin is loaded)
+  const cacheKey = `user:${id}`;
+  let user = await context.cache?.get<User>(cacheKey);
+  if (!user) {
+    // Fetch from database
+    user = await fetchUser(id);
+    // Cache for 1 hour
+    await context.cache?.set(cacheKey, user, 3600);
+  }
+  
   // Set response status (optional - framework sets defaults)
   context.status(201);
   
   // Return response data (framework handles sending)
-  return { success: true };
-}
-  const body = request.body;
-  
-  // Return response
-  return { message: 'Success' };
+  return { success: true, user };
 }
 ```
 
@@ -221,7 +228,7 @@ This package depends on:
 - `@betagors/yama-core` - Core runtime
 - `@betagors/yama-docs-generator` - OpenAPI generation
 - `@betagors/yama-postgres` - PostgreSQL adapter (or other database adapter)
-- `@betagors/yama-http-fastify` - Fastify HTTP adapter
+- `@betagors/yama-fastify` - Fastify HTTP adapter
 - `js-yaml` - YAML parsing
 - `dotenv` - Environment variable loading
 

@@ -37,7 +37,7 @@ import {
   formatRateLimitHeaders,
 } from "@betagors/yama-core";
 import { generateOpenAPI } from "@betagors/yama-docs-generator";
-import { createFastifyAdapter } from "@betagors/yama-http-fastify";
+import { createFastifyAdapter } from "@betagors/yama-fastify";
 import yaml from "js-yaml";
 import { readFileSync, readdirSync, existsSync, writeFileSync, mkdirSync } from "fs";
 import { join, dirname, extname, resolve, relative } from "path";
@@ -371,7 +371,8 @@ function createHandlerContext(
   reply: HttpResponse,
   authContext?: { authenticated: boolean; user?: unknown; provider?: string; token?: string },
   repositories?: Record<string, unknown>,
-  dbAdapter?: unknown
+  dbAdapter?: unknown,
+  cacheAdapter?: unknown
 ): HandlerContext {
   let statusCode: number | undefined;
   
@@ -391,6 +392,9 @@ function createHandlerContext(
     // Database access
     db: dbAdapter,
     entities: repositories,
+    
+    // Cache access
+    cache: cacheAdapter as any,
     
     // Status helper
     status(code: number): HandlerContext {
@@ -565,7 +569,8 @@ function registerRoutes(
           if (!rateLimiter && endpoint.rateLimit) {
             const configKey = JSON.stringify(endpoint.rateLimit);
             if (!endpointRateLimiters.has(configKey)) {
-              endpointRateLimiters.set(configKey, await createRateLimiterFromConfig(endpoint.rateLimit));
+              // Use cache adapter if available (works with any cache implementation)
+              endpointRateLimiters.set(configKey, await createRateLimiterFromConfig(endpoint.rateLimit, cacheAdapter as any));
             }
             rateLimiter = endpointRateLimiters.get(configKey)!;
           }
@@ -574,7 +579,8 @@ function registerRoutes(
           if (!rateLimiter && config.rateLimit) {
             const globalConfigKey = JSON.stringify(config.rateLimit);
             if (!endpointRateLimiters.has(globalConfigKey)) {
-              endpointRateLimiters.set(globalConfigKey, await createRateLimiterFromConfig(config.rateLimit));
+              // Use cache adapter if available (works with any cache implementation)
+              endpointRateLimiters.set(globalConfigKey, await createRateLimiterFromConfig(config.rateLimit, cacheAdapter as any));
             }
             rateLimiter = endpointRateLimiters.get(globalConfigKey)!;
           }
@@ -659,7 +665,7 @@ function registerRoutes(
         }
 
         // Create handler context
-        const context = createHandlerContext(request, reply, authContext, repositories, dbAdapter);
+        const context = createHandlerContext(request, reply, authContext, repositories, dbAdapter, cacheAdapter);
 
         // Call handler with context
         const result = await handlerFn(context);
@@ -757,6 +763,9 @@ export async function startYamaNodeRuntime(
   
   // Rate limiter (initialized later if config has rateLimit)
   let globalRateLimiter: RateLimiter | null = null;
+  
+  // Cache adapter (initialized from cache plugin if available)
+  let cacheAdapter: unknown = null;
 
   // Load and parse YAML config if provided
   let config: YamaConfig | null = null;
@@ -854,6 +863,12 @@ export async function startYamaNodeRuntime(
                 console.warn("⚠️  Failed to initialize database (continuing without DB):", error instanceof Error ? error.message : String(error));
               }
             }
+            
+            // If this is a cache plugin, store the cache adapter
+            if (plugin.category === "cache" && pluginApi && typeof pluginApi === "object" && "adapter" in pluginApi) {
+              cacheAdapter = pluginApi.adapter;
+              console.log("✅ Cache adapter initialized");
+            }
           } catch (error) {
             console.warn(`⚠️  Failed to load plugin ${pluginName}:`, error instanceof Error ? error.message : String(error));
           }
@@ -950,7 +965,8 @@ export async function startYamaNodeRuntime(
   // Initialize rate limiter if global config is provided
   if (config?.rateLimit) {
     try {
-      globalRateLimiter = await createRateLimiterFromConfig(config.rateLimit);
+      // Use cache adapter if available (works with any cache implementation)
+      globalRateLimiter = await createRateLimiterFromConfig(config.rateLimit, cacheAdapter as any);
       console.log("✅ Initialized rate limiter");
     } catch (error) {
       console.warn(`⚠️  Failed to initialize rate limiter: ${error instanceof Error ? error.message : String(error)}`);

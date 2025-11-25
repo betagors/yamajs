@@ -16,7 +16,7 @@ All installable packages that extend Yama functionality:
 - **`@betagors/yama-*`** - User-installable plugins
   - `@betagors/yama-postgres` - PostgreSQL database plugin
   - `@betagors/yama-pglite` - PGLite database plugin
-  - `@betagors/yama-http-fastify` - Fastify HTTP server plugin
+  - `@betagors/yama-fastify` - Fastify HTTP server plugin
   - `@betagors/yama-plugin-db-mysql` - MySQL database plugin (future)
   - `@betagors/yama-plugin-http-express` - Express HTTP server plugin (future)
   - `@betagors/yama-plugin-payments-stripe` - Stripe payments plugin (future)
@@ -86,7 +86,7 @@ export interface YamaPlugin {
 The following packages may be renamed in the future to follow the new convention:
 
 - `@betagors/yama-postgres` → `@betagors/yama-postgres` (already renamed)
-- `@betagors/yama-http-fastify` - Fastify HTTP server adapter
+- `@betagors/yama-fastify` - Fastify HTTP server adapter
 
 These changes are optional and backward compatibility will be maintained.
 

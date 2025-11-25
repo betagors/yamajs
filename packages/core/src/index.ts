@@ -63,8 +63,8 @@ export {
   type RateLimitStore,
   createMemoryRateLimitStore,
   MemoryRateLimitStore,
-  createRedisRateLimitStore,
-  RedisRateLimitStore,
+  createCacheRateLimitStore,
+  CacheRateLimitStore,
 } from "./rate-limit";
 
 // Export auth provider types
@@ -120,6 +120,10 @@ export {
   createDatabaseAdapter,
   registerDatabaseAdapter,
 } from "./infrastructure/database";
+
+export {
+  type CacheAdapter,
+} from "./infrastructure/cache";
 
 export {
   type HttpServerAdapter,

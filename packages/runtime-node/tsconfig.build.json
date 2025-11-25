@@ -10,7 +10,7 @@
     { "path": "../core/tsconfig.build.json" },
     { "path": "../docs-generator/tsconfig.build.json" },
     { "path": "../postgres/tsconfig.build.json" },
-    { "path": "../http-fastify/tsconfig.build.json" }
+    { "path": "../fastify/tsconfig.build.json" }
   ]
 }
 

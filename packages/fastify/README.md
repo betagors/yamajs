@@ -1,8 +1,8 @@
-# @betagors/yama-http-fastify
+# @betagors/yama-fastify
 
 > Fastify HTTP server adapter for Yama
 
-[![npm version](https://img.shields.io/npm/v/@betagors/yama-http-fastify.svg)](https://www.npmjs.com/package/@betagors/yama-http-fastify)
+[![npm version](https://img.shields.io/npm/v/@betagors/yama-fastify.svg)](https://www.npmjs.com/package/@betagors/yama-fastify)
 [![License: MPL-2.0](https://img.shields.io/badge/License-MPL_2.0-brightgreen.svg)](https://opensource.org/licenses/MPL-2.0)
 
 HTTP server adapter that integrates [Fastify](https://www.fastify.io/) with the Yama framework. This adapter allows Yama to use Fastify as its HTTP server engine.
@@ -10,7 +10,7 @@ HTTP server adapter that integrates [Fastify](https://www.fastify.io/) with the 
 ## Installation
 
 ```bash
-npm install @betagors/yama-http-fastify fastify
+npm install @betagors/yama-fastify fastify
 ```
 
 ## Usage
@@ -18,7 +18,7 @@ npm install @betagors/yama-http-fastify fastify
 The adapter is typically used internally by `@betagors/yama-runtime-node`, but you can also use it directly:
 
 ```typescript
-import { createFastifyAdapter } from '@betagors/yama-http-fastify';
+import { createFastifyAdapter } from '@betagors/yama-fastify';
 import { createHttpServerAdapter } from '@betagors/yama-core';
 
 // Register the Fastify adapter

@@ -6,7 +6,7 @@ export type RateLimitKeyStrategy = "ip" | "user" | "both";
 /**
  * Rate limiting storage backend type
  */
-export type RateLimitStoreType = "memory" | "redis";
+export type RateLimitStoreType = "memory" | "cache";
 
 /**
  * Rate limit configuration
@@ -33,21 +33,9 @@ export interface RateLimitConfig {
   /**
    * Storage backend to use
    * - "memory": In-memory store (default, single-instance only)
-   * - "redis": Redis store (for distributed scenarios)
+   * - "cache": Use cache adapter from plugin (works with any cache implementation like Redis, Memcached, etc.)
    */
   store?: RateLimitStoreType;
-
-  /**
-   * Redis configuration (only required if store is "redis")
-   */
-  redis?: {
-    url?: string;
-    host?: string;
-    port?: number;
-    password?: string;
-    db?: number;
-    [key: string]: unknown; // Allow additional Redis options
-  };
 }
 
 /**

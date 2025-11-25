@@ -19,6 +19,7 @@ npm install @betagors/yama-core
 - **Type Generation** - Generate TypeScript types from YAML schemas
 - **Authentication** - JWT and API key authentication with authorization rules
 - **Database Adapters** - Pluggable database adapter system
+- **Cache Adapters** - Unified cache adapter interface for Redis, Memcached, etc.
 - **HTTP Server Adapters** - Pluggable HTTP server adapter system
 - **Plugin System** - Extensible plugin architecture
 - **Migration System** - Database migration utilities and model diffing
@@ -127,6 +128,44 @@ adapter.registerRoute(server, 'GET', '/hello', handler);
 await adapter.start(server, 3000, '0.0.0.0');
 ```
 
+### Cache Adapters
+
+The cache adapter interface provides a unified API for cache operations. Cache adapters are typically provided via plugins (e.g., `@betagors/yama-redis`).
+
+```typescript
+import { type CacheAdapter } from '@betagors/yama-core';
+
+// Cache adapters are available in HandlerContext
+export async function myHandler(context: HandlerContext) {
+  // Get from cache
+  const cached = await context.cache?.get<string>('user:42');
+  
+  if (!cached) {
+    // Fetch and cache
+    const user = await fetchUser(42);
+    await context.cache?.set('user:42', user, 3600); // 1 hour TTL
+    return user;
+  }
+  
+  return cached;
+}
+```
+
+**Cache Adapter Methods:**
+- `get<T>(key: string)` - Get a value from cache
+- `set<T>(key: string, value: T, ttlSeconds?: number)` - Set a value in cache
+- `del(key: string)` - Delete a key from cache
+- `exists(key: string)` - Check if a key exists
+- `namespace(prefix: string)` - Create a namespaced cache adapter
+- `health?()` - Optional health check method
+
+**Namespace Support:**
+```typescript
+// Create isolated cache namespace
+const tenantCache = context.cache?.namespace('tenant:123');
+await tenantCache?.set('user:42', userData); // Stores as "tenant:123:user:42"
+```
+
 ### Handler Functions (User Handlers)
 
 User handlers use `HandlerFunction` with `HandlerContext`:
@@ -142,6 +181,12 @@ export async function myHandler(context: HandlerContext) {
   
   // Access auth context
   const user = context.auth?.user;
+  
+  // Access cache (if cache plugin is loaded)
+  const cached = await context.cache?.get<string>('key');
+  if (!cached) {
+    await context.cache?.set('key', 'value', 3600);
+  }
   
   // Set status code (optional)
   context.status(201);
@@ -211,6 +256,12 @@ const schemas = entitiesToSchemas(entities);
 - `createHttpServerAdapter()` - Create an HTTP server adapter
 - `registerHttpServerAdapter()` - Register a custom HTTP server adapter
 - `HttpServerAdapter` - HTTP server adapter interface
+
+### Cache Adapters
+
+- `CacheAdapter` - Cache adapter interface
+- Cache adapters are provided via plugins (e.g., `@betagors/yama-redis`)
+- Available in `HandlerContext.cache` when a cache plugin is loaded
 
 ### Plugin System
 

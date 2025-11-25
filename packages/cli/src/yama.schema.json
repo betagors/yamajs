@@ -233,38 +233,22 @@
         },
         "store": {
           "type": "string",
-          "enum": ["memory", "redis"],
+          "enum": ["memory", "cache"],
           "default": "memory",
-          "description": "Storage backend: 'memory' (in-memory, single-instance) or 'redis' (distributed)"
-        },
-        "redis": {
-          "type": "object",
-          "description": "Redis configuration (required if store is 'redis')",
-          "properties": {
-            "url": {
-              "type": "string",
-              "description": "Redis connection URL (e.g., 'redis://localhost:6379')"
-            },
-            "host": {
-              "type": "string",
-              "description": "Redis host (default: 'localhost')"
-            },
-            "port": {
-              "type": "integer",
-              "description": "Redis port (default: 6379)"
-            },
-            "password": {
-              "type": "string",
-              "description": "Redis password"
-            },
-            "db": {
-              "type": "integer",
-              "description": "Redis database number"
-            }
-          }
+          "description": "Storage backend: 'memory' (in-memory, single-instance) or 'cache' (uses cache adapter from plugin - works with Redis, Memcached, etc.)"
         }
       },
       "required": ["maxRequests", "windowMs"]
+    },
+    "cache": {
+      "type": "object",
+      "description": "Cache configuration (optional - cache is configured via plugins)",
+      "properties": {
+        "provider": {
+          "type": "string",
+          "description": "Cache provider (e.g., 'redis', 'memcache') - configured via plugins"
+        }
+      }
     },
     "entities": {
       "type": "object",

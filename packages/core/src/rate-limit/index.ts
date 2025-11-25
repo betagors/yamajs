@@ -5,9 +5,10 @@ import type {
   RateLimitResult,
 } from "./types";
 import { createMemoryRateLimitStore, MemoryRateLimitStore } from "./memory-store";
-import { createRedisRateLimitStore, RedisRateLimitStore } from "./redis-store";
+import { createCacheRateLimitStore, CacheRateLimitStore } from "./cache-store";
 import type { HttpRequest } from "../infrastructure/server";
 import type { AuthContext } from "../schemas";
+import type { CacheAdapter } from "../infrastructure/cache";
 
 /**
  * Rate limiter instance
@@ -45,26 +46,31 @@ export function createRateLimiter(store: RateLimitStore): RateLimiter {
 
 /**
  * Create a rate limiter from configuration
- * Automatically selects the appropriate store (memory or Redis)
+ * Automatically selects the appropriate store (memory or cache)
+ * 
+ * @param config - Rate limit configuration
+ * @param cacheAdapter - Optional cache adapter from cache plugin (works with any cache implementation like Redis, Memcached, etc.)
  */
 export async function createRateLimiterFromConfig(
-  config: RateLimitConfig
+  config: RateLimitConfig,
+  cacheAdapter?: CacheAdapter
 ): Promise<RateLimiter> {
   const storeType = config.store || "memory";
 
   let store: RateLimitStore;
 
-  if (storeType === "redis") {
-    try {
-      store = await createRedisRateLimitStore(config.redis);
-    } catch (error) {
-      // Fallback to memory if Redis fails
+  if (storeType === "cache") {
+    // Use cache adapter (works with Redis, Memcached, or any cache implementation)
+    if (cacheAdapter) {
+      store = createCacheRateLimitStore(cacheAdapter);
+    } else {
       console.warn(
-        `⚠️  Failed to create Redis rate limit store, falling back to memory: ${error instanceof Error ? error.message : String(error)}`
+        "⚠️  Rate limit store is set to 'cache' but no cache adapter is available. Falling back to memory."
       );
       store = createMemoryRateLimitStore();
     }
   } else {
+    // Default to memory store
     store = createMemoryRateLimitStore();
   }
 
@@ -158,5 +164,5 @@ export function formatRateLimitHeaders(result: RateLimitResult): Record<string, 
 // Export types and stores
 export type { RateLimitConfig, RateLimitResult, RateLimitStore, RateLimitKeyStrategy } from "./types";
 export { createMemoryRateLimitStore, MemoryRateLimitStore } from "./memory-store";
-export { createRedisRateLimitStore, RedisRateLimitStore } from "./redis-store";
+export { createCacheRateLimitStore, CacheRateLimitStore } from "./cache-store";
 

@@ -1,4 +1,5 @@
 import type { AuthContext } from "../schemas";
+import type { CacheAdapter } from "./cache";
 
 /**
  * Normalized HTTP request interface
@@ -47,6 +48,7 @@ export interface HandlerContext {
   // Framework services (for future extensibility)
   db?: unknown; // Direct database adapter access
   entities?: Record<string, unknown>; // Entity repositories (e.g., context.entities.Product)
+  cache?: CacheAdapter; // Cache adapter (Redis, Memcached, etc.)
   logger?: {
     info(message: string): void;
     warn(message: string): void;
