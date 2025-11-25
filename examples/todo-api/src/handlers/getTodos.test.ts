@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { getTodos } from "./getTodos.ts";
-import type { HttpRequest, HttpResponse } from "@betagors/yama-core";
+import type { HandlerContext } from "@betagors/yama-core";
 import { todoRepository } from "../generated/db/repository.ts";
 
 // Mock the repository
@@ -11,17 +11,15 @@ vi.mock("../generated/db/repository.ts", () => ({
 }));
 
 describe("getTodos Handler", () => {
-  let mockRequest: Partial<HttpRequest>;
-  let mockReply: Partial<HttpResponse>;
+  let mockContext: Partial<HandlerContext>;
 
   beforeEach(() => {
     vi.clearAllMocks();
 
-    mockRequest = {
+    mockContext = {
       query: {},
+      status: vi.fn().mockReturnThis(),
     };
-
-    mockReply = {};
   });
 
   it("should return all todos", async () => {
@@ -43,8 +41,7 @@ describe("getTodos Handler", () => {
     vi.mocked(todoRepository.findAll).mockResolvedValue(mockTodos);
 
     const result = await getTodos(
-      mockRequest as HttpRequest,
-      mockReply as HttpResponse
+      mockContext as HandlerContext
     );
 
     expect(todoRepository.findAll).toHaveBeenCalledWith({ completed: undefined, limit: undefined, offset: 0 });
@@ -61,12 +58,11 @@ describe("getTodos Handler", () => {
       },
     ];
 
-    mockRequest.query = { completed: true };
+    mockContext.query = { completed: true };
     vi.mocked(todoRepository.findAll).mockResolvedValue(mockTodos);
 
     const result = await getTodos(
-      mockRequest as HttpRequest,
-      mockReply as HttpResponse
+      mockContext as HandlerContext
     );
 
     expect(todoRepository.findAll).toHaveBeenCalledWith({ completed: true, limit: undefined, offset: 0 });
@@ -84,12 +80,11 @@ describe("getTodos Handler", () => {
       },
     ];
 
-    mockRequest.query = { completed: false };
+    mockContext.query = { completed: false };
     vi.mocked(todoRepository.findAll).mockResolvedValue(mockTodos);
 
     const result = await getTodos(
-      mockRequest as HttpRequest,
-      mockReply as HttpResponse
+      mockContext as HandlerContext
     );
 
     expect(todoRepository.findAll).toHaveBeenCalledWith({ completed: false, limit: undefined, offset: 0 });
@@ -106,12 +101,11 @@ describe("getTodos Handler", () => {
       },
     ];
 
-    mockRequest.query = { limit: 10 };
+    mockContext.query = { limit: 10 };
     vi.mocked(todoRepository.findAll).mockResolvedValue(mockTodos);
 
     await getTodos(
-      mockRequest as HttpRequest,
-      mockReply as HttpResponse
+      mockContext as HandlerContext
     );
 
     expect(todoRepository.findAll).toHaveBeenCalledWith({ completed: undefined, limit: 10, offset: 0 });
@@ -120,12 +114,11 @@ describe("getTodos Handler", () => {
   it("should apply offset", async () => {
     const mockTodos: any[] = [];
 
-    mockRequest.query = { offset: 5 };
+    mockContext.query = { offset: 5 };
     vi.mocked(todoRepository.findAll).mockResolvedValue(mockTodos);
 
     await getTodos(
-      mockRequest as HttpRequest,
-      mockReply as HttpResponse
+      mockContext as HandlerContext
     );
 
     expect(todoRepository.findAll).toHaveBeenCalledWith({ completed: undefined, limit: undefined, offset: 5 });
@@ -134,7 +127,7 @@ describe("getTodos Handler", () => {
   it("should combine query parameters", async () => {
     const mockTodos: any[] = [];
 
-    mockRequest.query = {
+    mockContext.query = {
       completed: true,
       limit: 20,
       offset: 10,
@@ -142,8 +135,7 @@ describe("getTodos Handler", () => {
     vi.mocked(todoRepository.findAll).mockResolvedValue(mockTodos);
 
     await getTodos(
-      mockRequest as HttpRequest,
-      mockReply as HttpResponse
+      mockContext as HandlerContext
     );
 
     expect(todoRepository.findAll).toHaveBeenCalledWith({ completed: true, limit: 20, offset: 10 });
@@ -153,8 +145,7 @@ describe("getTodos Handler", () => {
     vi.mocked(todoRepository.findAll).mockResolvedValue([]);
 
     const result = await getTodos(
-      mockRequest as HttpRequest,
-      mockReply as HttpResponse
+      mockContext as HandlerContext
     );
 
     expect(result).toEqual({ todos: [] });
@@ -166,8 +157,7 @@ describe("getTodos Handler", () => {
 
     await expect(
       getTodos(
-        mockRequest as HttpRequest,
-        mockReply as HttpResponse
+        mockContext as HandlerContext
       )
     ).rejects.toThrow("Database query failed");
   });

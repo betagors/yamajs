@@ -1,3 +1,5 @@
+import type { AuthContext } from "../schemas";
+
 /**
  * Normalized HTTP request interface
  */
@@ -23,7 +25,54 @@ export interface HttpResponse {
 }
 
 /**
- * Route handler function type
+ * Handler context passed to route handlers
+ * Provides a clean, single-parameter API for handlers
+ */
+export interface HandlerContext {
+  // Request data
+  method: string;
+  url: string;
+  path: string;
+  query: Record<string, unknown>;
+  params: Record<string, unknown>;
+  body: unknown;
+  headers: Record<string, string | undefined>;
+  
+  // Authentication context
+  auth?: AuthContext;
+  
+  // Response helpers
+  status(code: number): HandlerContext;
+  
+  // Framework services (for future extensibility)
+  db?: unknown;
+  logger?: {
+    info(message: string): void;
+    warn(message: string): void;
+    error(message: string): void;
+  };
+  
+  // Original request/reply for edge cases
+  _original?: {
+    request: HttpRequest;
+    reply: HttpResponse;
+  };
+  
+  // Internal: status code set by handler (used by runtime)
+  _statusCode?: number;
+  
+  [key: string]: unknown; // Allow additional properties
+}
+
+/**
+ * Handler function type for user handlers
+ * User handlers receive a single HandlerContext parameter
+ */
+export type HandlerFunction = (context: HandlerContext) => Promise<unknown> | unknown;
+
+/**
+ * Route handler function type for adapters
+ * Adapters receive request/reply and convert them to context for user handlers
  */
 export type RouteHandler = (request: HttpRequest, reply: HttpResponse) => Promise<unknown> | unknown;
 

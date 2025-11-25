@@ -78,3 +78,4 @@ const adapter = createHttpServerAdapter('fastify', {
 
 MPL-2.0
 
+

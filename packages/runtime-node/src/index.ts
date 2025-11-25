@@ -21,8 +21,13 @@ import {
   type HttpRequest,
   type HttpResponse,
   type RouteHandler,
+  type HandlerContext,
+  type HandlerFunction,
   loadPlugin,
   type YamaPlugin,
+  generateAllCrudEndpoints,
+  generateCrudInputSchemas,
+  generateArraySchema,
 } from "@betagors/yama-core";
 import { generateOpenAPI } from "@betagors/yama-docs-generator";
 import { createFastifyAdapter } from "@betagors/yama-http-fastify";
@@ -58,7 +63,7 @@ interface YamaConfig {
   }>;
 }
 
-type HandlerFunction = RouteHandler;
+// HandlerFunction is now imported from core, which uses HandlerContext
 
 /**
  * Resolve @betagors/yama-* and @gen/* imports using package.json exports
@@ -294,11 +299,53 @@ function coerceParams(
 /**
  * Default handler for endpoints without custom handlers
  */
+/**
+ * Create a handler context from request and reply
+ */
+function createHandlerContext(
+  request: HttpRequest,
+  reply: HttpResponse,
+  authContext?: { authenticated: boolean; user?: unknown; provider?: string; token?: string }
+): HandlerContext {
+  let statusCode: number | undefined;
+  
+  const context: HandlerContext = {
+    // Request data
+    method: request.method,
+    url: request.url,
+    path: request.path,
+    query: request.query,
+    params: request.params,
+    body: request.body,
+    headers: request.headers,
+    
+    // Auth context
+    auth: authContext,
+    
+    // Status helper
+    status(code: number): HandlerContext {
+      statusCode = code;
+      context._statusCode = code;
+      return context;
+    },
+    
+    // Original request/reply
+    _original: {
+      request,
+      reply,
+    },
+    
+    _statusCode: statusCode,
+  };
+  
+  return context;
+}
+
 function createDefaultHandler(
   endpoint: NonNullable<YamaConfig["endpoints"]>[number],
   responseType?: string
 ): HandlerFunction {
-  return async (request: HttpRequest, reply: HttpResponse) => {
+  return async (context: HandlerContext) => {
     // If response type is specified, return an empty object (will be validated)
     // Otherwise, return a simple success message
     if (responseType) {
@@ -350,14 +397,12 @@ function registerRoutes(
     }
 
     // Wrap handler with validation and auth
-    // Note: Handlers can use either normalized HttpRequest/HttpResponse or original engine types
+    // The wrapped handler receives request/reply from the adapter, then creates context for user handlers
     const wrappedHandler: RouteHandler = async (request: HttpRequest, reply: HttpResponse) => {
       try {
-        // Get original request/reply for compatibility with existing handlers
-        const originalRequest = (request as HttpRequest & { _original?: unknown })._original;
-        const originalReply = (reply as HttpResponse & { _original?: unknown })._original;
-
         // Authenticate and authorize request
+        let authContext: { authenticated: boolean; user?: unknown; provider?: string; token?: string } | undefined;
+        
         if (config.auth || endpoint.auth) {
           const authResult = await authenticateAndAuthorize(
             request.headers,
@@ -373,12 +418,7 @@ function registerRoutes(
             return;
           }
 
-          // Attach auth context to request for handlers to use
-          (request as HttpRequest & { auth: typeof authResult.context }).auth = authResult.context;
-          // Also attach to original request if available
-          if (originalRequest) {
-            (originalRequest as { auth: typeof authResult.context }).auth = authResult.context;
-          }
+          authContext = authResult.context;
         }
 
         // Validate and coerce path parameters if specified
@@ -437,10 +477,24 @@ function registerRoutes(
           }
         }
 
-        // Call handler - handlers can use normalized types or access _original for engine-specific types
-        // For backward compatibility with Fastify handlers, we pass the normalized types
-        // but handlers can access request._original and reply._original if needed
-        const result = await handlerFn(request, reply);
+        // Create handler context
+        const context = createHandlerContext(request, reply, authContext);
+
+        // Call handler with context
+        const result = await handlerFn(context);
+        
+        // Determine status code: use handler-set status, or default based on method
+        let statusCode = context._statusCode;
+        if (statusCode === undefined) {
+          // Default status codes
+          if (method.toUpperCase() === "POST") {
+            statusCode = 201;
+          } else if (method.toUpperCase() === "DELETE") {
+            statusCode = 204;
+          } else {
+            statusCode = 200;
+          }
+        }
         
         // Validate response if response model is specified
         if (response?.type && result !== undefined) {
@@ -467,6 +521,14 @@ function registerRoutes(
           }
         }
 
+        // Send response with appropriate status code
+        if (statusCode === 204) {
+          // No content - don't send body
+          reply.status(statusCode).send(undefined);
+        } else {
+          reply.status(statusCode).send(result);
+        }
+        
         return result;
       } catch (error) {
         const handlerLabel = handlerName || "default";
@@ -608,12 +670,64 @@ export async function startYamaNodeRuntime(
 
       // Convert entities to schemas and merge with explicit schemas
       const entitySchemas = config.entities ? entitiesToSchemas(config.entities) : {};
-      const allSchemas = mergeSchemas(config.schemas, entitySchemas);
-
-      // Register schemas for validation
-      if (Object.keys(allSchemas).length > 0) {
-        validator.registerSchemas(allSchemas);
-        console.log(`✅ Registered ${Object.keys(allSchemas).length} schema(s) for validation`);
+      
+      // Generate CRUD input schemas and array schemas for entities with CRUD enabled
+      if (config.entities) {
+        const crudInputSchemas: YamaSchemas = {};
+        const crudArraySchemas: YamaSchemas = {};
+        
+        for (const [entityName, entityDef] of Object.entries(config.entities)) {
+          if (entityDef.crud) {
+            const inputSchemas = generateCrudInputSchemas(entityName, entityDef);
+            const arraySchemas = generateArraySchema(entityName, entityDef);
+            Object.assign(crudInputSchemas, inputSchemas);
+            Object.assign(crudArraySchemas, arraySchemas);
+          }
+        }
+        
+        // Merge: entity schemas -> CRUD input schemas -> CRUD array schemas -> explicit schemas
+        const mergedWithInputs = mergeSchemas(crudInputSchemas, entitySchemas);
+        const mergedWithArrays = mergeSchemas(crudArraySchemas, mergedWithInputs);
+        const allSchemas = mergeSchemas(config.schemas, mergedWithArrays);
+        
+        // Register schemas for validation
+        if (Object.keys(allSchemas).length > 0) {
+          validator.registerSchemas(allSchemas);
+          console.log(`✅ Registered ${Object.keys(allSchemas).length} schema(s) for validation`);
+        }
+        
+        // Generate CRUD endpoints and merge with existing endpoints
+        const crudEndpoints = generateAllCrudEndpoints(config.entities);
+        if (crudEndpoints.length > 0) {
+          // Convert CrudEndpoint[] to YamaConfig["endpoints"] format
+          const convertedCrudEndpoints: NonNullable<YamaConfig["endpoints"]> = crudEndpoints.map(ep => ({
+            path: ep.path,
+            method: ep.method,
+            description: ep.description,
+            params: ep.params,
+            query: ep.query,
+            body: ep.body,
+            response: ep.response,
+            auth: ep.auth,
+            // No handler specified - will use default handler
+          }));
+          
+          // Merge CRUD endpoints with existing endpoints
+          config.endpoints = [
+            ...(config.endpoints || []),
+            ...convertedCrudEndpoints,
+          ];
+          
+          console.log(`✅ Generated ${crudEndpoints.length} CRUD endpoint(s) from entities`);
+        }
+      } else {
+        const allSchemas = mergeSchemas(config.schemas, entitySchemas);
+        
+        // Register schemas for validation
+        if (Object.keys(allSchemas).length > 0) {
+          validator.registerSchemas(allSchemas);
+          console.log(`✅ Registered ${Object.keys(allSchemas).length} schema(s) for validation`);
+        }
       }
 
       // Determine handlers directory (src/handlers relative to YAML file)

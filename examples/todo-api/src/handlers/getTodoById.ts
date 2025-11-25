@@ -1,21 +1,20 @@
-import type { HttpRequest, HttpResponse } from "@betagors/yama-core";
+import type { HandlerContext } from "@betagors/yama-core";
 import { todoRepository } from "@yama/db";
 import type { Todo } from "@yama/types";
 
 export async function getTodoById(
-  request: HttpRequest,
-  reply: HttpResponse
-): Promise<Todo | void> {
-  const params = request.params as { id: string };
+  context: HandlerContext
+): Promise<Todo | { error: string; message: string }> {
+  const params = context.params as { id: string };
   const { id } = params;
   const todo = await todoRepository.findById(id);
 
   if (!todo) {
-    reply.status(404).send({
+    context.status(404);
+    return {
       error: "Not found",
       message: `Todo with id "${id}" not found`
-    });
-    return;
+    };
   }
 
   return todo;

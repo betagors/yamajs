@@ -171,25 +171,30 @@ endpoints:
 
 ## Handler Context
 
-Handlers receive a context object with request information:
+Handlers receive a single `HandlerContext` parameter with request information and framework services:
 
 ```typescript
 import { HandlerContext } from '@betagors/yama-core';
 
-export async function myHandler(
-  request: HttpRequest,
-  reply: HttpResponse
-) {
+export async function myHandler(context: HandlerContext) {
   // Access authenticated user
-  const userId = request.auth?.userId;
+  const userId = context.auth?.user?.id;
   
   // Access path parameters
-  const id = request.params.id;
+  const id = context.params.id;
   
   // Access query parameters
-  const page = request.query.page;
+  const page = context.query.page;
   
   // Access request body
+  const data = context.body;
+  
+  // Set response status (optional - framework sets defaults)
+  context.status(201);
+  
+  // Return response data (framework handles sending)
+  return { success: true };
+}
   const body = request.body;
   
   // Return response
@@ -223,4 +228,5 @@ This package depends on:
 ## License
 
 MPL-2.0
+
 

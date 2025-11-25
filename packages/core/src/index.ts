@@ -43,10 +43,20 @@ export {
   type EntityIndex,
   type YamaEntities,
   type DatabaseConfig,
+  type CrudConfig,
   entityToSchema,
   entitiesToSchemas,
   mergeSchemas,
 } from "./entities";
+
+// Export CRUD generation functions
+export {
+  type CrudEndpoint,
+  generateCrudEndpoints,
+  generateAllCrudEndpoints,
+  generateCrudInputSchemas,
+  generateArraySchema,
+} from "./crud";
 
 // Export environment utilities
 export {
@@ -68,6 +78,8 @@ export {
   type HttpRequest,
   type HttpResponse,
   type RouteHandler,
+  type HandlerContext,
+  type HandlerFunction,
   type HttpServerInstance,
   createHttpServerAdapter,
   registerHttpServerAdapter,

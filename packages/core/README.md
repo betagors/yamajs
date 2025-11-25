@@ -118,12 +118,37 @@ import { createHttpServerAdapter, type RouteHandler } from '@betagors/yama-core'
 const adapter = createHttpServerAdapter('fastify', {});
 const server = adapter.createServer({});
 
+// RouteHandler is used by adapters (takes request/reply)
 const handler: RouteHandler = async (request, reply) => {
   return { message: 'Hello, Yama!' };
 };
 
 adapter.registerRoute(server, 'GET', '/hello', handler);
 await adapter.start(server, 3000, '0.0.0.0');
+```
+
+### Handler Functions (User Handlers)
+
+User handlers use `HandlerFunction` with `HandlerContext`:
+
+```typescript
+import { type HandlerContext } from '@betagors/yama-core';
+
+export async function myHandler(context: HandlerContext) {
+  // Access request data
+  const id = context.params.id;
+  const query = context.query;
+  const body = context.body;
+  
+  // Access auth context
+  const user = context.auth?.user;
+  
+  // Set status code (optional)
+  context.status(201);
+  
+  // Return response
+  return { id, message: 'Success' };
+}
 ```
 
 ### Plugin System
@@ -218,4 +243,5 @@ This package is written in TypeScript and includes full type definitions. All ex
 ## License
 
 MPL-2.0
+
 

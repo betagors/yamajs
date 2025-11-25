@@ -1,12 +1,11 @@
-import type { HttpRequest, HttpResponse } from "@betagors/yama-core";
+import type { HandlerContext } from "@betagors/yama-core";
 import { todoRepository } from "@yama/db";
 import type { TodoList } from "@yama/types";
 
 export async function getTodos(
-  request: HttpRequest,
-  reply: HttpResponse
+  context: HandlerContext
 ): Promise<TodoList> {
-  const query = request.query as {
+  const query = context.query as {
     completed?: boolean;
     limit?: number;
     offset?: number;

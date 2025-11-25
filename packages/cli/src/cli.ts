@@ -22,6 +22,10 @@ import { schemaRestoreCommand } from "./commands/schema-restore.ts";
 import { pluginListCommand, pluginInstallCommand, pluginValidateCommand } from "./commands/plugin.ts";
 import { dbListCommand } from "./commands/db-list.ts";
 import { dbInspectCommand } from "./commands/db-inspect.ts";
+import { addCommand } from "./commands/add.ts";
+import { addEndpointCommand } from "./commands/add-endpoint.ts";
+import { addSchemaCommand } from "./commands/add-schema.ts";
+import { addEntityCommand } from "./commands/add-entity.ts";
 
 const program = new Command();
 
@@ -111,6 +115,41 @@ program
   .description("List all schemas")
   .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
   .action(schemasCommand);
+
+// Add commands
+program
+  .command("add")
+  .description("Add endpoint, schema, or entity to yama.yaml")
+  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
+  .option("-t, --type <type>", "Type to add (endpoint, schema, entity)")
+  .action(addCommand);
+
+program
+  .command("add:endpoint")
+  .alias("add-endpoint")
+  .description("Add a new endpoint")
+  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
+  .action(async (options) => {
+    await addEndpointCommand(options);
+  });
+
+program
+  .command("add:schema")
+  .alias("add-schema")
+  .description("Add a new schema")
+  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
+  .action(async (options) => {
+    await addSchemaCommand(options);
+  });
+
+program
+  .command("add:entity")
+  .alias("add-entity")
+  .description("Add a new entity")
+  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
+  .action(async (options) => {
+    await addEntityCommand(options);
+  });
 
 program
   .command("docs")

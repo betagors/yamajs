@@ -42,6 +42,33 @@ export interface EntityIndex {
 }
 
 /**
+ * CRUD configuration for auto-generating endpoints
+ */
+export interface CrudConfig {
+  /**
+   * Enable CRUD endpoint generation for this entity
+   * Can be:
+   * - `true` - Generate all CRUD endpoints (GET, POST, PUT, DELETE)
+   * - `false` - Don't generate CRUD endpoints
+   * - Array of methods to generate (e.g., ["GET", "POST"])
+   * - Object with method-specific config (e.g., { "GET": { auth: { required: true } } })
+   */
+  enabled?: boolean | string[] | Record<string, { auth?: { required?: boolean; roles?: string[] }; path?: string }>;
+  /**
+   * Base path for CRUD endpoints (default: pluralized entity name in lowercase)
+   * e.g., "Example" -> "/examples"
+   */
+  path?: string;
+  /**
+   * Auth configuration applied to all CRUD endpoints (can be overridden per method)
+   */
+  auth?: {
+    required?: boolean;
+    roles?: string[];
+  };
+}
+
+/**
  * Entity definition
  */
 export interface EntityDefinition {
@@ -49,6 +76,7 @@ export interface EntityDefinition {
   fields: Record<string, EntityField>;
   indexes?: EntityIndex[];
   apiSchema?: string; // Optional custom API schema name (default: entity name)
+  crud?: boolean | CrudConfig; // Optional CRUD endpoint generation
 }
 
 /**
