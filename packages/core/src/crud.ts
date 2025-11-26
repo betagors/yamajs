@@ -1,6 +1,7 @@
 import type { EntityDefinition, YamaEntities, CrudConfig } from "./entities.js";
 import type { SchemaField } from "./schemas.js";
 import { entityToSchema } from "./entities.js";
+import type { PaginationConfig } from "./pagination/types.js";
 
 /**
  * Endpoint definition for CRUD operations
@@ -80,6 +81,114 @@ function generateArraySchemaName(entityName: string): string {
 }
 
 /**
+ * Get all searchable fields from entity (string/text fields)
+ */
+function getAllSearchableFields(entityDef: EntityDefinition): string[] {
+  const searchable: string[] = [];
+  for (const [fieldName, field] of Object.entries(entityDef.fields)) {
+    if (field.api !== false && (field.type === "string" || field.type === "text")) {
+      // Get API field name
+      const apiFieldName = field.api && typeof field.api === "string"
+        ? field.api
+        : field.dbColumn
+        ? field.dbColumn.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase())
+        : fieldName;
+      searchable.push(apiFieldName);
+    }
+  }
+  return searchable;
+}
+
+/**
+ * Get searchable fields from entity definition based on search config
+ * Returns array of API field names that can be searched
+ */
+function getSearchableFields(
+  entityDef: EntityDefinition,
+  searchConfig?: CrudConfig["search"]
+): string[] {
+  // Handle simplified syntax: boolean
+  if (typeof searchConfig === "boolean") {
+    if (searchConfig === false) {
+      return []; // Explicitly disabled
+    }
+    // true - use all searchable fields
+    return getAllSearchableFields(entityDef);
+  }
+
+  // Handle simplified syntax: array of field names
+  if (Array.isArray(searchConfig)) {
+    return searchConfig;
+  }
+
+  // Handle object config
+  if (searchConfig && typeof searchConfig === "object") {
+    // If search config specifies fields, use those
+    if (searchConfig.fields) {
+      if (Array.isArray(searchConfig.fields)) {
+        return searchConfig.fields;
+      }
+      if (searchConfig.fields === true) {
+        return getAllSearchableFields(entityDef);
+      }
+    }
+  }
+
+  // Default: return all string/text fields (auto-enabled)
+  return getAllSearchableFields(entityDef);
+}
+
+/**
+ * Check if search should be enabled for an entity
+ * Returns true if entity has searchable fields and search is not explicitly disabled
+ */
+function shouldEnableSearch(
+  entityDef: EntityDefinition,
+  crudConfig?: CrudConfig | boolean
+): boolean {
+  // If CRUD is not enabled or is a boolean, check if entity has searchable fields
+  if (!crudConfig || typeof crudConfig === "boolean") {
+    return getAllSearchableFields(entityDef).length > 0;
+  }
+
+  // Check search config
+  const searchConfig = crudConfig.search;
+  
+  // Explicitly disabled
+  if (searchConfig === false) {
+    return false;
+  }
+
+  // Explicitly enabled or has searchable fields
+  if (searchConfig === true || Array.isArray(searchConfig) || (searchConfig && typeof searchConfig === "object")) {
+    return true;
+  }
+
+  // Auto-enable if entity has searchable fields
+  return getAllSearchableFields(entityDef).length > 0;
+}
+
+/**
+ * Get search mode from config (default: "contains")
+ */
+function getSearchMode(searchConfig?: CrudConfig["search"]): "contains" | "starts" | "ends" | "exact" {
+  if (searchConfig && typeof searchConfig === "object" && searchConfig.mode) {
+    return searchConfig.mode;
+  }
+  return "contains";
+}
+
+/**
+ * Check if full-text search should be enabled (default: true)
+ */
+function shouldEnableFullText(searchConfig?: CrudConfig["search"]): boolean {
+  if (searchConfig && typeof searchConfig === "object") {
+    return searchConfig.fullText !== false; // Default to true unless explicitly false
+  }
+  return true; // Default enabled
+}
+
+/**
  * Check if a method should be generated based on CRUD config
  * Supports both individual methods and method groups (read, write, mutate, etc.)
  */
@@ -148,7 +257,7 @@ function methodBelongsToGroup(method: string, group: string): boolean {
 function getMethodConfig(
   method: string,
   crudConfig: CrudConfig | boolean
-): { auth?: { required?: boolean; roles?: string[] }; path?: string; inputType?: string; responseType?: string } | undefined {
+): { auth?: { required?: boolean; roles?: string[]; permissions?: string[]; handler?: string }; path?: string; inputType?: string; responseType?: string } | undefined {
   if (typeof crudConfig === "boolean") {
     return undefined;
   }
@@ -271,14 +380,48 @@ export function generateCrudEndpoints(
   if (shouldGenerateMethod("GET", crudConfig)) {
     const methodConfig = getMethodConfig("GET", crudConfig);
     const responseType = getResponseType("GET", crudConfig, arraySchemaName, "list");
+    
+    // Build query parameters based on pagination config
+    const queryParams: Record<string, SchemaField> = {};
+    
+    // Handle pagination config
+    const paginationConfig = typeof crudConfig === "object" ? crudConfig.pagination : undefined;
+    if (paginationConfig === undefined || paginationConfig === true) {
+      // Default: offset pagination
+      queryParams.limit = { type: "number", required: false };
+      queryParams.offset = { type: "number", required: false };
+    } else if (typeof paginationConfig === "object") {
+      if (paginationConfig.type === "page" || !paginationConfig.type) {
+        // Page-based pagination (or default to page if type not specified but page/pageSize provided)
+        queryParams.page = { type: "number", required: false };
+        queryParams.pageSize = { type: "number", required: false };
+      } else if (paginationConfig.type === "cursor") {
+        // Cursor-based pagination
+        queryParams.cursor = { type: "string", required: false };
+        queryParams.limit = { type: "number", required: false };
+      } else {
+        // Offset pagination (explicit)
+        queryParams.limit = { type: "number", required: false };
+        queryParams.offset = { type: "number", required: false };
+      }
+    }
+
+    // Auto-enable search if entity has searchable fields (smart defaults)
+    const searchEnabled = shouldEnableSearch(entityDef, crudConfig);
+    if (searchEnabled) {
+      const searchConfig = typeof crudConfig === "object" ? crudConfig.search : undefined;
+      // Add full-text search parameter (enabled by default)
+      if (shouldEnableFullText(searchConfig)) {
+        queryParams.search = { type: "string", required: false };
+      }
+      // Individual field search is handled by existing query param matching
+    }
+
     endpoints.push({
       path: basePath,
       method: "GET",
       description: `List all ${schemaName} records`,
-      query: {
-        limit: { type: "number", required: false },
-        offset: { type: "number", required: false },
-      },
+      query: queryParams,
       response: {
         type: responseType,
       },

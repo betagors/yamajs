@@ -5,6 +5,7 @@ import inquirer from "inquirer";
 import { ensureDir, readPackageJson, writePackageJson } from "../utils/file-utils.ts";
 import { createSpinner, colors, printBox, success, error, warning, info } from "../utils/cli-utils.ts";
 import { getYamaSchemaPath } from "../utils/paths.ts";
+import { detectIDE, getIDEName } from "../utils/project-detection.ts";
 
 interface CreateOptions {
   name?: string;
@@ -67,12 +68,14 @@ function setupVSCodeSettings(cwd: string, schemaPath: string): void {
   const settingsPath = join(vscodeDir, "settings.json");
   
   let settings: Record<string, unknown> = {};
+  let hasExistingSettings = false;
   
   // Read existing settings if they exist
   if (existsSync(settingsPath)) {
     try {
       const content = readFileSync(settingsPath, "utf-8");
       settings = JSON.parse(content);
+      hasExistingSettings = true;
     } catch {
       // If parsing fails, start fresh
       settings = {};
@@ -94,9 +97,40 @@ function setupVSCodeSettings(cwd: string, schemaPath: string): void {
     "*.yama.yml"
   ];
   
-  // Write settings
+  // Add helpful settings for YAML editing
+  settings["yaml.validate"] = true;
+  settings["yaml.hover"] = true;
+  settings["yaml.completion"] = true;
+  settings["files.associations"] = {
+    ...(settings["files.associations"] as Record<string, string> || {}),
+    "yama.yaml": "yaml",
+    "yama.yml": "yaml"
+  };
+  
+  // Write settings with comment header if it's a new file
   ensureDir(vscodeDir);
-  writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + "\n", "utf-8");
+  let settingsContent = JSON.stringify(settings, null, 2) + "\n";
+  
+  if (!hasExistingSettings) {
+    // Add helpful comments at the top
+    // Note: This config works for both VS Code and Cursor (they share .vscode folder)
+    settingsContent = `{
+  // Yama YAML autocomplete configuration
+  // Works with VS Code and Cursor (both use .vscode folder)
+  // 
+  // 📦 Required Extension: Install "YAML" by Red Hat (redhat.vscode-yaml)
+  //    - Open Extensions (Ctrl+Shift+X) and search for "YAML"
+  //    - Or install via command:
+  //      VS Code: code --install-extension redhat.vscode-yaml
+  //      Cursor:  cursor --install-extension redhat.vscode-yaml
+  //
+  // After installing, reload your editor (Ctrl+Shift+P -> "Reload Window")
+  // Then you'll get autocomplete, validation, and hover docs for yama.yaml files!
+  //
+${settingsContent.slice(1)}`;
+  }
+  
+  writeFileSync(settingsPath, settingsContent, "utf-8");
 }
 
 /**
@@ -119,6 +153,95 @@ function setupYamlLSConfig(cwd: string, schemaPath: string): void {
   };
   
   writeFileSync(configPath, JSON.stringify(config, null, 2) + "\n", "utf-8");
+}
+
+/**
+ * Setup WebStorm/JetBrains IDE JSON Schema configuration
+ * Creates .idea/jsonSchemas.xml for YAML schema mapping
+ */
+function setupWebStormConfig(cwd: string, schemaPath: string): void {
+  const ideaDir = join(cwd, ".idea");
+  const schemasPath = join(ideaDir, "jsonSchemas.xml");
+  
+  // Convert relative path to absolute for WebStorm
+  const absoluteSchemaPath = resolve(cwd, schemaPath).replace(/\\/g, "/");
+  
+  // Check if jsonSchemas.xml already exists
+  let existingContent = "";
+  if (existsSync(schemasPath)) {
+    try {
+      existingContent = readFileSync(schemasPath, "utf-8");
+      // Check if Yama schema is already configured
+      if (existingContent.includes("Yama Configuration Schema") || 
+          existingContent.includes("yama.schema.json")) {
+        // Already configured, skip
+        return;
+      }
+    } catch {
+      // If we can't read it, we'll create a new one
+      existingContent = "";
+    }
+  }
+  
+  // Create .idea directory if it doesn't exist
+  ensureDir(ideaDir);
+  
+  // Create or update jsonSchemas.xml
+  // WebStorm uses XML format for JSON schema mappings
+  const xmlContent = `<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="JsonSchemaMappingsProjectConfiguration">
+    <state>
+      <map>
+        <entry key="Yama Configuration Schema">
+          <value>
+            <JsonSchemaMapping>
+              <name>Yama Configuration Schema</name>
+              <source>
+                <file url="file://${absoluteSchemaPath}" />
+              </source>
+              <path>
+                <pathitem name="yama.yaml" />
+                <pathitem name="yama.yml" />
+                <pathitem name="*.yama.yaml" />
+                <pathitem name="*.yama.yml" />
+              </path>
+              <version>JSON Schema version 7</version>
+            </JsonSchemaMapping>
+          </value>
+        </entry>
+      </map>
+    </state>
+  </component>
+</project>
+`;
+  
+  // If there's existing content, we should merge it, but for simplicity,
+  // we'll append our schema (WebStorm will handle duplicates)
+  if (existingContent && !existingContent.includes("Yama Configuration Schema")) {
+    // Try to insert before closing </project> tag
+    const insertPos = existingContent.lastIndexOf("</project>");
+    if (insertPos > 0) {
+      const beforeClosing = existingContent.substring(0, insertPos);
+      const afterClosing = existingContent.substring(insertPos);
+      // Extract the entry from our template
+      const entryMatch = xmlContent.match(/<entry key="Yama Configuration Schema">[\s\S]*?<\/entry>/);
+      if (entryMatch) {
+        // Find the map tag and insert before it closes
+        const mapClosePos = beforeClosing.lastIndexOf("</map>");
+        if (mapClosePos > 0) {
+          const newContent = beforeClosing.substring(0, mapClosePos) + 
+                           "\n        " + entryMatch[0] + "\n      " +
+                           beforeClosing.substring(mapClosePos) + afterClosing;
+          writeFileSync(schemasPath, newContent, "utf-8");
+          return;
+        }
+      }
+    }
+  }
+  
+  // Write new file or overwrite if we couldn't merge
+  writeFileSync(schemasPath, xmlContent, "utf-8");
 }
 
 /**
@@ -558,22 +681,64 @@ shamefully-hoist=false
     }
   }
 
-  // Setup editor configuration for autocomplete
-  const editorSpinner = createSpinner("Configuring editor autocomplete...");
-  try {
-    const yamaYamlPath = join(projectPath, "yama.yaml");
-    const schemaPath = getYamaSchemaPath(yamaYamlPath);
+  // Setup editor configuration for autocomplete (only for supported IDEs)
+  const detectedIDE = detectIDE(projectPath);
+  if (detectedIDE) {
+    const editorSpinner = createSpinner(`Configuring ${getIDEName(detectedIDE)} autocomplete...`);
+    try {
+      const yamaYamlPath = join(projectPath, "yama.yaml");
+      const schemaPath = getYamaSchemaPath(yamaYamlPath);
+      
+      // VS Code and Cursor both use .vscode folder
+      if (detectedIDE === "vscode" || detectedIDE === "cursor") {
+        setupVSCodeSettings(projectPath, schemaPath);
+      }
+      
+      // WebStorm/JetBrains uses .idea folder
+      if (detectedIDE === "webstorm") {
+        setupWebStormConfig(projectPath, schemaPath);
+      }
+      
+      // Zed uses .zed folder (if we add Zed support later)
+      // if (detectedIDE === "zed") {
+      //   setupZedSettings(projectPath, schemaPath);
+      // }
+      
+      // Setup YAML Language Server config (works for all IDEs)
+      setupYamlLSConfig(projectPath, schemaPath);
+      
+      editorSpinner.succeed(`Configured ${getIDEName(detectedIDE)} autocomplete`);
+    } catch (err) {
+      editorSpinner.fail("Failed to configure editor (non-fatal)");
+      // Non-fatal, continue
+    }
     
-    // Setup VS Code settings
-    setupVSCodeSettings(projectPath, schemaPath);
+    // Show editor setup instructions
+    console.log();
+    info(`📝 Editor Setup (${getIDEName(detectedIDE)}):`);
+    console.log(colors.dim(`   Autocomplete is configured!`));
     
-    // Setup YAML Language Server config
-    setupYamlLSConfig(projectPath, schemaPath);
-    
-    editorSpinner.succeed("Configured editor autocomplete");
-  } catch (err) {
-    editorSpinner.fail("Failed to configure editor (non-fatal)");
-    // Non-fatal, continue
+    if (detectedIDE === "vscode" || detectedIDE === "cursor") {
+      console.log(colors.warning(`   ⚠️  Don't forget to install the YAML extension:`));
+      console.log(colors.dim(`     1. Open Extensions (Ctrl+Shift+X)`));
+      console.log(colors.dim(`     2. Search for "YAML" by Red Hat`));
+      console.log(colors.dim(`     3. Install and reload ${getIDEName(detectedIDE)}`));
+      const installCmd = detectedIDE === "cursor" 
+        ? "cursor --install-extension redhat.vscode-yaml"
+        : "code --install-extension redhat.vscode-yaml";
+      console.log(colors.dim(`   Or run: ${installCmd}`));
+    } else if (detectedIDE === "webstorm") {
+      console.log(colors.dim(`   ✅ WebStorm has built-in YAML support!`));
+      console.log(colors.dim(`   The schema is configured in .idea/jsonSchemas.xml`));
+      console.log(colors.dim(`   You may need to restart WebStorm for changes to take effect.`));
+    }
+  } else {
+    // No supported IDE detected
+    console.log();
+    warning("📝 Editor Setup:");
+    console.log(colors.dim(`   No supported IDE detected (VS Code, Cursor, Zed, or WebStorm).`));
+    console.log(colors.dim(`   Autocomplete will still work via the schema comment in yama.yaml`));
+    console.log(colors.dim(`   if you have a YAML Language Server extension installed.`));
   }
 
   // Create README.md

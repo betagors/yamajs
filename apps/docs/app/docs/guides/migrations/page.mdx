@@ -1,0 +1,239 @@
+# Database Migrations
+
+Yama provides a complete migration system to manage your database schema changes safely.
+
+## Overview
+
+Migrations are versioned SQL files that track changes to your database schema. Yama generates migrations from your `yama.yaml` schemas and applies them in order.
+
+## Generate a Migration
+
+When you modify schemas in `yama.yaml`, generate a migration:
+
+```bash
+yama schema:generate --name add_users_table
+```
+
+This creates a migration file in `migrations/`:
+
+```
+migrations/
+└── 20231126120000_add_users_table.sql
+```
+
+## Migration File Format
+
+```sql
+-- Migration: add_users_table
+-- Created: 2023-11-26T12:00:00Z
+
+-- Up
+CREATE TABLE users (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email VARCHAR(255) NOT NULL UNIQUE,
+  name VARCHAR(100) NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_users_email ON users(email);
+
+-- Down
+DROP TABLE IF EXISTS users;
+```
+
+## Apply Migrations
+
+Apply pending migrations to your database:
+
+```bash
+yama schema:apply
+```
+
+For a specific environment:
+
+```bash
+yama schema:apply --env production
+```
+
+## Check Migration Status
+
+See which migrations have been applied:
+
+```bash
+yama schema:status
+```
+
+Output:
+
+```
+Migration Status
+================
+✓ 20231126120000_add_users_table
+✓ 20231126130000_add_posts_table
+○ 20231126140000_add_comments_table (pending)
+```
+
+## View Migration History
+
+See the complete migration history:
+
+```bash
+yama schema:history
+```
+
+## Rollback Migrations
+
+Roll back the last migration:
+
+```bash
+yama schema:rollback
+```
+
+Roll back multiple migrations:
+
+```bash
+yama schema:rollback --steps 3
+```
+
+## Schema Sync Check
+
+Check if your database is in sync with `yama.yaml`:
+
+```bash
+yama schema:check
+```
+
+## Scaffold Common Changes
+
+Quickly scaffold common schema changes:
+
+```bash
+# Add a new table
+yama schema:scaffold add-table posts
+
+# Add a column
+yama schema:scaffold add-column users avatar_url
+
+# Add an index
+yama schema:scaffold add-index users email
+```
+
+## Best Practices
+
+### 1. Always Review Generated Migrations
+
+Before applying, review the generated SQL:
+
+```bash
+cat migrations/20231126120000_add_users_table.sql
+```
+
+### 2. Test Migrations Locally First
+
+```bash
+# Apply to development database
+yama schema:apply --env development
+
+# Verify the changes
+yama db inspect users
+
+# Then apply to production
+yama schema:apply --env production
+```
+
+### 3. Use Transactions
+
+Wrap complex migrations in transactions:
+
+```sql
+-- Up
+BEGIN;
+
+ALTER TABLE users ADD COLUMN role VARCHAR(50) DEFAULT 'user';
+UPDATE users SET role = 'admin' WHERE email LIKE '%@company.com';
+
+COMMIT;
+
+-- Down
+BEGIN;
+
+ALTER TABLE users DROP COLUMN role;
+
+COMMIT;
+```
+
+### 4. Handle Data Migrations
+
+For data migrations, use separate files:
+
+```sql
+-- Migration: backfill_user_roles
+-- Type: data
+
+-- Up
+UPDATE users 
+SET role = CASE 
+  WHEN email LIKE '%@admin.com' THEN 'admin'
+  ELSE 'user'
+END
+WHERE role IS NULL;
+
+-- Down
+-- Data migrations typically aren't reversible
+```
+
+### 5. Version Control
+
+Always commit migrations to version control:
+
+```bash
+git add migrations/
+git commit -m "Add users table migration"
+```
+
+## Environment-Specific Migrations
+
+Apply migrations to different environments:
+
+```bash
+# Development
+yama schema:apply --env development
+
+# Staging
+yama schema:apply --env staging
+
+# Production
+yama schema:apply --env production
+```
+
+Each environment uses its own database URL from the corresponding `.env` file.
+
+## Troubleshooting
+
+### Migration Failed
+
+If a migration fails:
+
+1. Check the error message
+2. Fix the SQL in the migration file
+3. Re-run `yama schema:apply`
+
+### Out of Sync
+
+If your database is out of sync:
+
+```bash
+# Check current state
+yama schema:status
+
+# Force sync (use with caution)
+yama schema:apply --force
+```
+
+### Conflicting Migrations
+
+If you have conflicting migrations from different branches:
+
+1. Merge the branches
+2. Resolve conflicts in migration files
+3. Run `yama schema:apply`

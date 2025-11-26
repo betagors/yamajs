@@ -1,0 +1,168 @@
+# Deploying with Docker
+
+Deploy your Yama application using Docker containers.
+
+## Prerequisites
+
+- Docker installed ([get Docker](https://www.docker.com/get-started))
+- Your Yama project ready for deployment
+
+## Dockerfile
+
+Create a `Dockerfile` in your project root:
+
+```dockerfile
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Copy package files
+COPY package.json pnpm-lock.yaml ./
+RUN corepack enable pnpm && pnpm install --frozen-lockfile
+
+# Copy source and build
+COPY . .
+RUN pnpm build
+
+# Production image
+FROM node:20-alpine AS runner
+
+WORKDIR /app
+
+# Copy package files
+COPY package.json pnpm-lock.yaml ./
+RUN corepack enable pnpm && pnpm install --prod --frozen-lockfile
+
+# Copy built application
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
+
+# Expose port
+EXPOSE 4000
+
+# Start application
+CMD ["node", "dist/server.js"]
+```
+
+## Build Image
+
+```bash
+docker build -t my-yama-app .
+```
+
+## Run Container
+
+```bash
+docker run -p 4000:4000 \
+  -e DATABASE_URL=postgresql://... \
+  -e JWT_SECRET=your-secret \
+  my-yama-app
+```
+
+## Docker Compose
+
+Create a `docker-compose.yml`:
+
+```yaml
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "4000:4000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@db:5432/yama
+      - JWT_SECRET=${JWT_SECRET}
+    depends_on:
+      - db
+  
+  db:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=yama
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
+```
+
+Run with:
+
+```bash
+docker-compose up -d
+```
+
+## Production Optimizations
+
+### Multi-stage Builds
+
+Use multi-stage builds to reduce image size:
+
+```dockerfile
+FROM node:20-alpine AS builder
+# ... build steps ...
+
+FROM node:20-alpine AS runner
+# ... only copy what's needed ...
+```
+
+### Health Checks
+
+Add health checks:
+
+```dockerfile
+HEALTHCHECK --interval=30s --timeout=3s \
+  CMD node -e "require('http').get('http://localhost:4000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
+```
+
+### Non-root User
+
+Run as non-root:
+
+```dockerfile
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S yama -u 1001
+USER yama
+```
+
+## Kubernetes
+
+Deploy to Kubernetes:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: yama-app
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: yama-app
+  template:
+    metadata:
+      labels:
+        app: yama-app
+    spec:
+      containers:
+      - name: app
+        image: my-yama-app:latest
+        ports:
+        - containerPort: 4000
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: yama-secrets
+              key: database-url
+```
+
+## Next Steps
+
+- Learn about [Vercel deployment](/docs/deployment/vercel)
+- See [Environment Variables guide](/docs/guides/environment-variables)
+

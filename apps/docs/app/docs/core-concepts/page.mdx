@@ -1,0 +1,83 @@
+# Core Concepts
+
+Yama is built around a few core concepts that work together to create powerful APIs with minimal code.
+
+## Schemas
+
+Schemas define the structure and validation rules for your data. They're reusable definitions that can be referenced throughout your configuration.
+
+```yaml
+schemas:
+  User:
+    type: object
+    properties:
+      id:
+        type: string
+        format: uuid
+      email:
+        type: string
+        format: email
+      name:
+        type: string
+```
+
+[Learn more about Schemas →](/docs/core-concepts/schemas)
+
+## Entities
+
+Entities represent database tables and provide automatic CRUD operations. They're built on top of schemas and add database-specific configuration.
+
+```yaml
+entities:
+  User:
+    table: users
+    crud:
+      enabled: true
+    fields:
+      id:
+        type: uuid
+        primary: true
+```
+
+[Learn more about Entities →](/docs/core-concepts/entities)
+
+## Endpoints
+
+Endpoints define your API routes. They can use handlers for custom logic or leverage automatic CRUD operations from entities.
+
+```yaml
+endpoints:
+  - path: /users
+    method: GET
+    handler: handlers/listUsers
+    response:
+      type: UserArray
+```
+
+[Learn more about Endpoints →](/docs/core-concepts/endpoints)
+
+## Handlers
+
+Handlers contain your business logic. They're TypeScript functions that receive a context object with database access, authentication, and more.
+
+```typescript
+export async function listUsers(context: HandlerContext) {
+  const users = await context.entities.User.findAll();
+  return users;
+}
+```
+
+[Learn more about Handlers →](/docs/core-concepts/handlers)
+
+## How They Work Together
+
+1. **Schemas** define your data structure
+2. **Entities** add database operations to schemas
+3. **Endpoints** expose your data via HTTP
+4. **Handlers** implement custom business logic
+
+This separation allows you to:
+- Define structure in YAML (version-controlled, AI-friendly)
+- Write logic in TypeScript (type-safe, testable)
+- Let Yama handle routing, validation, and code generation
+

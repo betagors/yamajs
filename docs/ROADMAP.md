@@ -19,20 +19,22 @@ The roadmap is organized into tiers based on dependencies, production readiness,
 ### Current State
 - ✅ CRUD endpoints are fully config-based (no code required)
 - ✅ Custom endpoints can be defined in YAML but require TypeScript handler files
-- ⚠️ Default handlers only return placeholder messages
-- ⚠️ Handlers must manually import database repositories
+- ✅ Default handlers automatically query entity repositories based on response type detection
+- ✅ Handlers can access database repositories via `context.entities` without manual imports
+- ✅ CRUD endpoints support configurable search functionality
 
 ### Planned Features
 
 #### 1. Database Access in Handler Context
-**Priority: High | TIER 1**
+**Priority: High | TIER 1** ✅ **IMPLEMENTED**
 
 Add database access to `HandlerContext` so handlers can use repositories without manual imports.
 
-**Implementation:**
-- Populate `context.db` with the database adapter
-- Provide entity repositories through `context.repositories` or `context.entities`
-- Allow handlers to access database operations directly from context
+**Implementation Status:**
+- ✅ `context.db` populated with the database adapter
+- ✅ `context.entities` provides entity repositories (e.g., `context.entities.Product`)
+- ✅ Handlers can access database operations directly from context
+- ✅ Type generation supports typed entity repositories
 
 **Example:**
 ```typescript
@@ -50,25 +52,21 @@ export async function myHandler(context: HandlerContext) {
 ---
 
 #### 2. Smart Default Handlers for Entity Endpoints
-**Priority: High | TIER 1**
+**Priority: High | TIER 1** ✅ **IMPLEMENTED**
 
 Enable endpoints without handlers to automatically query entity repositories based on response type detection.
 
-**Current State:**
-- Endpoints without handlers use `createDefaultHandler` which returns placeholder messages
-- No automatic database querying for entity-based endpoints
-
-**Implementation:**
-- Enhance `createDefaultHandler` to detect entity-based response types (e.g., `ProductArray`, `Product`)
-- Dynamically load and use the appropriate repository based on entity name
-- Support CRUD operations automatically:
+**Implementation Status:**
+- ✅ `createDefaultHandler` detects entity-based response types (e.g., `ProductArray`, `Product`)
+- ✅ Dynamically loads and uses the appropriate repository based on entity name
+- ✅ Supports CRUD operations automatically:
   - `GET /path` with `ProductArray` response → calls `productRepository.findAll(query)`
   - `GET /path/:id` with `Product` response → calls `productRepository.findById(params.id)`
   - `POST /path` with `Product` response → calls `productRepository.create(body)`
   - `PUT/PATCH /path/:id` → calls `productRepository.update(params.id, body)`
   - `DELETE /path/:id` → calls `productRepository.delete(params.id)`
-- Map query parameters to repository method options
-- Support pagination, filtering, and sorting through query parameters
+- ✅ Maps query parameters to repository method options
+- ✅ Supports pagination, filtering, and sorting through query parameters
 
 **Example:**
 ```yaml
@@ -84,11 +82,11 @@ endpoints:
       type: ProductArray
 ```
 
-The default handler would:
-1. Detect `ProductArray` response type
-2. Load `productRepository` dynamically
-3. Query with `findAll({ featured: true, limit: 10, offset: 0 })` based on query params
-4. Return results automatically
+The default handler:
+1. Detects `ProductArray` response type
+2. Loads `productRepository` dynamically
+3. Queries with `findAll({ featured: true, limit: 10, offset: 0 })` based on query params
+4. Returns results automatically
 
 **Benefits:**
 - No handler code needed for simple entity queries
@@ -99,42 +97,17 @@ The default handler would:
 ---
 
 #### 3. Auto-Implemented Search in CRUD
-**Priority: High | TIER 1**
+**Priority: High | TIER 1** ✅ **IMPLEMENTED**
 
 Add configurable search functionality to CRUD endpoints that automatically implements search across specified fields.
 
-**Current State:**
-- CRUD GET list endpoints only support `limit` and `offset` query parameters
-- No built-in search functionality
-- Users must implement search manually in handlers
-
-**Implementation:**
-- Extend `CrudConfig` interface with search configuration:
-  ```typescript
-  export interface CrudConfig {
-    // ... existing fields ...
-    search?: {
-      /**
-       * Fields that can be searched (default: all string/text fields)
-       * Can be array of field names or true to enable all searchable fields
-       */
-      fields?: string[] | true;
-      
-      /**
-       * Search mode: "contains" (default), "starts", "ends", "exact"
-       */
-      mode?: "contains" | "starts" | "ends" | "exact";
-      
-      /**
-       * Enable full-text search across multiple fields with a single query parameter
-       */
-      fullText?: boolean;
-    };
-  }
-  ```
-- Update `generateCrudEndpoints` to add `search` query parameter when search is enabled
-- Enhance repository `findAll` method to support search across configured fields
-- Support both individual field search and full-text search modes
+**Implementation Status:**
+- ✅ `CrudConfig` interface extended with search configuration
+- ✅ Search automatically enabled for entities with string/text fields
+- ✅ Repository `findAll` method supports search across configured fields
+- ✅ Supports all search modes: `contains`, `starts`, `ends`, `exact`
+- ✅ Full-text search across multiple fields with single `?search=query` parameter
+- ✅ Simplified syntax: `search: true`, `search: ["field1", "field2"]`, or full config object
 
 **Example Configuration:**
 ```yaml
@@ -161,7 +134,7 @@ entities:
         type: number
 ```
 
-**Generated Endpoints Would Support:**
+**Endpoints Support:**
 - `GET /products?search=laptop` - Full-text search across name and description for "laptop"
 - `GET /products?name=laptop` - Exact field matching (existing functionality)
 - `GET /products?name=laptop&price=1000` - Multiple field filters (existing)
@@ -272,9 +245,17 @@ schemas:
 ---
 
 #### 5. Basic Query Handler Type
-**Priority: High | TIER 1**
+**Priority: High | TIER 1** ✅ **IMPLEMENTED**
 
 Support built-in query handler type that can be configured directly in YAML without writing code.
+
+**Implementation Status:**
+- ✅ Query handler type support in YAML schema
+- ✅ Parameter resolution for `query.xxx` and `params.xxx` references
+- ✅ Filter support with operators: `eq` (exact match) and `ilike` (case-insensitive contains)
+- ✅ Pagination support with `limit` and `offset` from query params or config
+- ✅ OrderBy support from config or query params
+- ✅ Automatic repository integration via `context.entities`
 
 **Implementation:**
 Execute database queries directly from config:
@@ -288,10 +269,10 @@ endpoints:
       filters:
         - field: name
           operator: ilike
-          param: search
+          param: query.search
         - field: price
           operator: lte
-          param: maxPrice
+          param: query.maxPrice
       pagination:
         limit: query.limit
         offset: query.offset
@@ -1617,9 +1598,109 @@ plugins:
 
 ---
 
-## TIER 4: Plugin Ecosystem Development
+## TIER 4: Enhanced Developer Experience
 
-### Current State
+### Development Tools
+
+#### 1. Dev Admin UI Plugin (`@betagors/yama-dev-admin`)
+**Priority: High | TIER 4**
+
+Auto-generated HTMX-based admin interface for development, similar to Django Admin. Provides full CRUD operations for all entities with `crud: true` enabled.
+
+**Current State:**
+- ✅ Realtime plugin has dev tools pattern (`dev.inspectorUI`)
+- ✅ CRUD endpoints are auto-generated from entities
+- ❌ No visual admin interface for data management
+- ❌ Developers must use curl/Postman for testing CRUD operations
+
+**Implementation:**
+- Create `@betagors/yama-dev-admin` plugin following the dev tools pattern
+- Auto-discover all entities with `crud: true` enabled
+- Generate HTMX-based admin routes:
+  - `GET /dev-admin` - Dashboard home (list of all entities)
+  - `GET /dev-admin/{entity}` - List view with pagination, filtering, search
+  - `GET /dev-admin/{entity}/:id` - Detail/edit view
+  - `POST /dev-admin/{entity}` - Create new record
+  - `PUT /dev-admin/{entity}/:id` - Update record
+  - `DELETE /dev-admin/{entity}/:id` - Delete record
+- Auto-generate forms based on entity field definitions
+- Support field types: string, number, boolean, date, uuid, text, etc.
+- Simple authentication (dev user check, no complex RBAC needed)
+- Environment-aware: only enabled in development mode by default
+
+**Example Configuration:**
+```yaml
+plugins:
+  "@betagors/yama-postgres": { ... }
+
+dev:
+  adminUI:
+    enabled: true
+    path: /dev-admin  # Optional, default: /dev-admin
+    requireAuth: true  # Simple: just check if user is authenticated
+    # No RBAC needed - this is a dev tool, not production admin
+```
+
+**Features:**
+- Auto-discovery of entities with `crud: true`
+- Full CRUD operations (Create, Read, Update, Delete)
+- List views with pagination
+- Search and filtering
+- Field type detection and appropriate form inputs
+- Simple, clean HTMX-based UI
+- No build step required (server-rendered)
+- Respects existing auth configuration
+
+**Usage:**
+```yaml
+# yama.yaml
+entities:
+  Todo:
+    table: todos
+    crud: true  # Admin UI will automatically show this entity
+    fields:
+      id:
+        type: uuid
+        primary: true
+      title:
+        type: string
+        required: true
+      completed:
+        type: boolean
+        default: false
+
+dev:
+  adminUI:
+    enabled: true
+    path: /dev-admin
+```
+
+**Benefits:**
+- Immediate visual data management during development
+- No code required - works out of the box
+- Faster development and testing workflow
+- Reduces need for curl/Postman during development
+- Aligns with YAMA's config-first philosophy
+- Similar to Django Admin but for YAMA
+- Lightweight (HTMX, no build step)
+
+**Why Dev Tool, Not Production:**
+- Production dashboards need custom workflows and business logic
+- Generic CRUD admin doesn't fit production requirements
+- Simple dev auth is sufficient (no complex RBAC needed)
+- Environment-aware: automatically disabled in production unless explicitly enabled
+- Follows existing pattern (realtime inspector is also dev-only)
+
+**Dependencies:**
+- Requires entities with `crud: true` to be useful
+- Requires database plugin to be loaded
+- Should work with any database adapter
+
+---
+
+### Plugin Ecosystem Development
+
+#### Current State
 - ✅ Plugin system with `YamaPlugin` interface
 - ✅ Plugin loading from npm packages
 - ✅ Plugin registry and validation
@@ -1870,12 +1951,14 @@ Web-based plugin directory and marketplace.
 ### TIER 1: Foundation & Core DX (Do First)
 **Timeline: Months 1-2**
 
-1. Database access in handler context
-2. Smart default handlers for entity endpoints
-3. Auto-implemented search in CRUD
-4. Basic query handler type
+1. ✅ Database access in handler context - **IMPLEMENTED**
+2. ✅ Smart default handlers for entity endpoints - **IMPLEMENTED**
+3. ✅ Auto-implemented search in CRUD - **IMPLEMENTED**
+4. ✅ Basic query handler type - **IMPLEMENTED**
 
 **Why First:** These enable everything else and provide immediate developer experience improvements.
+
+**Status:** All 4 TIER 1 features are complete! ✅
 
 ---
 
@@ -1923,16 +2006,17 @@ Web-based plugin directory and marketplace.
 ### TIER 4: Enhanced Developer Experience
 **Timeline: Months 7-8**
 
-1. Plugin Creation Guide & Templates
-2. Plugin Discovery & Search
-3. Plugin Documentation & Examples
-4. Relation handler type
-5. Aggregate handler type
-6. Handler templates
-7. `@betagors/yama-queue-bullmq` - Job queue processing
-8. `@betagors/yama-auth-oauth` - OAuth authentication
+1. `@betagors/yama-dev-admin` - Dev Admin UI plugin (HTMX-based CRUD interface)
+2. Plugin Creation Guide & Templates
+3. Plugin Discovery & Search
+4. Plugin Documentation & Examples
+5. Relation handler type
+6. Aggregate handler type
+7. Handler templates
+8. `@betagors/yama-queue-bullmq` - Job queue processing
+9. `@betagors/yama-auth-oauth` - OAuth authentication
 
-**Why Fourth:** Improves productivity and adoption. Enables community growth.
+**Why Fourth:** Improves productivity and adoption. Enables community growth. Dev tools provide immediate DX value.
 
 ---
 

@@ -1,0 +1,189 @@
+# Getting Started
+
+Learn how to install Yama, create your first project, and run the development server.
+
+## Installation
+
+Install the Yama CLI globally:
+
+```bash
+npm install -g @betagors/yama-cli
+# or
+pnpm add -g @betagors/yama-cli
+```
+
+Or use it directly with `npx`:
+
+```bash
+npx @betagors/yama-cli create my-app
+```
+
+## Create a Project
+
+Scaffold a new project with the interactive CLI:
+
+```bash
+yama create my-app
+```
+
+You can also specify options directly:
+
+```bash
+yama create my-app --database postgresql
+```
+
+This creates a project with the following structure:
+
+```
+my-app/
+├── yama.yaml              # API configuration
+├── package.json
+├── src/
+│   ├── handlers/          # Your business logic
+│   └── generated/         # Auto-generated types (gitignored)
+├── migrations/            # Database migrations
+└── .env                   # Environment variables
+```
+
+## Run the Development Server
+
+Navigate to your project and start the dev server:
+
+```bash
+cd my-app
+npm install
+yama dev
+```
+
+The server starts at `http://localhost:4000` with:
+- Hot reload on file changes
+- Auto-regeneration of types and SDK
+- API documentation at `/docs`
+
+## Configure Your API
+
+Edit `yama.yaml` to define your API:
+
+```yaml
+name: my-app
+version: 1.0.0
+
+schemas:
+  User:
+    type: object
+    properties:
+      id:
+        type: string
+        format: uuid
+      email:
+        type: string
+        format: email
+      name:
+        type: string
+
+endpoints:
+  /users:
+    get:
+      handler: handlers/listUsers
+      response:
+        type: array
+        items:
+          $ref: "#/schemas/User"
+    post:
+      handler: handlers/createUser
+      request:
+        $ref: "#/schemas/User"
+      response:
+        $ref: "#/schemas/User"
+```
+
+## Write Handlers
+
+Create handler files in `src/handlers/`:
+
+```typescript
+// src/handlers/listUsers.ts
+import { HandlerContext } from '@betagors/yama-core';
+
+export async function listUsers(context: HandlerContext) {
+  // Access database, services, etc. via context
+  return context.db.query('SELECT * FROM users');
+}
+```
+
+```typescript
+// src/handlers/createUser.ts
+import { HandlerContext } from '@betagors/yama-core';
+
+export async function createUser(context: HandlerContext) {
+  const { email, name } = context.request.body;
+  
+  const user = await context.db.query(
+    'INSERT INTO users (email, name) VALUES ($1, $2) RETURNING *',
+    [email, name]
+  );
+  
+  return user;
+}
+```
+
+## Generate Types and SDK
+
+Generate TypeScript types and a client SDK:
+
+```bash
+yama generate
+```
+
+This creates:
+- `src/generated/types.ts` — TypeScript types from your schemas
+- `src/generated/sdk.ts` — Type-safe API client
+
+Use the SDK in your frontend:
+
+```typescript
+import { api } from './generated/sdk';
+
+const users = await api.users.get();
+const newUser = await api.users.post({ 
+  email: 'user@example.com',
+  name: 'John Doe'
+});
+```
+
+## Environment Variables
+
+Create environment-specific configuration:
+
+```
+.env                    # Base configuration
+.env.development        # Development overrides
+.env.production         # Production overrides
+.env.local              # Local overrides (gitignored)
+```
+
+Example `.env`:
+
+```env
+DATABASE_URL=postgresql://user:password@localhost:5432/myapp
+JWT_SECRET=your-secret-key
+PORT=4000
+```
+
+Reference variables in `yama.yaml`:
+
+```yaml
+database:
+  url: ${DATABASE_URL}
+
+auth:
+  providers:
+    - type: jwt
+      secret: ${JWT_SECRET}
+```
+
+## Next Steps
+
+- [Guides](/docs/guides) — Learn about migrations, authentication, and more
+- [CLI Reference](/docs/api-reference/cli) — All available commands
+- [Examples](/docs/examples) — Full example projects

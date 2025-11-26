@@ -1,0 +1,341 @@
+# Configuration Reference
+
+Complete reference for all `yama.yaml` configuration options.
+
+## Top-Level Structure
+
+```yaml
+name: string          # Project name (required)
+version: string       # API version (required)
+
+database: object      # Database configuration
+server: object        # Server settings
+auth: object          # Authentication settings
+schemas: object       # Schema definitions
+endpoints: object     # API endpoints
+plugins: array        # Plugin configuration
+```
+
+---
+
+## Project Info
+
+```yaml
+name: my-api
+version: 1.0.0
+description: My Yama API
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | string | Yes | Project name |
+| `version` | string | Yes | Semantic version |
+| `description` | string | No | Project description |
+
+---
+
+## Database
+
+```yaml
+database:
+  url: ${DATABASE_URL}
+  pool:
+    min: 2
+    max: 10
+  ssl: true
+```
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `url` | string | - | Connection string (required) |
+| `pool.min` | number | 2 | Minimum pool connections |
+| `pool.max` | number | 10 | Maximum pool connections |
+| `ssl` | boolean | false | Enable SSL connection |
+
+---
+
+## Server
+
+```yaml
+server:
+  port: ${PORT:-4000}
+  host: 0.0.0.0
+  cors:
+    origin: "*"
+    methods:
+      - GET
+      - POST
+      - PUT
+      - DELETE
+    credentials: true
+  logging:
+    level: info
+    format: json
+```
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `port` | number | 4000 | Server port |
+| `host` | string | localhost | Server host |
+| `cors.origin` | string/array | * | Allowed origins |
+| `cors.methods` | array | all | Allowed HTTP methods |
+| `cors.credentials` | boolean | false | Allow credentials |
+| `logging.level` | string | info | Log level: debug, info, warn, error |
+| `logging.format` | string | text | Log format: text, json |
+
+---
+
+## Authentication
+
+```yaml
+auth:
+  providers:
+    - type: jwt
+      secret: ${JWT_SECRET}
+      expiresIn: 7d
+      algorithm: HS256
+```
+
+### JWT Provider
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `type` | string | - | Provider type: `jwt` |
+| `secret` | string | - | JWT secret key (required) |
+| `expiresIn` | string | 7d | Token expiration |
+| `algorithm` | string | HS256 | Signing algorithm |
+
+---
+
+## Schemas
+
+Define data models using JSON Schema:
+
+```yaml
+schemas:
+  User:
+    type: object
+    required:
+      - email
+      - name
+    properties:
+      id:
+        type: string
+        format: uuid
+      email:
+        type: string
+        format: email
+      name:
+        type: string
+        minLength: 1
+        maxLength: 100
+      age:
+        type: integer
+        minimum: 0
+      role:
+        type: string
+        enum:
+          - user
+          - admin
+      createdAt:
+        type: string
+        format: date-time
+```
+
+### Supported Types
+
+| Type | Description |
+|------|-------------|
+| `string` | Text values |
+| `number` | Floating point numbers |
+| `integer` | Whole numbers |
+| `boolean` | true/false |
+| `array` | Arrays |
+| `object` | Nested objects |
+
+### String Formats
+
+| Format | Description |
+|--------|-------------|
+| `uuid` | UUID v4 |
+| `email` | Email address |
+| `date` | ISO date (YYYY-MM-DD) |
+| `date-time` | ISO datetime |
+| `uri` | URL/URI |
+| `password` | Password (masked in docs) |
+
+### Validation Keywords
+
+| Keyword | Applies To | Description |
+|---------|-----------|-------------|
+| `minLength` | string | Minimum length |
+| `maxLength` | string | Maximum length |
+| `pattern` | string | Regex pattern |
+| `minimum` | number | Minimum value |
+| `maximum` | number | Maximum value |
+| `minItems` | array | Minimum items |
+| `maxItems` | array | Maximum items |
+| `enum` | any | Allowed values |
+
+### References
+
+Use `$ref` to reference other schemas:
+
+```yaml
+schemas:
+  Address:
+    type: object
+    properties:
+      street:
+        type: string
+      city:
+        type: string
+
+  User:
+    type: object
+    properties:
+      address:
+        $ref: "#/schemas/Address"
+```
+
+---
+
+## Endpoints
+
+```yaml
+endpoints:
+  /users:
+    get:
+      handler: handlers/listUsers
+      summary: List all users
+      auth: required
+      parameters:
+        - name: limit
+          in: query
+          type: integer
+          default: 10
+      response:
+        type: array
+        items:
+          $ref: "#/schemas/User"
+    
+    post:
+      handler: handlers/createUser
+      auth: required
+      request:
+        $ref: "#/schemas/CreateUserInput"
+      response:
+        $ref: "#/schemas/User"
+
+  /users/{id}:
+    get:
+      handler: handlers/getUser
+      response:
+        $ref: "#/schemas/User"
+```
+
+### Endpoint Options
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `handler` | string | Path to handler function (required) |
+| `summary` | string | Brief description |
+| `description` | string | Detailed description |
+| `auth` | string/object | Authentication rule |
+| `parameters` | array | Query/path parameters |
+| `request` | object | Request body schema |
+| `response` | object | Response schema |
+| `tags` | array | OpenAPI tags |
+
+### Auth Rules
+
+```yaml
+# Public endpoint
+auth: public
+
+# Requires authentication
+auth: required
+
+# Optional authentication
+auth: optional
+
+# Role-based
+auth:
+  role: admin
+
+# Multiple roles
+auth:
+  role:
+    - admin
+    - moderator
+```
+
+### Parameters
+
+```yaml
+parameters:
+  - name: limit
+    in: query
+    type: integer
+    default: 10
+    description: Maximum results
+  
+  - name: id
+    in: path
+    type: string
+    required: true
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `name` | string | Parameter name |
+| `in` | string | Location: `query`, `path`, `header` |
+| `type` | string | Data type |
+| `required` | boolean | Is required |
+| `default` | any | Default value |
+| `description` | string | Description |
+
+---
+
+## Plugins
+
+```yaml
+plugins:
+  - name: "@betagors/yama-redis"
+    config:
+      url: ${REDIS_URL}
+  
+  - name: "@betagors/yama-s3"
+    config:
+      bucket: my-bucket
+      region: us-east-1
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `name` | string | Plugin package name |
+| `config` | object | Plugin-specific configuration |
+
+---
+
+## Environment Variables
+
+Use `${VAR_NAME}` syntax to reference environment variables:
+
+```yaml
+database:
+  url: ${DATABASE_URL}
+
+server:
+  port: ${PORT:-4000}  # With default value
+```
+
+### Default Values
+
+```yaml
+# ${VAR:-default} - Use default if VAR is unset or empty
+port: ${PORT:-4000}
+
+# ${VAR-default} - Use default only if VAR is unset
+host: ${HOST-localhost}
+```

@@ -1,0 +1,149 @@
+# Deploying to AWS Lambda
+
+Deploy your Yama application to AWS Lambda for serverless functions.
+
+## Prerequisites
+
+- AWS account
+- AWS CLI configured
+- Serverless Framework or AWS SAM
+
+## Serverless Framework
+
+### Installation
+
+```bash
+npm install -g serverless
+```
+
+### Configuration
+
+Create `serverless.yml`:
+
+```yaml
+service: my-yama-app
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  region: us-east-1
+  environment:
+    DATABASE_URL: ${env:DATABASE_URL}
+    JWT_SECRET: ${env:JWT_SECRET}
+
+functions:
+  api:
+    handler: dist/server.handler
+    events:
+      - http:
+          path: /{proxy+}
+          method: ANY
+    timeout: 30
+    memorySize: 512
+```
+
+### Deploy
+
+```bash
+serverless deploy
+```
+
+## AWS SAM
+
+### Template
+
+Create `template.yaml`:
+
+```yaml
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Resources:
+  YamaApi:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: dist/server.handler
+      Runtime: nodejs20.x
+      CodeUri: .
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /{proxy+}
+            Method: ANY
+      Environment:
+        Variables:
+          DATABASE_URL: !Ref DatabaseUrl
+          JWT_SECRET: !Ref JwtSecret
+```
+
+### Deploy
+
+```bash
+sam build
+sam deploy --guided
+```
+
+## Lambda Layers
+
+Use Lambda layers for dependencies:
+
+```yaml
+layers:
+  nodeModules:
+    path: layer
+    compatibleRuntimes:
+      - nodejs20.x
+```
+
+## Environment Variables
+
+Set via AWS Console or CLI:
+
+```bash
+aws lambda update-function-configuration \
+  --function-name my-yama-app \
+  --environment Variables="{DATABASE_URL=...,JWT_SECRET=...}"
+```
+
+## API Gateway
+
+Yama works with API Gateway:
+
+- Automatic routing
+- Request/response transformation
+- CORS configuration
+
+## Database Connection
+
+For Lambda, use connection pooling:
+
+```typescript
+// Use RDS Proxy or connection pooling
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  max: 1, // Lambda-specific: reuse connections
+});
+```
+
+## Cold Starts
+
+Optimize cold starts:
+
+- Use provisioned concurrency
+- Minimize dependencies
+- Use Lambda layers for shared code
+
+## Monitoring
+
+Monitor with CloudWatch:
+
+- Function logs
+- Execution metrics
+- Error tracking
+
+## Next Steps
+
+- Learn about [Docker deployment](/docs/deployment/docker)
+- See [Environment Variables guide](/docs/guides/environment-variables)
+

@@ -235,3 +235,25 @@ export {
   isExpired,
 } from "./migrations/trash.js";
 
+// Export pagination types and utilities
+export {
+  type PaginationType,
+  type PaginationMetadataField,
+  type OffsetPaginationConfig,
+  type PagePaginationConfig,
+  type CursorPaginationConfig,
+  type PaginationConfig,
+  type NormalizedPaginationConfig,
+  type PaginationMetadata,
+  type PaginatedResponse,
+} from "./pagination/types.js";
+
+export {
+  pageToOffset,
+  normalizePaginationConfig,
+  calculatePaginationMetadata,
+  filterMetadata,
+  wrapPaginatedResponse,
+  detectPaginationFromQuery,
+} from "./pagination/utils.js";
+

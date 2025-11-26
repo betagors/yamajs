@@ -1,0 +1,176 @@
+# Handlers
+
+Handlers contain your business logic. They're TypeScript functions that receive a context object with database access, authentication, and more.
+
+## Basic Handler
+
+```typescript
+import { HandlerContext } from '@betagors/yama-core';
+
+export async function listTodos(context: HandlerContext) {
+  const todos = await context.entities.Todo.findAll();
+  return todos;
+}
+```
+
+## Handler Context
+
+The `HandlerContext` provides access to:
+
+- **Database** - `context.db` - Database adapter
+- **Entities** - `context.entities` - Entity repositories
+- **Auth** - `context.auth` - Authentication info
+- **Request** - `context.request` - HTTP request
+- **Response** - `context.response` - HTTP response
+- **Params** - `context.params` - Path parameters
+- **Query** - `context.query` - Query parameters
+- **Body** - `context.body` - Request body
+
+## Accessing Entities
+
+Use entity repositories for database operations:
+
+```typescript
+export async function getTodo(context: HandlerContext) {
+  const { id } = context.params;
+  const todo = await context.entities.Todo.findById(id);
+  
+  if (!todo) {
+    context.response.status(404);
+    return { error: 'Todo not found' };
+  }
+  
+  return todo;
+}
+```
+
+## CRUD Operations
+
+Entity repositories provide CRUD methods:
+
+```typescript
+// Find all
+const todos = await context.entities.Todo.findAll({
+  limit: 10,
+  offset: 0,
+  where: { completed: false }
+});
+
+// Find by ID
+const todo = await context.entities.Todo.findById(id);
+
+// Create
+const newTodo = await context.entities.Todo.create({
+  title: 'New Todo',
+  completed: false
+});
+
+// Update
+const updated = await context.entities.Todo.update(id, {
+  completed: true
+});
+
+// Delete
+await context.entities.Todo.delete(id);
+```
+
+## Authentication
+
+Access authentication information:
+
+```typescript
+export async function getProfile(context: HandlerContext) {
+  const user = context.auth.user;
+  
+  if (!user) {
+    context.response.status(401);
+    return { error: 'Unauthorized' };
+  }
+  
+  return {
+    id: user.id,
+    email: user.email,
+    roles: user.roles
+  };
+}
+```
+
+## Request/Response
+
+Access HTTP request and response:
+
+```typescript
+export async function uploadFile(context: HandlerContext) {
+  const file = context.request.files?.file;
+  
+  if (!file) {
+    context.response.status(400);
+    return { error: 'No file provided' };
+  }
+  
+  // Process file...
+  
+  context.response.status(201);
+  return { success: true };
+}
+```
+
+## Error Handling
+
+Throw errors or return error responses:
+
+```typescript
+export async function createTodo(context: HandlerContext) {
+  const { title } = context.body;
+  
+  if (!title) {
+    context.response.status(400);
+    return { error: 'Title is required' };
+  }
+  
+  try {
+    const todo = await context.entities.Todo.create({ title });
+    return todo;
+  } catch (error) {
+    context.response.status(500);
+    return { error: 'Failed to create todo' };
+  }
+}
+```
+
+## Query Parameters
+
+Access query parameters:
+
+```typescript
+export async function searchTodos(context: HandlerContext) {
+  const { search, limit = 10, offset = 0 } = context.query;
+  
+  const todos = await context.entities.Todo.findAll({
+    where: search ? { title: { ilike: `%${search}%` } } : {},
+    limit: Number(limit),
+    offset: Number(offset)
+  });
+  
+  return todos;
+}
+```
+
+## Path Parameters
+
+Access path parameters:
+
+```typescript
+export async function getTodo(context: HandlerContext) {
+  const { id } = context.params;
+  const todo = await context.entities.Todo.findById(id);
+  return todo;
+}
+```
+
+## Next Steps
+
+- See [Guides: Handlers](/docs/guides/handlers) - Advanced handler patterns
+- Learn about [Endpoints](/docs/core-concepts/endpoints) - Configuring endpoints
+- Check [Examples](/docs/examples) - Real-world handler examples
+

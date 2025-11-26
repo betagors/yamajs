@@ -20,7 +20,7 @@ export default withNextra({
   webpack: (config) => {
     config.resolve.alias = {
       ...config.resolve.alias,
-      'next-mdx-import-source-file': resolve(__dirname, 'mdx-components.tsx'),
+      'next-mdx-import-source-file': resolve(__dirname, 'app', 'mdx-components.tsx'),
     };
     return config;
   },

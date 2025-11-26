@@ -1,7 +1,8 @@
 export default {
-  index: 'Introduction',
-  development: 'Development',
-  migrations: 'Migrations',
+  index: 'Home',
+  docs: 'Documentation',
   plugins: 'Plugins',
+  // Future: enterprise: 'Enterprise',
+  // Future: marketplace: 'Marketplace',
 };
 

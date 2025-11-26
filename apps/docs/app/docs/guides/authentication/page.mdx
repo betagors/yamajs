@@ -1,0 +1,258 @@
+# Authentication
+
+Yama provides built-in JWT authentication and authorization rules to secure your API.
+
+## Enable Authentication
+
+Configure authentication in `yama.yaml`:
+
+```yaml
+auth:
+  providers:
+    - type: jwt
+      secret: ${JWT_SECRET}
+      expiresIn: 7d
+```
+
+## Protect Endpoints
+
+Use auth rules on endpoints:
+
+```yaml
+endpoints:
+  # Public endpoint - no authentication required
+  /health:
+    get:
+      handler: handlers/health
+      auth: public
+
+  # Authenticated endpoint - requires valid JWT
+  /profile:
+    get:
+      handler: handlers/getProfile
+      auth: required
+
+  # Role-based access
+  /admin/users:
+    get:
+      handler: handlers/adminListUsers
+      auth:
+        role: admin
+```
+
+## Auth Levels
+
+| Level | Description |
+|-------|-------------|
+| `public` | No authentication required |
+| `required` | Valid JWT token required |
+| `optional` | Token validated if present, but not required |
+| `{ role: 'admin' }` | Requires specific role |
+
+## Login Handler
+
+Create a login endpoint:
+
+```yaml
+endpoints:
+  /auth/login:
+    post:
+      handler: handlers/login
+      auth: public
+      request:
+        type: object
+        properties:
+          email:
+            type: string
+          password:
+            type: string
+```
+
+```typescript
+// src/handlers/login.ts
+import { HandlerContext } from '@betagors/yama-core';
+import { sign } from 'jsonwebtoken';
+
+export async function login(context: HandlerContext) {
+  const { email, password } = context.request.body;
+  
+  // Verify credentials
+  const user = await context.db.query(
+    'SELECT * FROM users WHERE email = $1',
+    [email]
+  );
+  
+  if (!user.length || !verifyPassword(password, user[0].password_hash)) {
+    context.reply.code(401);
+    return { error: 'Invalid credentials' };
+  }
+  
+  // Generate JWT
+  const token = sign(
+    { userId: user[0].id, email: user[0].email },
+    process.env.JWT_SECRET,
+    { expiresIn: '7d' }
+  );
+  
+  return { token, user: user[0] };
+}
+```
+
+## Register Handler
+
+```typescript
+// src/handlers/register.ts
+import { HandlerContext } from '@betagors/yama-core';
+import { hash } from 'bcrypt';
+
+export async function register(context: HandlerContext) {
+  const { email, password, name } = context.request.body;
+  
+  // Check if user exists
+  const existing = await context.db.query(
+    'SELECT id FROM users WHERE email = $1',
+    [email]
+  );
+  
+  if (existing.length) {
+    context.reply.code(409);
+    return { error: 'Email already registered' };
+  }
+  
+  // Hash password and create user
+  const passwordHash = await hash(password, 10);
+  
+  const [user] = await context.db.query(
+    'INSERT INTO users (email, password_hash, name) VALUES ($1, $2, $3) RETURNING id, email, name',
+    [email, passwordHash, name]
+  );
+  
+  return user;
+}
+```
+
+## Access User in Handlers
+
+```typescript
+export async function getProfile(context: HandlerContext) {
+  // User is automatically available from JWT
+  const { user } = context.auth;
+  
+  return {
+    id: user.id,
+    email: user.email,
+    name: user.name,
+  };
+}
+```
+
+## Role-Based Access Control
+
+Define roles in your user schema:
+
+```yaml
+schemas:
+  User:
+    type: object
+    properties:
+      id:
+        type: string
+      email:
+        type: string
+      role:
+        type: string
+        enum:
+          - user
+          - admin
+          - moderator
+```
+
+Protect endpoints by role:
+
+```yaml
+endpoints:
+  /admin/dashboard:
+    get:
+      handler: handlers/adminDashboard
+      auth:
+        role: admin
+
+  /moderator/reports:
+    get:
+      handler: handlers/moderatorReports
+      auth:
+        role:
+          - admin
+          - moderator
+```
+
+## Custom Authorization
+
+For complex authorization logic, handle it in your handler:
+
+```typescript
+export async function updatePost(context: HandlerContext) {
+  const { id } = context.params;
+  const { user } = context.auth;
+  
+  // Fetch the post
+  const [post] = await context.db.query(
+    'SELECT * FROM posts WHERE id = $1',
+    [id]
+  );
+  
+  if (!post) {
+    context.reply.code(404);
+    return { error: 'Post not found' };
+  }
+  
+  // Check ownership or admin role
+  if (post.author_id !== user.id && user.role !== 'admin') {
+    context.reply.code(403);
+    return { error: 'Not authorized to edit this post' };
+  }
+  
+  // Update the post
+  const { title, content } = context.request.body;
+  const [updated] = await context.db.query(
+    'UPDATE posts SET title = $1, content = $2 WHERE id = $3 RETURNING *',
+    [title, content, id]
+  );
+  
+  return updated;
+}
+```
+
+## Token Refresh
+
+Implement token refresh for long-lived sessions:
+
+```yaml
+endpoints:
+  /auth/refresh:
+    post:
+      handler: handlers/refreshToken
+      auth: required
+```
+
+```typescript
+export async function refreshToken(context: HandlerContext) {
+  const { user } = context.auth;
+  
+  const token = sign(
+    { userId: user.id, email: user.email },
+    process.env.JWT_SECRET,
+    { expiresIn: '7d' }
+  );
+  
+  return { token };
+}
+```
+
+## Best Practices
+
+1. **Use strong secrets** — Generate a random 256-bit secret for JWT
+2. **Set appropriate expiration** — Balance security and user experience
+3. **Store password hashes** — Never store plain text passwords
+4. **Use HTTPS** — Always use HTTPS in production
+5. **Validate input** — Sanitize all user input before use

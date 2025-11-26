@@ -136,7 +136,29 @@ function generateEndpointMethod(
   const hasQuery = endpoint.query && Object.keys(endpoint.query).length > 0;
   const hasBody = endpoint.body !== undefined;
   // For DELETE without response, use void; otherwise use the response type or unknown
-  const responseType = endpoint.response?.type || (endpoint.method === "DELETE" ? "void" : "unknown");
+  let responseType = endpoint.response?.type || (endpoint.method === "DELETE" ? "void" : "unknown");
+  
+  // Detect if this endpoint uses pagination and should return PaginatedResponse
+  const hasPagination = endpoint.query && (
+    endpoint.query.page !== undefined ||
+    endpoint.query.pageSize !== undefined ||
+    endpoint.query.cursor !== undefined ||
+    endpoint.query.limit !== undefined ||
+    endpoint.query.offset !== undefined
+  );
+  
+  // If pagination is detected and response is an array type, wrap with PaginatedResponse
+  if (hasPagination && responseType !== "void" && responseType !== "unknown") {
+    // Check if response type ends with Array (common pattern) or is a list
+    if (responseType.endsWith("Array") || responseType.toLowerCase().includes("list")) {
+      // Extract the item type from array type (e.g., "ProductArray" -> "Product")
+      const itemType = responseType.replace(/Array$/i, "").replace(/List$/i, "");
+      responseType = `PaginatedResponse<${itemType}>`;
+    } else {
+      // For other array types, wrap with PaginatedResponse
+      responseType = `PaginatedResponse<${responseType}>`;
+    }
+  }
 
   // Build method parameters
   const params: string[] = [];
@@ -260,27 +282,59 @@ export function generateSDK(
 
   // Collect all type names used
   const typeNames = new Set<string>();
+  let needsPaginatedResponse = false;
+  
   for (const endpoint of endpoints) {
     if (endpoint.body?.type) {
       typeNames.add(endpoint.body.type);
     }
     if (endpoint.response?.type) {
-      typeNames.add(endpoint.response.type);
+      // Check if this endpoint uses pagination
+      const hasPagination = endpoint.query && (
+        endpoint.query.page !== undefined ||
+        endpoint.query.pageSize !== undefined ||
+        endpoint.query.cursor !== undefined ||
+        endpoint.query.limit !== undefined ||
+        endpoint.query.offset !== undefined
+      );
+      
+      if (hasPagination && endpoint.response.type !== "void") {
+        // Extract item type for paginated responses
+        const responseType = endpoint.response.type;
+        if (responseType.endsWith("Array") || responseType.toLowerCase().includes("list")) {
+          const itemType = responseType.replace(/Array$/i, "").replace(/List$/i, "");
+          typeNames.add(itemType);
+          needsPaginatedResponse = true;
+        } else {
+          typeNames.add(responseType);
+          needsPaginatedResponse = true;
+        }
+      } else {
+        typeNames.add(endpoint.response.type);
+      }
     }
+  }
+  
+  // Add PaginatedResponse to imports if needed
+  if (needsPaginatedResponse) {
+    typeNames.add("PaginatedResponse");
   }
 
   // Generate imports (only if types are needed)
-  const imports = typeNames.size > 0
-    ? `// This file is auto-generated from yama.yaml
-// Do not edit manually - your changes will be overwritten
-
-import type { ${Array.from(typeNames).join(", ")} } from "${typesImportPath}";
-
-`
-    : `// This file is auto-generated from yama.yaml
+  let imports = `// This file is auto-generated from yama.yaml
 // Do not edit manually - your changes will be overwritten
 
 `;
+  
+  if (typeNames.size > 0) {
+    imports += `import type { ${Array.from(typeNames).join(", ")} } from "${typesImportPath}";\n`;
+  }
+  
+  if (needsPaginatedResponse) {
+    imports += `import type { PaginatedResponse } from "@betagors/yama-core";\n`;
+  }
+  
+  imports += "\n";
 
   // Check if auth is configured
   const hasAuth = config.auth?.providers && config.auth.providers.length > 0;

@@ -1,0 +1,162 @@
+# Official Plugins
+
+Plugins maintained by the Yama team.
+
+## Database
+
+### @betagors/yama-postgres
+
+PostgreSQL adapter with connection pooling and migrations.
+
+```bash
+pnpm add @betagors/yama-postgres
+```
+
+```yaml
+plugins:
+  - name: "@betagors/yama-postgres"
+    config:
+      url: ${DATABASE_URL}
+      pool:
+        min: 2
+        max: 10
+```
+
+### @betagors/yama-pglite
+
+Embedded PostgreSQL using PGLite. Great for development and testing.
+
+```bash
+pnpm add @betagors/yama-pglite
+```
+
+```yaml
+plugins:
+  - name: "@betagors/yama-pglite"
+    config:
+      dataDir: ./data
+```
+
+## Storage
+
+### @betagors/yama-s3
+
+AWS S3 compatible storage adapter.
+
+```bash
+pnpm add @betagors/yama-s3
+```
+
+```yaml
+plugins:
+  - name: "@betagors/yama-s3"
+    config:
+      bucket: ${S3_BUCKET}
+      region: ${AWS_REGION}
+      accessKeyId: ${AWS_ACCESS_KEY_ID}
+      secretAccessKey: ${AWS_SECRET_ACCESS_KEY}
+```
+
+**Usage:**
+
+```typescript
+export async function uploadFile(context: HandlerContext) {
+  const { s3 } = context.services;
+  
+  const result = await s3.upload({
+    key: 'uploads/file.pdf',
+    body: context.request.body,
+    contentType: 'application/pdf',
+  });
+  
+  return { url: result.url };
+}
+```
+
+## Caching
+
+### @betagors/yama-redis
+
+Redis adapter for caching and session storage.
+
+```bash
+pnpm add @betagors/yama-redis
+```
+
+```yaml
+plugins:
+  - name: "@betagors/yama-redis"
+    config:
+      url: ${REDIS_URL}
+```
+
+**Usage:**
+
+```typescript
+export async function getData(context: HandlerContext) {
+  const { redis } = context.services;
+  
+  // Check cache
+  const cached = await redis.get('my-key');
+  if (cached) return JSON.parse(cached);
+  
+  // Fetch and cache
+  const data = await fetchExpensiveData();
+  await redis.set('my-key', JSON.stringify(data), 'EX', 3600);
+  
+  return data;
+}
+```
+
+## Realtime
+
+### @betagors/yama-realtime
+
+WebSocket support for real-time updates.
+
+```bash
+pnpm add @betagors/yama-realtime
+```
+
+```yaml
+plugins:
+  - name: "@betagors/yama-realtime"
+    config:
+      path: /ws
+```
+
+**Usage:**
+
+```typescript
+export async function createTodo(context: HandlerContext) {
+  const { realtime } = context.services;
+  
+  const todo = await context.db.query(
+    'INSERT INTO todos (title) VALUES ($1) RETURNING *',
+    [context.request.body.title]
+  );
+  
+  // Broadcast to connected clients
+  await realtime.broadcast('todos', {
+    type: 'created',
+    data: todo[0],
+  });
+  
+  return todo[0];
+}
+```
+
+## All Packages
+
+| Package | Description |
+|---------|-------------|
+| `@betagors/yama-cli` | Command-line interface |
+| `@betagors/yama-core` | Core runtime and types |
+| `@betagors/yama-fastify` | Fastify HTTP adapter |
+| `@betagors/yama-postgres` | PostgreSQL adapter |
+| `@betagors/yama-pglite` | PGLite adapter |
+| `@betagors/yama-redis` | Redis adapter |
+| `@betagors/yama-s3` | S3 storage adapter |
+| `@betagors/yama-realtime` | WebSocket realtime |
+| `@betagors/yama-sdk` | SDK generator |
+| `@betagors/yama-openapi` | OpenAPI generator |

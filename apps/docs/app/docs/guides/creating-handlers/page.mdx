@@ -1,0 +1,244 @@
+# Creating Handlers
+
+Learn how to create and organize handlers for your Yama application.
+
+## Handler File Structure
+
+Handlers are TypeScript files in the `src/handlers/` directory:
+
+```
+src/
+  handlers/
+    listTodos.ts
+    createTodo.ts
+    updateTodo.ts
+    deleteTodo.ts
+```
+
+## Basic Handler
+
+Create a simple handler:
+
+```typescript
+// src/handlers/listTodos.ts
+import { HandlerContext } from '@betagors/yama-core';
+
+export async function listTodos(context: HandlerContext) {
+  const todos = await context.entities.Todo.findAll();
+  return todos;
+}
+```
+
+## Registering Handlers
+
+Reference handlers in your `yama.yaml`:
+
+```yaml
+endpoints:
+  - path: /todos
+    method: GET
+    handler: handlers/listTodos
+    response:
+      type: TodoArray
+```
+
+The path `handlers/listTodos` maps to `src/handlers/listTodos.ts` and exports the `listTodos` function.
+
+## Handler Patterns
+
+### List Handler
+
+```typescript
+export async function listTodos(context: HandlerContext) {
+  const { limit = 10, offset = 0, search } = context.query;
+  
+  const options: any = {
+    limit: Number(limit),
+    offset: Number(offset)
+  };
+  
+  if (search) {
+    options.where = { title: { ilike: `%${search}%` } };
+  }
+  
+  const todos = await context.entities.Todo.findAll(options);
+  return todos;
+}
+```
+
+### Get by ID Handler
+
+```typescript
+export async function getTodo(context: HandlerContext) {
+  const { id } = context.params;
+  const todo = await context.entities.Todo.findById(id);
+  
+  if (!todo) {
+    context.response.status(404);
+    return { error: 'Todo not found' };
+  }
+  
+  return todo;
+}
+```
+
+### Create Handler
+
+```typescript
+export async function createTodo(context: HandlerContext) {
+  const { title, completed = false } = context.body;
+  
+  if (!title) {
+    context.response.status(400);
+    return { error: 'Title is required' };
+  }
+  
+  const todo = await context.entities.Todo.create({
+    title,
+    completed
+  });
+  
+  context.response.status(201);
+  return todo;
+}
+```
+
+### Update Handler
+
+```typescript
+export async function updateTodo(context: HandlerContext) {
+  const { id } = context.params;
+  const updates = context.body;
+  
+  const todo = await context.entities.Todo.update(id, updates);
+  
+  if (!todo) {
+    context.response.status(404);
+    return { error: 'Todo not found' };
+  }
+  
+  return todo;
+}
+```
+
+### Delete Handler
+
+```typescript
+export async function deleteTodo(context: HandlerContext) {
+  const { id } = context.params;
+  
+  const deleted = await context.entities.Todo.delete(id);
+  
+  if (!deleted) {
+    context.response.status(404);
+    return { error: 'Todo not found' };
+  }
+  
+  context.response.status(204);
+  return null;
+}
+```
+
+## Advanced Patterns
+
+### Joining Entities
+
+```typescript
+export async function getTodoWithUser(context: HandlerContext) {
+  const { id } = context.params;
+  
+  const todo = await context.entities.Todo.findById(id);
+  if (!todo) {
+    context.response.status(404);
+    return { error: 'Todo not found' };
+  }
+  
+  const user = await context.entities.User.findById(todo.userId);
+  
+  return {
+    ...todo,
+    user
+  };
+}
+```
+
+### Batch Operations
+
+```typescript
+export async function batchCreateTodos(context: HandlerContext) {
+  const { todos } = context.body;
+  
+  const created = await Promise.all(
+    todos.map(todo => context.entities.Todo.create(todo))
+  );
+  
+  context.response.status(201);
+  return { todos: created };
+}
+```
+
+### Custom Queries
+
+```typescript
+export async function getTodoStats(context: HandlerContext) {
+  const stats = await context.db.query(`
+    SELECT 
+      COUNT(*) as total,
+      COUNT(*) FILTER (WHERE completed = true) as completed,
+      COUNT(*) FILTER (WHERE completed = false) as pending
+    FROM todos
+  `);
+  
+  return stats[0];
+}
+```
+
+## Error Handling
+
+Handle errors gracefully:
+
+```typescript
+export async function createTodo(context: HandlerContext) {
+  try {
+    const todo = await context.entities.Todo.create(context.body);
+    context.response.status(201);
+    return todo;
+  } catch (error) {
+    if (error.code === '23505') { // Unique violation
+      context.response.status(409);
+      return { error: 'Todo already exists' };
+    }
+    
+    context.response.status(500);
+    return { error: 'Failed to create todo' };
+  }
+}
+```
+
+## Authentication
+
+Protect handlers with authentication:
+
+```typescript
+export async function getMyTodos(context: HandlerContext) {
+  const user = context.auth.user;
+  
+  if (!user) {
+    context.response.status(401);
+    return { error: 'Unauthorized' };
+  }
+  
+  const todos = await context.entities.Todo.findAll({
+    where: { userId: user.id }
+  });
+  
+  return todos;
+}
+```
+
+## Next Steps
+
+- Learn about [Handler Context](/docs/core-concepts/handlers) - Available context properties
+- See [Custom Endpoints](/docs/guides/custom-endpoints) - Advanced endpoint patterns
+- Check [Examples](/docs/examples) - Real-world handler examples
+

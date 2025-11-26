@@ -291,11 +291,26 @@ export type AuthProvider = JwtAuthProvider | ApiKeyAuthProvider | BasicAuthProvi
 
 export interface AuthConfig {
   providers: AuthProvider[];
+  /**
+   * Optional role-to-permission mapping for permission-based authorization
+   * Example: { admin: { permissions: ["*"] }, user: { permissions: ["posts:read", "posts:create"] } }
+   */
+  roles?: Record<string, { permissions: string[] }>;
 }
 
 export interface EndpointAuth {
   required?: boolean;
   roles?: string[];
+  /**
+   * Required permissions for this endpoint (permission-based authorization)
+   * User must have at least one of these permissions (derived from their roles)
+   */
+  permissions?: string[];
+  /**
+   * Custom authorization handler function name
+   * Handler will be called with authContext and should return boolean or throw error
+   */
+  handler?: string;
   provider?: string; // Provider type or name to use
 }
 

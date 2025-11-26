@@ -1,38 +1,205 @@
-# Yama JS Documentation
+# Yama JS
 
-Welcome to the Yama JS documentation. This directory contains guides and references for developing with and contributing to Yama JS.
+<div className="text-center mb-12">
+  <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+    Build APIs Faster
+  </h1>
+  <p className="text-xl text-gray-600 dark:text-gray-400 mb-6">
+    Configuration-first backend platform that turns YAML into fully functional APIs, SDKs, and documentation
+  </p>
+  <div className="flex gap-4 justify-center mb-8">
+    <a href="/docs/getting-started" className="px-8 py-4 bg-white text-gray-900 rounded-lg hover:bg-gray-100 transition-colors font-semibold text-lg shadow-lg">
+      Get Started
+    </a>
+    <a href="/docs" className="px-8 py-4 border-2 border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors font-semibold text-lg">
+      Learn Yama
+    </a>
+  </div>
+  <div className="mt-6 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg inline-block">
+    <p className="text-sm text-gray-700 dark:text-gray-300 font-mono">
+      npx @betagors/yama-cli create my-api
+    </p>
+  </div>
+</div>
 
-## Getting Started
+## Why Yama?
 
-- [Development Scripts](./development/scripts) - Complete guide to all available npm/pnpm scripts for building and developing
-- [Environment Variables](./development/environment-variables) - Guide to managing environment-specific configuration
+Yama separates **structure** from **logic**:
+- **Structure** lives in YAML (schemas, endpoints, auth rules, behaviors)
+- **Logic** lives in TypeScript handlers
+- **Platform** handles everything else (routing, validation, generation, docs, consistency)
 
-## Documentation Structure
+This approach dramatically reduces boilerplate, prevents AI hallucinations, and enables teams to build apps faster and safer.
 
-### Development
+## ✨ Features
 
-- **[Development Scripts](./development/scripts)** - All available build and development scripts, common workflows, and troubleshooting
-- **[Environment Variables](./development/environment-variables)** - Environment variable management and configuration
+<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 my-8">
+  <div className="p-6 border border-gray-200 dark:border-gray-800 rounded-lg">
+    <div className="text-2xl mb-2">🎯</div>
+    <h3 className="text-lg font-semibold mb-2">YAML-First Configuration</h3>
+    <p className="text-sm text-gray-600 dark:text-gray-400">Define your entire API structure in `yama.yaml`</p>
+  </div>
+  <div className="p-6 border border-gray-200 dark:border-gray-800 rounded-lg">
+    <div className="text-2xl mb-2">🚀</div>
+    <h3 className="text-lg font-semibold mb-2">Type-Safe TypeScript</h3>
+    <p className="text-sm text-gray-600 dark:text-gray-400">Auto-generated types and SDKs from your config</p>
+  </div>
+  <div className="p-6 border border-gray-200 dark:border-gray-800 rounded-lg">
+    <div className="text-2xl mb-2">🔌</div>
+    <h3 className="text-lg font-semibold mb-2">Plugin System</h3>
+    <p className="text-sm text-gray-600 dark:text-gray-400">Extensible architecture with database and HTTP adapters</p>
+  </div>
+  <div className="p-6 border border-gray-200 dark:border-gray-800 rounded-lg">
+    <div className="text-2xl mb-2">📚</div>
+    <h3 className="text-lg font-semibold mb-2">Auto-Generated Docs</h3>
+    <p className="text-sm text-gray-600 dark:text-gray-400">OpenAPI documentation generated from your config</p>
+  </div>
+  <div className="p-6 border border-gray-200 dark:border-gray-800 rounded-lg">
+    <div className="text-2xl mb-2">🛠️</div>
+    <h3 className="text-lg font-semibold mb-2">Powerful CLI</h3>
+    <p className="text-sm text-gray-600 dark:text-gray-400">Development server, code generation, and migration tools</p>
+  </div>
+  <div className="p-6 border border-gray-200 dark:border-gray-800 rounded-lg">
+    <div className="text-2xl mb-2">🔒</div>
+    <h3 className="text-lg font-semibold mb-2">Built-in Auth</h3>
+    <p className="text-sm text-gray-600 dark:text-gray-400">JWT authentication and authorization rules</p>
+  </div>
+  <div className="p-6 border border-gray-200 dark:border-gray-800 rounded-lg">
+    <div className="text-2xl mb-2">🗄️</div>
+    <h3 className="text-lg font-semibold mb-2">Database Support</h3>
+    <p className="text-sm text-gray-600 dark:text-gray-400">PostgreSQL and PGLite adapters with migrations</p>
+  </div>
+  <div className="p-6 border border-gray-200 dark:border-gray-800 rounded-lg">
+    <div className="text-2xl mb-2">⚡</div>
+    <h3 className="text-lg font-semibold mb-2">Fast Development</h3>
+    <p className="text-sm text-gray-600 dark:text-gray-400">Hot reload, watch mode, and instant feedback</p>
+  </div>
+</div>
 
-### Migrations
+## 🚀 Quick Start
 
-- **[Migration Problems](./migrations/problems)** - Common migration problems and how Yama addresses them
+Install the Yama CLI globally:
 
-### Plugins
+```bash
+npm install -g @betagors/yama-cli
+```
 
-- **[Plugin Naming](./plugins/naming)** - Naming conventions for Yama packages and plugins
+Create a new project:
 
-## Contributing
+```bash
+yama create my-api
+cd my-api
+npm install
+```
 
-When adding new documentation:
+Start the development server:
 
-1. Create a new `.mdx` file in the appropriate directory
-2. Add a link to it in the navigation structure
-3. Follow the existing documentation style
-4. Include code examples where helpful
+```bash
+yama dev
+```
 
-## Quick Links
+Your API will be running at `http://localhost:4000` 🎉
 
-- [Main README](https://github.com/betagors/yama) - Project overview and philosophy
-- [Development Scripts](./development/scripts) - Scripts reference
+## Quick Example
+
+Define your API structure in `yama.yaml`:
+
+```yaml
+name: my-api
+version: 1.0.0
+
+schemas:
+  Todo:
+    type: object
+    properties:
+      id:
+        type: string
+        format: uuid
+      title:
+        type: string
+      completed:
+        type: boolean
+
+endpoints:
+  /todos:
+    get:
+      handler: handlers/listTodos
+      response:
+        type: array
+        items:
+          $ref: "#/schemas/Todo"
+```
+
+Write your business logic in TypeScript:
+
+```typescript
+import { HandlerContext } from '@betagors/yama-core';
+
+export async function listTodos(context: HandlerContext) {
+  return [
+    { id: '1', title: 'Learn Yama', completed: false },
+    { id: '2', title: 'Build an API', completed: true },
+  ];
+}
+```
+
+That's it! Yama handles routing, validation, type generation, and documentation automatically.
+
+## 📚 Documentation
+
+<div className="grid grid-cols-1 md:grid-cols-3 gap-4 my-8">
+  <a href="/docs/getting-started" className="block p-6 border border-gray-200 dark:border-gray-800 rounded-lg hover:border-blue-500 dark:hover:border-blue-500 transition-colors">
+    <h3 className="text-lg font-semibold mb-2">Getting Started</h3>
+    <p className="text-sm text-gray-600 dark:text-gray-400">Learn the basics of Yama and build your first API</p>
+  </a>
+  <a href="/docs/core-concepts" className="block p-6 border border-gray-200 dark:border-gray-800 rounded-lg hover:border-blue-500 dark:hover:border-blue-500 transition-colors">
+    <h3 className="text-lg font-semibold mb-2">Core Concepts</h3>
+    <p className="text-sm text-gray-600 dark:text-gray-400">Understand schemas, entities, endpoints, and handlers</p>
+  </a>
+  <a href="/docs/api-reference/cli" className="block p-6 border border-gray-200 dark:border-gray-800 rounded-lg hover:border-blue-500 dark:hover:border-blue-500 transition-colors">
+    <h3 className="text-lg font-semibold mb-2">API Reference</h3>
+    <p className="text-sm text-gray-600 dark:text-gray-400">Complete reference for all CLI commands and configuration</p>
+  </a>
+  <a href="/docs/guides" className="block p-6 border border-gray-200 dark:border-gray-800 rounded-lg hover:border-blue-500 dark:hover:border-blue-500 transition-colors">
+    <h3 className="text-lg font-semibold mb-2">Guides</h3>
+    <p className="text-sm text-gray-600 dark:text-gray-400">Step-by-step guides for common tasks</p>
+  </a>
+  <a href="/docs/examples" className="block p-6 border border-gray-200 dark:border-gray-800 rounded-lg hover:border-blue-500 dark:hover:border-blue-500 transition-colors">
+    <h3 className="text-lg font-semibold mb-2">Examples</h3>
+    <p className="text-sm text-gray-600 dark:text-gray-400">See Yama in action with real-world examples</p>
+  </a>
+  <a href="/plugins" className="block p-6 border border-gray-200 dark:border-gray-800 rounded-lg hover:border-blue-500 dark:hover:border-blue-500 transition-colors">
+    <h3 className="text-lg font-semibold mb-2">Plugins</h3>
+    <p className="text-sm text-gray-600 dark:text-gray-400">Extend Yama with plugins and adapters</p>
+  </a>
+</div>
+
+## 💡 Philosophy
+
+Yama's core philosophy:
+
+- **YAML defines the contract** - Structure is explicit and version-controlled
+- **Code defines custom behavior** - Business logic stays in TypeScript
+- **Yama guarantees correctness** - Type safety, validation, and consistency
+
+---
+
+<div className="text-center mt-12 pt-8 border-t border-gray-200 dark:border-gray-800">
+  <p className="text-gray-600 dark:text-gray-400 mb-4">
+    Made with ❤️ by <a href="https://github.com/BetagorsLabs" className="text-blue-600 hover:underline">Betagors Labs</a>
+  </p>
+  <div className="flex gap-4 justify-center">
+    <a href="https://github.com/betagors/yama" className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100">
+      GitHub
+    </a>
+    <span className="text-gray-400">•</span>
+    <a href="https://github.com/betagors/yama/discussions" className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100">
+      Discussions
+    </a>
+    <span className="text-gray-400">•</span>
+    <a href="https://github.com/betagors/yama/issues" className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100">
+      Issues
+    </a>
+  </div>
+</div>
 

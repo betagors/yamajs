@@ -1,0 +1,186 @@
+# Environment Variables
+
+Yama supports environment-specific configuration files for managing different environments.
+
+## Loading Order
+
+Environment variables are loaded in priority order (later files override earlier ones):
+
+1. **`.env`** — Base configuration (committed to git)
+2. **`.env.{environment}`** — Environment-specific overrides
+3. **`.env.local`** — Local overrides (gitignored)
+
+## Setting the Environment
+
+The environment is determined by:
+
+1. `--env` flag in CLI commands
+2. `NODE_ENV` environment variable
+3. Defaults to `development`
+
+```bash
+# Use development environment (default)
+yama dev
+
+# Specify environment explicitly
+yama dev --env staging
+
+# Use NODE_ENV
+NODE_ENV=production yama dev
+```
+
+## File Structure
+
+```
+your-project/
+├── .env                    # Base configuration (committed)
+├── .env.development        # Development settings (committed)
+├── .env.production         # Production settings (committed)
+├── .env.staging            # Staging settings (committed)
+└── .env.local              # Local overrides (gitignored)
+```
+
+## Example Configuration
+
+### `.env` (Base)
+
+```env
+# Shared across all environments
+PORT=4000
+LOG_LEVEL=info
+```
+
+### `.env.development`
+
+```env
+DATABASE_URL=postgresql://localhost:5432/myapp_dev
+JWT_SECRET=dev-secret-key
+DEBUG=true
+```
+
+### `.env.production`
+
+```env
+DATABASE_URL=postgresql://prod-host:5432/myapp_prod
+JWT_SECRET=${JWT_SECRET_FROM_VAULT}
+DEBUG=false
+LOG_LEVEL=warn
+```
+
+### `.env.local` (Gitignored)
+
+```env
+# Personal overrides
+DATABASE_URL=postgresql://localhost:5432/my_local_db
+JWT_SECRET=my-personal-secret
+```
+
+## Using Variables in yama.yaml
+
+Reference environment variables with `${VAR_NAME}` syntax:
+
+```yaml
+database:
+  url: ${DATABASE_URL}
+
+auth:
+  providers:
+    - type: jwt
+      secret: ${JWT_SECRET}
+
+server:
+  port: ${PORT:-4000}  # With default value
+```
+
+## Default Values
+
+Provide fallback values with `:-` syntax:
+
+```yaml
+server:
+  port: ${PORT:-4000}           # Default to 4000
+  host: ${HOST:-0.0.0.0}        # Default to 0.0.0.0
+  logLevel: ${LOG_LEVEL:-info}  # Default to info
+```
+
+## Required Variables
+
+Document required variables in your README or create `.env.example`:
+
+```env
+# .env.example
+# Copy to .env and fill in your values
+
+# Required
+DATABASE_URL=postgresql://user:password@localhost:5432/myapp
+JWT_SECRET=your-secret-key-here
+
+# Optional
+PORT=4000
+LOG_LEVEL=info
+```
+
+## Commands with Environment
+
+Most commands support the `--env` flag:
+
+```bash
+# Development server
+yama dev --env development
+
+# Schema operations
+yama schema:check --env production
+yama schema:apply --env staging
+
+# Code generation
+yama generate --env production
+```
+
+## Best Practices
+
+### 1. Never Commit Secrets
+
+Use `.env.local` for sensitive values:
+
+```gitignore
+# .gitignore
+.env.local
+.env.*.local
+```
+
+### 2. Use Environment-Specific Files
+
+Create files for each environment:
+
+```
+.env.development
+.env.staging
+.env.production
+```
+
+### 3. Document Required Variables
+
+List all required variables in your README:
+
+```markdown
+## Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| DATABASE_URL | Yes | PostgreSQL connection string |
+| JWT_SECRET | Yes | Secret for JWT signing |
+| PORT | No | Server port (default: 4000) |
+```
+
+### 4. Validate on Startup
+
+Yama validates required environment variables on startup. Missing variables will cause an error.
+
+### 5. Use Secrets Management in Production
+
+For production, use a secrets manager instead of `.env` files:
+
+- AWS Secrets Manager
+- HashiCorp Vault
+- Google Secret Manager
+- Azure Key Vault

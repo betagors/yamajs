@@ -360,7 +360,7 @@ function generateRepositoryClass(
   return `import { pgliteAdapter } from "@betagors/yama-pglite";
 import { ${tableName} } from "./schema.ts";
 import { ${mapperToEntity}, ${mapperFromEntity} } from "./mapper.ts";
-import { eq, and, ilike, gt, lt, desc, asc } from "drizzle-orm";
+import { eq, and, or, ilike, gt, lt, desc, asc } from "drizzle-orm";
 import type { SQL } from "drizzle-orm";
 import type { ${apiSchemaName}, ${createInputName}, ${updateInputName} } from "${typesImportPath}";
 import type { ${entityName}RepositoryMethods } from "./repository-types.ts";
@@ -412,6 +412,9 @@ ${queryableFields.map(f => {
     limit?: number;
     offset?: number;
     orderBy?: { field: string; direction?: 'asc' | 'desc' };
+    search?: string;
+    searchFields?: string[];
+    searchMode?: 'contains' | 'starts' | 'ends' | 'exact';
   }): Promise<${apiSchemaName}[]> {
     const db = getDb();
     let query = db.select().from(${tableName});
@@ -423,6 +426,35 @@ ${queryableFields.map(f => {
       conditions.push(eq(${tableName}.${dbCol}, options.${f.apiFieldName}));
     }`;
 }).join('\n')}
+    
+    // Handle search
+    if (options?.search) {
+      const searchTerm = String(options.search);
+      const searchFields = options.searchFields || [${queryableFields.filter(f => f.field.type === 'string' || f.field.type === 'text').map(f => `'${f.apiFieldName}'`).join(', ')}];
+      const searchMode = options.searchMode || 'contains';
+      
+      const searchConditions: SQL[] = [];
+      for (const fieldName of searchFields) {
+        const searchableField = queryableFields.find(f => f.apiFieldName === fieldName);
+        if (searchableField && (searchableField.field.type === 'string' || searchableField.field.type === 'text')) {
+          const dbCol = searchableField.dbColumnName;
+          if (searchMode === 'contains') {
+            searchConditions.push(ilike(${tableName}.${dbCol}, \`%\${searchTerm}%\`));
+          } else if (searchMode === 'starts') {
+            searchConditions.push(ilike(${tableName}.${dbCol}, \`\${searchTerm}%\`));
+          } else if (searchMode === 'ends') {
+            searchConditions.push(ilike(${tableName}.${dbCol}, \`%\${searchTerm}\`));
+          } else if (searchMode === 'exact') {
+            searchConditions.push(eq(${tableName}.${dbCol}, searchTerm));
+          }
+        }
+      }
+      
+      if (searchConditions.length > 0) {
+        // Use OR for full-text search across multiple fields
+        conditions.push(or(...searchConditions));
+      }
+    }
     
     if (conditions.length > 0) {
       query = query.where(and(...conditions));
@@ -587,6 +619,9 @@ ${queryableFields.map(f => {
   limit?: number;
   offset?: number;
   orderBy?: { field: string; direction?: 'asc' | 'desc' };
+  search?: string;
+  searchFields?: string[];
+  searchMode?: 'contains' | 'starts' | 'ends' | 'exact';
 }
 
 export interface ${entityName}RepositoryMethods {

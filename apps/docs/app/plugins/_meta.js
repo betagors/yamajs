@@ -1,4 +1,5 @@
 export default {
-  naming: 'Plugin Naming',
+  index: 'Overview',
+  official: 'Official Plugins',
 };
 

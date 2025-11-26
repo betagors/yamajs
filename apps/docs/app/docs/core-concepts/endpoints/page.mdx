@@ -1,0 +1,176 @@
+# Endpoints
+
+Endpoints define your API routes. They can use handlers for custom logic or leverage automatic CRUD operations from entities.
+
+## Basic Endpoint Definition
+
+```yaml
+endpoints:
+  - path: /todos
+    method: GET
+    handler: handlers/listTodos
+    response:
+      type: TodoArray
+```
+
+## Endpoint Methods
+
+Yama supports all HTTP methods:
+
+```yaml
+endpoints:
+  - path: /todos
+    method: GET                    # Retrieve data
+    handler: handlers/listTodos
+  
+  - path: /todos
+    method: POST                   # Create data
+    handler: handlers/createTodo
+  
+  - path: /todos/:id
+    method: PUT                    # Full update
+    handler: handlers/updateTodo
+  
+  - path: /todos/:id
+    method: PATCH                  # Partial update
+    handler: handlers/patchTodo
+  
+  - path: /todos/:id
+    method: DELETE                 # Delete data
+    handler: handlers/deleteTodo
+```
+
+## Path Parameters
+
+Use `:param` syntax for dynamic routes:
+
+```yaml
+endpoints:
+  - path: /users/:id
+    method: GET
+    params:
+      id:
+        type: string
+        required: true
+    handler: handlers/getUser
+```
+
+## Query Parameters
+
+Define query string parameters:
+
+```yaml
+endpoints:
+  - path: /products
+    method: GET
+    query:
+      category:
+        type: string
+        required: false
+      limit:
+        type: number
+        default: 10
+      offset:
+        type: number
+        default: 0
+    handler: handlers/listProducts
+```
+
+## Request Body
+
+Define request body schemas:
+
+```yaml
+endpoints:
+  - path: /todos
+    method: POST
+    body:
+      type: object
+      properties:
+        title:
+          type: string
+        completed:
+          type: boolean
+    handler: handlers/createTodo
+```
+
+Or reference a schema:
+
+```yaml
+endpoints:
+  - path: /todos
+    method: POST
+    body:
+      $ref: "#/schemas/Todo"
+    handler: handlers/createTodo
+```
+
+## Response Types
+
+Define response schemas:
+
+```yaml
+endpoints:
+  - path: /todos
+    method: GET
+    response:
+      type: array
+      items:
+        $ref: "#/schemas/Todo"
+```
+
+## Authentication
+
+Protect endpoints with authentication:
+
+```yaml
+endpoints:
+  - path: /admin/users
+    method: GET
+    auth:
+      required: true
+      roles: ["admin"]
+    handler: handlers/listUsers
+```
+
+## Handler Types
+
+### Custom Handler
+
+Use a TypeScript handler file:
+
+```yaml
+endpoints:
+  - path: /custom
+    method: GET
+    handler: handlers/myHandler
+```
+
+### Query Handler
+
+Query entities directly from config:
+
+```yaml
+endpoints:
+  - path: /products/search
+    method: GET
+    handler:
+      type: query
+      entity: Product
+      filters:
+        - field: name
+          operator: ilike
+          param: query.search
+    query:
+      search:
+        type: string
+    response:
+      type: ProductArray
+```
+
+## Next Steps
+
+- Learn about [Handlers](/docs/core-concepts/handlers) - Implementing business logic
+- See [Guides: Handlers](/docs/guides/handlers) - Advanced handler patterns
+- Check [API Reference: Configuration](/docs/api-reference/configuration) - Complete endpoint options
+

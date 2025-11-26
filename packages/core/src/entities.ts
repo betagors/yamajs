@@ -74,6 +74,8 @@ export interface CrudConfig {
   auth?: {
     required?: boolean;
     roles?: string[];
+    permissions?: string[];
+    handler?: string;
   };
   /**
    * Custom input types per HTTP method
@@ -87,6 +89,45 @@ export interface CrudConfig {
    * Example: { GET_LIST: "TodoSummary", GET_ONE: "TodoDetail", POST: "Todo" }
    */
   responseTypes?: Record<string, string>;
+  /**
+   * Search configuration for CRUD list endpoints
+   * 
+   * Simplified syntax options:
+   * - `true` - Enable search with smart defaults (all string/text fields, contains mode)
+   * - `["field1", "field2"]` - Enable search on specific fields only
+   * - `{ fields: [...], mode: "starts", fullText: true }` - Full configuration
+   * - `false` - Explicitly disable search (if entity has searchable fields)
+   * 
+   * If not specified, search is automatically enabled if entity has string/text fields
+   */
+  search?: boolean | string[] | {
+    /**
+     * Fields that can be searched (default: all string/text fields)
+     * Can be array of field names or true to enable all searchable fields
+     */
+    fields?: string[] | true;
+    /**
+     * Search mode: "contains" (default), "starts", "ends", "exact"
+     */
+    mode?: "contains" | "starts" | "ends" | "exact";
+    /**
+     * Enable full-text search across multiple fields with a single query parameter
+     * Default: true (enabled automatically)
+     */
+    fullText?: boolean;
+  };
+  /**
+   * Pagination configuration for CRUD list endpoints
+   * 
+   * Supports all pagination types: offset, page, cursor
+   * Default: offset pagination with limit/offset query params
+   * 
+   * Examples:
+   * - `pagination: true` - Enable offset pagination (default)
+   * - `pagination: { type: "page" }` - Use page-based pagination
+   * - `pagination: { type: "cursor", cursorField: "id" }` - Use cursor pagination
+   */
+  pagination?: import("./pagination/types.js").PaginationConfig;
 }
 
 /**

@@ -24,6 +24,7 @@ npm install @betagors/yama-core
 - **Plugin System** - Extensible plugin architecture
 - **Migration System** - Database migration utilities and model diffing
 - **Entity System** - Convert entities to schemas and manage database models
+- **Pagination** - Multiple pagination types (offset, page, cursor) with metadata support
 
 ## Usage
 
@@ -92,6 +93,139 @@ import { generateTypes } from '@betagors/yama-core';
 
 const types = generateTypes(schemas);
 // Returns TypeScript type definitions as a string
+```
+
+### Pagination
+
+Yama supports multiple pagination types for flexible API design:
+
+#### Offset Pagination (Default)
+
+```yaml
+endpoints:
+  - path: /products
+    method: GET
+    handler:
+      type: query
+      entity: Product
+      pagination:
+        type: offset
+        limit: query.limit
+        offset: query.offset
+        metadata: true
+```
+
+#### Page-Based Pagination
+
+```yaml
+endpoints:
+  - path: /products
+    method: GET
+    handler:
+      type: query
+      entity: Product
+      pagination:
+        type: page
+        page: query.page
+        pageSize: 20
+        metadata: [total, hasNext, hasPrev]
+```
+
+#### Cursor-Based Pagination
+
+```yaml
+endpoints:
+  - path: /products
+    method: GET
+    handler:
+      type: query
+      entity: Product
+      pagination:
+        type: cursor
+        cursor: query.cursor
+        cursorField: id
+        limit: 20
+        metadata: [hasNext, nextCursor]
+      orderBy:
+        field: id
+        direction: asc
+```
+
+#### Shorthand Configuration
+
+```yaml
+# Enable pagination with defaults (offset, limit=20)
+pagination: true
+
+# Or specify type with smart defaults
+pagination:
+  type: page  # pageSize defaults to 20
+```
+
+#### Pagination Metadata
+
+All paginated responses are automatically wrapped with metadata for better DX:
+
+```typescript
+// Always wrapped with metadata
+{
+  data: [/* array of results */],
+  pagination: {
+    type: "page",
+    page: 1,
+    pageSize: 20,
+    hasNext: true,
+    hasPrev: false
+  }
+}
+```
+
+You can specify which metadata fields to include:
+
+```yaml
+pagination:
+  type: page
+  metadata: [total, hasNext, hasPrev]  # Only include these fields
+```
+
+Available metadata fields:
+- `total` - Total count of items (requires COUNT query)
+- `hasNext` - Boolean indicating if more results exist
+- `hasPrev` - Boolean indicating if previous page exists
+- `nextCursor` - Next cursor token (cursor pagination)
+- `prevCursor` - Previous cursor token (cursor pagination)
+
+#### Programmatic Usage
+
+```typescript
+import {
+  normalizePaginationConfig,
+  calculatePaginationMetadata,
+  wrapPaginatedResponse,
+  type PaginationConfig
+} from '@betagors/yama-core';
+
+// Normalize pagination config from YAML
+const normalized = normalizePaginationConfig(
+  { type: 'page', page: 1, pageSize: 20 },
+  context,
+  'id', // primary key field
+  20    // default limit
+);
+
+// Calculate metadata after fetching results
+const metadata = calculatePaginationMetadata(
+  normalized,
+  results,
+  totalCount // optional
+);
+
+// Wrap response with metadata
+const response = wrapPaginatedResponse(
+  results,
+  metadata,
+  true // include all metadata
+);
 ```
 
 ### Database Adapters
@@ -321,6 +455,17 @@ const schemas = entitiesToSchemas(entities);
 - `deserializeMigration()` - Deserialize migration from YAML
 - `validateMigration()` - Validate a migration
 - `replayMigrations()` - Replay migrations on a database
+
+### Pagination
+
+- `normalizePaginationConfig()` - Normalize pagination config to standard form
+- `pageToOffset()` - Convert page/pageSize to offset/limit
+- `calculatePaginationMetadata()` - Calculate pagination metadata from results
+- `wrapPaginatedResponse()` - Wrap results with pagination metadata
+- `detectPaginationFromQuery()` - Detect pagination type from query parameters
+- `PaginationConfig` - Pagination configuration type
+- `PaginationMetadata` - Pagination metadata type
+- `PaginatedResponse` - Paginated response wrapper type
 
 ## TypeScript Support
 

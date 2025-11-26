@@ -1,0 +1,133 @@
+# Entities
+
+Entities represent database tables and provide automatic CRUD operations. They're built on top of schemas and add database-specific configuration.
+
+## Basic Entity Definition
+
+```yaml
+entities:
+  Todo:
+    table: todos                    # Database table name
+    crud:
+      enabled: true                 # Enable automatic CRUD endpoints
+    fields:
+      id:
+        type: uuid
+        primary: true
+        generated: true
+      title:
+        type: string
+        required: true
+      completed:
+        type: boolean
+        default: false
+      createdAt:
+        type: timestamp
+        default: now
+```
+
+## Entity Fields
+
+Entity fields map to database columns:
+
+```yaml
+entities:
+  User:
+    table: users
+    fields:
+      id:
+        type: uuid
+        primary: true
+        generated: true              # Auto-generate UUID
+      email:
+        type: string
+        required: true
+        unique: true                 # Unique constraint
+      name:
+        type: string
+        nullable: true               # Allow NULL
+      age:
+        type: integer
+        default: 0
+      createdAt:
+        type: timestamp
+        default: now                 # Current timestamp
+      updatedAt:
+        type: timestamp
+        default: now
+        onUpdate: now                # Update on change
+```
+
+## CRUD Operations
+
+When `crud.enabled: true`, Yama automatically creates:
+
+- `GET /todos` - List all todos (with pagination, filtering, search)
+- `GET /todos/:id` - Get a single todo
+- `POST /todos` - Create a new todo
+- `PUT /todos/:id` - Update a todo
+- `PATCH /todos/:id` - Partially update a todo
+- `DELETE /todos/:id` - Delete a todo
+
+## Search Configuration
+
+Enable search across entity fields:
+
+```yaml
+entities:
+  Product:
+    table: products
+    crud:
+      enabled: true
+      search:
+        fields: ["name", "description"]
+        mode: contains              # contains, starts, ends, exact
+        fullText: true              # Enable ?search=query parameter
+    fields:
+      name:
+        type: string
+      description:
+        type: text
+```
+
+## Response Types
+
+Customize response types for different CRUD operations:
+
+```yaml
+entities:
+  Todo:
+    table: todos
+    crud:
+      enabled: true
+      responseTypes:
+        GET_LIST: TodoSummary       # Different type for list
+        GET_ONE: TodoDetail          # Different type for single item
+        POST: TodoResponse
+```
+
+## Relations
+
+Define relationships between entities (coming soon):
+
+```yaml
+entities:
+  Post:
+    table: posts
+    fields:
+      id:
+        type: uuid
+        primary: true
+      authorId:
+        type: uuid
+        relation:
+          entity: User
+          field: id
+```
+
+## Next Steps
+
+- Learn about [Endpoints](/docs/core-concepts/endpoints) - Custom API routes
+- See [Guides: Database Migrations](/docs/guides/migrations) - Managing schema changes
+- Check [API Reference: Configuration](/docs/api-reference/configuration) - Complete entity options
+
