@@ -1,0 +1,125 @@
+# Schemas
+
+Schemas define the structure and validation rules for your data models. They're reusable definitions that can be referenced throughout your `yama.yaml` configuration.
+
+## Basic Schema Definition
+
+```yaml
+schemas:
+  Todo:
+    type: object
+    properties:
+      id:
+        type: string
+        format: uuid
+      title:
+        type: string
+        minLength: 1
+        maxLength: 200
+      completed:
+        type: boolean
+        default: false
+      createdAt:
+        type: string
+        format: date-time
+```
+
+## Schema Types
+
+Yama supports all JSON Schema types:
+
+- `string` - Text data
+- `number` - Numeric values
+- `integer` - Whole numbers
+- `boolean` - True/false values
+- `array` - Lists of items
+- `object` - Nested objects
+- `null` - Null values
+
+## Field Validation
+
+You can add validation rules to fields:
+
+```yaml
+schemas:
+  User:
+    type: object
+    properties:
+      email:
+        type: string
+        format: email          # Email format validation
+        required: true          # Field is required
+      age:
+        type: integer
+        minimum: 0              # Minimum value
+        maximum: 150            # Maximum value
+      password:
+        type: string
+        minLength: 8            # Minimum length
+        pattern: '^[A-Za-z0-9]+$'  # Regex pattern
+```
+
+## Referencing Schemas
+
+Schemas can reference other schemas using `$ref`:
+
+```yaml
+schemas:
+  User:
+    type: object
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+  
+  Post:
+    type: object
+    properties:
+      id:
+        type: string
+      author:
+        $ref: "#/schemas/User"  # Reference User schema
+      title:
+        type: string
+```
+
+## Array Types
+
+Define arrays of schemas:
+
+```yaml
+schemas:
+  Todo:
+    type: object
+    properties:
+      id:
+        type: string
+      title:
+        type: string
+
+  TodoArray:
+    type: array
+    items:
+      $ref: "#/schemas/Todo"
+```
+
+## Using Schemas in Endpoints
+
+Schemas are used to define request and response types:
+
+```yaml
+endpoints:
+  - path: /todos
+    method: POST
+    body:
+      $ref: "#/schemas/Todo"
+    response:
+      $ref: "#/schemas/Todo"
+```
+
+## Next Steps
+
+- Learn about [Entities](/core-concepts/entities) - Add database operations to schemas
+- See [Configuration Reference](/api-reference/configuration) - Complete schema options
+

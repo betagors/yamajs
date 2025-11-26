@@ -1,0 +1,207 @@
+# Custom Endpoints
+
+Create custom endpoints with advanced configurations and patterns.
+
+## Custom Paths
+
+Define custom paths beyond CRUD:
+
+```yaml
+endpoints:
+  - path: /todos/featured
+    method: GET
+    handler: handlers/getFeaturedTodos
+    response:
+      type: TodoArray
+  
+  - path: /todos/:id/comments
+    method: GET
+    handler: handlers/getTodoComments
+    response:
+      type: CommentArray
+```
+
+## Multiple Methods
+
+Handle multiple methods on the same path:
+
+```yaml
+endpoints:
+  - path: /todos/:id/archive
+    method: POST
+    handler: handlers/archiveTodo
+  
+  - path: /todos/:id/archive
+    method: DELETE
+    handler: handlers/unarchiveTodo
+```
+
+## Complex Query Parameters
+
+Define complex query schemas:
+
+```yaml
+endpoints:
+  - path: /products
+    method: GET
+    query:
+      category:
+        type: string
+        enum: [electronics, clothing, books]
+      priceMin:
+        type: number
+        minimum: 0
+      priceMax:
+        type: number
+        minimum: 0
+      sortBy:
+        type: string
+        enum: [price, name, date]
+        default: date
+      sortOrder:
+        type: string
+        enum: [asc, desc]
+        default: desc
+    handler: handlers/searchProducts
+```
+
+## Request Validation
+
+Validate request bodies:
+
+```yaml
+endpoints:
+  - path: /users
+    method: POST
+    body:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+          pattern: '^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)'
+    handler: handlers/createUser
+```
+
+## Response Types
+
+Use different response types:
+
+```yaml
+endpoints:
+  - path: /todos
+    method: GET
+    response:
+      type: object
+      properties:
+        todos:
+          type: array
+          items:
+            $ref: "#/schemas/Todo"
+        total:
+          type: number
+        page:
+          type: number
+```
+
+## Middleware-like Handlers
+
+Chain handlers for middleware-like behavior:
+
+```typescript
+// src/handlers/withAuth.ts
+export async function withAuth(
+  context: HandlerContext,
+  next: () => Promise<any>
+) {
+  if (!context.auth.user) {
+    context.response.status(401);
+    return { error: 'Unauthorized' };
+  }
+  
+  return next();
+}
+
+// src/handlers/getProfile.ts
+export async function getProfile(context: HandlerContext) {
+  // User is guaranteed to be authenticated
+  return context.auth.user;
+}
+```
+
+## File Uploads
+
+Handle file uploads:
+
+```yaml
+endpoints:
+  - path: /upload
+    method: POST
+    handler: handlers/uploadFile
+```
+
+```typescript
+export async function uploadFile(context: HandlerContext) {
+  const file = context.request.files?.file;
+  
+  if (!file) {
+    context.response.status(400);
+    return { error: 'No file provided' };
+  }
+  
+  // Process file...
+  return { success: true, url: fileUrl };
+}
+```
+
+## Webhooks
+
+Create webhook endpoints:
+
+```yaml
+endpoints:
+  - path: /webhooks/stripe
+    method: POST
+    handler: handlers/stripeWebhook
+    auth:
+      required: false  # Webhooks use signature verification
+```
+
+## Rate Limiting
+
+Configure rate limiting:
+
+```yaml
+endpoints:
+  - path: /api/expensive-operation
+    method: POST
+    handler: handlers/expensiveOperation
+    rateLimit:
+      max: 10
+      window: 60000  # per minute
+```
+
+## CORS
+
+Configure CORS per endpoint:
+
+```yaml
+endpoints:
+  - path: /api/public
+    method: GET
+    handler: handlers/publicData
+    cors:
+      origin: '*'
+      methods: [GET, OPTIONS]
+```
+
+## Next Steps
+
+- Learn about [Endpoints](/core-concepts/endpoints) - Core endpoint concepts
+- See [Creating Handlers](/guides/creating-handlers) - Handler patterns
+- Check [Examples](/examples) - Real-world examples
+

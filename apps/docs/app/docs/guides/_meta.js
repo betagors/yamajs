@@ -1,5 +1,4 @@
 export default {
-  index: 'Overview',
   'creating-handlers': 'Creating Handlers',
   'custom-endpoints': 'Custom Endpoints',
   migrations: 'Database Migrations',
