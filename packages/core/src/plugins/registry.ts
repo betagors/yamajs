@@ -1,6 +1,6 @@
-import type { YamaPlugin, PluginManifest, ServicePlugin } from "./base";
-import { loadPluginFromPackage, importPlugin } from "./loader";
-import { validateYamaPlugin, validateServicePlugin, validatePluginVersion } from "./validator";
+import type { YamaPlugin, PluginManifest, ServicePlugin } from "./base.js";
+import { loadPluginFromPackage, importPlugin } from "./loader.js";
+import { validateYamaPlugin, validateServicePlugin, validatePluginVersion } from "./validator.js";
 
 /**
  * Plugin registry

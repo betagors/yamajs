@@ -23,7 +23,10 @@ const plugin: YamaPlugin = {
 
     // Register storage adapter factory
     registerStorageAdapter("fs", (storageConfig) => {
-      const fsConfig = storageConfig as FSAdapterConfig;
+      const fsConfig = storageConfig as unknown as FSAdapterConfig;
+      if (!fsConfig.basePath) {
+        throw new Error("FS adapter requires basePath in config");
+      }
       return createFSBucket(fsConfig);
     });
 

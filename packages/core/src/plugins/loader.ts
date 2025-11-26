@@ -1,7 +1,7 @@
 import { readFileSync, existsSync } from "fs";
 import { join, dirname, resolve } from "path";
 import { pathToFileURL } from "url";
-import type { PluginManifest, YamaPlugin } from "./base";
+import type { PluginManifest, YamaPlugin } from "./base.js";
 
 /**
  * Load plugin manifest from package.json

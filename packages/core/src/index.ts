@@ -12,7 +12,7 @@ export {
   type SchemaDefinition,
   type YamaSchemas,
   type ValidationResult
-} from "./schemas";
+} from "./schemas.js";
 
 // Export auth types from schemas
 export {
@@ -27,21 +27,21 @@ export {
   type BasicAuthProviderStatic,
   type BasicAuthProviderDatabase,
   type OAuthAuthProvider,
-} from "./schemas";
+} from "./schemas.js";
 
 // Export rate limiting types from schemas
 export {
   type RateLimitConfig,
   type RateLimitKeyStrategy,
   type RateLimitStoreType,
-} from "./schemas";
+} from "./schemas.js";
 
 // Export auth functions
 export {
   authenticateRequest,
   authorizeRequest,
   authenticateAndAuthorize,
-} from "./auth";
+} from "./auth.js";
 
 // Export auth provider registry functions
 export {
@@ -51,7 +51,7 @@ export {
   getOAuthProvider,
   getAllOAuthProviders,
   getRegisteredProviderTypes,
-} from "./auth/registry";
+} from "./auth/registry.js";
 
 // Export rate limiting functions
 export {
@@ -67,23 +67,23 @@ export {
   CacheRateLimitStore,
   createRedisOptimizedRateLimitStore,
   RedisOptimizedRateLimitStore,
-} from "./rate-limit";
+} from "./rate-limit/index.js";
 
 // Export auth provider types
 export {
   type AuthProviderHandler,
   type AuthResult,
   type OAuthProviderMetadata,
-} from "./auth/types";
+} from "./auth/types.js";
 
 // Export database registry
 export {
   registerGlobalDatabaseAdapter,
   getGlobalDatabaseAdapter,
-} from "./infrastructure/database-registry";
+} from "./infrastructure/database-registry.js";
 
 // Export type generation
-export { generateTypes } from "./typegen";
+export { generateTypes } from "./typegen.js";
 
 // Export entity types and functions
 export {
@@ -97,7 +97,7 @@ export {
   entityToSchema,
   entitiesToSchemas,
   mergeSchemas,
-} from "./entities";
+} from "./entities.js";
 
 // Export CRUD generation functions
 export {
@@ -106,14 +106,14 @@ export {
   generateAllCrudEndpoints,
   generateCrudInputSchemas,
   generateArraySchema,
-} from "./crud";
+} from "./crud.js";
 
 // Export environment utilities
 export {
   loadEnvFile,
   resolveEnvVar,
   resolveEnvVars,
-} from "./env";
+} from "./env.js";
 
 // Export infrastructure adapters
 export {
@@ -121,11 +121,11 @@ export {
   type DatabaseConnection,
   createDatabaseAdapter,
   registerDatabaseAdapter,
-} from "./infrastructure/database";
+} from "./infrastructure/database.js";
 
 export {
   type CacheAdapter,
-} from "./infrastructure/cache";
+} from "./infrastructure/cache.js";
 
 export {
   type StorageAdapter,
@@ -136,7 +136,7 @@ export {
   type StorageMetadata,
   createStorageAdapter,
   registerStorageAdapter,
-} from "./infrastructure/storage";
+} from "./infrastructure/storage.js";
 
 export {
   type HttpServerAdapter,
@@ -148,12 +148,12 @@ export {
   type HttpServerInstance,
   createHttpServerAdapter,
   registerHttpServerAdapter,
-} from "./infrastructure/server";
+} from "./infrastructure/server.js";
 
 // Export updated config types
 export {
   type ServerConfig,
-} from "./entities";
+} from "./entities.js";
 
 // Export plugin system
 export {
@@ -172,7 +172,7 @@ export {
   loadServicePlugin,
   getServicePlugin,
   getServicePluginByType,
-} from "./plugins/index";
+} from "./plugins/index.js";
 
 // Export migration types and functions
 export {
@@ -185,7 +185,7 @@ export {
   computeModelHash,
   entitiesToModel,
   compareModels,
-} from "./migrations/model";
+} from "./migrations/model.js";
 
 export {
   type DiffResult,
@@ -203,14 +203,14 @@ export {
   type MigrationStepUnion,
   computeDiff,
   diffToSteps,
-} from "./migrations/diff";
+} from "./migrations/diff.js";
 
 export {
   type MigrationYAML,
   serializeMigration,
   deserializeMigration,
   createMigration,
-} from "./migrations/migration-yaml";
+} from "./migrations/migration-yaml.js";
 
 export {
   type ValidationError,
@@ -218,12 +218,12 @@ export {
   validateMigrationHash,
   validateStepDependencies,
   validateMigration,
-} from "./migrations/validator";
+} from "./migrations/validator.js";
 
 export {
   replayMigrations,
   getCurrentModelHashFromDB,
-} from "./migrations/replay";
+} from "./migrations/replay.js";
 
 // Export trash/recycle bin types
 export {
@@ -232,5 +232,5 @@ export {
   DEFAULT_RETENTION_DAYS,
   calculateExpirationDate,
   isExpired,
-} from "./migrations/trash";
+} from "./migrations/trash.js";
 

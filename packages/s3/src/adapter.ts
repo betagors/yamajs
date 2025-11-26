@@ -23,37 +23,6 @@ export interface S3AdapterConfig extends S3Config {
   public?: boolean; // Whether bucket is public (affects URL generation)
 }
 
-/**
- * Create a storage bucket wrapper for S3
- */
-function createS3Bucket(adapter: StorageAdapter, bucket: string): StorageBucket {
-  return {
-    async upload(key: string, data: Buffer | ReadableStream<Uint8Array>, options?: UploadOptions): Promise<UploadResult> {
-      return adapter.upload(key, data, { ...options, bucket });
-    },
-    async download(key: string): Promise<Buffer | ReadableStream<Uint8Array>> {
-      return adapter.download(key);
-    },
-    async delete(key: string): Promise<void> {
-      return adapter.delete(key);
-    },
-    async exists(key: string): Promise<boolean> {
-      return adapter.exists(key);
-    },
-    async getUrl(key: string, expiresIn?: number): Promise<string> {
-      return adapter.getUrl(key, expiresIn);
-    },
-    async list(prefix?: string): Promise<string[]> {
-      return adapter.list(prefix);
-    },
-    async getMetadata(key: string): Promise<StorageMetadata | null> {
-      return adapter.getMetadata(key);
-    },
-    async copy(sourceKey: string, destKey: string): Promise<void> {
-      return adapter.copy(sourceKey, destKey);
-    },
-  };
-}
 
 /**
  * Create S3 storage adapter
@@ -73,7 +42,7 @@ export function createS3Adapter(config: S3AdapterConfig): StorageAdapter {
       let body: Buffer | Readable;
       if (data instanceof Buffer) {
         body = data;
-      } else {
+      } else if (data instanceof ReadableStream) {
         // Convert ReadableStream to Readable stream
         const chunks: Uint8Array[] = [];
         const reader = data.getReader();
@@ -83,6 +52,8 @@ export function createS3Adapter(config: S3AdapterConfig): StorageAdapter {
           chunks.push(value);
         }
         body = Buffer.concat(chunks);
+      } else {
+        throw new Error("Invalid data type: expected Buffer or ReadableStream");
       }
 
       const command = new PutObjectCommand({
@@ -94,7 +65,7 @@ export function createS3Adapter(config: S3AdapterConfig): StorageAdapter {
         Metadata: options?.metadata,
         CacheControl: options?.cacheControl,
         Expires: options?.expires,
-        ACL: options?.acl || (isPublic ? "public-read" : "private"),
+        ACL: (options?.acl as any) || (isPublic ? "public-read" : "private"),
       });
 
       const response = await client.send(command);

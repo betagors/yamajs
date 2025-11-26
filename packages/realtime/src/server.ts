@@ -1,4 +1,4 @@
-import type { FastifyInstance } from "fastify";
+import type { FastifyInstance, FastifyRequest } from "fastify";
 import type { WebSocket } from "@fastify/websocket";
 import websocket from "@fastify/websocket";
 import type { AuthContext } from "@betagors/yama-core";
@@ -25,7 +25,7 @@ export async function setupWebSocketServer(
   const wsPath = config.path || "/ws";
 
   // Register WebSocket route
-  server.get(wsPath, { websocket: true }, async (connection: WebSocket, req) => {
+  server.get(wsPath, { websocket: true }, async (connection: WebSocket, req: FastifyRequest) => {
     // Authenticate connection
     const auth = await authenticateWebSocket(req, authConfig);
 
@@ -36,7 +36,7 @@ export async function setupWebSocketServer(
     // Create connection object
     const wsConnection: WebSocketConnection = {
       socket: connection,
-      auth,
+      auth: auth ?? undefined,
       userId,
       connectionId,
       subscribedChannels: new Set(),
@@ -46,7 +46,7 @@ export async function setupWebSocketServer(
     adapter.registerConnection(wsConnection);
 
     // Handle messages from client
-    connection.on("message", async (message) => {
+    connection.on("message", async (message: Buffer) => {
       try {
         const data = JSON.parse(message.toString());
         
@@ -72,7 +72,7 @@ export async function setupWebSocketServer(
     });
 
     // Handle errors
-    connection.on("error", (error) => {
+    connection.on("error", (error: Error) => {
       console.error(`WebSocket error for connection ${connectionId}:`, error);
       adapter.unregisterConnection(connectionId);
     });

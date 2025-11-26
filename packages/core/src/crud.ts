@@ -1,6 +1,6 @@
-import type { EntityDefinition, YamaEntities, CrudConfig } from "./entities";
-import type { SchemaField } from "./schemas";
-import { entityToSchema } from "./entities";
+import type { EntityDefinition, YamaEntities, CrudConfig } from "./entities.js";
+import type { SchemaField } from "./schemas.js";
+import { entityToSchema } from "./entities.js";
 
 /**
  * Endpoint definition for CRUD operations
@@ -181,7 +181,7 @@ export function generateCrudEndpoints(
   const crudConfig = entityDef.crud;
   
   // If CRUD is not enabled, return empty array
-  if (!crudConfig || crudConfig === false) {
+  if (!crudConfig) {
     return [];
   }
 

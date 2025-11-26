@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
-import type { AuthProviderHandler, AuthResult } from "../types";
-import type { JwtAuthProvider, AuthContext } from "../../schemas";
+import type { AuthProviderHandler, AuthResult } from "../types.js";
+import type { JwtAuthProvider, AuthContext } from "../../schemas.js";
 
 /**
  * Resolve environment variable references in strings

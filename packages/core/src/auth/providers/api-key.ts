@@ -1,5 +1,5 @@
-import type { AuthProviderHandler, AuthResult } from "../types";
-import type { ApiKeyAuthProvider, AuthContext } from "../../schemas";
+import type { AuthProviderHandler, AuthResult } from "../types.js";
+import type { ApiKeyAuthProvider, AuthContext } from "../../schemas.js";
 
 /**
  * API key auth provider handler

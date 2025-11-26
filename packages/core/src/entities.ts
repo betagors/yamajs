@@ -1,4 +1,4 @@
-import type { SchemaField, SchemaDefinition, YamaSchemas } from "./schemas";
+import type { SchemaField, SchemaDefinition, YamaSchemas } from "./schemas.js";
 
 /**
  * Entity field types supported by Yama

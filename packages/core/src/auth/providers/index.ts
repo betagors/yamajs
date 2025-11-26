@@ -1,8 +1,8 @@
 // Import all built-in providers to trigger registration
-import jwtHandler from "./jwt";
-import apiKeyHandler from "./api-key";
-import basicHandler from "./basic";
-import { registerAuthProvider } from "../registry";
+import jwtHandler from "./jwt.js";
+import apiKeyHandler from "./api-key.js";
+import basicHandler from "./basic.js";
+import { registerAuthProvider } from "../registry.js";
 
 // Register all built-in providers
 registerAuthProvider("jwt", jwtHandler);

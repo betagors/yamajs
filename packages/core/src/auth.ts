@@ -3,11 +3,11 @@ import {
   type AuthConfig,
   type EndpointAuth,
   type AuthContext,
-} from "./schemas";
-import { getAuthProvider } from "./auth/registry";
+} from "./schemas.js";
+import { getAuthProvider } from "./auth/registry.js";
 
 // Import built-in providers to trigger registration
-import "./auth/providers";
+import "./auth/providers/index.js";
 
 /**
  * Authenticate request using configured providers

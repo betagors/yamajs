@@ -107,6 +107,9 @@ describe("RedisAdapter", () => {
 
     it("should support nested namespaces", async () => {
       const ns1 = adapter.namespace("tenant:1");
+      if (!ns1.namespace) {
+        throw new Error("Namespace method not available");
+      }
       const ns2 = ns1.namespace("feature:cache");
       await ns2.set("key", "value");
       expect(mockClient.set).toHaveBeenCalledWith(

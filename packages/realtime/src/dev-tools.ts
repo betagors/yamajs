@@ -1,15 +1,16 @@
+import type { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import type { RealtimeAdapter } from "./adapter";
 
 /**
  * Setup development tools
  */
 export function setupDevTools(
-  server: any, // FastifyInstance
+  server: FastifyInstance,
   adapter: RealtimeAdapter,
   wsPath: string
 ): void {
   // Inspector UI
-  server.get("/realtime-inspector", async (request, reply) => {
+  server.get("/realtime-inspector", async (request: FastifyRequest, reply: FastifyReply) => {
     const connections = adapter.getAllConnections();
     const eventLog = adapter.getEventLog();
 

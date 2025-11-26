@@ -3,13 +3,13 @@ import type {
   RateLimitStore,
   RateLimitKeyStrategy,
   RateLimitResult,
-} from "./types";
-import { createMemoryRateLimitStore, MemoryRateLimitStore } from "./memory-store";
-import { createCacheRateLimitStore, CacheRateLimitStore } from "./cache-store";
-import { createRedisOptimizedRateLimitStore, RedisOptimizedRateLimitStore } from "./redis-optimized-store";
-import type { HttpRequest } from "../infrastructure/server";
-import type { AuthContext } from "../schemas";
-import type { CacheAdapter } from "../infrastructure/cache";
+} from "./types.js";
+import { createMemoryRateLimitStore, MemoryRateLimitStore } from "./memory-store.js";
+import { createCacheRateLimitStore, CacheRateLimitStore } from "./cache-store.js";
+import { createRedisOptimizedRateLimitStore, RedisOptimizedRateLimitStore } from "./redis-optimized-store.js";
+import type { HttpRequest } from "../infrastructure/server.js";
+import type { AuthContext } from "../schemas.js";
+import type { CacheAdapter } from "../infrastructure/cache.js";
 
 /**
  * Rate limiter instance
@@ -164,8 +164,8 @@ export function formatRateLimitHeaders(result: RateLimitResult): Record<string, 
 }
 
 // Export types and stores
-export type { RateLimitConfig, RateLimitResult, RateLimitStore, RateLimitKeyStrategy } from "./types";
-export { createMemoryRateLimitStore, MemoryRateLimitStore } from "./memory-store";
-export { createCacheRateLimitStore, CacheRateLimitStore } from "./cache-store";
-export { createRedisOptimizedRateLimitStore, RedisOptimizedRateLimitStore } from "./redis-optimized-store";
+export type { RateLimitConfig, RateLimitResult, RateLimitStore, RateLimitKeyStrategy } from "./types.js";
+export { createMemoryRateLimitStore, MemoryRateLimitStore } from "./memory-store.js";
+export { createCacheRateLimitStore, CacheRateLimitStore } from "./cache-store.js";
+export { createRedisOptimizedRateLimitStore, RedisOptimizedRateLimitStore } from "./redis-optimized-store.js";
 

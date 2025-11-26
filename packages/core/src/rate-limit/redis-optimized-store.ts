@@ -1,5 +1,5 @@
-import type { RateLimitStore, RateLimitResult } from "./types";
-import type { RedisClient } from "./redis-store";
+import type { RateLimitStore, RateLimitResult } from "./types.js";
+import type { RedisClient } from "./redis-store.js";
 
 // RedisClient interface includes sorted set methods (zadd, zcard, zremrangebyscore, zrange, expire)
 

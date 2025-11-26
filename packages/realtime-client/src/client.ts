@@ -42,7 +42,7 @@ export interface YamaRealtimeClientOptions {
  */
 export class YamaRealtimeClient {
   private url: string;
-  private options: Required<Omit<YamaRealtimeClientOptions, "onError" | "onConnect" | "onDisconnect">> & Pick<YamaRealtimeClientOptions, "onError" | "onConnect" | "onDisconnect">;
+  private options: Required<Omit<YamaRealtimeClientOptions, "onError" | "onConnect" | "onDisconnect" | "token">> & Pick<YamaRealtimeClientOptions, "onError" | "onConnect" | "onDisconnect" | "token">;
   private ws: WebSocket | null = null;
   private connected = false;
   private reconnectAttempts = 0;

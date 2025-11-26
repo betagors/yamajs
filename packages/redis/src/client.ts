@@ -117,7 +117,7 @@ export async function initRedis(config: RedisConfig): Promise<RedisClient> {
       delete options.password;
       delete options.db;
 
-      client = createClient(options) as RedisClient;
+      client = createClient(options) as unknown as RedisClient;
       await (client as any).connect();
     } else {
       throw new Error("Unsupported Redis client type");

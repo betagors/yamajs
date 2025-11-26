@@ -55,7 +55,7 @@ export async function addEntityCommand(options: AddEntityOptions): Promise<void>
     console.log("\n🗄️  Add New Entity\n");
 
     // Prompt for entity name
-    const entityInfo = await inquirer.prompt([
+    const entityInfo = await (inquirer.prompt as any)([
       {
         type: "input",
         name: "name",
@@ -103,7 +103,7 @@ export async function addEntityCommand(options: AddEntityOptions): Promise<void>
     console.log("\n📝 Add fields to the entity:\n");
 
     while (addMore) {
-      const fieldInfo = await inquirer.prompt([
+      const fieldInfo = await (inquirer.prompt as any)([
         {
           type: "input",
           name: "name",
@@ -239,7 +239,7 @@ export async function addEntityCommand(options: AddEntityOptions): Promise<void>
     }
 
     // Ask about CRUD endpoints
-    const crudInfo = await inquirer.prompt([
+    const crudInfo = await (inquirer.prompt as any)([
       {
         type: "confirm",
         name: "enableCrud",

@@ -1,4 +1,4 @@
-import type { RateLimitStore, RateLimitResult, RateLimitConfig } from "./types";
+import type { RateLimitStore, RateLimitResult, RateLimitConfig } from "./types.js";
 
 /**
  * Redis client interface (to avoid requiring redis as a direct dependency)
@@ -97,7 +97,7 @@ export class RedisRateLimitStore implements RateLimitStore {
  * Attempts to dynamically import and create a Redis client
  */
 export async function createRedisRateLimitStore(
-  config: RateLimitConfig["redis"]
+  config: any
 ): Promise<RedisRateLimitStore> {
   if (!config) {
     throw new Error("Redis configuration is required");
@@ -107,10 +107,13 @@ export async function createRedisRateLimitStore(
     // Try to import ioredis first (more common)
     let Redis: any;
     try {
+      // @ts-ignore - optional dependency
       Redis = (await import("ioredis")).default;
     } catch {
       // Fallback to redis package
-      Redis = (await import("redis")).createClient ? (await import("redis")).createClient : null;
+      // @ts-ignore - optional dependency
+      const redisModule = await import("redis").catch(() => null);
+      Redis = redisModule?.createClient || null;
       if (!Redis) {
         throw new Error("Neither 'ioredis' nor 'redis' package is installed");
       }
@@ -144,6 +147,7 @@ export async function createRedisRateLimitStore(
       client = new Redis(options) as RedisClient;
     } else if (typeof Redis === "function") {
       // redis package (v4+)
+      // @ts-ignore - optional dependency
       const redisModule = await import("redis");
       const createClient = redisModule.createClient || redisModule.default?.createClient;
       

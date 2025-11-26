@@ -47,7 +47,7 @@ export function createFSAdapter(config: FSAdapterConfig): StorageAdapter {
       let buffer: Buffer;
       if (data instanceof Buffer) {
         buffer = data;
-      } else {
+      } else if (data instanceof ReadableStream) {
         const chunks: Uint8Array[] = [];
         const reader = data.getReader();
         while (true) {
@@ -56,6 +56,8 @@ export function createFSAdapter(config: FSAdapterConfig): StorageAdapter {
           chunks.push(value);
         }
         buffer = Buffer.concat(chunks);
+      } else {
+        throw new Error("Invalid data type: expected Buffer or ReadableStream");
       }
 
       const filePath = getFilePath(key);

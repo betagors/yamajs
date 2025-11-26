@@ -1,4 +1,4 @@
-import type { AuthContext, AuthProvider } from "../schemas";
+import type { AuthContext, AuthProvider } from "../schemas.js";
 
 /**
  * Result of authentication validation

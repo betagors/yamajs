@@ -1,9 +1,25 @@
 import { existsSync, writeFileSync, mkdirSync } from "fs";
 import { join, dirname, extname } from "path";
-import { generateOpenAPI } from "@betagors/yama-docs-generator";
 import { readYamaConfig, ensureDir, getConfigDir } from "../utils/file-utils.ts";
 import { findYamaConfig } from "../utils/project-detection.ts";
 import yaml from "js-yaml";
+
+// Dynamic import for openapi package to handle workspace resolution
+async function getGenerateOpenAPI() {
+  try {
+    // @ts-ignore - dynamic import, package may not be available at compile time
+    const openapiModule = await import("@betagors/yama-openapi");
+    return openapiModule.generateOpenAPI;
+  } catch (error) {
+    throw new Error(
+      `Failed to load @betagors/yama-openapi. Make sure it's built and available. ` +
+      `Original error: ${error instanceof Error ? error.message : String(error)}`
+    );
+  }
+}
+
+// Type for the OpenAPI spec (using any to avoid import issues)
+type OpenAPISpec = any;
 
 interface DocsOptions {
   config?: string;
@@ -21,6 +37,7 @@ export async function docsCommand(options: DocsOptions): Promise<void> {
   }
 
   try {
+    const generateOpenAPI = await getGenerateOpenAPI();
     const config = readYamaConfig(configPath) as Parameters<typeof generateOpenAPI>[0];
     const openAPISpec = generateOpenAPI(config);
 
@@ -57,7 +74,7 @@ function getDefaultOutputPath(configPath: string, format: string): string {
 }
 
 async function generateDocs(
-  spec: ReturnType<typeof generateOpenAPI>,
+  spec: OpenAPISpec,
   format: string,
   outputPath: string,
   configPath: string
@@ -115,7 +132,7 @@ async function generateDocs(
   }
 }
 
-function generateSwaggerUIHTML(spec: ReturnType<typeof generateOpenAPI>): string {
+function generateSwaggerUIHTML(spec: OpenAPISpec): string {
   const specJson = JSON.stringify(spec, null, 2);
   
   return `<!DOCTYPE html>
@@ -166,7 +183,7 @@ function generateSwaggerUIHTML(spec: ReturnType<typeof generateOpenAPI>): string
 </html>`;
 }
 
-function generateMarkdown(spec: ReturnType<typeof generateOpenAPI>): string {
+function generateMarkdown(spec: OpenAPISpec): string {
   let md = `# ${spec.info.title}\n\n`;
   md += `**Version:** ${spec.info.version}\n\n`;
   
@@ -177,12 +194,12 @@ function generateMarkdown(spec: ReturnType<typeof generateOpenAPI>): string {
   md += `---\n\n`;
 
   // Group endpoints by path
-  const paths = Object.entries(spec.paths).sort();
+  const paths = Object.entries((spec.paths || {}) as Record<string, unknown>).sort();
 
   for (const [path, methods] of paths) {
     md += `## ${path}\n\n`;
 
-    for (const [method, operation] of Object.entries(methods)) {
+    for (const [method, operation] of Object.entries((methods || {}) as Record<string, unknown>)) {
       const op = operation as {
         summary?: string;
         description?: string;

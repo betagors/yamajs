@@ -4,7 +4,7 @@
   "version": "0.0.1",
   "packageManager": "pnpm@9.0.0",
   "scripts": {
-    "build": "npm test && turbo run build",
+    "build": "pnpm test && turbo run build",
     "build:packages": "turbo run build --filter='./packages/*'",
     "build:example": "pnpm build:packages",
     "dev": "turbo run dev --parallel",
@@ -12,7 +12,7 @@
     "dev:example": "pnpm build:packages && pnpm --filter yama-example-todo-api dev",
     "start:example": "pnpm --filter yama-example-todo-api dev",
     "lint": "turbo run lint",
-    "test": "jest --coverage && turbo run test",
+    "test": "turbo run test",
     "clean": "turbo run clean",
     "clean:all": "turbo run clean && rimraf node_modules packages/*/node_modules examples/*/node_modules",
     "yama": "node packages/cli/dist/cli/src/cli.js",

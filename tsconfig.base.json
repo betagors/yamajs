@@ -15,7 +15,7 @@
       "@betagors/yama-core": ["packages/core/src"],
       "@betagors/yama-runtime-node": ["packages/runtime-node/src"],
       "@betagors/yama-sdk": ["packages/sdk/src"],
-      "@betagors/yama-docs-generator": ["packages/docs-generator/src"],
+      "@betagors/yama-openapi": ["packages/openapi/src"],
       "@betagors/yama": ["packages/yama/src"]
     }
   }

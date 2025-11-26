@@ -1,4 +1,4 @@
-import type { DatabaseAdapter } from "./database";
+import type { DatabaseAdapter } from "./database.js";
 
 /**
  * Global database adapter registry

@@ -1,8 +1,8 @@
-# @betagors/yama-docs-generator
+# @betagors/yama-openapi
 
 > OpenAPI documentation generator for Yama (internal tool)
 
-[![npm version](https://img.shields.io/npm/v/@betagors/yama-docs-generator.svg)](https://www.npmjs.com/package/@betagors/yama-docs-generator)
+[![npm version](https://img.shields.io/npm/v/@betagors/yama-openapi.svg)](https://www.npmjs.com/package/@betagors/yama-openapi)
 [![License: MPL-2.0](https://img.shields.io/badge/License-MPL_2.0-brightgreen.svg)](https://opensource.org/licenses/MPL-2.0)
 
 Internal tool used by the Yama runtime to generate OpenAPI 3.0 specifications from `yama.yaml` configurations. This package is typically used indirectly through the runtime, but can also be used programmatically.
@@ -10,7 +10,7 @@ Internal tool used by the Yama runtime to generate OpenAPI 3.0 specifications fr
 ## Installation
 
 ```bash
-npm install @betagors/yama-docs-generator
+npm install @betagors/yama-openapi
 ```
 
 ## Usage
@@ -18,7 +18,7 @@ npm install @betagors/yama-docs-generator
 ### Programmatic Usage
 
 ```typescript
-import { generateOpenAPI, type YamaConfig } from '@betagors/yama-docs-generator';
+import { generateOpenAPI, type YamaConfig } from '@betagors/yama-openapi';
 
 const config: YamaConfig = {
   name: 'my-api',

@@ -1,4 +1,4 @@
-import type { RateLimitStore, RateLimitResult } from "./types";
+import type { RateLimitStore, RateLimitResult } from "./types.js";
 
 /**
  * In-memory storage for request timestamps per key

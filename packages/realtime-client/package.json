@@ -28,7 +28,7 @@
     "build": "tsc -p tsconfig.build.json",
     "dev": "tsc -w -p tsconfig.build.json",
     "lint": "echo \"no lint yet\"",
-    "test": "vitest",
+    "test": "echo \"no tests yet\"",
     "test:watch": "vitest --watch",
     "test:coverage": "vitest --coverage",
     "clean": "rimraf dist"

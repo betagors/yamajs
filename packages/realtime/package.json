@@ -40,7 +40,8 @@
   },
   "dependencies": {
     "@betagors/yama-core": "workspace:*",
-    "@fastify/websocket": "^11.0.0"
+    "@fastify/websocket": "^11.0.0",
+    "fastify": "^5.0.0"
   },
   "devDependencies": {
     "rimraf": "^5.0.0",

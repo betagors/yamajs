@@ -7,6 +7,7 @@ import {
   fieldToJsonSchema,
   type AuthConfig,
   type EndpointAuth,
+  type AuthContext,
   authenticateAndAuthorize,
   type YamaEntities,
   type DatabaseConfig,
@@ -23,6 +24,7 @@ import {
   type RouteHandler,
   type HandlerContext,
   type HandlerFunction,
+  type StorageBucket,
   loadPlugin,
   type YamaPlugin,
   generateAllCrudEndpoints,
@@ -36,8 +38,21 @@ import {
   type RateLimiter,
   formatRateLimitHeaders,
 } from "@betagors/yama-core";
-import { generateOpenAPI } from "@betagors/yama-docs-generator";
 import { createFastifyAdapter } from "@betagors/yama-fastify";
+
+// Dynamic import for openapi package to handle workspace resolution
+async function getGenerateOpenAPI() {
+  try {
+    // @ts-ignore - dynamic import, package may not be available at compile time
+    const openapiModule = await import("@betagors/yama-openapi");
+    return openapiModule.generateOpenAPI;
+  } catch (error) {
+    throw new Error(
+      `Failed to load @betagors/yama-openapi. Make sure it's built and available. ` +
+      `Original error: ${error instanceof Error ? error.message : String(error)}`
+    );
+  }
+}
 import yaml from "js-yaml";
 import { readFileSync, readdirSync, existsSync, writeFileSync, mkdirSync } from "fs";
 import { join, dirname, extname, resolve, relative } from "path";
@@ -389,11 +404,11 @@ function coerceParams(
 function createHandlerContext(
   request: HttpRequest,
   reply: HttpResponse,
-  authContext?: { authenticated: boolean; user?: unknown; provider?: string; token?: string },
+  authContext?: AuthContext,
   repositories?: Record<string, unknown>,
   dbAdapter?: unknown,
   cacheAdapter?: unknown,
-  storage?: Record<string, unknown>,
+  storage?: Record<string, StorageBucket>,
   realtimeAdapter?: unknown
 ): HandlerContext {
   let statusCode: number | undefined;
@@ -550,7 +565,9 @@ function registerRoutes(
   globalRateLimiter: RateLimiter | null,
   repositories?: Record<string, unknown>,
   dbAdapter?: unknown,
-  storage?: Record<string, unknown>
+  cacheAdapter?: unknown,
+  storage?: Record<string, StorageBucket>,
+  realtimeAdapter?: unknown
 ) {
   if (!config.endpoints) {
     return;
@@ -594,7 +611,7 @@ function registerRoutes(
         // ============================================
         // Public endpoints: Skip auth entirely for better performance
         // Secured endpoints: Authenticate and authorize before processing request
-        let authContext: { authenticated: boolean; user?: unknown; provider?: string; token?: string } | undefined;
+        let authContext: AuthContext | undefined;
         
         if (requiresAuth) {
           // --- SECURED ENDPOINT ---
@@ -630,7 +647,7 @@ function registerRoutes(
             const configKey = JSON.stringify(endpoint.rateLimit);
             if (!endpointRateLimiters.has(configKey)) {
               // Use cache adapter if available (works with any cache implementation)
-              endpointRateLimiters.set(configKey, await createRateLimiterFromConfig(endpoint.rateLimit, cacheAdapter as any));
+              endpointRateLimiters.set(configKey, await createRateLimiterFromConfig(endpoint.rateLimit as any, cacheAdapter as any));
             }
             rateLimiter = endpointRateLimiters.get(configKey)!;
           }
@@ -640,13 +657,13 @@ function registerRoutes(
             const globalConfigKey = JSON.stringify(config.rateLimit);
             if (!endpointRateLimiters.has(globalConfigKey)) {
               // Use cache adapter if available (works with any cache implementation)
-              endpointRateLimiters.set(globalConfigKey, await createRateLimiterFromConfig(config.rateLimit, cacheAdapter as any));
+              endpointRateLimiters.set(globalConfigKey, await createRateLimiterFromConfig(config.rateLimit as any, cacheAdapter as any));
             }
             rateLimiter = endpointRateLimiters.get(globalConfigKey)!;
           }
           
           if (rateLimiter) {
-            const rateLimitResult = await rateLimiter.check(request, authContext, rateLimitConfig);
+            const rateLimitResult = await rateLimiter.check(request, authContext, rateLimitConfig as any);
           
             // Add rate limit headers to response
             const rateLimitHeaders = formatRateLimitHeaders(rateLimitResult);
@@ -828,7 +845,7 @@ export async function startYamaNodeRuntime(
   let cacheAdapter: unknown = null;
 
   // Storage buckets (initialized from storage plugins)
-  const storageBuckets: Record<string, unknown> = {};
+  const storageBuckets: Record<string, StorageBucket> = {};
 
   // Realtime adapter (initialized from realtime plugin if available)
   let realtimeAdapter: unknown = null;
@@ -946,6 +963,7 @@ export async function startYamaNodeRuntime(
               } else if ("bucket" in pluginApi) {
                 // FS plugin returns single bucket (also exposed as buckets.default)
                 storageBuckets.default = pluginApi.bucket;
+                console.log("✅ Storage bucket initialized (default)");
               }
             }
 
@@ -969,8 +987,6 @@ export async function startYamaNodeRuntime(
               }
               
               console.log("✅ Realtime adapter initialized");
-                console.log("✅ Storage bucket initialized (default)");
-              }
             }
           } catch (error) {
             console.warn(`⚠️  Failed to load plugin ${pluginName}:`, error instanceof Error ? error.message : String(error));
@@ -1069,7 +1085,7 @@ export async function startYamaNodeRuntime(
   if (config?.rateLimit) {
     try {
       // Use cache adapter if available (works with any cache implementation)
-      globalRateLimiter = await createRateLimiterFromConfig(config.rateLimit, cacheAdapter as any);
+      globalRateLimiter = await createRateLimiterFromConfig(config.rateLimit as any, cacheAdapter as any);
       console.log("✅ Initialized rate limiter");
     } catch (error) {
       console.warn(`⚠️  Failed to initialize rate limiter: ${error instanceof Error ? error.message : String(error)}`);
@@ -1131,8 +1147,16 @@ export async function startYamaNodeRuntime(
       reply.status(404).send({ error: "No config loaded" });
       return;
     }
-    const openAPISpec = generateOpenAPI(config);
-    reply.type("application/json").send(openAPISpec);
+    try {
+      const generateOpenAPI = await getGenerateOpenAPI();
+      const openAPISpec = generateOpenAPI(config as any);
+      reply.type("application/json").send(openAPISpec);
+    } catch (error) {
+      reply.status(500).send({ 
+        error: "Failed to generate OpenAPI spec",
+        message: error instanceof Error ? error.message : String(error)
+      });
+    }
   });
 
   serverAdapter.registerRoute(server, "GET", "/docs", async (request: HttpRequest, reply: HttpResponse) => {
@@ -1140,10 +1164,12 @@ export async function startYamaNodeRuntime(
       reply.status(404).send({ error: "No config loaded" });
       return;
     }
-    const openAPISpec = generateOpenAPI(config);
-    const specJson = JSON.stringify(openAPISpec, null, 2);
-    
-    const html = `<!DOCTYPE html>
+    try {
+      const generateOpenAPI = await getGenerateOpenAPI();
+      const openAPISpec = generateOpenAPI(config as any);
+      const specJson = JSON.stringify(openAPISpec, null, 2);
+      
+      const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -1189,8 +1215,14 @@ export async function startYamaNodeRuntime(
   </script>
 </body>
 </html>`;
-    
-    reply.type("text/html").send(html);
+      
+      reply.type("text/html").send(html);
+    } catch (error) {
+      reply.status(500).send({ 
+        error: "Failed to generate OpenAPI spec",
+        message: error instanceof Error ? error.message : String(error)
+      });
+    }
   });
 
   // Register OAuth endpoints if auto-generation is enabled
@@ -1200,7 +1232,7 @@ export async function startYamaNodeRuntime(
       // Check if this is an OAuth provider
       if (provider.type.startsWith("oauth-")) {
         const oauthMetadata = oauthProviders.get(provider.type.toLowerCase());
-        const autoGenerate = provider.autoGenerateEndpoints !== false; // Default to true
+        const autoGenerate = (provider as any).autoGenerateEndpoints !== false; // Default to true
         
         if (oauthMetadata && autoGenerate) {
           const providerName = provider.type.replace("oauth-", "");
@@ -1241,7 +1273,7 @@ export async function startYamaNodeRuntime(
   // Load handlers and register routes
   if (config?.endpoints && handlersDir && serverAdapter && configDir) {
     const handlers = await loadHandlers(handlersDir, configDir);
-    registerRoutes(serverAdapter, server, config, handlers, validator, globalRateLimiter, repositories, dbAdapter || null, storageBuckets);
+    registerRoutes(serverAdapter, server, config, handlers, validator, globalRateLimiter, repositories, dbAdapter || null, cacheAdapter || null, storageBuckets, realtimeAdapter || null);
   }
 
   // Call onStart lifecycle hooks for all plugins

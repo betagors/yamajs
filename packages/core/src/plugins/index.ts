@@ -5,13 +5,13 @@ export {
   type YamaPlugin,
   type ServicePlugin,
   type PluginContext,
-} from "./base";
+} from "./base.js";
 
 // Export plugin loader
 export {
   loadPluginFromPackage,
   importPlugin,
-} from "./loader";
+} from "./loader.js";
 
 // Export plugin validator
 export {
@@ -20,7 +20,7 @@ export {
   validateYamaPlugin,
   validateServicePlugin,
   validatePluginVersion,
-} from "./validator";
+} from "./validator.js";
 
 // Export plugin registry
 export {
@@ -36,5 +36,5 @@ export {
   loadServicePlugin,
   getServicePlugin,
   getServicePluginByType,
-} from "./registry";
+} from "./registry.js";
 

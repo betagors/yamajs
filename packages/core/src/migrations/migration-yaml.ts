@@ -1,8 +1,8 @@
 import yaml from "js-yaml";
-import type { MigrationStepUnion } from "./diff";
+import type { MigrationStepUnion } from "./diff.js";
 
 // Re-export for convenience
-export type { MigrationStepUnion } from "./diff";
+export type { MigrationStepUnion } from "./diff.js";
 
 /**
  * Migration YAML structure

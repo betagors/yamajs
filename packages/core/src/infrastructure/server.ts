@@ -1,6 +1,6 @@
-import type { AuthContext } from "../schemas";
-import type { CacheAdapter } from "./cache";
-import type { StorageBucket } from "./storage";
+import type { AuthContext } from "../schemas.js";
+import type { CacheAdapter } from "./cache.js";
+import type { StorageBucket } from "./storage.js";
 
 /**
  * Normalized HTTP request interface

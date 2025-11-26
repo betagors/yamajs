@@ -57,11 +57,15 @@ function transformImports(dir) {
       transformImports(fullPath);
     } else if (extname(entry) === '.js') {
       let content = readFileSync(fullPath, 'utf-8');
-      // Replace .ts extensions with .js in import/export statements
+      // Replace .ts extensions with .js in import/export statements (both relative and absolute)
       content = content.replace(/from\s+["'](\.\/[^"']+\.ts)["']/g, (match, path) => {
         return match.replace(path, path.replace(/\.ts$/, '.js'));
       });
       content = content.replace(/import\s+\(["'](\.\/[^"']+\.ts)["']\)/g, (match, path) => {
+        return match.replace(path, path.replace(/\.ts$/, '.js'));
+      });
+      // Also handle import statements without 'from'
+      content = content.replace(/import\s+["'](\.\/[^"']+\.ts)["']/g, (match, path) => {
         return match.replace(path, path.replace(/\.ts$/, '.js'));
       });
       writeFileSync(fullPath, content, 'utf-8');

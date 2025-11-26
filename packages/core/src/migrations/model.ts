@@ -1,4 +1,4 @@
-import type { YamaEntities, EntityDefinition } from "../entities";
+import type { YamaEntities, EntityDefinition } from "../entities.js";
 import { createHash } from "crypto";
 
 /**

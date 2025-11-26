@@ -72,7 +72,7 @@ All installable packages that extend Yama functionality:
 ### Tools
 Build-time utilities:
 - **`@betagors/yama-*`** - Build-time tools
-  - `@betagors/yama-docs-generator` - OpenAPI docs generator
+  - `@betagors/yama-openapi` - OpenAPI docs generator
   - `@betagors/yama-sdk` - TypeScript SDK generator
   - `@betagors/yama-sdk-js` - JavaScript SDK generator (future)
 

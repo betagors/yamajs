@@ -1,7 +1,7 @@
-import type { RateLimitStore, RateLimitResult, RateLimitConfig } from "./types";
-import type { CacheAdapter } from "../infrastructure/cache";
-import { createRedisOptimizedRateLimitStore, type RedisOptimizedRateLimitStore } from "./redis-optimized-store";
-import type { RedisClient } from "./redis-store";
+import type { RateLimitStore, RateLimitResult, RateLimitConfig } from "./types.js";
+import type { CacheAdapter } from "../infrastructure/cache.js";
+import { createRedisOptimizedRateLimitStore, type RedisOptimizedRateLimitStore } from "./redis-optimized-store.js";
+import type { RedisClient } from "./redis-store.js";
 
 /**
  * Check if a cache adapter is a Redis adapter

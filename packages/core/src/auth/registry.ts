@@ -1,4 +1,4 @@
-import type { AuthProviderHandler, OAuthProviderMetadata } from "./types";
+import type { AuthProviderHandler, OAuthProviderMetadata } from "./types.js";
 
 /**
  * Registry of auth providers by type

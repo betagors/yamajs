@@ -226,7 +226,7 @@ The runtime automatically handles errors and returns appropriate HTTP status cod
 
 This package depends on:
 - `@betagors/yama-core` - Core runtime
-- `@betagors/yama-docs-generator` - OpenAPI generation
+- `@betagors/yama-openapi` - OpenAPI generation
 - `@betagors/yama-postgres` - PostgreSQL adapter (or other database adapter)
 - `@betagors/yama-fastify` - Fastify HTTP adapter
 - `js-yaml` - YAML parsing

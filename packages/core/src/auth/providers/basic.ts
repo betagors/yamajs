@@ -1,6 +1,6 @@
-import type { AuthProviderHandler, AuthResult } from "../types";
-import type { BasicAuthProvider, AuthContext } from "../../schemas";
-import { getGlobalDatabaseAdapter } from "../../infrastructure/database-registry";
+import type { AuthProviderHandler, AuthResult } from "../types.js";
+import type { BasicAuthProvider, AuthContext } from "../../schemas.js";
+import { getGlobalDatabaseAdapter } from "../../infrastructure/database-registry.js";
 
 /**
  * Resolve environment variable references in strings
@@ -51,6 +51,7 @@ async function comparePassword(
 ): Promise<boolean> {
   try {
     // Try to use bcrypt if available
+    // @ts-ignore - optional dependency
     const bcrypt = await import("bcryptjs").catch(() => null);
     if (bcrypt) {
       return await bcrypt.compare(password, hash);

@@ -2,8 +2,8 @@
 import { readFileSync, writeFileSync } from "fs";
 import { join, dirname } from "path";
 import yaml from "js-yaml";
-import { generateTypes } from "./typegen";
-import type { YamaSchemas } from "./schemas";
+import { generateTypes } from "./typegen.js";
+import type { YamaSchemas } from "./schemas.js";
 
 const args = process.argv.slice(2);
 const yamlPath = args[0] || "yama.yaml";

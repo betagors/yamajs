@@ -41,7 +41,7 @@
   },
   "dependencies": {
     "@betagors/yama-core": "workspace:*",
-    "@betagors/yama-docs-generator": "workspace:*",
+    "@betagors/yama-openapi": "workspace:*",
     "@betagors/yama-postgres": "workspace:*",
     "@betagors/yama-runtime-node": "workspace:*",
     "@betagors/yama-sdk": "workspace:*",

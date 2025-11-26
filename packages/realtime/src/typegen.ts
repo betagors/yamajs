@@ -1,5 +1,3 @@
-import type { YamaConfig } from "./types";
-
 /**
  * Generate TypeScript types for realtime channels and entity events
  */

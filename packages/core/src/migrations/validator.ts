@@ -1,6 +1,6 @@
-import type { MigrationYAML } from "./migration-yaml";
-import type { MigrationStepUnion } from "./diff";
-import type { Model } from "./model";
+import type { MigrationYAML } from "./migration-yaml.js";
+import type { MigrationStepUnion } from "./diff.js";
+import type { Model } from "./model.js";
 
 /**
  * Validation error

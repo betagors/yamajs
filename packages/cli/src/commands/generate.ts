@@ -79,13 +79,19 @@ export async function generateOnce(configPath: string, options: GenerateOptions)
     // Generate realtime types
     if (!options.sdkOnly && config.realtime) {
       try {
-        const { generateRealtimeTypes } = await import("@betagors/yama-realtime/typegen");
-        const realtimeTypes = generateRealtimeTypes(config);
-        const realtimeTypesPath = join(configDir, ".yama", "realtime-types.ts");
-        const { mkdirSync, writeFileSync } = await import("fs");
-        mkdirSync(join(configDir, ".yama"), { recursive: true });
-        writeFileSync(realtimeTypesPath, realtimeTypes, "utf-8");
-        console.log(`✅ Generated realtime types: ${realtimeTypesPath}`);
+        // @ts-ignore - optional module
+        const realtimeModule = await import("@betagors/yama-realtime/typegen").catch(() => null);
+        if (!realtimeModule || !realtimeModule.generateRealtimeTypes) {
+          console.warn("⚠️  Realtime type generation not available");
+        } else {
+          const { generateRealtimeTypes } = realtimeModule;
+          const realtimeTypes = generateRealtimeTypes(config);
+          const realtimeTypesPath = join(configDir, ".yama", "realtime-types.ts");
+          const { mkdirSync, writeFileSync } = await import("fs");
+          mkdirSync(join(configDir, ".yama"), { recursive: true });
+          writeFileSync(realtimeTypesPath, realtimeTypes, "utf-8");
+          console.log(`✅ Generated realtime types: ${realtimeTypesPath}`);
+        }
       } catch (error) {
         console.warn("⚠️  Failed to generate realtime types:", error instanceof Error ? error.message : String(error));
       }

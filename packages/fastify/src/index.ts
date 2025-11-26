@@ -1,3 +1,3 @@
 // Export adapter factory
-export { createFastifyAdapter } from "./adapter";
+export { createFastifyAdapter } from "./adapter.js";
 
