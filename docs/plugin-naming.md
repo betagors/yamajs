@@ -14,16 +14,60 @@ This document outlines the naming conventions for Yama packages and plugins.
 ### Plugins
 All installable packages that extend Yama functionality:
 - **`@betagors/yama-*`** - User-installable plugins
+
+#### Database Plugins
   - `@betagors/yama-postgres` - PostgreSQL database plugin
   - `@betagors/yama-pglite` - PGLite database plugin
+  - `@betagors/yama-mysql` - MySQL/MariaDB database plugin (planned)
+  - `@betagors/yama-sqlite` - SQLite database plugin (planned)
+
+#### HTTP Server Plugins
   - `@betagors/yama-fastify` - Fastify HTTP server plugin
+  - `@betagors/yama-http-express` - Express HTTP server plugin (planned)
+
+#### Storage Plugins
   - `@betagors/yama-s3` - S3-compatible object storage plugin
   - `@betagors/yama-fs` - Filesystem storage plugin
-  - `@betagors/yama-plugin-db-mysql` - MySQL database plugin (future)
-  - `@betagors/yama-plugin-http-express` - Express HTTP server plugin (future)
-  - `@betagors/yama-plugin-payments-stripe` - Stripe payments plugin (future)
-  - `@betagors/yama-plugin-email-sendgrid` - SendGrid email plugin (future)
-  - `@betagors/yama-plugin-auth-clerk` - Clerk authentication plugin (future)
+
+#### Cache Plugins
+  - `@betagors/yama-redis` - Redis cache plugin
+  - `@betagors/yama-cache-memcached` - Memcached cache plugin (planned)
+  - `@betagors/yama-cache-cloudflare` - Cloudflare KV cache plugin (planned)
+
+#### Observability Plugins
+  - `@betagors/yama-logging` - Structured logging plugin (planned)
+  - `@betagors/yama-metrics` - Metrics and telemetry plugin (planned)
+  - `@betagors/yama-tracing` - Distributed tracing plugin (planned)
+  - `@betagors/yama-error-tracking` - Error tracking plugin (planned)
+  - `@betagors/yama-health` - Enhanced health checks plugin (planned)
+
+#### Email Plugins
+  - `@betagors/yama-email-sendgrid` - SendGrid email plugin (planned)
+  - `@betagors/yama-email-resend` - Resend email plugin (planned)
+  - `@betagors/yama-email-ses` - AWS SES email plugin (planned)
+  - `@betagors/yama-email-smtp` - Generic SMTP email plugin (planned)
+
+#### Payment Plugins
+  - `@betagors/yama-payments-stripe` - Stripe payments plugin (planned)
+  - `@betagors/yama-payments-paypal` - PayPal payments plugin (planned)
+
+#### Authentication Plugins
+  - `@betagors/yama-auth-oauth` - OAuth providers plugin (planned)
+  - `@betagors/yama-auth-clerk` - Clerk authentication plugin (planned)
+  - `@betagors/yama-auth-auth0` - Auth0 authentication plugin (planned)
+  - `@betagors/yama-auth-supabase` - Supabase authentication plugin (planned)
+
+#### Queue & Job Processing Plugins
+  - `@betagors/yama-queue-bullmq` - BullMQ job queue plugin (planned)
+  - `@betagors/yama-queue-bull` - Bull job queue plugin (planned)
+  - `@betagors/yama-queue-sqs` - AWS SQS queue plugin (planned)
+
+#### Security Plugins
+  - `@betagors/yama-security` - Security middleware plugin (planned)
+
+#### Realtime Plugins
+  - `@betagors/yama-realtime` - Realtime/WebSocket plugin
+  - `@betagors/yama-realtime-client` - Realtime client SDK
 
 ### Tools
 Build-time utilities:
