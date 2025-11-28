@@ -1,5 +1,6 @@
 import type { YamaPlugin, PluginManifest } from "./base.js";
 import type { EventEmitter } from "events";
+import type { MiddlewareRegistry } from "../middleware/registry.js";
 
 /**
  * Logger interface for plugins
@@ -99,13 +100,15 @@ export class PluginContextImpl {
   private pluginAPIs: Map<string, any>;
   private eventEmitter: SimpleEventEmitter;
   private serviceRegistry: ServiceRegistry;
+  private middlewareRegistry: MiddlewareRegistry | null;
 
   constructor(
     config: Record<string, unknown>,
     projectDir: string,
     logger: Logger,
     pluginRegistry: Map<string, YamaPlugin>,
-    pluginAPIs: Map<string, any>
+    pluginAPIs: Map<string, any>,
+    middlewareRegistry?: MiddlewareRegistry | null
   ) {
     this.config = config;
     this.projectDir = projectDir;
@@ -114,6 +117,7 @@ export class PluginContextImpl {
     this.pluginAPIs = pluginAPIs;
     this.eventEmitter = new SimpleEventEmitter();
     this.serviceRegistry = new ServiceRegistry();
+    this.middlewareRegistry = middlewareRegistry || null;
   }
 
   /**
@@ -159,6 +163,18 @@ export class PluginContextImpl {
    */
   hasService(name: string): boolean {
     return this.serviceRegistry.has(name);
+  }
+
+  /**
+   * Get middleware registry to register middleware
+   */
+  getMiddlewareRegistry(): MiddlewareRegistry {
+    if (!this.middlewareRegistry) {
+      throw new Error(
+        "Middleware registry is not available. Middleware registry must be provided when creating PluginContext."
+      );
+    }
+    return this.middlewareRegistry;
   }
 
   /**

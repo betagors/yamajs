@@ -47,6 +47,11 @@ import {
   calculatePaginationMetadata,
   wrapPaginatedResponse,
   detectPaginationFromQuery,
+  MiddlewareRegistry,
+  loadMiddlewareFromFile,
+  type MiddlewarePhase,
+  type MiddlewareDefinition,
+  type MiddlewareContext,
 } from "@betagors/yama-core";
 import { createFastifyAdapter } from "@betagors/yama-fastify";
 
@@ -79,6 +84,28 @@ interface YamaConfig {
   auth?: AuthConfig;
   rateLimit?: RateLimitConfig;
   plugins?: Record<string, Record<string, unknown>> | string[]; // Plugin configs or list of plugin names
+  middleware?: {
+    global?: Array<{
+      name: string;
+      file?: string;
+      phases?: Array<'pre-auth' | 'post-auth' | 'pre-handler' | 'post-handler' | 'error'>;
+      priority?: number;
+      enabled?: boolean;
+      config?: Record<string, unknown>;
+    }>;
+    endpoints?: Array<{
+      path: string;
+      method?: string;
+      middleware: Array<{
+        name: string;
+        file?: string;
+        phases?: Array<'pre-auth' | 'post-auth' | 'pre-handler' | 'post-handler' | 'error'>;
+        priority?: number;
+        enabled?: boolean;
+        config?: Record<string, unknown>;
+      }>;
+    }>;
+  };
   realtime?: {
     entities?: Record<string, {
       enabled?: boolean;
@@ -424,6 +451,55 @@ function coerceParams(
 /**
  * Create a handler context from request and reply
  */
+/**
+ * Execute middleware phase with proper context
+ */
+async function executeMiddlewarePhase(
+  middlewareRegistry: MiddlewareRegistry | undefined,
+  phase: MiddlewarePhase,
+  handlerContext: HandlerContext,
+  path: string,
+  method: string
+): Promise<{ aborted: boolean; abortResponse?: unknown }> {
+  if (!middlewareRegistry) {
+    return { aborted: false };
+  }
+
+  const state = {
+    skipped: false,
+    aborted: false,
+    abortResponse: undefined as unknown,
+  };
+
+  const middlewareContext: MiddlewareContext = {
+    ...handlerContext,
+    phase,
+    middleware: {
+      name: '',
+      skip: () => {
+        state.skipped = true;
+      },
+      abort: (response: unknown) => {
+        state.aborted = true;
+        state.abortResponse = response;
+      },
+    },
+    metrics: handlerContext.metrics || undefined,
+  };
+
+  try {
+    await middlewareRegistry.executePhase(phase, middlewareContext, path, method);
+  } catch (error) {
+    // Re-throw to be handled by error phase
+    throw error;
+  }
+
+  return {
+    aborted: state.aborted,
+    abortResponse: state.abortResponse,
+  };
+}
+
 function createHandlerContext(
   request: HttpRequest,
   reply: HttpResponse,
@@ -432,7 +508,8 @@ function createHandlerContext(
   dbAdapter?: unknown,
   cacheAdapter?: unknown,
   storage?: Record<string, StorageBucket>,
-  realtimeAdapter?: unknown
+  realtimeAdapter?: unknown,
+  emailService?: any
 ): HandlerContext {
   let statusCode: number | undefined;
   
@@ -491,6 +568,12 @@ function createHandlerContext(
       get available() {
         return realtimeAdapter !== null && realtimeAdapter !== undefined;
       },
+    } : undefined,
+    
+    // Email access
+    email: emailService ? {
+      send: emailService.send.bind(emailService),
+      sendBatch: emailService.sendBatch.bind(emailService),
     } : undefined,
     
     // Status helper
@@ -1144,7 +1227,9 @@ function registerRoutes(
   dbAdapter?: unknown,
   cacheAdapter?: unknown,
   storage?: Record<string, StorageBucket>,
-  realtimeAdapter?: unknown
+  realtimeAdapter?: unknown,
+  middlewareRegistry?: MiddlewareRegistry,
+  emailService?: any
 ) {
   if (!config.endpoints) {
     return;
@@ -1193,7 +1278,21 @@ function registerRoutes(
     // Wrap handler with validation and auth
     // The wrapped handler receives request/reply from the adapter, then creates context for user handlers
     const wrappedHandler: RouteHandler = async (request: HttpRequest, reply: HttpResponse) => {
+      // Create initial handler context (will be updated as we progress)
+      let handlerContext: HandlerContext | null = null;
+      let abortResponse: unknown | null = null;
+
       try {
+        // ============================================
+        // PHASE 1: PRE-AUTH MIDDLEWARE
+        // ============================================
+        handlerContext = createHandlerContext(request, reply, undefined, repositories, dbAdapter, cacheAdapter, storage, realtimeAdapter, emailService);
+        const preAuthResult = await executeMiddlewarePhase(middlewareRegistry, 'pre-auth', handlerContext, path, method);
+        if (preAuthResult.aborted && preAuthResult.abortResponse !== undefined) {
+          reply.status(200).send(preAuthResult.abortResponse);
+          return;
+        }
+
         // ============================================
         // AUTHENTICATION & AUTHORIZATION
         // ============================================
@@ -1270,6 +1369,18 @@ function registerRoutes(
           // --- PUBLIC ENDPOINT ---
           // No authentication required - skip auth checks for performance
           authContext = { authenticated: false };
+        }
+
+        // Update handler context with auth
+        handlerContext.auth = authContext;
+
+        // ============================================
+        // PHASE 2: POST-AUTH MIDDLEWARE
+        // ============================================
+        const postAuthResult = await executeMiddlewarePhase(middlewareRegistry, 'post-auth', handlerContext, path, method);
+        if (postAuthResult.aborted && postAuthResult.abortResponse !== undefined) {
+          reply.status(200).send(postAuthResult.abortResponse);
+          return;
         }
 
         // Check rate limit (after auth so we can use user ID if available)
@@ -1376,11 +1487,36 @@ function registerRoutes(
           }
         }
 
-        // Create handler context
-        const context = createHandlerContext(request, reply, authContext, repositories, dbAdapter, cacheAdapter, storage, realtimeAdapter);
+        // Update handler context with latest request data
+        handlerContext.method = request.method;
+        handlerContext.url = request.url;
+        handlerContext.path = request.path;
+        handlerContext.query = request.query;
+        handlerContext.params = request.params;
+        handlerContext.body = request.body;
+        handlerContext.headers = request.headers;
+        const context = handlerContext;
+
+        // ============================================
+        // PHASE 3: PRE-HANDLER MIDDLEWARE
+        // ============================================
+        const preHandlerResult = await executeMiddlewarePhase(middlewareRegistry, 'pre-handler', context, path, method);
+        if (preHandlerResult.aborted && preHandlerResult.abortResponse !== undefined) {
+          reply.status(200).send(preHandlerResult.abortResponse);
+          return;
+        }
 
         // Call handler with context
         const result = await handlerFn(context);
+        
+        // ============================================
+        // PHASE 4: POST-HANDLER MIDDLEWARE
+        // ============================================
+        const postHandlerResult = await executeMiddlewarePhase(middlewareRegistry, 'post-handler', context, path, method);
+        if (postHandlerResult.aborted && postHandlerResult.abortResponse !== undefined) {
+          reply.status(200).send(postHandlerResult.abortResponse);
+          return;
+        }
         
         // Determine status code: use handler-set status, or default based on method
         let statusCode = context._statusCode;
@@ -1432,9 +1568,29 @@ function registerRoutes(
         
         return result;
       } catch (error) {
+        // ============================================
+        // PHASE 5: ERROR MIDDLEWARE
+        // ============================================
         const currentHandlerLabel = typeof handlerConfig === "object" && handlerConfig.type === "query" 
           ? "query" 
           : (typeof handlerConfig === "string" ? handlerConfig : "default");
+        
+        // Ensure handler context exists for error middleware
+        if (!handlerContext) {
+          handlerContext = createHandlerContext(request, reply, undefined, repositories, dbAdapter, cacheAdapter, storage, realtimeAdapter, emailService);
+        }
+        
+        try {
+          const errorResult = await executeMiddlewarePhase(middlewareRegistry, 'error', handlerContext, path, method);
+          if (errorResult.aborted && errorResult.abortResponse !== undefined) {
+            reply.status(200).send(errorResult.abortResponse);
+            return;
+          }
+        } catch (mwError) {
+          // If error middleware itself fails, log and continue with default error handling
+          console.error(`Error in error middleware:`, mwError);
+        }
+        
         console.error(`Error in handler ${currentHandlerLabel}:`, error);
         reply.status(500).send({
           error: "Internal server error",
@@ -1644,12 +1800,28 @@ export async function startYamaNodeRuntime(
               
               console.log("✅ Realtime adapter initialized");
             }
+
+            // If this is an email plugin, store the email service
+            if (plugin.category === "email" && pluginApi && typeof pluginApi === "object" && "service" in pluginApi) {
+              // Email service is available via pluginApi.service
+              // It will be accessed via plugin registry context later
+              console.log("✅ Email service initialized");
+            }
           } catch (error) {
             console.warn(`⚠️  Failed to load plugin ${pluginName}:`, error instanceof Error ? error.message : String(error));
           }
         }
       }
 
+      // Get email service from email plugin (if available)
+      let emailService: any = null;
+      const emailPlugin = pluginRegistry.getPluginsByCategory("email")[0];
+      if (emailPlugin) {
+        const emailPluginApi = pluginRegistry.getPluginAPI(emailPlugin.name);
+        if (emailPluginApi && typeof emailPluginApi === "object" && "service" in emailPluginApi) {
+          emailService = emailPluginApi.service;
+        }
+      }
 
       // Convert entities to schemas and merge with explicit schemas
       const entitySchemas = config.entities ? entitiesToSchemas(config.entities) : {};
@@ -1745,6 +1917,148 @@ export async function startYamaNodeRuntime(
       console.log("✅ Initialized rate limiter");
     } catch (error) {
       console.warn(`⚠️  Failed to initialize rate limiter: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  // Create middleware registry
+  const middlewareRegistry = new MiddlewareRegistry();
+  
+  // Set middleware registry in plugin registry so plugins can access it
+  pluginRegistry.setMiddlewareRegistry(middlewareRegistry);
+
+  // Load middleware from config
+  if (config?.middleware) {
+    try {
+      // Load global middleware
+      if (config.middleware.global) {
+        for (const mwConfig of config.middleware.global) {
+          if (mwConfig.enabled === false) {
+            continue;
+          }
+
+          let handler: MiddlewareDefinition['handler'];
+          
+          // Check if it's plugin-provided middleware
+          if (mwConfig.name.startsWith('@')) {
+            const pluginAPI = pluginRegistry.getPluginAPI(mwConfig.name);
+            if (pluginAPI && typeof pluginAPI.getMiddleware === 'function') {
+              const pluginMw = pluginAPI.getMiddleware();
+              if (Array.isArray(pluginMw)) {
+                // Plugin returns array of middleware
+                for (const mw of pluginMw) {
+                  middlewareRegistry.register({
+                    ...mw,
+                    ...mwConfig, // Merge user config
+                  });
+                }
+              } else {
+                // Plugin returns single middleware
+                middlewareRegistry.register({
+                  ...pluginMw,
+                  ...mwConfig, // Merge user config
+                });
+              }
+              continue;
+            } else {
+              throw new Error(
+                `Plugin middleware "${mwConfig.name}" not found. Plugin must expose getMiddleware() method.`
+              );
+            }
+          }
+
+          // File-based middleware
+          if (mwConfig.file) {
+            const handlerFn = await loadMiddlewareFromFile(mwConfig.file, configDir || process.cwd());
+            handler = handlerFn;
+          } else {
+            throw new Error(
+              `Middleware "${mwConfig.name}" must specify either a file path or be a plugin-provided middleware.`
+            );
+          }
+
+          middlewareRegistry.register({
+            name: mwConfig.name,
+            handler,
+            phases: mwConfig.phases || ['pre-handler'],
+            priority: mwConfig.priority,
+            enabled: mwConfig.enabled,
+            config: mwConfig.config,
+          });
+        }
+        console.log(`✅ Loaded ${config.middleware.global.filter(m => m.enabled !== false).length} global middleware`);
+      }
+
+      // Load endpoint-specific middleware
+      if (config.middleware.endpoints) {
+        for (const endpointMw of config.middleware.endpoints) {
+          for (const mwConfig of endpointMw.middleware) {
+            if (mwConfig.enabled === false) {
+              continue;
+            }
+
+            let handler: MiddlewareDefinition['handler'];
+            
+            // Check if it's plugin-provided middleware
+            if (mwConfig.name.startsWith('@')) {
+              const pluginAPI = pluginRegistry.getPluginAPI(mwConfig.name);
+              if (pluginAPI && typeof pluginAPI.getMiddleware === 'function') {
+                const pluginMw = pluginAPI.getMiddleware();
+                if (Array.isArray(pluginMw)) {
+                  for (const mw of pluginMw) {
+                    middlewareRegistry.register({
+                      ...mw,
+                      ...mwConfig,
+                      endpointPath: endpointMw.path,
+                      endpointMethod: endpointMw.method,
+                    });
+                  }
+                } else {
+                  middlewareRegistry.register({
+                    ...pluginMw,
+                    ...mwConfig,
+                    endpointPath: endpointMw.path,
+                    endpointMethod: endpointMw.method,
+                  });
+                }
+                continue;
+              } else {
+                throw new Error(
+                  `Plugin middleware "${mwConfig.name}" not found. Plugin must expose getMiddleware() method.`
+                );
+              }
+            }
+
+            // File-based middleware
+            if (mwConfig.file) {
+              const handlerFn = await loadMiddlewareFromFile(mwConfig.file, configDir || process.cwd());
+              handler = handlerFn;
+            } else {
+              throw new Error(
+                `Middleware "${mwConfig.name}" must specify either a file path or be a plugin-provided middleware.`
+              );
+            }
+
+            middlewareRegistry.register({
+              name: mwConfig.name,
+              handler,
+              phases: mwConfig.phases || ['pre-handler'],
+              priority: mwConfig.priority,
+              enabled: mwConfig.enabled,
+              config: mwConfig.config,
+              endpointPath: endpointMw.path,
+              endpointMethod: endpointMw.method,
+            });
+          }
+        }
+        const endpointMwCount = config.middleware.endpoints.reduce(
+          (sum, ep) => sum + ep.middleware.filter(m => m.enabled !== false).length,
+          0
+        );
+        console.log(`✅ Loaded ${endpointMwCount} endpoint-specific middleware`);
+      }
+    } catch (error) {
+      console.error(`❌ Failed to load middleware:`, error instanceof Error ? error.message : String(error));
+      throw error;
     }
   }
 
@@ -1929,7 +2243,16 @@ export async function startYamaNodeRuntime(
   // Load handlers and register routes
   if (config?.endpoints && handlersDir && serverAdapter && configDir) {
     const handlers = await loadHandlers(handlersDir, configDir);
-    registerRoutes(serverAdapter, server, config, handlers, validator, globalRateLimiter, repositories, dbAdapter || null, cacheAdapter || null, storageBuckets, realtimeAdapter || null);
+    // Get email service from email plugin (if available)
+    let emailService: any = null;
+    const emailPlugin = pluginRegistry.getPluginsByCategory("email")[0];
+    if (emailPlugin) {
+      const emailPluginApi = pluginRegistry.getPluginAPI(emailPlugin.name);
+      if (emailPluginApi && typeof emailPluginApi === "object" && "service" in emailPluginApi) {
+        emailService = emailPluginApi.service;
+      }
+    }
+    registerRoutes(serverAdapter, server, config, handlers, validator, globalRateLimiter, repositories, dbAdapter || null, cacheAdapter || null, storageBuckets, realtimeAdapter || null, middlewareRegistry, emailService);
   }
 
   // Call onStart lifecycle hooks for all plugins

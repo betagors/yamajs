@@ -21,6 +21,7 @@ import {
   recordPluginInitialized,
   recordPluginError,
 } from "./metrics.js";
+import type { MiddlewareRegistry } from "../middleware/registry.js";
 
 /**
  * Plugin registry
@@ -33,6 +34,7 @@ export class PluginRegistry {
   private config: Record<string, unknown> = {};
   private projectDir: string = process.cwd();
   private logger: Logger | null = null;
+  private middlewareRegistry: MiddlewareRegistry | null = null;
 
   /**
    * Get database connection from database plugin if available
@@ -78,6 +80,13 @@ export class PluginRegistry {
   }
 
   /**
+   * Set middleware registry (called by runtime after creating middleware registry)
+   */
+  setMiddlewareRegistry(middlewareRegistry: MiddlewareRegistry): void {
+    this.middlewareRegistry = middlewareRegistry;
+  }
+
+  /**
    * Create default logger
    */
   private createDefaultLogger(): Logger {
@@ -105,7 +114,8 @@ export class PluginRegistry {
       this.projectDir,
       this.logger,
       this.plugins,
-      this.pluginAPIs
+      this.pluginAPIs,
+      this.middlewareRegistry
     );
   }
 

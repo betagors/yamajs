@@ -51,6 +51,61 @@ export interface HandlerContext {
   entities?: Record<string, unknown>; // Entity repositories (e.g., context.entities.Product)
   cache?: CacheAdapter; // Cache adapter (Redis, Memcached, etc.)
   storage?: Record<string, StorageBucket>; // Storage buckets (e.g., context.storage.images, context.storage.documents)
+  email?: {
+    /**
+     * Send an email
+     */
+    send(options: {
+      to: string | string[];
+      cc?: string | string[];
+      bcc?: string | string[];
+      subject: string;
+      text?: string;
+      html?: string;
+      attachments?: Array<{
+        filename?: string;
+        path?: string;
+        content?: Buffer | string;
+        contentType?: string;
+        cid?: string;
+      }>;
+      replyTo?: string | string[];
+      from?: string;
+      headers?: Record<string, string>;
+    }): Promise<{
+      messageId: string;
+      accepted: string[];
+      rejected: string[];
+      response?: string;
+    }>;
+    
+    /**
+     * Send multiple emails in batch
+     */
+    sendBatch(emails: Array<{
+      to: string | string[];
+      cc?: string | string[];
+      bcc?: string | string[];
+      subject: string;
+      text?: string;
+      html?: string;
+      attachments?: Array<{
+        filename?: string;
+        path?: string;
+        content?: Buffer | string;
+        contentType?: string;
+        cid?: string;
+      }>;
+      replyTo?: string | string[];
+      from?: string;
+      headers?: Record<string, string>;
+    }>): Promise<Array<{
+      messageId: string;
+      accepted: string[];
+      rejected: string[];
+      response?: string;
+    }>>;
+  };
   realtime?: {
     /**
      * Publish an event to a channel (throws on error)

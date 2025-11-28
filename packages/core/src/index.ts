@@ -299,3 +299,16 @@ export {
   detectPaginationFromQuery,
 } from "./pagination/utils.js";
 
+// Export middleware system
+export {
+  type MiddlewarePhase,
+  type NextFunction,
+  type MiddlewareHandler,
+  type MiddlewareContext,
+  type MiddlewareState,
+  type MiddlewareDefinition,
+  type Middleware,
+  MiddlewareRegistry,
+  loadMiddlewareFromFile,
+} from "./middleware/index.js";
+

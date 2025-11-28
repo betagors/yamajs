@@ -251,6 +251,11 @@ export interface PluginContext {
   hasService(name: string): boolean;
   
   /**
+   * Get middleware registry to register middleware
+   */
+  getMiddlewareRegistry(): import("../middleware/registry.js").MiddlewareRegistry;
+  
+  /**
    * Emit an event
    */
   emit(event: string, data?: any): void;

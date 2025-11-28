@@ -1,8 +1,9 @@
 import { existsSync } from "fs";
 import { findYamaConfig } from "../utils/project-detection.ts";
 import { getConfigDir, readYamaConfig, resolveEnvVars, loadEnvFile } from "../utils/file-utils.ts";
-import { success, error, info, warning } from "../utils/cli-utils.ts";
+import { success, error, info, warning, printBox, printTable } from "../utils/cli-utils.ts";
 import { getDatabasePlugin } from "../utils/db-plugin.ts";
+import { confirm } from "../utils/interactive.ts";
 import { loadPlugin } from "@betagors/yama-core";
 import {
   ensurePluginMigrationTables,
@@ -10,13 +11,18 @@ import {
   getPluginPackageDir,
   getInstalledPluginVersion,
   updatePluginVersion,
+  getPluginMigrationHistory,
 } from "@betagors/yama-core";
+import semver from "semver";
 
 interface PluginRollbackOptions {
-  toVersion: string;
+  toVersion?: string;
+  steps?: number;
   dryRun?: boolean;
   config?: string;
   env?: string;
+  force?: boolean;
+  skipConfirm?: boolean;
 }
 
 export async function pluginRollbackCommand(
