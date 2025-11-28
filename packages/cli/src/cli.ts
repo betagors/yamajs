@@ -20,6 +20,14 @@ import { schemaEnvCommand } from "./commands/schema-env.ts";
 import { schemaTrashCommand } from "./commands/schema-trash.ts";
 import { schemaRestoreCommand } from "./commands/schema-restore.ts";
 import { pluginListCommand, pluginInstallCommand, pluginValidateCommand } from "./commands/plugin.ts";
+import { pluginMigrateCommand } from "./commands/plugin-migrate.ts";
+import { pluginRollbackCommand } from "./commands/plugin-rollback.ts";
+import { pluginStatusCommand } from "./commands/plugin-status.ts";
+import { pluginHealthCommand } from "./commands/plugin-health.ts";
+import { pluginSearchCommand } from "./commands/plugin-search.ts";
+import { pluginInfoCommand } from "./commands/plugin-info.ts";
+import { pluginDocsCommand } from "./commands/plugin-docs.ts";
+import { pluginMetricsCommand } from "./commands/plugin-metrics.ts";
 import { dbListCommand } from "./commands/db-list.ts";
 import { dbInspectCommand } from "./commands/db-inspect.ts";
 import { addCommand } from "./commands/add.ts";
@@ -326,6 +334,92 @@ pluginCommand
   .command("validate")
   .description("Validate all installed service plugins")
   .action(pluginValidateCommand);
+
+pluginCommand
+  .command("migrate")
+  .description("Run pending plugin migrations")
+  .option("--plugin <name>", "Migrate specific plugin only")
+  .option("--all", "Migrate all plugins")
+  .option("--dry-run", "Show what would be migrated without executing")
+  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
+  .option("--env <env>", "Environment (development, production, etc.)", "development")
+  .action(async (options) => {
+    await pluginMigrateCommand(options);
+  });
+
+pluginCommand
+  .command("rollback")
+  .description("Rollback plugin migrations")
+  .argument("<plugin>", "Plugin name to rollback")
+  .argument("<version>", "Target version to rollback to")
+  .option("--dry-run", "Show what would be rolled back without executing")
+  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
+  .option("--env <env>", "Environment (development, production, etc.)", "development")
+  .action(async (pluginName, version, options) => {
+    await pluginRollbackCommand(pluginName, { ...options, toVersion: version });
+  });
+
+pluginCommand
+  .command("status")
+  .description("Show plugin migration status")
+  .option("--plugin <name>", "Show status for specific plugin only")
+  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
+  .option("--env <env>", "Environment (development, production, etc.)", "development")
+  .action(async (options) => {
+    await pluginStatusCommand(options);
+  });
+
+pluginCommand
+  .command("health")
+  .description("Check plugin health status")
+  .option("--plugin <name>", "Check health for specific plugin only")
+  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
+  .option("--env <env>", "Environment (development, production, etc.)", "development")
+  .action(async (options) => {
+    await pluginHealthCommand(options);
+  });
+
+pluginCommand
+  .command("search")
+  .description("Search for plugins on npm")
+  .argument("<query>", "Search query")
+  .option("--category <category>", "Filter by category")
+  .option("--limit <number>", "Limit number of results", "20")
+  .action(async (query, options) => {
+    await pluginSearchCommand({ query, ...options });
+  });
+
+pluginCommand
+  .command("info")
+  .description("Show detailed plugin information")
+  .argument("<package>", "Package name")
+  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
+  .action(async (packageName, options) => {
+    await pluginInfoCommand({ package: packageName, ...options });
+  });
+
+pluginCommand
+  .command("docs")
+  .description("Generate plugin documentation")
+  .argument("<package>", "Package name")
+  .option("--format <format>", "Output format (markdown, html)", "markdown")
+  .option("-o, --output <path>", "Output file path (default: stdout)")
+  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
+  .action(async (packageName, options) => {
+    await pluginDocsCommand({ package: packageName, ...options });
+  });
+
+pluginCommand
+  .command("metrics")
+  .description("Show plugin performance metrics")
+  .option("--plugin <name>", "Show metrics for specific plugin only")
+  .option("--reset", "Clear all metrics")
+  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
+  .option("--env <env>", "Environment (development, production, etc.)", "development")
+  .option("--format <format>", "Output format (table, prometheus, json)", "table")
+  .action(async (options) => {
+    await pluginMetricsCommand(options);
+  });
 
 // Database inspection
 const dbCommand = program

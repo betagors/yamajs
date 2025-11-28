@@ -160,19 +160,61 @@ export {
 export {
   type PluginManifest,
   type YamaPlugin,
-  type ServicePlugin,
   type PluginContext,
+  type PluginMigrationDefinition,
   loadPlugin,
   getPlugin,
+  getPluginAPI,
   getAllPlugins,
   getPluginByCategory,
   getPluginsByCategory,
   getPluginByType,
   loadPluginFromPackage,
-  // Backward compatibility exports
-  loadServicePlugin,
-  getServicePlugin,
-  getServicePluginByType,
+  // Plugin migrations
+  PLUGIN_MIGRATIONS_TABLE_SQL,
+  PLUGIN_VERSIONS_TABLE_SQL,
+  type PluginMigration,
+  type MigrationResult,
+  ensurePluginMigrationTables,
+  getInstalledPluginVersion,
+  getPendingPluginMigrations,
+  executePluginMigration,
+  rollbackPluginMigration,
+  updatePluginVersion,
+  getPluginPackageDir,
+  getPluginMigrationHistory,
+  // Migration utilities
+  type MigrationPlan,
+  validateMigrationFile,
+  getMigrationPlan,
+  formatMigrationPlan,
+  getPluginMigrationStatus,
+  // Plugin context and dependencies
+  type PluginDependencies,
+  type Logger,
+  PluginContextImpl,
+  setPluginRegistryConfig,
+  type DependencyResolution,
+  resolvePluginDependencies,
+  validateDependencies,
+  // Testing utilities
+  createTestPluginContext,
+  mockPlugin,
+  testPluginIntegration,
+  // Security
+  type PluginSecurityPolicy,
+  validateSecurityPolicy,
+  isPluginTrusted,
+  // Metrics
+  type PluginMetrics,
+  type SummaryStats,
+  type MetricsConfig,
+  pluginMetricsCollector,
+  // Documentation
+  type PluginDocumentation,
+  generatePluginDocs,
+  generateMarkdownDocs,
+  generateHTMLDocs,
 } from "./plugins/index.js";
 
 // Export migration types and functions

@@ -1,13 +1,10 @@
 {
-  "name": "@betagors/yama-core",
+  "name": "@betagors/yama-logging",
   "version": "0.1.0-alpha.0",
   "type": "module",
-  "description": "Yama — backend as config (core runtime and types)",
+  "description": "Yama logging plugin with console, file, and S3 transports",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "bin": {
-    "yama-typegen": "./dist/cli.js"
-  },
   "files": [
     "dist"
   ],
@@ -17,18 +14,25 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/betagors/yama.git",
-    "directory": "packages/core"
+    "directory": "packages/logging"
   },
   "keywords": [
     "yama",
-    "backend",
-    "framework",
-    "api",
-    "yaml",
-    "config",
-    "typescript"
+    "logging",
+    "logger",
+    "log",
+    "console",
+    "file",
+    "s3",
+    "plugin"
   ],
   "license": "MPL-2.0",
+  "yama": {
+    "pluginApi": "1.0",
+    "yamaCore": "^0.1.0",
+    "category": "logging",
+    "entryPoint": "./dist/plugin.js"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "dev": "tsc -w -p tsconfig.build.json",
@@ -39,20 +43,15 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
-    "ajv": "^8.12.0",
-    "ajv-formats": "^2.1.1",
-    "js-yaml": "^4.1.1",
-    "jsonwebtoken": "^9.0.2",
-    "semver": "^7.7.3"
+    "@betagors/yama-core": "workspace:*"
   },
   "devDependencies": {
-    "@types/js-yaml": "^4.0.9",
-    "@types/jsonwebtoken": "^9.0.10",
-    "@types/node": "^20.0.0",
     "rimraf": "^5.0.0",
+    "@types/node": "^20.0.0",
     "vitest": "^1.0.0"
   },
   "engines": {
     "node": ">=18"
   }
 }
+

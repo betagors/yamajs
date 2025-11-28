@@ -29,6 +29,8 @@ import {
   type HandlerFunction,
   type StorageBucket,
   loadPlugin,
+  pluginRegistry,
+  setPluginRegistryConfig,
   type YamaPlugin,
   generateAllCrudEndpoints,
   generateCrudInputSchemas,
@@ -1511,21 +1513,36 @@ export async function startYamaNodeRuntime(
       
       console.log("✅ Loaded YAML config");
 
+      // Set registry configuration
+      const configDir = dirname(yamlConfigPath || process.cwd());
+      setPluginRegistryConfig(config, configDir);
+
       // Load plugins from config
+      // Note: Plugin migrations run automatically during loadPlugin() if a database plugin is available.
+      // Database plugin should be loaded first to ensure migrations can run for other plugins.
       if (config.plugins) {
         const pluginList = Array.isArray(config.plugins) 
           ? config.plugins 
           : Object.keys(config.plugins);
         
-        for (const pluginName of pluginList) {
+        // Load database plugin first if present, so migrations for other plugins can run
+        const dbPluginName = pluginList.find((name: string) => 
+          name.includes("postgres") || name.includes("pglite") || name.includes("database")
+        );
+        const otherPlugins = pluginList.filter((name: string) => name !== dbPluginName);
+        const orderedPlugins = dbPluginName ? [dbPluginName, ...otherPlugins] : pluginList;
+        
+        for (const pluginName of orderedPlugins) {
           try {
-            const plugin = await loadPlugin(pluginName);
             const pluginConfig = typeof config.plugins === "object" && !Array.isArray(config.plugins)
               ? config.plugins[pluginName] || {}
               : {};
             
-            // Initialize plugin (this registers adapters, etc.)
-            const pluginApi = await plugin.init(pluginConfig);
+            // Load plugin (init is called automatically with context in registry)
+            const plugin = await loadPlugin(pluginName, configDir, pluginConfig);
+            
+            // Get plugin API (already initialized by registry)
+            const pluginApi = pluginRegistry.getPluginAPI(pluginName);
             
             // Store plugin and its API
             loadedPlugins.set(pluginName, plugin);
