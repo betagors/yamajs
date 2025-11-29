@@ -30,8 +30,8 @@
   ],
   "license": "MPL-2.0",
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
-    "dev": "tsc -w -p tsconfig.build.json",
+    "build": "pnpm exec tsc --build tsconfig.build.json",
+    "dev": "pnpm exec tsc --build -w tsconfig.build.json",
     "lint": "echo \"no lint yet\"",
     "test": "vitest",
     "test:watch": "vitest --watch",
@@ -49,6 +49,7 @@
     "@types/js-yaml": "^4.0.9",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20.0.0",
+    "@types/semver": "^7.5.8",
     "rimraf": "^5.0.0",
     "vitest": "^1.0.0"
   },

@@ -34,7 +34,12 @@ export const yamaSchemaGenerateTool = {
             : `❌ Migration generation failed\n\n${result.output}\n${result.error || ""}`,
         },
       ],
-      isError: !result.success,
     };
   },
 };
+
+
+
+
+
+

@@ -1,7 +1,8 @@
 import { readFileSync, existsSync } from "fs";
 import { join } from "path";
 import semver from "semver";
-import type { YamaPlugin, PluginManifest, PluginMigration } from "./base.js";
+import type { YamaPlugin, PluginManifest } from "./base.js";
+import type { PluginMigration } from "./migrations.js";
 import {
   getPendingPluginMigrations,
   getInstalledPluginVersion,
@@ -166,5 +167,6 @@ export async function getPluginMigrationStatus(
     migrationHistory: history,
   };
 }
+
 
 

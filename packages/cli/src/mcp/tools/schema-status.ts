@@ -32,7 +32,12 @@ export const yamaSchemaStatusTool = {
             : `❌ Failed to check migration status\n\n${result.output}\n${result.error || ""}`,
         },
       ],
-      isError: !result.success,
     };
   },
 };
+
+
+
+
+
+

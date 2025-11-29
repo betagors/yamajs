@@ -26,7 +26,12 @@ export const yamaValidateTool = {
             : `❌ Validation failed\n\n${result.output}\n${result.error || ""}`,
         },
       ],
-      isError: !result.success,
     };
   },
 };
+
+
+
+
+
+

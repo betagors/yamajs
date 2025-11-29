@@ -131,9 +131,15 @@ export function normalizePaginationConfig(
     const limit = config.limit !== undefined
       ? toNumber(resolveParameter(config.limit, context)) ?? defaultLimit
       : defaultLimit;
-    const cursorValue = config.cursor !== undefined
+    const rawCursorValue = config.cursor !== undefined
       ? resolveParameter(config.cursor, context)
       : undefined;
+    // Convert cursor value to string | number | undefined
+    const cursorValue: string | number | undefined = rawCursorValue === undefined
+      ? undefined
+      : typeof rawCursorValue === "string" || typeof rawCursorValue === "number"
+      ? rawCursorValue
+      : String(rawCursorValue);
     const cursorField = config.cursorField || primaryKeyField;
     const direction = config.direction || "forward";
 
@@ -289,7 +295,12 @@ export function wrapPaginatedResponse<T>(
   metadataConfig?: boolean | PaginationMetadataField[]
 ): PaginatedResponse<T> {
   // Always wrap with metadata - filter to requested fields if array provided
-  const filteredMetadata = filterMetadata(metadata, metadataConfig);
+  // Convert boolean to undefined (false = no metadata, true = all metadata)
+  const metadataFields: PaginationMetadataField[] | undefined = 
+    typeof metadataConfig === "boolean" 
+      ? undefined // Let filterMetadata handle boolean logic (undefined = all fields)
+      : metadataConfig;
+  const filteredMetadata = filterMetadata(metadata, metadataFields);
 
   return {
     data: results,
@@ -308,11 +319,18 @@ export function detectPaginationFromQuery(
   // Check for cursor pagination first (most specific)
   if (query.cursor !== undefined) {
     const limit = query.limit !== undefined ? toNumber(query.limit) ?? defaultLimit : defaultLimit;
+    // Convert cursor to string | number | undefined
+    const rawCursor = query.cursor;
+    const cursorValue: string | number | undefined = rawCursor === undefined || rawCursor === null
+      ? undefined
+      : typeof rawCursor === "string" || typeof rawCursor === "number"
+      ? rawCursor
+      : String(rawCursor);
     return {
       type: "cursor",
       limit: Math.max(1, limit),
       offset: 0, // Cursor pagination doesn't use offset directly
-      cursorValue: query.cursor,
+      cursorValue,
       cursorField: "id", // Default, can be overridden
     };
   }

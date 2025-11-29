@@ -1,14 +1,11 @@
 import { existsSync } from "fs";
 import { findYamaConfig } from "../utils/project-detection.ts";
-import { getConfigDir, readYamaConfig, resolveEnvVars, loadEnvFile } from "../utils/file-utils.ts";
+import { getConfigDir, readYamaConfig } from "../utils/file-utils.ts";
+import { resolveEnvVars, loadEnvFile } from "@betagors/yama-core";
 import { success, error, info } from "../utils/cli-utils.ts";
 import { loadPlugin, setPluginRegistryConfig, pluginRegistry } from "@betagors/yama-core";
 import {
   pluginMetricsCollector,
-  trackPluginLoad,
-  recordPluginLoaded,
-  trackPluginInit,
-  recordPluginInitialized,
 } from "@betagors/yama-core";
 import { table } from "table";
 
@@ -60,7 +57,7 @@ export async function pluginMetricsCommand(
     let metricsService: any = null;
     if (pluginList.includes("@betagors/yama-metrics")) {
       try {
-        const metricsConfig = Array.isArray(config.plugins)
+        const metricsConfig = !config.plugins || Array.isArray(config.plugins)
           ? {}
           : (config.plugins["@betagors/yama-metrics"] || {});
         await loadPlugin("@betagors/yama-metrics", configDir, metricsConfig);
@@ -82,7 +79,7 @@ export async function pluginMetricsCommand(
     // Load plugins to collect metrics
     for (const pluginName of pluginsToShow) {
       try {
-        const pluginConfig = Array.isArray(config.plugins)
+        const pluginConfig = !config.plugins || Array.isArray(config.plugins)
           ? {}
           : (config.plugins[pluginName] || {});
         await loadPlugin(pluginName, configDir, pluginConfig);

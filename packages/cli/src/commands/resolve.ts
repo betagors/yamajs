@@ -7,7 +7,7 @@ import {
   saveSnapshot,
   createTransition,
   saveTransition,
-  mergeSchemas,
+  mergeMigrationSchemas,
   createMergeSnapshot,
   entitiesToModel,
   computeDiff,
@@ -96,18 +96,19 @@ export async function resolveCommand(options: ResolveOptions): Promise<void> {
 
     // Perform merge
     info("Merging schemas...");
-    const mergeResult = mergeSchemas(
+    const mergeResult = mergeMigrationSchemas(
       baseSnapshot.entities,
       localSnapshot.entities,
       remoteSnapshot.entities
     );
 
-    if (mergeResult.conflicts.length > 0) {
+    if (!mergeResult.success || !mergeResult.merged) {
       error("Conflicts detected that cannot be auto-merged:");
       for (const conflict of mergeResult.conflicts) {
-        error(`  - ${conflict.type}: ${conflict.path}`);
-        error(`    Local: ${JSON.stringify(conflict.local)}`);
-        error(`    Remote: ${JSON.stringify(conflict.remote)}`);
+        error(`  - ${conflict.type}: ${conflict.entity}${conflict.field ? `.${conflict.field}` : ""}`);
+        error(`    Description: ${conflict.description}`);
+        error(`    Local: ${conflict.localChange}`);
+        error(`    Remote: ${conflict.remoteChange}`);
       }
       error("Please resolve conflicts manually in yama.yaml");
       process.exit(1);
@@ -115,13 +116,16 @@ export async function resolveCommand(options: ResolveOptions): Promise<void> {
 
     // Create merge snapshot
     const mergedSnapshot = createMergeSnapshot(
+      configDir,
+      baseHash,
+      localHash,
+      remoteHash,
       mergeResult.merged,
       {
         createdAt: new Date().toISOString(),
         createdBy: process.env.USER || "system",
         description: "Merged snapshot",
-      },
-      [localHash, remoteHash]
+      }
     );
 
     // Save merge snapshot

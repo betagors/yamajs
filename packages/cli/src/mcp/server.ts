@@ -118,17 +118,28 @@ export async function createMCPServer(): Promise<Server> {
   server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
     const uri = request.params.uri;
 
-    switch (uri) {
-      case "yama://config":
-        return await getConfigResource(uri);
-      case "yama://endpoints":
-        return await getSchemasResource(uri);
-      case "yama://schemas":
-        return await getSchemasResource(uri);
-      case "yama://migration-status":
-        return await getMigrationStatusResource(uri);
-      default:
-        throw new Error(`Resource not found: ${uri}`);
+    try {
+      switch (uri) {
+        case "yama://config":
+          return await getConfigResource(uri);
+        case "yama://endpoints":
+          return await getEndpointsResource(uri);
+        case "yama://schemas":
+          return await getSchemasResource(uri);
+        case "yama://migration-status":
+          return await getMigrationStatusResource(uri);
+        default:
+          throw new Error(`Resource not found: ${uri}`);
+      }
+    } catch (error) {
+      // Provide better error messages for common issues
+      if (error instanceof Error) {
+        if (error.message.includes("Config file not found")) {
+          throw new Error(`Resource not available: ${uri}. ${error.message}. Make sure you're in a directory with a yama.yaml file.`);
+        }
+        throw new Error(`Resource not available: ${uri}. ${error.message}`);
+      }
+      throw error;
     }
   });
 
@@ -140,3 +151,5 @@ export async function startMCPServer(): Promise<void> {
   const transport = new StdioServerTransport();
   await server.connect(transport);
 }
+
+

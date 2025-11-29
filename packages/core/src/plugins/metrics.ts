@@ -113,10 +113,26 @@ class PluginMetricsCollector {
    */
   configure(config: Partial<MetricsConfig>): void {
     this.config = {
-      retention: { ...this.config.retention, ...config.retention },
-      sampling: { ...this.config.sampling, ...config.sampling },
-      caching: { ...this.config.caching, ...config.caching },
-      batching: { ...this.config.batching, ...config.batching },
+      retention: { 
+        enabled: config.retention?.enabled ?? this.config.retention?.enabled ?? false,
+        ...this.config.retention,
+        ...config.retention,
+      },
+      sampling: { 
+        enabled: config.sampling?.enabled ?? this.config.sampling?.enabled ?? false,
+        ...this.config.sampling,
+        ...config.sampling,
+      },
+      caching: { 
+        enabled: config.caching?.enabled ?? this.config.caching?.enabled ?? true,
+        ...this.config.caching,
+        ...config.caching,
+      },
+      batching: { 
+        enabled: config.batching?.enabled ?? this.config.batching?.enabled ?? false,
+        ...this.config.batching,
+        ...config.batching,
+      },
     };
     this.invalidateCache();
   }

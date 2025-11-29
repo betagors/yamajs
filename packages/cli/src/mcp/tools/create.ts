@@ -31,7 +31,12 @@ export const yamaCreateTool = {
             : `❌ Project creation failed\n\n${result.output}\n${result.error || ""}`,
         },
       ],
-      isError: !result.success,
     };
   },
 };
+
+
+
+
+
+

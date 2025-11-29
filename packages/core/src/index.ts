@@ -186,6 +186,7 @@ export {
   getPluginsByCategory,
   getPluginByType,
   loadPluginFromPackage,
+  pluginRegistry,
   // Plugin migrations
   PLUGIN_MIGRATIONS_TABLE_SQL,
   PLUGIN_VERSIONS_TABLE_SQL,
@@ -310,29 +311,25 @@ export {
 export {
   type Transition,
   type TransitionMetadata,
-  type TransitionGraph,
   getTransitionsDir,
   getTransitionPath,
-  getGraphPath,
   ensureTransitionsDir,
   createTransition,
   saveTransition,
   loadTransition,
   transitionExists,
   deleteTransition,
-  getTransitionsFrom,
-  getTransitionsTo,
-  loadGraph,
-  saveGraph,
-  updateGraph,
-  removeFromGraph,
   getAllTransitions,
-  rebuildGraph,
 } from "./migrations/transitions.js";
 
 // Export graph path computation
 export {
   type PathResult,
+  type TransitionGraph,
+  getGraphPath,
+  loadGraph,
+  buildGraph,
+  saveGraph,
   findPath,
   findReversePath,
   findAllPaths,
@@ -364,7 +361,7 @@ export {
   type ConflictType,
   type Conflict,
   type MergeResult,
-  mergeSchemas,
+  mergeSchemas as mergeMigrationSchemas,
   detectConflicts,
   canAutoMerge,
   createMergeSnapshot,
@@ -374,6 +371,7 @@ export {
 export {
   type ShadowColumn,
   type ShadowManifest,
+  DEFAULT_SHADOW_RETENTION_DAYS,
   getShadowsDir,
   getShadowManifestPath,
   ensureShadowsDir,
@@ -387,7 +385,6 @@ export {
   getExpiredShadowColumns,
   markShadowRestored,
   deleteShadowColumn,
-  calculateExpirationDate,
   isShadowExpired,
 } from "./migrations/shadows.js";
 

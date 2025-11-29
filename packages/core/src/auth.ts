@@ -97,7 +97,7 @@ export async function authorizeRequest(
   endpointAuth: EndpointAuth,
   rolePermissions?: Record<string, string[]>,
   authHandler?: (authContext: AuthContext, ...args: unknown[]) => Promise<boolean> | boolean
-): { authorized: boolean; error?: string } {
+): Promise<{ authorized: boolean; error?: string }> {
   // If auth is not required, allow
   if (endpointAuth.required === false) {
     return { authorized: true };

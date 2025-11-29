@@ -27,7 +27,7 @@ export type MiddlewareHandler = (
 /**
  * Middleware context extends HandlerContext with phase-specific information
  */
-export interface MiddlewareContext extends HandlerContext {
+export interface MiddlewareContext extends Omit<HandlerContext, 'metrics'> {
   /**
    * Current middleware phase
    */
@@ -55,6 +55,7 @@ export interface MiddlewareContext extends HandlerContext {
 
   /**
    * Optional metrics helpers (if metrics plugin is available)
+   * Middleware-specific metrics interface with timer support
    */
   metrics?: {
     /**
@@ -142,5 +143,6 @@ export interface Middleware {
   endpointPath?: string;
   endpointMethod?: string;
 }
+
 
 

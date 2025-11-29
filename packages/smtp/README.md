@@ -91,3 +91,9 @@ await context.email?.sendBatch([
 - ✅ Multiple recipients (to, cc, bcc)
 
 
+
+
+
+
+
+

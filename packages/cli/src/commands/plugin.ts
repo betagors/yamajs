@@ -1,6 +1,6 @@
 import { execSync } from "child_process";
 import { readPackageJson } from "../utils/file-utils.ts";
-import { loadServicePlugin, getServicePlugin } from "@betagors/yama-core";
+import { loadPluginFromPackage } from "@betagors/yama-core";
 
 interface PluginOptions {
   package?: string;
@@ -21,11 +21,11 @@ export async function pluginListCommand(): Promise<void> {
 
     for (const [packageName, version] of Object.entries(deps)) {
       try {
-        const plugin = await loadServicePlugin(packageName);
+        const manifest = await loadPluginFromPackage(packageName);
         plugins.push({
           name: packageName,
           version,
-          manifest: plugin.manifest,
+          manifest,
         });
       } catch {
         // Not a Yama plugin, skip
@@ -100,14 +100,14 @@ export async function pluginInstallCommand(options: PluginOptions): Promise<void
 
     // Try to load and validate the plugin
     console.log("\nValidating plugin...");
-    const plugin = await loadServicePlugin(packageName);
+    const manifest = await loadPluginFromPackage(packageName);
 
     console.log(`\n✅ Plugin installed successfully!`);
-    console.log(`   Name: ${plugin.name}`);
-    console.log(`   Version: ${plugin.version}`);
-    console.log(`   Type: ${plugin.manifest.type}`);
-    if (plugin.manifest.service) {
-      console.log(`   Service: ${plugin.manifest.service}`);
+    console.log(`   Name: ${manifest.name || packageName}`);
+    console.log(`   Version: ${manifest.version || "unknown"}`);
+    console.log(`   Type: ${manifest.type}`);
+    if (manifest.service) {
+      console.log(`   Service: ${manifest.service}`);
     }
     console.log("\n💡 Configure the plugin in your yama.yaml file");
   } catch (error) {
@@ -133,21 +133,19 @@ export async function pluginValidateCommand(): Promise<void> {
 
     for (const [packageName] of Object.entries(deps)) {
       try {
-        const plugin = await loadServicePlugin(packageName);
+        await loadPluginFromPackage(packageName);
         results.push({ plugin: packageName, valid: true });
         validCount++;
       } catch (error) {
         // Check if it's a Yama plugin that failed validation
-        try {
-          // Try to load manifest to see if it's a Yama plugin
-          const { loadPluginFromPackage } = await import("@betagors/yama-core");
-          await loadPluginFromPackage(packageName);
-          // If we get here, it's a Yama plugin but failed validation
-          const errorMsg = error instanceof Error ? error.message : String(error);
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        // If error mentions "Cannot find module", it's not a Yama plugin
+        if (errorMsg.includes("Cannot find module") || errorMsg.includes("not found")) {
+          // Not a Yama plugin, skip
+        } else {
+          // It's a Yama plugin but failed validation
           results.push({ plugin: packageName, valid: false, error: errorMsg });
           invalidCount++;
-        } catch {
-          // Not a Yama plugin, skip
         }
       }
     }

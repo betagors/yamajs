@@ -1,11 +1,11 @@
 import { existsSync, readdirSync, readFileSync } from "fs";
 import { join } from "path";
 import { findYamaConfig } from "../utils/project-detection.ts";
-import { getConfigDir, readYamaConfig, resolveEnvVars, loadEnvFile } from "../utils/file-utils.ts";
+import { getConfigDir, readYamaConfig } from "../utils/file-utils.ts";
 import { success, error, info, warning, printBox, printTable, formatDuration, createSpinner } from "../utils/cli-utils.ts";
 import { confirm } from "../utils/interactive.ts";
 import type { DatabaseConfig } from "@betagors/yama-core";
-import { deserializeMigration, type MigrationStepUnion } from "@betagors/yama-core";
+import { deserializeMigration, type MigrationStepUnion, resolveEnvVars, loadEnvFile } from "@betagors/yama-core";
 import { getDatabasePlugin } from "../utils/db-plugin.ts";
 
 interface SchemaRollbackOptions {

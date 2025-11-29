@@ -25,7 +25,6 @@ export const yamaSchemasTool = {
             text: `❌ Config file not found: ${configPath}`,
           },
         ],
-        isError: true,
       };
     }
 
@@ -42,7 +41,6 @@ export const yamaSchemasTool = {
               text: "No schemas defined",
             },
           ],
-          isError: false,
         };
       }
 
@@ -54,7 +52,6 @@ export const yamaSchemasTool = {
             text: `📦 Schemas (${Object.keys(config.schemas).length}):\n\n${schemasJson}`,
           },
         ],
-        isError: false,
       };
     } catch (error) {
       return {
@@ -64,8 +61,13 @@ export const yamaSchemasTool = {
             text: `❌ Failed to read schemas: ${error instanceof Error ? error.message : String(error)}`,
           },
         ],
-        isError: true,
       };
     }
   },
 };
+
+
+
+
+
+

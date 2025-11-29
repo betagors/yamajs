@@ -21,8 +21,8 @@ export async function endpointsCommand(options: EndpointsOptions): Promise<void>
         method: string;
         handler: string;
         description?: string;
-        params?: unknown;
-        query?: unknown;
+        params?: Record<string, unknown>;
+        query?: Record<string, unknown>;
         body?: { type: string };
         response?: { type: string };
       }>;
@@ -39,7 +39,13 @@ export async function endpointsCommand(options: EndpointsOptions): Promise<void>
     
     if (useTUI) {
       const { runEndpointsTUI } = await import("../tui/EndpointsCommand.tsx");
-      runEndpointsTUI({ endpoints: config.endpoints });
+      runEndpointsTUI({ 
+        endpoints: config.endpoints.map(e => ({
+          ...e,
+          params: e.params as Record<string, unknown> | undefined,
+          query: e.query as Record<string, unknown> | undefined,
+        }))
+      });
       return;
     }
 

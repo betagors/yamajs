@@ -38,7 +38,12 @@ export const yamaGenerateTool = {
             : `❌ Generation failed\n\n${result.output}\n${result.error || ""}`,
         },
       ],
-      isError: !result.success,
     };
   },
 };
+
+
+
+
+
+

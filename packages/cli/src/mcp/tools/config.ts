@@ -24,7 +24,6 @@ export const yamaConfigTool = {
             text: `❌ Config file not found: ${configPath}`,
           },
         ],
-        isError: true,
       };
     }
 
@@ -37,7 +36,6 @@ export const yamaConfigTool = {
             text: JSON.stringify(config, null, 2),
           },
         ],
-        isError: false,
       };
     } catch (error) {
       return {
@@ -47,8 +45,13 @@ export const yamaConfigTool = {
             text: `❌ Failed to read config: ${error instanceof Error ? error.message : String(error)}`,
           },
         ],
-        isError: true,
       };
     }
   },
 };
+
+
+
+
+
+

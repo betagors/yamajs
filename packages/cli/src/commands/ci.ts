@@ -111,7 +111,7 @@ export async function ciAnalyzeCommand(options: CIAnalyzeOptions): Promise<void>
     // Assess safety
     const assessment = assessTransition(transition);
     const impact = analyzeImpact(transition);
-    const summary = getSafetySummary(assessment, impact);
+    const summary = getSafetySummary(transition);
 
     // Output results
     const outputFormat = options.output || "text";
@@ -151,7 +151,13 @@ export async function ciAnalyzeCommand(options: CIAnalyzeOptions): Promise<void>
       console.log(`  Requires backup: ${impact.requiresBackup ? "Yes" : "No"}`);
 
       console.log("\nSummary:");
-      console.log(`  ${summary}`);
+      console.log(`  ${summary.summary}`);
+      if (summary.details.length > 0) {
+        console.log("  Details:");
+        summary.details.forEach(detail => {
+          console.log(`    - ${detail}`);
+        });
+      }
 
       // Exit code based on safety level
       if (assessment.level === SafetyLevel.DANGEROUS) {

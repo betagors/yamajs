@@ -45,6 +45,10 @@ import { snapshotCreateCommand } from "./commands/snapshot-create.ts";
 import { transitionCreateCommand } from "./commands/transition-create.ts";
 import { resolveCommand } from "./commands/resolve.ts";
 import { ciAnalyzeCommand, ciValidateCommand } from "./commands/ci.ts";
+import { shadowsListCommand, shadowsRestoreCommand, shadowsCleanupCommand } from "./commands/shadows.ts";
+import { backupsListCommand, backupsStatusCommand, backupsCleanupCommand } from "./commands/backups.ts";
+import { deployCommand } from "./commands/deploy.ts";
+import { rollbackCommand } from "./commands/rollback.ts";
 
 const program = new Command();
 
@@ -572,6 +576,96 @@ ciCommand
   .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
   .action(async (options) => {
     await ciValidateCommand(options);
+  });
+
+// Shadow columns commands
+const shadowsCommand = program
+  .command("shadows")
+  .description("Manage shadow columns for safe field deletions");
+
+shadowsCommand
+  .command("list")
+  .description("List shadow columns")
+  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
+  .option("--table <table>", "Filter by table name")
+  .option("--expired", "Show only expired shadows")
+  .action(async (options) => {
+    await shadowsListCommand(options);
+  });
+
+shadowsCommand
+  .command("restore")
+  .description("Restore a shadow column")
+  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
+  .requiredOption("--table <table>", "Table name")
+  .requiredOption("--column <column>", "Shadow column name")
+  .action(async (options) => {
+    await shadowsRestoreCommand(options);
+  });
+
+shadowsCommand
+  .command("cleanup")
+  .description("Clean up expired shadow columns")
+  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
+  .option("--expired", "Clean up expired shadows only")
+  .action(async (options) => {
+    await shadowsCleanupCommand(options);
+  });
+
+// Backup commands
+const backupsCommand = program
+  .command("backups")
+  .description("Manage database backups");
+
+backupsCommand
+  .command("list")
+  .description("List backups")
+  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
+  .option("--snapshot <hash>", "Filter by snapshot hash")
+  .action(async (options) => {
+    await backupsListCommand(options);
+  });
+
+backupsCommand
+  .command("status")
+  .description("Show backup status")
+  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
+  .action(async (options) => {
+    await backupsStatusCommand(options);
+  });
+
+backupsCommand
+  .command("cleanup")
+  .description("Clean up old backups")
+  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
+  .option("--older-than <days>", "Clean backups older than N days")
+  .action(async (options) => {
+    await backupsCleanupCommand(options);
+  });
+
+// Deploy command
+program
+  .command("deploy")
+  .description("Deploy schema changes to an environment")
+  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
+  .requiredOption("--env <env>", "Environment name (production, staging, etc.)")
+  .option("--plan", "Show deployment plan without deploying")
+  .option("--dry-run", "Dry run - don't actually deploy")
+  .option("--auto-rollback", "Automatically rollback on failure")
+  .action(async (options) => {
+    await deployCommand(options);
+  });
+
+// Rollback command
+program
+  .command("rollback")
+  .description("Rollback schema changes")
+  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
+  .requiredOption("--env <env>", "Environment name")
+  .option("--to <hash>", "Target snapshot hash")
+  .option("--emergency", "Emergency rollback mode")
+  .action(async (options) => {
+    await rollbackCommand(options);
   });
 
 // MCP Server

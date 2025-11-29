@@ -1,9 +1,5 @@
 import { z } from "zod";
-import { endpointsCommand } from "../../commands/endpoints.ts";
-import { executeCommand } from "../utils/output-capture.ts";
-import { readYamaConfig } from "../../utils/file-utils.ts";
-import { findYamaConfig } from "../../utils/project-detection.ts";
-import { existsSync } from "fs";
+import { getEndpointsResource } from "../resources/endpoints.ts";
 
 const inputSchema = z.object({
   config: z.string().optional().describe("Path to yama.yaml configuration file"),
@@ -11,38 +7,16 @@ const inputSchema = z.object({
 
 export const yamaEndpointsTool = {
   name: "yama_endpoints",
-  description: "List all endpoints defined in yama.yaml",
+  description: "List all endpoints defined in yama.yaml (uses yama://endpoints resource)",
   inputSchema,
   handler: async (args: z.infer<typeof inputSchema>) => {
-    const configPath = args.config || findYamaConfig() || "yama.yaml";
-
-    if (!existsSync(configPath)) {
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: `❌ Config file not found: ${configPath}`,
-          },
-        ],
-        isError: true,
-      };
-    }
-
     try {
-      const config = readYamaConfig(configPath) as {
-        endpoints?: Array<{
-          path: string;
-          method: string;
-          handler: string;
-          description?: string;
-          params?: unknown;
-          query?: unknown;
-          body?: { type: string };
-          response?: { type: string };
-        }>;
-      };
+      // Use the same resource handler to ensure consistency
+      const resource = await getEndpointsResource("yama://endpoints");
+      const endpointsJson = resource.contents[0]?.text || "[]";
+      const endpoints = JSON.parse(endpointsJson);
 
-      if (!config.endpoints || config.endpoints.length === 0) {
+      if (!endpoints || endpoints.length === 0) {
         return {
           content: [
             {
@@ -50,19 +24,16 @@ export const yamaEndpointsTool = {
               text: "No endpoints defined",
             },
           ],
-          isError: false,
         };
       }
 
-      const endpointsJson = JSON.stringify(config.endpoints, null, 2);
       return {
         content: [
           {
             type: "text" as const,
-            text: `📡 Endpoints (${config.endpoints.length}):\n\n${endpointsJson}`,
+            text: `📡 Endpoints (${endpoints.length}):\n\n${endpointsJson}`,
           },
         ],
-        isError: false,
       };
     } catch (error) {
       return {
@@ -72,8 +43,12 @@ export const yamaEndpointsTool = {
             text: `❌ Failed to read endpoints: ${error instanceof Error ? error.message : String(error)}`,
           },
         ],
-        isError: true,
       };
     }
   },
 };
+
+
+
+
+
