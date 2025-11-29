@@ -17,6 +17,7 @@
     "@betagors/yama-pglite": "0.1.0-alpha.0"
   },
   "devDependencies": {
+    "@vitest/coverage-v8": "^1.0.0",
     "tsx": "^4.7.0",
     "vitest": "^1.0.0"
   }

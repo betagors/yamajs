@@ -261,7 +261,7 @@ Found a security vulnerability? Please see our [Security Policy](SECURITY.md) fo
 
 This project is licensed under the **Mozilla Public License 2.0 (MPL-2.0)** - see the [LICENSE](LICENSE) file for details.
 
-The documentation site (`apps/docs`) is licensed under **MIT** - see [apps/docs/LICENSE](apps/docs/LICENSE) for details.
+The documentation site (`apps/docs-site`) is licensed under **MIT** - see [apps/docs-site/LICENSE](apps/docs-site/LICENSE) for details.
 
 ## 🗺️ Roadmap
 

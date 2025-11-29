@@ -37,7 +37,7 @@ export default async function RootLayout({ children }) {
           navbar={navbar}
           banner={banner}
           pageMap={await getPageMap()}
-          docsRepositoryBase="https://github.com/BetagorsLabs/yama/tree/main/apps/docs"
+          docsRepositoryBase="https://github.com/BetagorsLabs/yama/tree/main/apps/docs-site"
           footer={footer}
         >
           {children}

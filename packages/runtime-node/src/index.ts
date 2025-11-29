@@ -52,6 +52,7 @@ import {
   type MiddlewarePhase,
   type MiddlewareDefinition,
   type MiddlewareContext,
+  parseFieldDefinition,
 } from "@betagors/yama-core";
 import { createFastifyAdapter } from "@betagors/yama-fastify";
 
@@ -483,6 +484,20 @@ async function executeMiddlewarePhase(
     abortResponse: undefined as unknown,
   };
 
+  // Create middleware-compatible metrics adapter
+  const middlewareMetrics = handlerContext.metrics ? {
+    startTimer: (name: string, labels?: Record<string, string>) => {
+      const startTime = Date.now();
+      return () => {
+        const duration = Date.now() - startTime;
+        handlerContext.metrics!.histogram(name, duration, labels);
+      };
+    },
+    increment: (name: string, labels?: Record<string, string>) => {
+      handlerContext.metrics!.increment(name, 1, labels);
+    },
+  } : undefined;
+
   const middlewareContext: MiddlewareContext = {
     ...handlerContext,
     phase,
@@ -496,7 +511,7 @@ async function executeMiddlewarePhase(
         state.abortResponse = response;
       },
     },
-    metrics: handlerContext.metrics || undefined,
+    metrics: middlewareMetrics,
   };
 
   try {
@@ -694,7 +709,8 @@ function getApiFieldNameFromEntity(fieldName: string, field: EntityField): strin
  * Get primary key field name from entity definition
  */
 function getPrimaryKeyFieldName(entityDef: EntityDefinition): string {
-  for (const [fieldName, field] of Object.entries(entityDef.fields)) {
+  for (const [fieldName, fieldDef] of Object.entries(entityDef.fields)) {
+    const field = parseFieldDefinition(fieldName, fieldDef);
     if (field.primary) {
       return getApiFieldNameFromEntity(fieldName, field);
     }
@@ -787,15 +803,21 @@ function mapQueryToFindAllOptions(
         }
       } else {
         // CRUD is boolean - check if entity has searchable fields
-        const hasSearchableFields = Object.values(entityDef.fields).some(
-          field => field.api !== false && (field.type === "string" || field.type === "text")
+        const hasSearchableFields = Object.entries(entityDef.fields).some(
+          ([fieldName, fieldDef]) => {
+            const field = parseFieldDefinition(fieldName, fieldDef);
+            return field.api !== false && (field.type === "string" || field.type === "text");
+          }
         );
         searchEnabled = hasSearchableFields;
       }
     } else {
       // No CRUD config - check if entity has searchable fields (auto-enable)
-      const hasSearchableFields = Object.values(entityDef.fields).some(
-        field => field.api !== false && (field.type === "string" || field.type === "text")
+      const hasSearchableFields = Object.entries(entityDef.fields).some(
+        ([fieldName, fieldDef]) => {
+          const field = parseFieldDefinition(fieldName, fieldDef);
+          return field.api !== false && (field.type === "string" || field.type === "text");
+        }
       );
       searchEnabled = hasSearchableFields;
     }
@@ -804,7 +826,7 @@ function mapQueryToFindAllOptions(
       options.search = String(query.search);
       
       // Get search mode
-      if (searchConfig && typeof searchConfig === "object" && searchConfig.mode) {
+      if (searchConfig && typeof searchConfig === "object" && !Array.isArray(searchConfig) && searchConfig.mode) {
         options.searchMode = searchConfig.mode;
       } else {
         options.searchMode = "contains"; // Default
@@ -814,7 +836,8 @@ function mapQueryToFindAllOptions(
       if (searchConfig === true) {
         // Use all searchable fields
         const searchable: string[] = [];
-        for (const [fieldName, field] of Object.entries(entityDef.fields)) {
+        for (const [fieldName, fieldDef] of Object.entries(entityDef.fields)) {
+          const field = parseFieldDefinition(fieldName, fieldDef);
           if (field.api !== false && (field.type === "string" || field.type === "text")) {
             const apiFieldName = getApiFieldNameFromEntity(fieldName, field);
             searchable.push(apiFieldName);
@@ -830,7 +853,8 @@ function mapQueryToFindAllOptions(
         } else if (searchConfig.fields === true) {
           // All searchable fields
           const searchable: string[] = [];
-          for (const [fieldName, field] of Object.entries(entityDef.fields)) {
+          for (const [fieldName, fieldDef] of Object.entries(entityDef.fields)) {
+            const field = parseFieldDefinition(fieldName, fieldDef);
             if (field.api !== false && (field.type === "string" || field.type === "text")) {
               const apiFieldName = getApiFieldNameFromEntity(fieldName, field);
               searchable.push(apiFieldName);
@@ -841,7 +865,8 @@ function mapQueryToFindAllOptions(
       } else {
         // Default: all string/text fields (auto-detected)
         const searchable: string[] = [];
-        for (const [fieldName, field] of Object.entries(entityDef.fields)) {
+        for (const [fieldName, fieldDef] of Object.entries(entityDef.fields)) {
+          const field = parseFieldDefinition(fieldName, fieldDef);
           if (field.api !== false && (field.type === "string" || field.type === "text")) {
             const apiFieldName = getApiFieldNameFromEntity(fieldName, field);
             searchable.push(apiFieldName);
@@ -861,7 +886,8 @@ function mapQueryToFindAllOptions(
     }
 
     // Find matching entity field by API field name
-    for (const [fieldName, field] of Object.entries(entityDef.fields)) {
+    for (const [fieldName, fieldDef] of Object.entries(entityDef.fields)) {
+      const field = parseFieldDefinition(fieldName, fieldDef);
       const apiFieldName = getApiFieldNameFromEntity(fieldName, field);
       if (apiFieldName === queryKey) {
         options[apiFieldName] = queryValue;
@@ -946,10 +972,12 @@ function createQueryHandler(
           continue;
         }
 
-        const apiFieldName = getApiFieldNameFromEntity(
-          filter.field,
-          entityDef.fields[filter.field] || {}
-        );
+        const fieldDef = entityDef.fields[filter.field];
+        if (!fieldDef) {
+          continue;
+        }
+        const field = parseFieldDefinition(filter.field, fieldDef);
+        const apiFieldName = getApiFieldNameFromEntity(filter.field, field);
 
         if (filter.operator === "eq") {
           // Exact match - use direct field matching
@@ -1706,13 +1734,19 @@ function registerRoutes(
         });
         
         // Log response
-        const logLevel = statusCode >= 500 ? "error" : statusCode >= 400 ? "warn" : "info";
-        context.logger?.[logLevel]("Request completed", {
+        const meta = {
           method: request.method,
           path: request.path,
           status: statusCode,
           duration,
-        });
+        };
+        if (statusCode >= 500) {
+          context.logger?.error("Request completed", undefined, meta);
+        } else if (statusCode >= 400) {
+          context.logger?.warn("Request completed", meta);
+        } else {
+          context.logger?.info("Request completed", meta);
+        }
         
         return result;
       } catch (error) {
@@ -1855,13 +1889,13 @@ export async function startYamaNodeRuntime(
       config = yaml.load(configFile) as YamaConfig;
       
       // Resolve environment variables in config
-      config = resolveEnvVars(config) as YamaConfig;
+      config = resolveEnvVars(config as Record<string, unknown>) as YamaConfig;
       
       console.log("✅ Loaded YAML config");
 
       // Set registry configuration
-      const configDir = dirname(yamlConfigPath || process.cwd());
-      setPluginRegistryConfig(config, configDir);
+      configDir = dirname(yamlConfigPath || process.cwd());
+      setPluginRegistryConfig(config as Record<string, unknown>, configDir);
 
       // Load plugins from config
       // Note: Plugin migrations run automatically during loadPlugin() if a database plugin is available.

@@ -45,6 +45,7 @@
     "rimraf": "^5.0.0",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^20.0.0",
+    "@vitest/coverage-v8": "^1.0.0",
     "vitest": "^1.0.0"
   },
   "engines": {

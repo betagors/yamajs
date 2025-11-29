@@ -8,7 +8,7 @@
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
   "ignore": [
-    "@betagors/yama-docs"
+    "@betagors/yama-docs-site"
   ]
 }
 

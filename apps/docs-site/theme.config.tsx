@@ -21,7 +21,7 @@ export default {
   project: {
     link: 'https://github.com/BetagorsLabs/yama',
   },
-  docsRepositoryBase: 'https://github.com/BetagorsLabs/yama/tree/main/apps/docs',
+  docsRepositoryBase: 'https://github.com/BetagorsLabs/yama/tree/main/apps/docs-site',
   footer: {
     text: `MIT ${new Date().getFullYear()} © Yama JS.`,
   },
