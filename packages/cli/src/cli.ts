@@ -574,5 +574,14 @@ ciCommand
     await ciValidateCommand(options);
   });
 
+// MCP Server
+program
+  .command("mcp")
+  .description("Start MCP (Model Context Protocol) server for AI assistants")
+  .action(async () => {
+    const { startMCPServer } = await import("./mcp/server.ts");
+    await startMCPServer();
+  });
+
 program.parse();
 
