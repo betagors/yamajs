@@ -8,7 +8,6 @@ import {
   computeModelHash,
   computeDiff,
   diffToSteps,
-  getCurrentModelHashFromDB,
 } from "@betagors/yama-core";
 import { getDatabasePluginAndConfig } from "../utils/db-plugin.ts";
 import { colors, success, error, printBox, printTable } from "../utils/cli-utils.ts";

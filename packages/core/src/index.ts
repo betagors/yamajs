@@ -305,24 +305,11 @@ export {
 } from "./migrations/diff.js";
 
 export {
-  type MigrationYAML,
-  serializeMigration,
-  deserializeMigration,
-  createMigration,
-} from "./migrations/migration-yaml.js";
-
-export {
   type ValidationError,
-  validateMigrationYAML,
   validateMigrationHash,
   validateStepDependencies,
-  validateMigration,
+  validateTransition,
 } from "./migrations/validator.js";
-
-export {
-  replayMigrations,
-  getCurrentModelHashFromDB,
-} from "./migrations/replay.js";
 
 // Export snapshot system
 export {
@@ -483,6 +470,35 @@ export {
   calculateExpirationDate,
   isExpired,
 } from "./migrations/trash.js";
+
+// Export migration plugin interface
+export {
+  type DatabaseCapabilities,
+  type SQLGenerationResult,
+  type MigrationPlugin,
+  DEFAULT_CAPABILITIES,
+  POSTGRES_CAPABILITIES,
+  SQLITE_CAPABILITIES,
+  MYSQL_CAPABILITIES,
+  isStepSupported,
+  validateStepsAgainstCapabilities,
+  createBaseMigrationPlugin,
+} from "./migrations/plugin-interface.js";
+
+// Export safety operations
+export {
+  type SafetyOptions,
+  type SafetyPreCheckResult,
+  DEFAULT_SAFETY_OPTIONS,
+  checkSafetyNeeds,
+  isDestructiveStep,
+  generateShadowSQL,
+  generateSnapshotSQL,
+  registerSafetyOperations,
+  getAuditTableSQL,
+  createStepAuditEntry,
+  generateSafetyAwareSQL,
+} from "./migrations/safety-ops.js";
 
 // Export pagination types and utilities
 export {

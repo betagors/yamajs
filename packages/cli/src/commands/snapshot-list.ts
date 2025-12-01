@@ -3,10 +3,10 @@ import { findYamaConfig } from "../utils/project-detection.ts";
 import { getConfigDir } from "../utils/file-utils.ts";
 import {
   getAllSnapshots,
-  loadManifest,
-  getManifestPath,
+  getCurrentSnapshot,
+  getAllStates,
 } from "@betagors/yama-core";
-import { info, error, printTable, colors } from "../utils/cli-utils.ts";
+import { info, error, dim, fmt, printTable } from "../utils/cli-utils.ts";
 
 interface SnapshotListOptions {
   config?: string;
@@ -16,54 +16,60 @@ export async function snapshotListCommand(options: SnapshotListOptions): Promise
   const configPath = options.config || findYamaConfig() || "yama.yaml";
 
   if (!existsSync(configPath)) {
-    error(`Config file not found: ${configPath}`);
+    error(`Config not found: ${configPath}`);
     process.exit(1);
   }
 
   try {
     const configDir = getConfigDir(configPath);
-    const manifestPath = getManifestPath(configDir);
-
-    if (!existsSync(manifestPath)) {
-      info("No snapshots found.");
-      return;
-    }
-
-    const manifest = loadManifest(configDir);
     const snapshots = getAllSnapshots(configDir);
+    const states = getAllStates(configDir);
 
     if (snapshots.length === 0) {
       info("No snapshots found.");
+      info("Run 'yama dev' or 'yama schema:generate' to create snapshots.");
       return;
     }
 
-    // Sort by creation date (newest first)
-    snapshots.sort((a, b) => {
-      const dateA = new Date(a.metadata.createdAt).getTime();
-      const dateB = new Date(b.metadata.createdAt).getTime();
-      return dateB - dateA;
-    });
-
-    const tableData: unknown[][] = [
-      ["Hash", "Created", "Description", "Parent"],
-    ];
-
-    for (const snapshot of snapshots) {
-      const hash = snapshot.hash.substring(0, 8) + "...";
-      const createdAt = new Date(snapshot.metadata.createdAt).toLocaleString();
-      const description = snapshot.metadata.description || "-";
-      const parent = snapshot.metadata.parent
-        ? snapshot.metadata.parent.substring(0, 8) + "..."
-        : "-";
-
-      tableData.push([hash, createdAt, description, parent]);
+    // Get current snapshots per env
+    const currentByEnv = new Map<string, string>();
+    for (const state of states) {
+      if (state.currentSnapshot) {
+        currentByEnv.set(state.currentSnapshot, state.environment);
+      }
     }
 
-    console.log("\n📸 Schema Snapshots:\n");
+    // Sort by creation date (newest first)
+    snapshots.sort((a, b) => 
+      new Date(b.metadata.createdAt).getTime() - new Date(a.metadata.createdAt).getTime()
+    );
+
+    console.log("");
+    console.log(fmt.bold("Snapshots"));
+    console.log(dim("─".repeat(50)));
+
+    const tableData: unknown[][] = [["Hash", "Created", "Description", "Env"]];
+
+    for (const snapshot of snapshots) {
+      const hash = snapshot.hash.substring(0, 12);
+      const created = new Date(snapshot.metadata.createdAt).toLocaleDateString();
+      const desc = snapshot.metadata.description || "-";
+      const env = currentByEnv.get(snapshot.hash) || "-";
+
+      tableData.push([
+        env !== "-" ? fmt.green(hash) : hash,
+        created,
+        desc.length > 30 ? desc.substring(0, 27) + "..." : desc,
+        env !== "-" ? fmt.cyan(env) : dim(env),
+      ]);
+    }
+
     printTable(tableData);
-    console.log(`\nTotal: ${snapshots.length} snapshot(s)`);
+    console.log("");
+    console.log(dim(`Total: ${snapshots.length} snapshot(s)`));
+
   } catch (err) {
-    error(`Failed to list snapshots: ${err instanceof Error ? err.message : String(err)}`);
+    error(`Failed: ${err instanceof Error ? err.message : String(err)}`);
     process.exit(1);
   }
 }

@@ -4,13 +4,32 @@ import { getConfigDir, readYamaConfig } from "../utils/file-utils.ts";
 import {
   getCurrentSnapshot,
   findReversePath,
-  loadTransition,
+  updateState,
   loadEnvFile,
   resolveEnvVars,
 } from "@betagors/yama-core";
-import { info, error, success, warning } from "../utils/cli-utils.ts";
+import { info, error, success, warning, dim, fmt, createSpinner, formatDuration } from "../utils/cli-utils.ts";
 import { confirm } from "../utils/interactive.ts";
-import { getDatabasePlugin } from "../utils/db-plugin.ts";
+import { getDatabasePluginAndConfig } from "../utils/db-plugin.ts";
+
+/**
+ * Split SQL into statements
+ */
+function splitSQLStatements(sql: string): string[] {
+  const statements: string[] = [];
+  let current = '';
+  for (const line of sql.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('--')) continue;
+    current += (current ? '\n' : '') + line;
+    if (trimmed.endsWith(';')) {
+      if (current.trim()) statements.push(current.trim());
+      current = '';
+    }
+  }
+  if (current.trim()) statements.push(current.trim());
+  return statements;
+}
 
 interface RollbackOptions {
   config?: string;
@@ -23,162 +42,126 @@ export async function rollbackCommand(options: RollbackOptions): Promise<void> {
   const configPath = options.config || findYamaConfig() || "yama.yaml";
 
   if (!existsSync(configPath)) {
-    error(`Config file not found: ${configPath}`);
+    error(`Config not found: ${configPath}`);
     process.exit(1);
   }
 
   try {
     loadEnvFile(configPath, options.env);
-    const config = readYamaConfig(configPath) as any;
-    const resolvedConfig = resolveEnvVars(config) as any;
+    const config = resolveEnvVars(readYamaConfig(configPath)) as any;
     const configDir = getConfigDir(configPath);
 
     // Get current snapshot
     const currentSnapshot = getCurrentSnapshot(configDir, options.env);
     if (!currentSnapshot) {
-      error(`No current snapshot found for environment: ${options.env}`);
+      error(`No snapshot found for ${options.env}.`);
       process.exit(1);
     }
 
-    // Determine target snapshot
-    let targetSnapshot: string;
-    if (options.to) {
-      targetSnapshot = options.to;
-    } else {
-      // Rollback to previous snapshot (would need to track history)
-      error("Target snapshot required. Use --to <snapshot-hash>");
+    // Target
+    if (!options.to) {
+      error("Target required. Use --to <snapshot-hash>");
       process.exit(1);
     }
+
+    const targetSnapshot = options.to;
 
     if (currentSnapshot === targetSnapshot) {
-      info(`Environment '${options.env}' is already at target snapshot.`);
+      info(`${options.env} is already at ${targetSnapshot.substring(0, 8)}.`);
       return;
     }
 
     // Find reverse path
     const path = findReversePath(configDir, currentSnapshot, targetSnapshot);
     if (!path) {
-      error(`No rollback path found from ${currentSnapshot.substring(0, 8)} to ${targetSnapshot.substring(0, 8)}`);
+      error(`No path from ${currentSnapshot.substring(0, 8)} to ${targetSnapshot.substring(0, 8)}.`);
       process.exit(1);
     }
 
-    // Show rollback plan
-    console.log("\n⏪ Rollback Plan\n");
-    console.log(`Environment: ${options.env}`);
-    console.log(`Current: ${currentSnapshot.substring(0, 8)}...`);
-    console.log(`Target: ${targetSnapshot.substring(0, 8)}...`);
-    console.log(`Transitions: ${path.transitions.length}`);
+    // Show plan
+    console.log("");
+    console.log(fmt.bold(`Rollback ${options.env}`));
+    console.log(dim("─".repeat(35)));
+    console.log(`Current: ${fmt.cyan(currentSnapshot.substring(0, 8))}`);
+    console.log(`Target:  ${targetSnapshot.substring(0, 8)}`);
+    console.log(`Steps:   ${path.transitions.length}`);
+    console.log("");
 
+    // Emergency mode warning
     if (options.emergency) {
-      warning("\n🚨 EMERGENCY ROLLBACK MODE");
-      warning("This will:");
-      warning("  1. Stop all writes to database");
-      warning("  2. Restore from snapshot");
-      warning("  3. Replay audit log (if available)");
-      warning("  4. Resume normal operation");
-      
-      const confirmed = await confirm("Type 'EMERGENCY' to confirm:", false);
-      if (!confirmed) {
-        info("Rollback cancelled.");
-        return;
-      }
-    } else {
-      const confirmed = await confirm("Continue with rollback?", false);
-      if (!confirmed) {
-        info("Rollback cancelled.");
-        return;
-      }
+      warning("EMERGENCY ROLLBACK MODE");
+      warning("This will rollback immediately without additional checks.");
+      console.log("");
     }
 
-    // Rollback
-    info("\nRolling back...");
-    
-    if (!resolvedConfig.database) {
-      error("No database configuration found in yama.yaml");
-      process.exit(1);
+    // Confirm
+    const message = options.emergency ? "Type 'ROLLBACK' to confirm:" : "Proceed with rollback?";
+    const confirmed = await confirm(message, false);
+    if (!confirmed) {
+      info("Cancelled.");
+      return;
     }
 
-    const dbPlugin = await getDatabasePlugin(resolvedConfig.plugins, configPath);
-    await dbPlugin.client.initDatabase(resolvedConfig.database);
+    // Execute rollback
+    const spinner = createSpinner("Rolling back...");
+    const startTime = Date.now();
+
+    const { plugin: dbPlugin, dbConfig } = await getDatabasePluginAndConfig(config, configPath);
+    await dbPlugin.client.initDatabase(dbConfig);
     const sql = dbPlugin.client.getSQL();
 
     try {
-      // Ensure migration tables exist
-      await sql.unsafe(dbPlugin.migrations.getMigrationTableSQL());
-      
-      // Apply rollback transitions in reverse order
+      // Apply transitions in reverse
       const reversedTransitions = [...path.transitions].reverse();
-      
+
       for (const transition of reversedTransitions) {
-        info(`Rolling back transition ${transition.hash.substring(0, 8)}...`);
-        
-        // Generate rollback SQL (reverse the steps)
-        const rollbackSteps = transition.steps.map(step => {
-          // Reverse each step
+        // Generate reverse steps
+        const rollbackSteps = transition.steps.map((step: any) => {
           switch (step.type) {
             case "add_table":
-              return { type: "drop_table" as const, table: step.table };
-            case "drop_table":
-              // Can't fully reverse drop_table without original definition
-              return null;
+              return { type: "drop_table", table: step.table };
             case "add_column":
-              return { type: "drop_column" as const, table: step.table, column: step.column.name };
-            case "drop_column":
-              // Can't fully reverse drop_column without original definition
-              return null;
+              return { type: "drop_column", table: step.table, column: step.column.name };
             case "add_index":
-              return { type: "drop_index" as const, table: step.table, index: step.index.name };
-            case "drop_index":
-              // Can't fully reverse drop_index without original definition
-              return null;
+              return { type: "drop_index", table: step.table, index: step.index.name };
             case "add_foreign_key":
-              return { type: "drop_foreign_key" as const, table: step.table, foreignKey: step.foreignKey.name };
-            case "drop_foreign_key":
-              // Can't fully reverse drop_foreign_key without original definition
-              return null;
-            case "modify_column":
-              // Can't fully reverse modify_column without original state
-              return null;
+              return { type: "drop_foreign_key", table: step.table, foreignKey: step.foreignKey.name };
             default:
-              return null;
+              return null; // Can't auto-reverse drop/modify
           }
-        }).filter((step): step is any => step !== null);
-        
+        }).filter((s: any) => s !== null);
+
         if (rollbackSteps.length > 0) {
           const rollbackSQL = dbPlugin.migrations.generateFromSteps(rollbackSteps);
           
           if (rollbackSQL.trim()) {
             await sql.begin(async (tx: any) => {
-              await tx.unsafe(rollbackSQL);
+              const statements = splitSQLStatements(rollbackSQL);
+              for (const stmt of statements) {
+                if (stmt.trim()) await tx.unsafe(stmt);
+              }
             });
           }
         }
       }
-      
+
       // Update state
-      const { updateState } = await import("@betagors/yama-core");
       updateState(configDir, options.env, targetSnapshot);
-      
-      success(`\n✅ Rollback successful!`);
-      success(`Environment '${options.env}' is now at: ${targetSnapshot.substring(0, 8)}...`);
+
+      const duration = Date.now() - startTime;
+      spinner.succeed(`Rolled back in ${formatDuration(duration)}`);
+      console.log("");
+      success(`${options.env} → ${targetSnapshot.substring(0, 8)}`);
+
+    } catch (err) {
+      spinner.fail("Rollback failed");
+      error(`${err instanceof Error ? err.message : String(err)}`);
+      process.exit(1);
     } finally {
       dbPlugin.client.closeDatabase();
     }
   } catch (err) {
-    error(`Failed to rollback: ${err instanceof Error ? err.message : String(err)}`);
+    error(`Rollback failed: ${err instanceof Error ? err.message : String(err)}`);
     process.exit(1);
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-

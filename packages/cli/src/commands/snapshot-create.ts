@@ -11,7 +11,7 @@ import {
   loadEnvFile,
   entitiesToModel,
 } from "@betagors/yama-core";
-import { info, error, success } from "../utils/cli-utils.ts";
+import { info, error, success, dim, fmt } from "../utils/cli-utils.ts";
 import { confirm } from "../utils/interactive.ts";
 
 interface SnapshotCreateOptions {
@@ -24,7 +24,7 @@ export async function snapshotCreateCommand(options: SnapshotCreateOptions): Pro
   const configPath = options.config || findYamaConfig() || "yama.yaml";
 
   if (!existsSync(configPath)) {
-    error(`Config file not found: ${configPath}`);
+    error(`Config not found: ${configPath}`);
     process.exit(1);
   }
 
@@ -32,56 +32,85 @@ export async function snapshotCreateCommand(options: SnapshotCreateOptions): Pro
     const environment = options.env || process.env.NODE_ENV || "development";
     loadEnvFile(configPath, environment);
     
-    const config = readYamaConfig(configPath) as any;
-    const resolvedConfig = resolveEnvVars(config) as any;
+    const config = resolveEnvVars(readYamaConfig(configPath)) as any;
     const configDir = getConfigDir(configPath);
 
-    if (!resolvedConfig.entities) {
-      error("No entities found in yama.yaml");
+    // Extract entities from schemas
+    const entities = extractEntitiesFromSchemas(config.schemas);
+    if (!entities || Object.keys(entities).length === 0) {
+      error("No entities found. Add schemas with 'database:' property.");
       process.exit(1);
     }
+
+    const normalizedEntities = normalizeEntities(entities);
 
     // Get current snapshot
     const currentSnapshotHash = getCurrentSnapshot(configDir, environment);
 
-    // Create snapshot from current entities
+    // Create snapshot
     const newSnapshot = createSnapshot(
-      resolvedConfig.entities,
+      normalizedEntities,
       {
         createdAt: new Date().toISOString(),
-        createdBy: process.env.USER || "system",
+        createdBy: process.env.USER || "yama",
         description: options.description || "Manual snapshot",
       },
       currentSnapshotHash || undefined
     );
 
-    // Check if snapshot already exists
+    // Check if exists
     if (snapshotExists(configDir, newSnapshot.hash)) {
-      info(`Snapshot already exists: ${newSnapshot.hash.substring(0, 8)}...`);
-      info("No changes detected in schema.");
+      info(`Snapshot ${newSnapshot.hash.substring(0, 8)} already exists.`);
+      info("No schema changes detected.");
       return;
     }
 
-    // Confirm creation
-    const confirmed = await confirm(
-      `Create snapshot ${newSnapshot.hash.substring(0, 8)}...?`,
-      true
-    );
+    // Show what will be created
+    console.log("");
+    console.log(fmt.bold("Create Snapshot"));
+    console.log(dim("─".repeat(35)));
+    console.log(`Hash:   ${fmt.cyan(newSnapshot.hash.substring(0, 12))}`);
+    console.log(`Parent: ${currentSnapshotHash ? currentSnapshotHash.substring(0, 12) : dim("none")}`);
+    console.log(`Env:    ${environment}`);
+    console.log("");
 
+    const confirmed = await confirm("Create snapshot?", true);
     if (!confirmed) {
-      info("Snapshot creation cancelled.");
+      info("Cancelled.");
       return;
     }
 
-    // Save snapshot
+    // Save
     saveSnapshot(configDir, newSnapshot);
-    success(`Snapshot created: ${newSnapshot.hash.substring(0, 8)}...`);
-
-    // Update state
     updateState(configDir, environment, newSnapshot.hash);
-    info(`Environment '${environment}' updated to snapshot ${newSnapshot.hash.substring(0, 8)}...`);
+
+    success(`Created: ${newSnapshot.hash.substring(0, 12)}`);
+
   } catch (err) {
-    error(`Failed to create snapshot: ${err instanceof Error ? err.message : String(err)}`);
+    error(`Failed: ${err instanceof Error ? err.message : String(err)}`);
     process.exit(1);
   }
+}
+
+// Helper functions
+function extractEntitiesFromSchemas(schemas: any): any {
+  const entities: any = {};
+  if (!schemas) return entities;
+  for (const [name, def] of Object.entries(schemas)) {
+    if (def && typeof def === 'object' && 'database' in (def as any)) {
+      entities[name] = def;
+    }
+  }
+  return entities;
+}
+
+function normalizeEntities(entities: any): any {
+  const normalized: any = {};
+  for (const [name, def] of Object.entries(entities)) {
+    const d = def as any;
+    const dbConfig = typeof d.database === "string" ? { table: d.database } : d.database;
+    const tableName = dbConfig?.table || d.table || name.toLowerCase();
+    normalized[name] = { ...d, table: tableName, database: dbConfig || { table: tableName } };
+  }
+  return normalized;
 }

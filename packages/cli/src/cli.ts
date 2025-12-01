@@ -13,18 +13,11 @@ import { schemaCheckCommand } from "./commands/schema-check.ts";
 import { schemaGenerateCommand } from "./commands/schema-generate.ts";
 import { schemaApplyCommand } from "./commands/schema-apply.ts";
 import { schemaStatusCommand } from "./commands/schema-status.ts";
-import { schemaWatchCommand } from "./commands/schema-watch.ts";
 import { schemaHistoryCommand } from "./commands/schema-history.ts";
-import { schemaScaffoldCommand } from "./commands/schema-scaffold.ts";
-import { schemaFixCommand } from "./commands/schema-fix.ts";
-import { schemaEnvCommand } from "./commands/schema-env.ts";
-import { schemaTrashCommand } from "./commands/schema-trash.ts";
 import { schemaRestoreCommand } from "./commands/schema-restore.ts";
-import { schemaRollbackCommand } from "./commands/schema-rollback.ts";
 import { pluginListCommand, pluginInstallCommand, pluginValidateCommand } from "./commands/plugin.ts";
 import { pluginMigrateCommand } from "./commands/plugin-migrate.ts";
 import { pluginRollbackCommand } from "./commands/plugin-rollback.ts";
-import { migrationCreateCommand } from "./commands/migration-create.ts";
 import { pluginStatusCommand } from "./commands/plugin-status.ts";
 import { pluginHealthCommand } from "./commands/plugin-health.ts";
 import { pluginSearchCommand } from "./commands/plugin-search.ts";
@@ -55,682 +48,514 @@ const program = new Command();
 
 program
   .name("yama")
-  .description("Yama CLI - API framework toolkit")
-  .version("0.0.1");
+  .description("Yama - Backend as Config")
+  .version("0.1.0");
 
-// Project creation
+// ============================================================================
+// CORE COMMANDS
+// ============================================================================
+
 program
   .command("create")
   .alias("new")
-  .description("Create a new Yama project (like Next.js)")
-  .argument("[project-name]", "Project name or '.' for current directory")
-  .option("--database <database>", "Database type (postgresql, none)")
-  .option("-y, --yes", "Use default options (non-interactive mode)")
-  .action(async (projectName, options) => {
-    await createCommand(projectName, options);
-  });
+  .description("Create a new Yama project")
+  .argument("[name]", "Project name or '.' for current directory")
+  .option("--database <type>", "Database (postgresql, none)")
+  .option("-y, --yes", "Use defaults")
+  .action(createCommand);
 
-// Development
 program
   .command("dev")
-  .description("Start development server with watch mode")
-  .option("-p, --port <port>", "Server port", "4000")
+  .description("Start dev server with hot reload")
+  .option("-p, --port <port>", "Port", "4000")
   .option("--no-watch", "Disable watch mode")
-  .option("--config <path>", "Path to yama.yaml", "yama.yaml")
-  .option("--generate", "Auto-generate SDK and types on startup and changes")
-  .option("--env <env>", "Environment (development, production, staging, etc.)", "development")
+  .option("-c, --config <path>", "Config path", "yama.yaml")
+  .option("--env <env>", "Environment", "development")
   .action(devCommand);
 
-// Generation
 program
   .command("generate")
   .alias("gen")
   .description("Generate SDK and types")
-  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
-  .option("-o, --output <path>", "Output path for generated files")
-  .option("--watch", "Watch mode - regenerate on changes")
-  .option("--types-only", "Generate types only")
-  .option("--sdk-only", "Generate SDK only")
-  .option("--framework <framework>", "Framework type (nextjs, react, node)")
-  .option("--no-cache", "Disable caching")
+  .option("-c, --config <path>", "Config path", "yama.yaml")
+  .option("-o, --output <path>", "Output path")
+  .option("--types-only", "Types only")
+  .option("--sdk-only", "SDK only")
   .action(generateCommand);
 
-program
-  .command("types")
-  .description("Generate TypeScript types only")
-  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
-  .option("-o, --output <path>", "Output path for types")
-  .action(async (options) => {
-    await generateCommand({ ...options, typesOnly: true });
-  });
+// ============================================================================
+// SCHEMA & MIGRATIONS (Snapshot/Transition based)
+// ============================================================================
 
 program
-  .command("sdk")
-  .description("Generate SDK only")
-  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
-  .option("-o, --output <path>", "Output path for SDK")
-  .option("--framework <framework>", "Framework type (nextjs, react, node)")
-  .action(async (options) => {
-    await generateCommand({ ...options, sdkOnly: true });
-  });
+  .command("status")
+  .description("Show schema status")
+  .option("-c, --config <path>", "Config path", "yama.yaml")
+  .option("--env <env>", "Environment", "development")
+  .option("--short", "Short output")
+  .action(schemaStatusCommand);
 
-// Validation & inspection
+program
+  .command("history")
+  .description("Show migration history")
+  .option("-c, --config <path>", "Config path", "yama.yaml")
+  .option("--env <env>", "Environment", "development")
+  .option("--graph", "Show graph view")
+  .action(schemaHistoryCommand);
+
+program
+  .command("deploy")
+  .description("Deploy schema to environment")
+  .option("-c, --config <path>", "Config path", "yama.yaml")
+  .requiredOption("--env <env>", "Target environment")
+  .option("--plan", "Show plan only")
+  .option("--dry-run", "Dry run")
+  .option("--auto-rollback", "Auto rollback on failure")
+  .action(deployCommand);
+
+program
+  .command("rollback")
+  .description("Rollback schema changes")
+  .option("-c, --config <path>", "Config path", "yama.yaml")
+  .requiredOption("--env <env>", "Environment")
+  .option("--to <hash>", "Target snapshot")
+  .option("--emergency", "Emergency mode")
+  .action(rollbackCommand);
+
+program
+  .command("resolve")
+  .description("Resolve schema merge conflicts")
+  .option("-c, --config <path>", "Config path", "yama.yaml")
+  .option("--base <hash>", "Base snapshot")
+  .option("--local <hash>", "Local snapshot")
+  .option("--remote <hash>", "Remote snapshot")
+  .action(resolveCommand);
+
+// Snapshot subcommands
+const snapshotCmd = program.command("snapshot").description("Manage snapshots");
+
+snapshotCmd
+  .command("list")
+  .description("List snapshots")
+  .option("-c, --config <path>", "Config path", "yama.yaml")
+  .action(snapshotListCommand);
+
+snapshotCmd
+  .command("create")
+  .description("Create snapshot")
+  .option("-c, --config <path>", "Config path", "yama.yaml")
+  .option("-d, --description <desc>", "Description")
+  .option("--env <env>", "Environment", "development")
+  .action(snapshotCreateCommand);
+
+// Transition subcommands
+const transitionCmd = program.command("transition").description("Manage transitions");
+
+transitionCmd
+  .command("create")
+  .description("Create transition")
+  .option("-c, --config <path>", "Config path", "yama.yaml")
+  .option("--from <hash>", "From snapshot")
+  .option("--to <hash>", "To snapshot")
+  .option("-d, --description <desc>", "Description")
+  .action(transitionCreateCommand);
+
+// Legacy migration aliases (pointing to new system)
+program
+  .command("migration:generate")
+  .description("Generate migration (alias for schema changes)")
+  .option("-c, --config <path>", "Config path", "yama.yaml")
+  .option("-n, --name <name>", "Migration name")
+  .option("--preview", "Preview only")
+  .action(schemaGenerateCommand);
+
+program
+  .command("migration:apply")
+  .description("Apply migrations (alias for deploy)")
+  .option("-c, --config <path>", "Config path", "yama.yaml")
+  .option("--env <env>", "Environment", "development")
+  .option("--no-apply", "Preview only")
+  .option("--allow-destructive", "Allow destructive")
+  .action(schemaApplyCommand);
+
+program
+  .command("migration:status")
+  .description("Migration status (alias for status)")
+  .option("-c, --config <path>", "Config path", "yama.yaml")
+  .option("--env <env>", "Environment", "development")
+  .option("--short", "Short output")
+  .action(schemaStatusCommand);
+
+program
+  .command("migration:check")
+  .description("Check schema sync")
+  .option("-c, --config <path>", "Config path", "yama.yaml")
+  .option("--env <env>", "Environment", "development")
+  .option("--diff", "Show diff")
+  .option("--ci", "CI mode")
+  .action(schemaCheckCommand);
+
+program
+  .command("migration:history")
+  .description("Migration history (alias for history)")
+  .option("-c, --config <path>", "Config path", "yama.yaml")
+  .option("--env <env>", "Environment", "development")
+  .option("--graph", "Graph view")
+  .action(schemaHistoryCommand);
+
+// ============================================================================
+// SAFETY & RECOVERY
+// ============================================================================
+
+const shadowsCmd = program.command("shadows").description("Shadow columns");
+
+shadowsCmd
+  .command("list")
+  .description("List shadow columns")
+  .option("-c, --config <path>", "Config path", "yama.yaml")
+  .option("--table <table>", "Filter by table")
+  .option("--expired", "Show expired only")
+  .action(shadowsListCommand);
+
+shadowsCmd
+  .command("restore")
+  .description("Restore shadow column")
+  .option("-c, --config <path>", "Config path", "yama.yaml")
+  .requiredOption("--table <table>", "Table")
+  .requiredOption("--column <col>", "Column")
+  .action(shadowsRestoreCommand);
+
+shadowsCmd
+  .command("cleanup")
+  .description("Cleanup expired shadows")
+  .option("-c, --config <path>", "Config path", "yama.yaml")
+  .option("--expired", "Expired only")
+  .action(shadowsCleanupCommand);
+
+const backupsCmd = program.command("backups").description("Database backups");
+
+backupsCmd
+  .command("list")
+  .description("List backups")
+  .option("-c, --config <path>", "Config path", "yama.yaml")
+  .option("--snapshot <hash>", "Filter by snapshot")
+  .action(backupsListCommand);
+
+backupsCmd
+  .command("status")
+  .description("Backup status")
+  .option("-c, --config <path>", "Config path", "yama.yaml")
+  .action(backupsStatusCommand);
+
+backupsCmd
+  .command("cleanup")
+  .description("Cleanup old backups")
+  .option("-c, --config <path>", "Config path", "yama.yaml")
+  .option("--older-than <days>", "Older than N days")
+  .action(backupsCleanupCommand);
+
+program
+  .command("schema:restore")
+  .description("Restore from data snapshot")
+  .option("-c, --config <path>", "Config path", "yama.yaml")
+  .option("--list", "List snapshots")
+  .option("--snapshot <name>", "Snapshot name")
+  .option("--table <table>", "Table")
+  .action(schemaRestoreCommand);
+
+// ============================================================================
+// VALIDATION & INSPECTION
+// ============================================================================
+
 program
   .command("validate")
-  .description("Validate yama.yaml configuration")
-  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
-  .option("--strict", "Enable strict validation")
+  .description("Validate configuration")
+  .option("-c, --config <path>", "Config path", "yama.yaml")
+  .option("--strict", "Strict mode")
   .action(validateCommand);
 
 program
   .command("config")
-  .description("Show current configuration")
-  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
+  .description("Show configuration")
+  .option("-c, --config <path>", "Config path", "yama.yaml")
   .action(configCommand);
 
 program
   .command("endpoints")
-  .description("List all endpoints")
-  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
+  .description("List endpoints")
+  .option("-c, --config <path>", "Config path", "yama.yaml")
   .action(endpointsCommand);
 
 program
   .command("schemas")
-  .description("List all schemas")
-  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
+  .description("List schemas")
+  .option("-c, --config <path>", "Config path", "yama.yaml")
   .action(schemasCommand);
 
-// Add commands
+program
+  .command("docs")
+  .description("Generate API docs")
+  .option("-c, --config <path>", "Config path", "yama.yaml")
+  .option("-f, --format <fmt>", "Format (openapi, json, yaml, html, md)", "openapi")
+  .option("-o, --output <path>", "Output path")
+  .action(docsCommand);
+
+// ============================================================================
+// DATABASE INSPECTION
+// ============================================================================
+
+const dbCmd = program.command("db").description("Database tools");
+
+dbCmd
+  .command("list")
+  .description("List tables")
+  .option("-c, --config <path>", "Config path", "yama.yaml")
+  .option("--env <env>", "Environment", "development")
+  .action(dbListCommand);
+
+dbCmd
+  .command("inspect")
+  .description("Inspect table")
+  .argument("<table>", "Table name")
+  .option("-c, --config <path>", "Config path", "yama.yaml")
+  .option("--env <env>", "Environment", "development")
+  .action(dbInspectCommand);
+
+// ============================================================================
+// ADD COMMANDS
+// ============================================================================
+
 program
   .command("add")
-  .description("Add endpoint, schema, or entity to yama.yaml")
-  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
-  .option("-t, --type <type>", "Type to add (endpoint, schema, entity)")
+  .description("Add endpoint, schema, or entity")
+  .option("-c, --config <path>", "Config path", "yama.yaml")
+  .option("-t, --type <type>", "Type (endpoint, schema, entity)")
   .action(addCommand);
 
 program
   .command("add:endpoint")
   .alias("add-endpoint")
-  .description("Add a new endpoint")
-  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
-  .action(async (options) => {
-    await addEndpointCommand(options);
-  });
+  .description("Add endpoint")
+  .option("-c, --config <path>", "Config path", "yama.yaml")
+  .action(addEndpointCommand);
 
 program
   .command("add:schema")
   .alias("add-schema")
-  .description("Add a new schema")
-  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
-  .action(async (options) => {
-    await addSchemaCommand(options);
-  });
+  .description("Add schema")
+  .option("-c, --config <path>", "Config path", "yama.yaml")
+  .action(addSchemaCommand);
 
 program
   .command("add:entity")
   .alias("add-entity")
-  .description("Add a new entity")
-  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
-  .action(async (options) => {
-    await addEntityCommand(options);
-  });
+  .description("Add entity")
+  .option("-c, --config <path>", "Config path", "yama.yaml")
+  .action(addEntityCommand);
 
 program
   .command("add:handler")
   .alias("add-handler")
-  .description("Add a new handler")
-  .requiredOption("-n, --name <name>", "Handler name (required)")
-  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
-  .option("-f, --force", "Override existing handler file")
-  .action(async (options) => {
-    await addHandlerCommand(options);
-  });
+  .description("Add handler")
+  .requiredOption("-n, --name <name>", "Handler name")
+  .option("-c, --config <path>", "Config path", "yama.yaml")
+  .option("-f, --force", "Overwrite")
+  .action(addHandlerCommand);
 
 program
   .command("add:plugin")
   .alias("add-plugin")
-  .description("Add a plugin to yama.yaml and install it")
-  .requiredOption("-n, --name <name>", "Plugin package name (required)")
-  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
-  .option("--config-only", "Only add to yama.yaml, don't install package")
-  .action(async (options) => {
-    await addPluginCommand(options);
-  });
+  .description("Add plugin")
+  .requiredOption("-n, --name <name>", "Plugin name")
+  .option("-c, --config <path>", "Config path", "yama.yaml")
+  .option("--config-only", "Config only")
+  .action(addPluginCommand);
 
 program
   .command("remove:plugin")
   .alias("remove-plugin")
-  .description("Remove a plugin from yama.yaml and uninstall it")
-  .requiredOption("-n, --name <name>", "Plugin package name (required)")
-  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
-  .option("--keep-package", "Keep the npm package, only remove from yama.yaml")
-  .action(async (options) => {
-    await removePluginCommand(options);
-  });
+  .description("Remove plugin")
+  .requiredOption("-n, --name <name>", "Plugin name")
+  .option("-c, --config <path>", "Config path", "yama.yaml")
+  .option("--keep-package", "Keep package")
+  .action(removePluginCommand);
 
 program
   .command("sync:plugins")
   .alias("sync-plugins")
-  .description("Sync plugins: install plugins from yama.yaml that aren't installed")
-  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
-  .option("--remove", "Also remove plugins from package.json that aren't in yama.yaml")
-  .action(async (options) => {
-    await syncPluginsCommand(options);
-  });
+  .description("Sync plugins")
+  .option("-c, --config <path>", "Config path", "yama.yaml")
+  .option("--remove", "Remove extras")
+  .action(syncPluginsCommand);
 
-program
-  .command("docs")
-  .description("Generate API documentation")
-  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
-  .option("-f, --format <format>", "Output format (openapi, json, yaml, swagger-ui, html, markdown, md)", "openapi")
-  .option("-o, --output <path>", "Output path for generated documentation")
-  .action(docsCommand);
+// ============================================================================
+// PLUGIN MANAGEMENT
+// ============================================================================
 
-// Schema management
-program
-  .command("migration:check")
-  .description("Check if migration is in sync with database")
-  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
-  .option("--diff", "Show detailed diff")
-  .option("--ci", "CI mode: minimal output, exit code only")
-  .option("--env <env>", "Environment (local, staging, prod)", "local")
-  .action(schemaCheckCommand);
+const pluginCmd = program.command("plugin").description("Plugin management");
 
-program
-  .command("migration:generate")
-  .description("Generate migration from entity changes")
-  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
-  .option("-n, --name <name>", "Migration name")
-  .option("--preview", "Preview changes without generating files")
-  .option("--interactive", "Interactive mode")
-  .action(schemaGenerateCommand);
+pluginCmd.command("list").description("List plugins").action(pluginListCommand);
+pluginCmd.command("install").description("Install plugin").argument("<pkg>", "Package").action((pkg) => pluginInstallCommand({ package: pkg }));
+pluginCmd.command("validate").description("Validate plugins").action(pluginValidateCommand);
 
-program
-  .command("migration:apply")
-  .description("Apply pending migrations")
-  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
-  .option("--env <env>", "Environment (local, staging, prod)", "local")
-  .option("--no-apply", "Generate files only, don't apply")
-  .option("--interactive", "Prompt before each migration")
-  .option("--allow-destructive", "Allow destructive operations")
-  .action(schemaApplyCommand);
-
-program
-  .command("migration:status")
-  .description("Check migration status")
-  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
-  .option("--short", "Short output format")
-  .option("--env <env>", "Environment (local, staging, prod)", "local")
-  .action(schemaStatusCommand);
-
-program
-  .command("migration:watch")
-  .description("Watch for entity changes and auto-check")
-  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
-  .action(schemaWatchCommand);
-
-program
-  .command("migration:history")
-  .description("Show migration history")
-  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
-  .option("--graph", "Show timeline graph")
-  .option("--env <env>", "Environment (local, staging, prod)", "local")
-  .action(schemaHistoryCommand);
-
-program
-  .command("migration:rollback")
-  .description("Rollback applied migrations")
-  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
-  .option("--steps <number>", "Number of migrations to rollback (default: 1)")
-  .option("--to <migration>", "Rollback to a specific migration name")
-  .option("--dry-run", "Show what would be rolled back without executing")
-  .option("--env <env>", "Environment (local, staging, prod)", "local")
-  .option("--force", "Skip confirmation prompts and safety checks (use with extreme caution)")
-  .option("--skip-confirm", "Skip confirmation prompts")
-  .action(async (options) => {
-    await schemaRollbackCommand(options);
-  });
-
-program
-  .command("schema:scaffold")
-  .description("Scaffold schema changes")
-  .argument("<action>", "Action: add-table or add-column")
-  .argument("[args...]", "Arguments for the action")
-  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
-  .action(async (action, args, options) => {
-    await schemaScaffoldCommand(action, args, options);
-  });
-
-program
-  .command("schema:fix")
-  .description("Fix schema issues")
-  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
-  .option("--action <action>", "Fix action (drift, validate-migrations)", "drift")
-  .action(schemaFixCommand);
-
-program
-  .command("schema:env")
-  .description("Manage environments")
-  .argument("[action]", "Action: list or set")
-  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
-  .option("--env <env>", "Environment name (for set action)")
-  .action(async (action, options) => {
-    await schemaEnvCommand(action, options);
-  });
-
-program
-  .command("schema:trash")
-  .description("Manage trash/recycle bin for migrations")
-  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
-  .option("--list", "List trash entries")
-  .option("--restore <id>", "Restore entry from trash")
-  .option("--delete <id>", "Permanently delete entry")
-  .option("--cleanup", "Clean up expired entries")
-  .option("--dry-run", "Dry run for cleanup")
-  .action(schemaTrashCommand);
-
-program
-  .command("schema:restore")
-  .description("Restore data from snapshots")
-  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
-  .option("--list", "List available snapshots")
-  .option("--snapshot <name>", "Snapshot table name")
-  .option("--table <table>", "Target table name")
-  .action(schemaRestoreCommand);
-
-program
-  .command("migration:create")
-  .alias("migrate:create")
-  .description("Create a new custom migration file")
-  .option("-n, --name <name>", "Migration name")
-  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
-  .option("--type <type>", "Migration type (schema, data, custom)", "schema")
-  .option("--template <template>", "Template to use (empty, table, column, index)", "empty")
-  .action(async (options) => {
-    await migrationCreateCommand(options);
-  });
-
-// Service plugins
-const pluginCommand = program
-  .command("plugin")
-  .description("Manage service plugins");
-
-pluginCommand
-  .command("list")
-  .description("List installed service plugins")
-  .action(pluginListCommand);
-
-pluginCommand
-  .command("install")
-  .description("Install a service plugin")
-  .argument("<package>", "Package name to install")
-  .action(async (packageName) => {
-    await pluginInstallCommand({ package: packageName });
-  });
-
-pluginCommand
-  .command("validate")
-  .description("Validate all installed service plugins")
-  .action(pluginValidateCommand);
-
-pluginCommand
+pluginCmd
   .command("migrate")
-  .description("Run pending plugin migrations")
-  .option("--plugin <name>", "Migrate specific plugin only")
-  .option("--all", "Migrate all plugins")
-  .option("--dry-run", "Show what would be migrated without executing")
-  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
-  .option("--env <env>", "Environment (development, production, etc.)", "development")
-  .option("--force", "Skip confirmation prompts (use with caution)")
-  .option("--skip-confirm", "Skip confirmation prompts")
-  .option("--interactive", "Prompt before applying each plugin's migrations")
-  .action(async (options) => {
-    await pluginMigrateCommand(options);
-  });
+  .description("Run plugin migrations")
+  .option("--plugin <name>", "Plugin name")
+  .option("--all", "All plugins")
+  .option("--dry-run", "Dry run")
+  .option("-c, --config <path>", "Config path", "yama.yaml")
+  .option("--env <env>", "Environment", "development")
+  .action(pluginMigrateCommand);
 
-pluginCommand
+pluginCmd
   .command("rollback")
-  .description("Rollback plugin migrations")
-  .argument("[plugin]", "Plugin name to rollback")
-  .option("--to-version <version>", "Target version to rollback to")
-  .option("--steps <number>", "Number of migrations to rollback")
-  .option("--dry-run", "Show what would be rolled back without executing")
-  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
-  .option("--env <env>", "Environment (development, production, etc.)", "development")
-  .option("--force", "Skip confirmation prompts and safety checks (use with extreme caution)")
-  .option("--skip-confirm", "Skip confirmation prompts")
-  .action(async (pluginName, options) => {
-    if (!pluginName) {
-      console.error("Error: Plugin name is required");
-      console.error("Usage: yama plugin rollback <plugin> [--to-version <version> | --steps <number>]");
+  .description("Rollback plugin")
+  .argument("[plugin]", "Plugin")
+  .option("--to-version <ver>", "Version")
+  .option("--steps <n>", "Steps")
+  .option("--dry-run", "Dry run")
+  .option("-c, --config <path>", "Config path", "yama.yaml")
+  .option("--env <env>", "Environment", "development")
+  .action((plugin, opts) => {
+    if (!plugin) {
+      console.error("Plugin name required");
       process.exit(1);
     }
-    if (!options.toVersion && !options.steps) {
-      console.error("Error: Either --to-version or --steps must be specified");
+    if (!opts.toVersion && !opts.steps) {
+      console.error("--to-version or --steps required");
       process.exit(1);
     }
-    // Parse steps as number if provided
-    if (options.steps) {
-      options.steps = parseInt(options.steps as string, 10);
-      if (isNaN(options.steps)) {
-        console.error("Error: --steps must be a valid number");
-        process.exit(1);
-      }
-    }
-    await pluginRollbackCommand(pluginName, options);
+    if (opts.steps) opts.steps = parseInt(opts.steps, 10);
+    pluginRollbackCommand(plugin, opts);
   });
 
-pluginCommand
+pluginCmd
   .command("status")
-  .description("Show plugin migration status")
-  .option("--plugin <name>", "Show status for specific plugin only")
-  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
-  .option("--env <env>", "Environment (development, production, etc.)", "development")
-  .action(async (options) => {
-    await pluginStatusCommand(options);
-  });
+  .description("Plugin status")
+  .option("--plugin <name>", "Plugin")
+  .option("-c, --config <path>", "Config path", "yama.yaml")
+  .option("--env <env>", "Environment", "development")
+  .action(pluginStatusCommand);
 
-pluginCommand
+pluginCmd
   .command("health")
-  .description("Check plugin health status")
-  .option("--plugin <name>", "Check health for specific plugin only")
-  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
-  .option("--env <env>", "Environment (development, production, etc.)", "development")
-  .action(async (options) => {
-    await pluginHealthCommand(options);
-  });
+  .description("Plugin health")
+  .option("--plugin <name>", "Plugin")
+  .option("-c, --config <path>", "Config path", "yama.yaml")
+  .option("--env <env>", "Environment", "development")
+  .action(pluginHealthCommand);
 
-pluginCommand
+pluginCmd
   .command("search")
-  .description("Search for plugins on npm")
-  .argument("<query>", "Search query")
-  .option("--category <category>", "Filter by category")
-  .option("--limit <number>", "Limit number of results", "20")
-  .action(async (query, options) => {
-    await pluginSearchCommand({ query, ...options });
-  });
+  .description("Search plugins")
+  .argument("<query>", "Query")
+  .option("--category <cat>", "Category")
+  .option("--limit <n>", "Limit", "20")
+  .action((query, opts) => pluginSearchCommand({ query, ...opts }));
 
-pluginCommand
+pluginCmd
   .command("info")
-  .description("Show detailed plugin information")
-  .argument("<package>", "Package name")
-  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
-  .action(async (packageName, options) => {
-    await pluginInfoCommand({ package: packageName, ...options });
-  });
+  .description("Plugin info")
+  .argument("<pkg>", "Package")
+  .option("-c, --config <path>", "Config path", "yama.yaml")
+  .action((pkg, opts) => pluginInfoCommand({ package: pkg, ...opts }));
 
-pluginCommand
+pluginCmd
   .command("docs")
-  .description("Generate plugin documentation")
-  .argument("<package>", "Package name")
-  .option("--format <format>", "Output format (markdown, html)", "markdown")
-  .option("-o, --output <path>", "Output file path (default: stdout)")
-  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
-  .action(async (packageName, options) => {
-    await pluginDocsCommand({ package: packageName, ...options });
-  });
+  .description("Plugin docs")
+  .argument("<pkg>", "Package")
+  .option("--format <fmt>", "Format (markdown, html)", "markdown")
+  .option("-o, --output <path>", "Output")
+  .option("-c, --config <path>", "Config path", "yama.yaml")
+  .action((pkg, opts) => pluginDocsCommand({ package: pkg, ...opts }));
 
-pluginCommand
+pluginCmd
   .command("metrics")
-  .description("Show plugin performance metrics")
-  .option("--plugin <name>", "Show metrics for specific plugin only")
-  .option("--reset", "Clear all metrics")
-  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
-  .option("--env <env>", "Environment (development, production, etc.)", "development")
-  .option("--format <format>", "Output format (table, prometheus, json)", "table")
-  .action(async (options) => {
-    await pluginMetricsCommand(options);
-  });
-
-// Database inspection
-const dbCommand = program
-  .command("db")
-  .description("Database inspection and management");
-
-dbCommand
-  .command("list")
-  .description("List all database tables with row counts")
-  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
+  .description("Plugin metrics")
+  .option("--plugin <name>", "Plugin")
+  .option("--reset", "Reset")
+  .option("-c, --config <path>", "Config path", "yama.yaml")
   .option("--env <env>", "Environment", "development")
-  .action(dbListCommand);
+  .option("--format <fmt>", "Format (table, prometheus, json)", "table")
+  .action(pluginMetricsCommand);
 
-dbCommand
-  .command("inspect")
-  .description("Inspect a specific table (schema and sample data)")
-  .argument("<table>", "Table name to inspect")
-  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
-  .option("--env <env>", "Environment", "development")
-  .action(async (table, options) => {
-    await dbInspectCommand(table, options);
-  });
+// ============================================================================
+// CI/CD
+// ============================================================================
 
-// Snapshot commands
-const snapshotCommand = program
-  .command("snapshot")
-  .description("Manage schema snapshots");
+const ciCmd = program.command("ci").description("CI/CD commands");
 
-snapshotCommand
-  .command("list")
-  .description("List all snapshots")
-  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
-  .action(async (options) => {
-    await snapshotListCommand(options);
-  });
-
-snapshotCommand
-  .command("create")
-  .description("Create a new snapshot")
-  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
-  .option("-d, --description <description>", "Snapshot description")
-  .option("--env <env>", "Environment", "development")
-  .action(async (options) => {
-    await snapshotCreateCommand(options);
-  });
-
-// Transition commands
-const transitionCommand = program
-  .command("transition")
-  .description("Manage transitions between snapshots");
-
-transitionCommand
-  .command("create")
-  .description("Create a transition between snapshots")
-  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
-  .option("--from <hash>", "Source snapshot hash")
-  .option("--to <hash>", "Target snapshot hash")
-  .option("-d, --description <description>", "Transition description")
-  .action(async (options) => {
-    await transitionCreateCommand(options);
-  });
-
-// Resolve command
-program
-  .command("resolve")
-  .description("Resolve schema merge conflicts")
-  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
-  .option("--base <hash>", "Base snapshot hash")
-  .option("--local <hash>", "Local snapshot hash")
-  .option("--remote <hash>", "Remote snapshot hash")
-  .action(async (options) => {
-    await resolveCommand(options);
-  });
-
-// CI/CD commands
-const ciCommand = program
-  .command("ci")
-  .description("CI/CD integration commands");
-
-ciCommand
+ciCmd
   .command("analyze")
-  .description("Analyze schema changes for CI/CD")
-  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
-  .option("--from <hash>", "Source snapshot hash")
-  .option("--to <hash>", "Target snapshot hash")
-  .option("--output <format>", "Output format (json, text)", "text")
-  .action(async (options) => {
-    await ciAnalyzeCommand(options);
-  });
+  .description("Analyze changes")
+  .option("-c, --config <path>", "Config path", "yama.yaml")
+  .option("--from <hash>", "From")
+  .option("--to <hash>", "To")
+  .option("--output <fmt>", "Output (json, text)", "text")
+  .action(ciAnalyzeCommand);
 
-ciCommand
+ciCmd
   .command("validate")
-  .description("Validate configuration")
-  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
-  .action(async (options) => {
-    await ciValidateCommand(options);
-  });
+  .description("Validate config")
+  .option("-c, --config <path>", "Config path", "yama.yaml")
+  .action(ciValidateCommand);
 
-// Shadow columns commands
-const shadowsCommand = program
-  .command("shadows")
-  .description("Manage shadow columns for safe field deletions");
+// ============================================================================
+// MCP SERVER
+// ============================================================================
 
-shadowsCommand
-  .command("list")
-  .description("List shadow columns")
-  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
-  .option("--table <table>", "Filter by table name")
-  .option("--expired", "Show only expired shadows")
-  .action(async (options) => {
-    await shadowsListCommand(options);
-  });
-
-shadowsCommand
-  .command("restore")
-  .description("Restore a shadow column")
-  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
-  .requiredOption("--table <table>", "Table name")
-  .requiredOption("--column <column>", "Shadow column name")
-  .action(async (options) => {
-    await shadowsRestoreCommand(options);
-  });
-
-shadowsCommand
-  .command("cleanup")
-  .description("Clean up expired shadow columns")
-  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
-  .option("--expired", "Clean up expired shadows only")
-  .action(async (options) => {
-    await shadowsCleanupCommand(options);
-  });
-
-// Backup commands
-const backupsCommand = program
-  .command("backups")
-  .description("Manage database backups");
-
-backupsCommand
-  .command("list")
-  .description("List backups")
-  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
-  .option("--snapshot <hash>", "Filter by snapshot hash")
-  .action(async (options) => {
-    await backupsListCommand(options);
-  });
-
-backupsCommand
-  .command("status")
-  .description("Show backup status")
-  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
-  .action(async (options) => {
-    await backupsStatusCommand(options);
-  });
-
-backupsCommand
-  .command("cleanup")
-  .description("Clean up old backups")
-  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
-  .option("--older-than <days>", "Clean backups older than N days")
-  .action(async (options) => {
-    await backupsCleanupCommand(options);
-  });
-
-// Deploy command
-program
-  .command("deploy")
-  .description("Deploy schema changes to an environment")
-  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
-  .requiredOption("--env <env>", "Environment name (production, staging, etc.)")
-  .option("--plan", "Show deployment plan without deploying")
-  .option("--dry-run", "Dry run - don't actually deploy")
-  .option("--auto-rollback", "Automatically rollback on failure")
-  .action(async (options) => {
-    await deployCommand(options);
-  });
-
-// Rollback command
-program
-  .command("rollback")
-  .description("Rollback schema changes")
-  .option("-c, --config <path>", "Path to yama.yaml", "yama.yaml")
-  .requiredOption("--env <env>", "Environment name")
-  .option("--to <hash>", "Target snapshot hash")
-  .option("--emergency", "Emergency rollback mode")
-  .action(async (options) => {
-    await rollbackCommand(options);
-  });
-
-// MCP Server
 program
   .command("mcp")
-  .description("Start MCP (Model Context Protocol) server for AI assistants")
+  .description("Start MCP server")
   .action(async () => {
     const { startMCPServer } = await import("./mcp/server.ts");
     await startMCPServer();
   });
 
-// Load and register plugin commands
+// ============================================================================
+// PLUGIN COMMANDS REGISTRATION
+// ============================================================================
+
 async function registerPluginCommands() {
   const { loadPluginCommands } = await import("./utils/plugin-commands.ts");
   const commands = await loadPluginCommands();
   
-  // Group commands by their first word (e.g., "docker" in "docker generate")
   const commandGroups = new Map<string, PluginCLICommand[]>();
   
   for (const command of commands) {
     const parts = command.name.split(" ");
     const groupName = parts[0];
-    
     if (!commandGroups.has(groupName)) {
       commandGroups.set(groupName, []);
     }
     commandGroups.get(groupName)!.push(command);
   }
   
-  // Create command groups and subcommands
   for (const [groupName, groupCommands] of commandGroups.entries()) {
-    const groupCommand = program
-      .command(groupName)
-      .description(`Commands for ${groupName} plugin`);
+    const groupCommand = program.command(groupName).description(`${groupName} plugin`);
     
     for (const cmd of groupCommands) {
       const parts = cmd.name.split(" ");
       const subcommandName = parts.slice(1).join(" ") || groupName;
       
-      const subcommand = groupCommand
-        .command(subcommandName)
-        .description(cmd.description);
+      const subcommand = groupCommand.command(subcommandName).description(cmd.description);
       
-      // Add options
       if (cmd.options) {
         for (const option of cmd.options) {
-          const flags = option.flags;
-          const isRequired = option.required;
-          const defaultValue = option.defaultValue;
-          
-          if (isRequired) {
-            subcommand.requiredOption(flags, option.description, defaultValue);
+          if (option.required) {
+            subcommand.requiredOption(option.flags, option.description, option.defaultValue);
           } else {
-            subcommand.option(flags, option.description, defaultValue);
+            subcommand.option(option.flags, option.description, option.defaultValue);
           }
         }
       }
       
-      // Add action
       subcommand.action(async (options) => {
         try {
           await cmd.action(options);
         } catch (error) {
-          console.error(`Error executing command ${cmd.name}:`, error instanceof Error ? error.message : String(error));
+          console.error(`Error: ${error instanceof Error ? error.message : String(error)}`);
           process.exit(1);
         }
       });
@@ -738,9 +563,8 @@ async function registerPluginCommands() {
   }
 }
 
-// Register plugin commands before parsing
+// Parse
 (async () => {
   await registerPluginCommands();
   program.parse();
 })();
-

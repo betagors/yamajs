@@ -1,6 +1,6 @@
-import type { MigrationYAML } from "./migration-yaml.js";
 import type { MigrationStepUnion } from "./diff.js";
 import type { Model } from "./model.js";
+import type { Transition } from "./transitions.js";
 
 /**
  * Validation error
@@ -12,56 +12,17 @@ export interface ValidationError {
 }
 
 /**
- * Validate migration YAML structure
- */
-export function validateMigrationYAML(migration: MigrationYAML): ValidationError[] {
-  const errors: ValidationError[] = [];
-
-  if (migration.type !== "schema") {
-    errors.push({ message: "Invalid migration type" });
-  }
-
-  if (!migration.from_model?.hash) {
-    errors.push({ message: "Missing from_model.hash", field: "from_model.hash" });
-  }
-
-  if (!migration.to_model?.hash) {
-    errors.push({ message: "Missing to_model.hash", field: "to_model.hash" });
-  }
-
-  if (!Array.isArray(migration.steps)) {
-    errors.push({ message: "Missing or invalid steps array", field: "steps" });
-  }
-
-  if (!migration.metadata) {
-    errors.push({ message: "Missing metadata", field: "metadata" });
-  }
-
-  // Validate each step
-  migration.steps.forEach((step, index) => {
-    if (!step.type) {
-      errors.push({ step: index, message: "Step missing type" });
-    }
-    if (!step.table) {
-      errors.push({ step: index, message: "Step missing table", field: "table" });
-    }
-  });
-
-  return errors;
-}
-
-/**
- * Validate that migration's from_model hash matches current model hash
+ * Validate that transition's fromHash matches current model hash
  */
 export function validateMigrationHash(
-  migration: MigrationYAML,
+  transition: Transition,
   currentModel: Model
 ): ValidationError[] {
   const errors: ValidationError[] = [];
 
-  if (migration.from_model.hash !== currentModel.hash) {
+  if (transition.fromHash !== currentModel.hash) {
     errors.push({
-      message: `Migration from_model.hash (${migration.from_model.hash.substring(0, 8)}) does not match current model hash (${currentModel.hash.substring(0, 8)})`,
+      message: `Transition fromHash (${transition.fromHash.substring(0, 8)}) does not match current model hash (${currentModel.hash.substring(0, 8)})`,
     });
   }
 
@@ -131,23 +92,19 @@ export function validateStepDependencies(
 }
 
 /**
- * Validate entire migration
+ * Validate a transition
  */
-export function validateMigration(
-  migration: MigrationYAML,
+export function validateTransition(
+  transition: Transition,
   currentModel: Model
 ): ValidationError[] {
   const errors: ValidationError[] = [];
 
-  // Validate structure
-  errors.push(...validateMigrationYAML(migration));
-
   // Validate hash
-  errors.push(...validateMigrationHash(migration, currentModel));
+  errors.push(...validateMigrationHash(transition, currentModel));
 
   // Validate dependencies
-  errors.push(...validateStepDependencies(migration.steps, currentModel));
+  errors.push(...validateStepDependencies(transition.steps, currentModel));
 
   return errors;
 }
-

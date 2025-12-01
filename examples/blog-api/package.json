@@ -11,7 +11,11 @@
     "yama": "yama",
     "dev": "yama dev",
     "build": "yama generate",
-    "start": "yama dev"
+    "start": "yama dev",
+    "status": "yama status",
+    "history": "yama history",
+    "deploy:staging": "yama deploy --env staging",
+    "deploy:prod": "yama deploy --env production --plan"
   },
   "dependencies": {
     "@betagors/yama-core": "file:../../packages/core",
