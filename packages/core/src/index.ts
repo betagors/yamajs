@@ -8,6 +8,11 @@ export {
   createSchemaValidator,
   schemaToJsonSchema,
   fieldToJsonSchema,
+  normalizeSchemaDefinition,
+  normalizeQueryOrParams,
+  normalizeBodyDefinition,
+  parseSchemaFieldDefinition,
+  type CustomValidator,
   type SchemaField,
   type SchemaDefinition,
   type YamaSchemas,
@@ -102,6 +107,7 @@ export {
   type EntityHooks,
   entityToSchema,
   entitiesToSchemas,
+  normalizeSchemas,
   mergeSchemas,
   parseFieldDefinition,
   parseRelationDefinition,
@@ -231,6 +237,8 @@ export {
   type SummaryStats,
   type MetricsConfig,
   pluginMetricsCollector,
+  recordPluginAPICall,
+  recordPluginError,
   // Documentation
   type PluginDocumentation,
   generatePluginDocs,
@@ -483,4 +491,53 @@ export {
   MiddlewareRegistry,
   loadMiddlewareFromFile,
 } from "./middleware/index.js";
+
+// Export type system
+export {
+  TypeParser,
+  DatabaseTypeMapper,
+  ValidationGenerator,
+} from "./types/index.js";
+export type {
+  FieldType,
+  BaseType,
+  FieldDefinition,
+} from "./types/index.js";
+
+// Export variants system
+export {
+  VariantGenerator,
+} from "./variants/index.js";
+export type {
+  VariantConfig,
+  SchemaVariants,
+  GlobalVariantDefaults,
+  VariantSchema,
+} from "./variants/index.js";
+
+// Export config normalizer
+export {
+  normalizeConfig,
+  getSchemasFromConfig,
+} from "./config-normalizer.js";
+export type {
+  NormalizedYamaConfig,
+} from "./config-normalizer.js";
+
+// Export APIs system
+export * from "./apis/index.js";
+export type {
+  ApisConfig,
+  RestApiConfig,
+  RestEndpointDefinition,
+  NormalizedEndpoint,
+  NormalizedRestConfig,
+  NormalizedApisConfig,
+} from "./apis/types.js";
+export {
+  normalizeApisConfig,
+} from "./apis/normalizer.js";
+export {
+  ApiEndpointParser,
+} from "./apis/parser.js";
 

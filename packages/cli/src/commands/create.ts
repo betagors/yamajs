@@ -274,23 +274,8 @@ export async function createCommand(projectName?: string, options: CreateOptions
   // Handle `.` for current directory (like Next.js)
   const useCurrentDir = projectName === "." || projectName === "./";
   
-  // Check if we should use TUI mode (only for interactive mode, not for current dir)
+  // Check if we need prompts (only for interactive mode, not for current dir)
   const needsPrompts = !useCurrentDir && !projectName && !isNonInteractive && !options.database;
-  if (needsPrompts) {
-    const { shouldUseTUI } = await import("../utils/tui-utils.ts");
-    const useTUI = shouldUseTUI();
-    
-    if (useTUI) {
-      try {
-        const { runCreateTUI } = await import("../tui/CreateCommand.tsx");
-        runCreateTUI({ projectName, database: options.database, yes: options.yes });
-        return;
-      } catch (error) {
-        // If TUI fails, fall back to inquirer
-        console.warn("TUI mode failed, falling back to text prompts");
-      }
-    }
-  }
   
   let finalProjectName: string;
   let projectPath: string;
@@ -591,20 +576,18 @@ export async function createCommand(projectName?: string, options: CreateOptions
       : "";
     const yamlContent = `name: ${finalProjectName}
 version: 0.1.0${pluginsSection}
-schemas:
+entities:
   Example:
     fields:
-      id:
-        type: string
-        required: true
-      name:
-        type: string
-        required: true
+      id: uuid!
+      name: string!
+      createdAt: timestamp
+      updatedAt: timestamp
 
 endpoints:
   - path: /examples
     method: GET
-    handler: getExamples
+    handler: src/handlers/getExamples.ts
     response:
       type: Example
 `;

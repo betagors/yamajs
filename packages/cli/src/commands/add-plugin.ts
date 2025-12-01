@@ -1,7 +1,8 @@
 import { existsSync } from "fs";
 import { execSync } from "child_process";
+import { join } from "path";
 import { findYamaConfig } from "../utils/project-detection.ts";
-import { getConfigDir, readYamaConfig, writeYamaConfig } from "../utils/file-utils.ts";
+import { getConfigDir, readYamaConfig, writeYamaConfig, readPackageJson } from "../utils/file-utils.ts";
 import { success, error } from "../utils/cli-utils.ts";
 import { detectPackageManager } from "../utils/project-detection.ts";
 import { loadPlugin } from "@betagors/yama-core";
@@ -66,6 +67,36 @@ export async function addPluginCommand(options: AddPluginOptions): Promise<void>
           stdio: "inherit" 
         });
         console.log(`✅ Package installed`);
+        
+        // Install peerDependencies if they exist
+        try {
+          // Try to find the plugin's package.json in node_modules
+          const pluginPackagePath = join(configDir, "node_modules", pluginName, "package.json");
+          if (existsSync(pluginPackagePath)) {
+            const pluginPackage = readPackageJson(pluginPackagePath);
+            const peerDeps = pluginPackage.peerDependencies as Record<string, string> | undefined;
+            
+            if (peerDeps && Object.keys(peerDeps).length > 0) {
+              console.log(`📦 Installing peer dependencies...`);
+              const peerDepList = Object.entries(peerDeps)
+                .map(([name, version]) => `${name}@${version}`)
+                .join(" ");
+              
+              try {
+                execSync(`${packageManager} add ${peerDepList}`, {
+                  cwd: configDir,
+                  stdio: "inherit"
+                });
+                console.log(`✅ Peer dependencies installed`);
+              } catch (peerErr) {
+                console.warn(`⚠️  Failed to install some peer dependencies: ${peerErr instanceof Error ? peerErr.message : String(peerErr)}`);
+                console.log(`   You may need to install them manually: ${peerDepList}`);
+              }
+            }
+          }
+        } catch (peerDepErr) {
+          // Silently fail - peer dependencies check is optional
+        }
       } catch (err) {
         error(`Failed to install package: ${err instanceof Error ? err.message : String(err)}`);
         console.log(`   You can add it to yama.yaml manually and install later`);

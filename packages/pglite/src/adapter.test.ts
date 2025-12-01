@@ -118,9 +118,9 @@ describe("PGlite Adapter", () => {
       expect(client).toBeDefined();
     });
 
-    it("should throw error if not initialized", () => {
+    it("should throw error if not initialized", async () => {
       // Close any existing connection
-      pgliteAdapter.close();
+      await pgliteAdapter.close();
 
       expect(() => pgliteAdapter.getClient()).toThrow(
         "Database not initialized"
@@ -137,16 +137,24 @@ describe("PGlite Adapter", () => {
 
       await pgliteAdapter.init(config);
 
+      if (!pgliteAdapter.getSQL) {
+        throw new Error("getSQL method not available");
+      }
+
       const sql = pgliteAdapter.getSQL();
 
       expect(sql).toBeDefined();
     });
 
-    it("should throw error if not initialized", () => {
+    it("should throw error if not initialized", async () => {
       // Close any existing connection
-      pgliteAdapter.close();
+      await pgliteAdapter.close();
 
-      expect(() => pgliteAdapter.getSQL()).toThrow(
+      if (!pgliteAdapter.getSQL) {
+        throw new Error("getSQL method not available");
+      }
+
+      expect(() => pgliteAdapter.getSQL!()).toThrow(
         "Database not initialized"
       );
     });
@@ -185,12 +193,17 @@ describe("PGlite Adapter", () => {
 
       const entities = {
         User: {
+          table: "users",
           fields: {
-            id: { type: "string", primary: true },
-            name: { type: "string" },
+            id: { type: "uuid" as const, primary: true },
+            name: { type: "string" as const },
           },
         },
       };
+
+      if (!pgliteAdapter.generateSchema) {
+        throw new Error("generateSchema method not available");
+      }
 
       const schema = await pgliteAdapter.generateSchema(entities);
 
@@ -210,12 +223,17 @@ describe("PGlite Adapter", () => {
 
       const entities = {
         User: {
+          table: "users",
           fields: {
-            id: { type: "string", primary: true },
-            name: { type: "string" },
+            id: { type: "uuid" as const, primary: true },
+            name: { type: "string" as const },
           },
         },
       };
+
+      if (!pgliteAdapter.generateMigration) {
+        throw new Error("generateMigration method not available");
+      }
 
       const migration = await pgliteAdapter.generateMigration(
         entities,

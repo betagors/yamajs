@@ -25,17 +25,6 @@ export async function schemasCommand(options: SchemasOptions): Promise<void> {
       return;
     }
 
-    // Use TUI mode if appropriate (disabled in CI or non-interactive environments)
-    const { shouldUseTUI } = await import("../utils/tui-utils.ts");
-    const useTUI = shouldUseTUI();
-    
-    if (useTUI) {
-      const { runSchemasTUI } = await import("../tui/SchemasCommand.tsx");
-      runSchemasTUI({ schemas: config.schemas });
-      return;
-    }
-
-    // Fallback to text output
     console.log(`📦 Schemas (${Object.keys(config.schemas).length}):\n`);
 
     for (const [schemaName, schemaDef] of Object.entries(config.schemas)) {

@@ -1,4 +1,5 @@
 import type { YamaEntities, EntityDefinition, EntityField, MigrationStepUnion } from "@betagors/yama-core";
+import { parseFieldDefinition, DatabaseTypeMapper } from "@betagors/yama-core";
 import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync } from "fs";
 import { join } from "path";
 import { createHash } from "crypto";
@@ -10,40 +11,27 @@ function generateSQLColumn(fieldName: string, field: EntityField, dbColumnName: 
   let sqlType: string;
   const modifiers: string[] = [];
 
-  // Determine SQL type
+  // Determine SQL type using new type system
   if (field.dbType) {
     sqlType = field.dbType;
   } else {
-    switch (field.type) {
-      case "uuid":
-        sqlType = "UUID";
-        break;
-      case "string":
-        if (field.maxLength) {
-          sqlType = `VARCHAR(${field.maxLength})`;
-        } else {
-          sqlType = "VARCHAR(255)";
-        }
-        break;
-      case "text":
-        sqlType = "TEXT";
-        break;
-      case "number":
-      case "integer":
-        sqlType = "INTEGER";
-        break;
-      case "boolean":
-        sqlType = "BOOLEAN";
-        break;
-      case "timestamp":
-        sqlType = "TIMESTAMP";
-        break;
-      case "jsonb":
-        sqlType = "JSONB";
-        break;
-      default:
-        sqlType = "TEXT";
-    }
+    // Convert EntityField to FieldType for DatabaseTypeMapper
+    const fieldType = {
+      type: field.type as any,
+      nullable: field.nullable !== false && !field.required,
+      array: false,
+      length: (field as any).length,
+      maxLength: field.maxLength,
+      minLength: field.minLength,
+      precision: (field as any).precision,
+      scale: (field as any).scale,
+      currency: (field as any).currency,
+      enumValues: field.enum as string[],
+      pattern: field.pattern,
+    };
+    
+    // Use DatabaseTypeMapper for PostgreSQL (PGlite uses PostgreSQL types)
+    sqlType = DatabaseTypeMapper.toPostgreSQL(fieldType);
   }
 
   // Add primary key
@@ -75,10 +63,15 @@ function generateSQLColumn(fieldName: string, field: EntityField, dbColumnName: 
 /**
  * Generate CREATE TABLE SQL for an entity
  */
-function generateCreateTableSQL(entityDef: EntityDefinition): string {
+function generateCreateTableSQL(entityDef: EntityDefinition, availableEntities: Set<string>): string {
   const columns: string[] = [];
 
-  for (const [fieldName, field] of Object.entries(entityDef.fields)) {
+  for (const [fieldName, fieldDef] of Object.entries(entityDef.fields)) {
+    const field = parseFieldDefinition(fieldName, fieldDef, availableEntities);
+    // Skip inline relations
+    if (field._isInlineRelation) {
+      continue;
+    }
     const dbColumnName = field.dbColumn || fieldName;
     columns.push(generateSQLColumn(fieldName, field, dbColumnName));
   }
@@ -91,7 +84,7 @@ ${columns.join(",\n")}
 /**
  * Generate CREATE INDEX SQL statements
  */
-function generateIndexSQL(entityDef: EntityDefinition): string[] {
+function generateIndexSQL(entityDef: EntityDefinition, availableEntities: Set<string>): string[] {
   const indexStatements: string[] = [];
 
   // Indexes from entity definition
@@ -99,8 +92,10 @@ function generateIndexSQL(entityDef: EntityDefinition): string[] {
     for (const index of entityDef.indexes) {
       const indexName = index.name || `${entityDef.table}_${index.fields.join("_")}_idx`;
       const fields = index.fields.map(f => {
-        const field = entityDef.fields[f];
-        return field?.dbColumn || f;
+        const fieldDef = entityDef.fields[f];
+        if (!fieldDef) return f;
+        const field = parseFieldDefinition(f, fieldDef, availableEntities);
+        return field.dbColumn || f;
       }).join(", ");
       const unique = index.unique ? "UNIQUE " : "";
       indexStatements.push(`CREATE ${unique}INDEX IF NOT EXISTS ${indexName} ON ${entityDef.table} (${fields});`);
@@ -108,7 +103,8 @@ function generateIndexSQL(entityDef: EntityDefinition): string[] {
   }
 
   // Indexes from field index: true
-  for (const [fieldName, field] of Object.entries(entityDef.fields)) {
+  for (const [fieldName, fieldDef] of Object.entries(entityDef.fields)) {
+    const field = parseFieldDefinition(fieldName, fieldDef, availableEntities);
     if (field.index) {
       const dbColumnName = field.dbColumn || fieldName;
       const indexName = `${entityDef.table}_${dbColumnName}_idx`;
@@ -129,16 +125,18 @@ export function generateMigrationSQL(entities: YamaEntities, migrationName?: str
   statements.push(`-- Migration: ${migrationName || "auto-generated"}`);
   statements.push(`-- Generated from yama.yaml entities\n`);
 
+  const availableEntities = new Set(Object.keys(entities));
+
   // Generate CREATE TABLE statements
   for (const [entityName, entityDef] of Object.entries(entities)) {
     statements.push(`-- Table: ${entityDef.table}`);
-    statements.push(generateCreateTableSQL(entityDef));
+    statements.push(generateCreateTableSQL(entityDef, availableEntities));
     statements.push("");
   }
 
   // Generate CREATE INDEX statements
   for (const [entityName, entityDef] of Object.entries(entities)) {
-    const indexes = generateIndexSQL(entityDef);
+    const indexes = generateIndexSQL(entityDef, availableEntities);
     if (indexes.length > 0) {
       statements.push(`-- Indexes for ${entityDef.table}`);
       statements.push(...indexes);

@@ -134,62 +134,6 @@ export async function pluginStatusCommand(
       }
     }
 
-    // Use TUI mode if appropriate (disabled in CI or non-interactive environments)
-    const { shouldUseTUI } = await import("../utils/tui-utils.ts");
-    const useTUI = shouldUseTUI();
-    
-    if (useTUI) {
-      // Prepare plugin status data
-      const pluginStatusData = statusRows.slice(1).map((row) => ({
-        plugin: row[0],
-        installed: row[1],
-        package: row[2],
-        pending: row[3],
-        status: row[4],
-      }));
-
-      let migrationHistory: Array<{
-        version: string;
-        migration: string;
-        type: string;
-        appliedAt: string;
-      }> | undefined;
-
-      // Show migration history for specific plugin if requested
-      if (options.plugin && sql) {
-        try {
-          const plugin = await loadPlugin(options.plugin, configDir);
-          const history = await getPluginMigrationHistory(options.plugin, sql);
-
-          if (history.length > 0) {
-            migrationHistory = history.map((h) => ({
-              version: h.version,
-              migration: h.migration_name,
-              type: h.type,
-              appliedAt: new Date(h.applied_at).toLocaleString(),
-            }));
-          }
-        } catch (err) {
-          // Ignore errors for history
-        }
-      }
-
-      // Close database connection if opened
-      if (dbPlugin && config.database) {
-        await dbPlugin.client.closeDatabase();
-      }
-
-      // Render TUI
-      const { runPluginStatusTUI } = await import("../tui/PluginStatus.tsx");
-      runPluginStatusTUI({
-        plugins: pluginStatusData,
-        history: migrationHistory,
-        pluginName: options.plugin,
-      });
-      return;
-    }
-
-    // Fallback to original non-TUI implementation
     // Display status table
     console.log("\n📦 Plugin Migration Status\n");
     console.log(table(statusRows));

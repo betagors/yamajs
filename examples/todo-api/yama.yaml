@@ -22,9 +22,18 @@ entities:
       comments: Comment[]            # hasMany
     
     # Validations (declarative)
-    validations:
-      email: [email]                 # unique is already in field definition
-      name: [minLength(2), maxLength(100)]
+    validation:
+      emailFormat:
+        field: email
+        rule: email
+      nameMinLength:
+        field: name
+        rule: minLength
+        params: [2]
+      nameMaxLength:
+        field: name
+        rule: maxLength
+        params: [100]
     
     # Computed fields
     computed:
@@ -53,9 +62,19 @@ entities:
       comments: Comment[]           # hasMany
       tags: Tag[] through:post_tags # manyToMany with junction table
     
-    validations:
-      title: [minLength(5), maxLength(200)]
-      content: [minLength(10)]
+    validation:
+      titleMinLength:
+        field: title
+        rule: minLength
+        params: [5]
+      titleMaxLength:
+        field: title
+        rule: maxLength
+        params: [200]
+      contentMinLength:
+        field: content
+        rule: minLength
+        params: [10]
     
     # Indexes (auto-generated, but customizable)
     indexes:
@@ -104,7 +123,7 @@ entities:
 endpoints:
   - path: /users/me
     method: GET
-    handler: getCurrentUser
+    handler: src/handlers/getCurrentUser.ts
     auth:
       required: true
     response:

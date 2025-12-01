@@ -78,23 +78,42 @@ function transformImports(dir) {
       transformImports(fullPath);
     } else if (extname(entry) === '.js') {
       let content = readFileSync(fullPath, 'utf-8');
-      // Replace .ts/.tsx extensions with .js in import/export statements (both relative and absolute)
-      // Handle: from "./path/file.ts" or "./path/file.tsx"
-      content = content.replace(/from\s+["'](\.\/[^"']+\.tsx?)["']/g, (match, path) => {
-        return match.replace(path, path.replace(/\.tsx?$/, '.js'));
+      
+      // First, transform .ts/.tsx extensions to .js
+      // Match any relative path (starts with .) followed by .ts or .tsx
+      // The pattern (\.\.?\/)+ matches one or more occurrences of ./ or ../
+      const tsImportRegex = /(["'])((?:\.\.?\/)+[^"']+\.tsx?)(["'])/g;
+      content = content.replace(tsImportRegex, (match, quote1, path, quote2) => {
+        return quote1 + path.replace(/\.tsx?$/, '.js') + quote2;
       });
-      // Handle: import("./path/file.ts") or import("./path/file.tsx")
-      content = content.replace(/import\s*\(["'](\.\/[^"']+\.tsx?)["']\)/g, (match, path) => {
-        return match.replace(path, path.replace(/\.tsx?$/, '.js'));
+      
+      // Second, add .js extension to relative imports without any extension
+      // This handles cases like: import ... from './DevServer' or import('./utils/file')
+      // Match relative imports that don't have a file extension
+      // Pattern: quote + relative path (./ or ../) + path without extension + quote
+      // Negative lookahead ensures we don't match paths that already have extensions
+      const noExtRegex = /(["'])((?:\.\.?\/)+[^"'\s?/#]+?)(["'])(?![^"']*\.(js|json|mjs|cjs|node|wasm|ts|tsx|d\.ts))/g;
+      content = content.replace(noExtRegex, (match, quote1, path, quote2) => {
+        // Skip if it's a directory import (ends with /)
+        if (path.endsWith('/')) {
+          return match;
+        }
+        // Skip if it has query strings or hashes (these are handled differently)
+        if (path.includes('?') || path.includes('#')) {
+          return match;
+        }
+        // Only process relative imports (must start with .)
+        if (!path.startsWith('.')) {
+          return match;
+        }
+        // Skip if it already looks like it has an extension (safety check)
+        if (/\.(js|json|mjs|cjs|node|wasm|ts|tsx|d\.ts)$/.test(path)) {
+          return match;
+        }
+        // Add .js extension
+        return quote1 + path + '.js' + quote2;
       });
-      // Handle: import "./path/file.ts" or import "./path/file.tsx"
-      content = content.replace(/import\s+["'](\.\/[^"']+\.tsx?)["']/g, (match, path) => {
-        return match.replace(path, path.replace(/\.tsx?$/, '.js'));
-      });
-      // Handle: import ... from "../utils/file-utils.ts" or "../utils/file-utils.tsx"
-      content = content.replace(/from\s+["'](\.\.\/[^"']+\.tsx?)["']/g, (match, path) => {
-        return match.replace(path, path.replace(/\.tsx?$/, '.js'));
-      });
+      
       writeFileSync(fullPath, content, 'utf-8');
     }
   }

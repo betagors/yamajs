@@ -104,39 +104,6 @@ export async function pluginHealthCommand(
       }
     }
 
-    // Use TUI mode if appropriate (disabled in CI or non-interactive environments)
-    const { shouldUseTUI } = await import("../utils/tui-utils.ts");
-    const useTUI = shouldUseTUI();
-    
-    if (useTUI) {
-      const healthyCount = healthRows.filter((r) => r[1].includes("✅")).length - 1;
-      const unhealthyCount = healthRows.filter((r) => r[1].includes("❌")).length - 1;
-      const noCheckCount = healthRows.filter((r) => r[1].includes("⚠️")).length - 1;
-      
-      const pluginHealth = healthRows.slice(1).map((row) => ({
-        plugin: row[0],
-        status: row[1].includes("✅")
-          ? ('healthy' as const)
-          : row[1].includes("⚠️")
-          ? ('no-check' as const)
-          : row[1].includes("Not installed")
-          ? ('not-installed' as const)
-          : ('unhealthy' as const),
-        details: row[2] || '',
-        error: row[3] || '',
-      }));
-      
-      const { runPluginHealthTUI } = await import("../tui/PluginHealthCommand.tsx");
-      runPluginHealthTUI({
-        plugins: pluginHealth,
-        summary: {
-          healthy: healthyCount,
-          unhealthy: unhealthyCount,
-          noCheck: noCheckCount,
-        },
-      });
-      return;
-    }
 
     // Fallback to text output
     console.log("\n🏥 Plugin Health Status\n");

@@ -1,14 +1,21 @@
 import type { YamaEntities, EntityDefinition, EntityField } from "@betagors/yama-core";
+import { parseFieldDefinition } from "@betagors/yama-core";
 
 /**
  * Generate Drizzle table definition for a single entity
  */
-function generateDrizzleTable(entityName: string, entityDef: EntityDefinition, allImports: Set<string>): string {
+function generateDrizzleTable(entityName: string, entityDef: EntityDefinition, entities: YamaEntities, allImports: Set<string>): string {
   const columns: string[] = [];
   const indexes: string[] = [];
 
   // Process each field
-  for (const [fieldName, field] of Object.entries(entityDef.fields)) {
+  const availableEntities = new Set(Object.keys(entities));
+  for (const [fieldName, fieldDef] of Object.entries(entityDef.fields)) {
+    const field = parseFieldDefinition(fieldName, fieldDef, availableEntities);
+    // Skip inline relations (they generate foreign keys separately)
+    if (field._isInlineRelation) {
+      continue;
+    }
     const dbColumnName = field.dbColumn || fieldName;
     const columnDef = generateDrizzleColumn(fieldName, field, dbColumnName);
     if (columnDef) {
@@ -19,7 +26,20 @@ function generateDrizzleTable(entityName: string, entityDef: EntityDefinition, a
   // Process indexes
   if (entityDef.indexes) {
     for (const index of entityDef.indexes) {
-      const indexDef = generateDrizzleIndex(entityDef.table, index);
+      // Normalize index format - can be string, array, or object
+      let normalizedIndex: { fields: string[]; name?: string; unique?: boolean };
+      if (typeof index === 'string') {
+        // Single field: "published"
+        normalizedIndex = { fields: [index] };
+      } else if (Array.isArray(index)) {
+        // Array of fields: [authorId, publishedAt]
+        normalizedIndex = { fields: index };
+      } else {
+        // Object format: { fields: [...], name: "...", unique: true }
+        normalizedIndex = index;
+      }
+      
+      const indexDef = generateDrizzleIndex(entityName.toLowerCase(), entityDef.table || entityName.toLowerCase(), normalizedIndex);
       if (indexDef) {
         indexes.push(indexDef);
       }
@@ -27,7 +47,9 @@ function generateDrizzleTable(entityName: string, entityDef: EntityDefinition, a
   }
 
   // Also add indexes for fields with index: true
-  for (const [fieldName, field] of Object.entries(entityDef.fields)) {
+  const availableEntitiesForIndex = new Set(Object.keys(entities));
+  for (const [fieldName, fieldDef] of Object.entries(entityDef.fields)) {
+    const field = parseFieldDefinition(fieldName, fieldDef, availableEntitiesForIndex);
     if (field.index) {
       const dbColumnName = field.dbColumn || fieldName;
       indexes.push(
@@ -142,9 +164,9 @@ function generateDrizzleColumn(
 /**
  * Generate Drizzle index definition
  */
-function generateDrizzleIndex(tableName: string, index: { fields: string[]; name?: string; unique?: boolean }): string {
+function generateDrizzleIndex(tableVarName: string, tableName: string, index: { fields: string[]; name?: string; unique?: boolean }): string {
   const indexName = index.name || `${tableName}_${index.fields.join("_")}_idx`;
-  const fieldsRef = index.fields.map(f => `table.${f}`).join(", ");
+  const fieldsRef = index.fields.map(f => `${tableVarName}.${f}`).join(", ");
   const uniqueModifier = index.unique ? ".unique()" : "";
   
   return `export const ${indexName} = index(\`${indexName}\`).on(${fieldsRef})${uniqueModifier};`;
@@ -161,8 +183,14 @@ export function generateDrizzleSchema(entities: YamaEntities): string {
 
   // Collect all unique imports
   const allImports = new Set<string>(["pgTable", "index"]);
+  const availableEntitiesForImports = new Set(Object.keys(entities));
   for (const [, entityDef] of Object.entries(entities)) {
-    for (const [, field] of Object.entries(entityDef.fields)) {
+    for (const [fieldName, fieldDef] of Object.entries(entityDef.fields)) {
+      const field = parseFieldDefinition(fieldName, fieldDef, availableEntitiesForImports);
+      // Skip inline relations
+      if (field._isInlineRelation) {
+        continue;
+      }
       switch (field.type) {
         case "uuid":
           allImports.add("uuid");
@@ -196,7 +224,7 @@ import type { InferSelectModel, InferInsertModel } from "drizzle-orm";\n\n`;
   const typeExports: string[] = [];
 
   for (const [entityName, entityDef] of Object.entries(entities)) {
-    const tableCode = generateDrizzleTable(entityName, entityDef, allImports);
+    const tableCode = generateDrizzleTable(entityName, entityDef, entities, allImports);
     tableDefinitions.push(tableCode);
     
     const tableName = entityName.toLowerCase();

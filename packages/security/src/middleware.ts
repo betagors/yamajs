@@ -28,14 +28,15 @@ export function createSecurityMiddleware(
 ): MiddlewareHandler {
   return async (context: MiddlewareContext, next: () => Promise<void>) => {
     // Create request object from context
+    // Use type assertions since MiddlewareContext extends HandlerContext
     const request: HttpRequest = {
-      method: context.method,
-      url: context.url,
-      path: context.path,
-      query: context.query,
-      params: context.params,
+      method: context.method as string,
+      url: context.url as string,
+      path: context.path as string,
+      query: context.query as Record<string, unknown>,
+      params: context.params as Record<string, unknown>,
       body: context.body,
-      headers: context.headers,
+      headers: context.headers as Record<string, string | undefined>,
     };
 
     // Create a response-like object to collect headers

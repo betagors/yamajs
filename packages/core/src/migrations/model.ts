@@ -1,5 +1,6 @@
 import type { YamaEntities, EntityDefinition } from "../entities.js";
 import { normalizeEntityDefinition } from "../entities.js";
+import { DatabaseTypeMapper } from "../types/index.js";
 import { createHash } from "crypto";
 
 /**
@@ -66,12 +67,14 @@ function normalizeEntities(entities: YamaEntities): string {
   
   for (const entityName of sortedEntityNames) {
     const entity = entities[entityName];
+    // Use same fallback logic as normalizeEntityDefinition
+    const tableName = entity.database?.table || entity.table || entityName.toLowerCase() + 's';
     const normalizedEntity: {
       table: string;
       fields: Record<string, Record<string, unknown>>;
       indexes?: Array<{ name?: string; fields: string[]; unique: boolean }>;
     } = {
-      table: entity.table,
+      table: tableName,
       fields: {},
     };
     
@@ -134,6 +137,8 @@ export function entitiesToModel(entities: YamaEntities): Model {
     
     // Normalize once per entity
     const normalized = normalizeEntityDefinition(entityName, entityDef, entities);
+    // normalized.table is always defined (has fallback in normalizeEntityDefinition)
+    const tableName: string = normalized.table || entityName.toLowerCase() + 's';
     const fieldEntries = Object.entries(normalized.fields);
     
     // Process fields efficiently
@@ -141,35 +146,26 @@ export function entitiesToModel(entities: YamaEntities): Model {
       const [fieldName, field] = fieldEntries[j];
       const dbColumnName = field.dbColumn || fieldName;
       
-      // Convert entity type to SQL type if dbType not provided
+      // Convert entity type to SQL type using new type system
       let sqlType: string = field.dbType || "";
       if (!sqlType) {
-        switch (field.type) {
-          case "uuid":
-            sqlType = "UUID";
-            break;
-          case "string":
-            sqlType = field.maxLength ? `VARCHAR(${field.maxLength})` : "VARCHAR(255)";
-            break;
-          case "text":
-            sqlType = "TEXT";
-            break;
-          case "number":
-          case "integer":
-            sqlType = "INTEGER";
-            break;
-          case "boolean":
-            sqlType = "BOOLEAN";
-            break;
-          case "timestamp":
-            sqlType = "TIMESTAMP";
-            break;
-          case "jsonb":
-            sqlType = "JSONB";
-            break;
-          default:
-            sqlType = String(field.type).toUpperCase();
-        }
+        // Convert EntityField to FieldType for DatabaseTypeMapper
+        const fieldType = {
+          type: field.type as any,
+          nullable: field.nullable !== false && !field.required,
+          array: false,
+          length: (field as any).length,
+          maxLength: field.maxLength,
+          minLength: field.minLength,
+          precision: (field as any).precision,
+          scale: (field as any).scale,
+          currency: (field as any).currency,
+          enumValues: field.enum as string[],
+          pattern: field.pattern,
+        };
+        
+        // Use DatabaseTypeMapper for PostgreSQL (default)
+        sqlType = DatabaseTypeMapper.toPostgreSQL(fieldType);
       }
       
       // Primary keys are always NOT NULL
@@ -199,7 +195,7 @@ export function entitiesToModel(entities: YamaEntities): Model {
           indexColumns.push(field?.dbColumn || f);
         }
         indexes.push({
-          name: index.name || `${normalized.table}_${index.fields.join("_")}_idx`,
+          name: index.name || `${tableName}_${index.fields.join("_")}_idx`,
           columns: indexColumns,
           unique: index.unique || false,
         });
@@ -212,15 +208,15 @@ export function entitiesToModel(entities: YamaEntities): Model {
       if (field.index) {
         const dbColumnName = field.dbColumn || fieldName;
         indexes.push({
-          name: `${normalized.table}_${dbColumnName}_idx`,
+          name: `${tableName}_${dbColumnName}_idx`,
           columns: [dbColumnName],
           unique: false,
         });
       }
     }
     
-    tables.set(normalized.table, {
-      name: normalized.table,
+    tables.set(tableName, {
+      name: tableName,
       columns,
       indexes,
       foreignKeys: [], // Foreign keys not yet supported in entity definitions

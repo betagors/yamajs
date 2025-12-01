@@ -14,6 +14,8 @@ export async function getDatabasePlugin(
   // Determine project directory from config path
   const projectDir = configPath ? getConfigDir(configPath) : process.cwd();
   
+  const errors: string[] = [];
+  
   // First, try to load plugins from config if provided
   if (configPlugins) {
     const pluginList = Array.isArray(configPlugins) 
@@ -33,14 +35,14 @@ export async function getDatabasePlugin(
           // Initialize plugin and get API
           const api = await plugin.init(pluginConfig);
           return api;
+        } else {
+          errors.push(`Plugin ${pluginName} is not a database plugin (category: ${plugin.category || 'unknown'})`);
         }
       } catch (error) {
-        // Silently continue - we'll try other methods
-        // Only log if it's not a "module not found" error (expected when plugin isn't installed)
+        // Collect all errors for better debugging
         const errorMsg = error instanceof Error ? error.message : String(error);
-        if (!errorMsg.includes("Cannot find module") && !errorMsg.includes("not found")) {
-          console.warn(`⚠️  Failed to load plugin ${pluginName}:`, errorMsg);
-        }
+        const errorStack = error instanceof Error && error.stack ? `\n${error.stack}` : '';
+        errors.push(`Failed to load plugin ${pluginName}: ${errorMsg}${errorStack}`);
       }
     }
   }
@@ -54,20 +56,26 @@ export async function getDatabasePlugin(
     for (const pluginName of commonPlugins) {
       try {
         dbPlugin = await loadPlugin(pluginName, projectDir);
-        break;
-      } catch (error) {
-        // Silently continue - we'll try other plugins
-        // Only log if it's not a "module not found" error (expected when plugin isn't installed)
-        const errorMsg = error instanceof Error ? error.message : String(error);
-        if (!errorMsg.includes("Cannot find module") && !errorMsg.includes("not found")) {
-          console.warn(`⚠️  Failed to load plugin ${pluginName}:`, errorMsg);
+        if (dbPlugin && dbPlugin.category === "database") {
+          break;
+        } else if (dbPlugin) {
+          errors.push(`Plugin ${pluginName} is not a database plugin (category: ${dbPlugin.category || 'unknown'})`);
+          dbPlugin = undefined;
         }
+      } catch (error) {
+        // Collect all errors for better debugging
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        const errorStack = error instanceof Error && error.stack ? `\n${error.stack}` : '';
+        errors.push(`Failed to load plugin ${pluginName}: ${errorMsg}${errorStack}`);
       }
     }
   }
   
   if (!dbPlugin) {
-    throw new Error("No database plugin found. Please install @betagors/yama-pglite or @betagors/yama-postgres");
+    const errorDetails = errors.length > 0 ? `\n\nErrors encountered:\n${errors.map(e => `  - ${e}`).join('\n')}` : '';
+    throw new Error(
+      `No database plugin found. Please install @betagors/yama-pglite or @betagors/yama-postgres.${errorDetails}`
+    );
   }
   
   // Initialize plugin and get API

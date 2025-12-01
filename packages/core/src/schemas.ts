@@ -1,17 +1,23 @@
 import Ajv, { ValidateFunction, ErrorObject } from "ajv";
 import addFormats from "ajv-formats";
+import { TypeParser } from "./types/index.js";
+import type { FieldType } from "./types/index.js";
+import type { ComputedFieldDefinition } from "./entities.js";
 
 // Type definitions for YAML schema structure
 export interface SchemaField {
   // Type can be a primitive type or a schema name (e.g., "User", "User[]")
-  type?: "string" | "number" | "boolean" | "integer" | "array" | "list" | "object" | string;
+  type?: "uuid" | "string" | "number" | "boolean" | "integer" | "array" | "list" | "object" | string;
   required?: boolean;
   default?: unknown;
   format?: string;
+  validator?: string; // Custom validator function name
   items?: SchemaField; // For array/list types (legacy, prefer type: "SchemaName[]")
   properties?: Record<string, SchemaField>; // For object types
   min?: number;
   max?: number;
+  minLength?: number;
+  maxLength?: number;
   pattern?: string;
   enum?: unknown[];
   /** @deprecated Use direct type references like type: "User" or type: "User[]" instead */
@@ -26,11 +32,347 @@ function normalizeType(type: string | undefined): string | undefined {
 }
 
 export interface SchemaDefinition {
+  // Database config (can be at top level or in database:)
+  table?: string; // Database table name (for schemas that map to database tables)
   fields: Record<string, SchemaField>;
+  computed?: Record<string, ComputedFieldDefinition>;
+  variants?: Record<string, import("./variants/types.js").VariantConfig>;
+  database?: {
+    table?: string; // Override table name
+    indexes?: Array<{ fields: string[]; unique?: boolean; name?: string }>;
+  };
 }
+
+// Re-export for convenience
+export type { ComputedFieldDefinition } from "./entities.js";
 
 export interface YamaSchemas {
   [schemaName: string]: SchemaDefinition;
+}
+
+/**
+ * Parse schema field definition using new type system
+ * Uses TypeParser for all type parsing
+ */
+export function parseSchemaFieldDefinition(
+  fieldName: string,
+  fieldDef: SchemaField | string,
+  availableSchemas?: Set<string>
+): SchemaField {
+  // Fast path: already parsed
+  if (typeof fieldDef !== "string") {
+    // Ensure it has a type
+    if (!fieldDef.type) {
+      throw new Error(`Field "${fieldName}" must have a type property. Received: ${JSON.stringify(fieldDef)}`);
+    }
+    return fieldDef;
+  }
+
+  const str = fieldDef.trim();
+  
+  // Handle empty string
+  if (!str) {
+    throw new Error(`Field "${fieldName}" has an empty type definition`);
+  }
+
+  // Check if this is a schema reference (capitalized name)
+  let schemaCheckStr = str;
+  if (schemaCheckStr.endsWith("[]")) {
+    schemaCheckStr = schemaCheckStr.slice(0, -2);
+  }
+  if (schemaCheckStr.endsWith("!") || schemaCheckStr.endsWith("?")) {
+    schemaCheckStr = schemaCheckStr.slice(0, -1);
+  }
+  // Remove type parameters for check
+  const paramMatch = schemaCheckStr.match(/^(\w+)(?:\(.*?\))?$/);
+  const baseName = paramMatch ? paramMatch[1] : schemaCheckStr;
+
+  const isSchemaReference = /^[A-Z][a-zA-Z0-9]*$/.test(baseName) && 
+    (availableSchemas?.has(baseName) ?? true);
+
+  if (isSchemaReference) {
+    // This is a schema reference
+    const parsed = TypeParser.parse(str);
+    const field: SchemaField = {
+      type: parsed.array ? `${baseName}[]` : baseName,
+      required: !parsed.nullable,
+    };
+    return field;
+  }
+
+  // Use TypeParser for all type parsing
+  const parsedType = TypeParser.parse(str);
+  
+  // Convert FieldType to SchemaField
+  const field: SchemaField = {
+    type: parsedType.type as SchemaField["type"],
+    required: !parsedType.nullable,
+    default: parsedType.default || (parsedType.defaultFn ? parsedType.defaultFn + "()" : undefined),
+    minLength: parsedType.minLength,
+    maxLength: parsedType.maxLength,
+    min: typeof parsedType.min === 'number' ? parsedType.min : undefined,
+    max: typeof parsedType.max === 'number' ? parsedType.max : undefined,
+    pattern: parsedType.pattern,
+    enum: parsedType.enumValues,
+  };
+
+  // Map new types to schema types
+  if (parsedType.type === 'email' || parsedType.type === 'url' || parsedType.type === 'phone' || parsedType.type === 'slug') {
+    field.type = "string";
+    if (parsedType.type === 'email') {
+      field.format = "email";
+    } else if (parsedType.type === 'url') {
+      field.format = "uri";
+    }
+  } else if (parsedType.type === 'text') {
+    field.type = "string";
+  } else if (parsedType.type === 'int' || parsedType.type === 'int8' || parsedType.type === 'int16' || 
+             parsedType.type === 'int32' || parsedType.type === 'int64' || parsedType.type === 'uint') {
+    field.type = "integer";
+  } else if (parsedType.type === 'decimal' || parsedType.type === 'money' || 
+             parsedType.type === 'float' || parsedType.type === 'double') {
+    field.type = "number";
+  } else if (parsedType.type === 'timestamp' || parsedType.type === 'timestamptz' || 
+             parsedType.type === 'timestamplocal' || parsedType.type === 'datetime' ||
+             parsedType.type === 'datetimetz' || parsedType.type === 'datetimelocal') {
+    field.type = "string";
+    field.format = "date-time";
+  } else if (parsedType.type === 'date') {
+    field.type = "string";
+    field.format = "date";
+  } else if (parsedType.type === 'time') {
+    field.type = "string";
+    field.format = "time";
+  } else if (parsedType.type === 'json' || parsedType.type === 'jsonb') {
+    field.type = "object";
+  } else if (parsedType.type === 'enum') {
+    field.type = "string";
+    field.enum = parsedType.enumValues;
+  } else {
+    // For types that don't need mapping (like 'string', 'uuid', etc.), ensure type is set
+    // parsedType.type should already be set in the field above, but double-check
+    if (!field.type) {
+      // Fallback: use the parsed type as-is
+      field.type = parsedType.type as SchemaField["type"];
+    }
+  }
+
+  // Final check: ensure type is always set
+  if (!field.type) {
+    throw new Error(`Field "${fieldName}" could not be parsed to determine type. Input: "${str}", Parsed: ${JSON.stringify(parsedType)}`);
+  }
+
+  return field;
+}
+
+/**
+ * Normalize a schema definition
+ * Parses shorthand field syntax automatically using new type system
+ */
+export function normalizeSchemaDefinition(
+  schemaDef: SchemaDefinition | { fields?: Record<string, SchemaField | string>; computed?: any; variants?: any; database?: any }
+): SchemaDefinition {
+  // Validate input
+  if (!schemaDef || typeof schemaDef !== 'object' || schemaDef === null) {
+    throw new Error(
+      `Invalid schema definition: expected an object, but got ${typeof schemaDef}`
+    );
+  }
+
+  // Must have fields property
+  if (!('fields' in schemaDef)) {
+    const keys = Object.keys(schemaDef);
+    throw new Error(
+      `Invalid schema definition format. Expected { fields: {...} }, ` +
+      `but got an object with keys: ${keys.length > 0 ? keys.join(', ') : '(empty object)'}`
+    );
+  }
+
+  if (!schemaDef.fields || typeof schemaDef.fields !== 'object' || schemaDef.fields === null) {
+    throw new Error(
+      `Invalid schema definition: expected fields to be an object, but got ${typeof schemaDef.fields}`
+    );
+  }
+
+  // Parse fields using new type system
+  // Note: availableSchemas will be populated when schemas are normalized together
+  const fields: Record<string, SchemaField> = {};
+  for (const [fieldName, fieldDef] of Object.entries(schemaDef.fields)) {
+    if (typeof fieldDef === "string") {
+      // New concise syntax - parse using TypeParser
+      fields[fieldName] = parseSchemaFieldDefinition(fieldName, fieldDef);
+    } else if (fieldDef && typeof fieldDef === "object") {
+      // Expanded object syntax - parse using TypeParser.parseExpanded
+      const parsedType = TypeParser.parseExpanded(fieldDef as any);
+      fields[fieldName] = {
+        type: parsedType.type as SchemaField["type"],
+        required: !parsedType.nullable,
+        default: parsedType.default || (parsedType.defaultFn ? parsedType.defaultFn + "()" : undefined),
+        minLength: parsedType.minLength,
+        maxLength: parsedType.maxLength,
+        min: typeof parsedType.min === 'number' ? parsedType.min : undefined,
+        max: typeof parsedType.max === 'number' ? parsedType.max : undefined,
+        pattern: parsedType.pattern,
+        enum: parsedType.enumValues,
+        // Map new types to schema types
+        ...(parsedType.type === 'email' && { format: 'email' }),
+        ...(parsedType.type === 'url' && { format: 'uri' }),
+        ...(parsedType.type === 'date' && { format: 'date' }),
+        ...(parsedType.type === 'time' && { format: 'time' }),
+        ...((parsedType.type === 'timestamp' || parsedType.type === 'timestamptz' || 
+             parsedType.type === 'timestamplocal' || parsedType.type === 'datetime') && { format: 'date-time' }),
+      };
+    } else {
+      throw new Error(
+        `Invalid field definition for "${fieldName}": expected a string or object, but got ${typeof fieldDef}`
+      );
+    }
+  }
+
+  const normalized: SchemaDefinition = { fields };
+  
+  // Preserve computed fields
+  if (schemaDef.computed !== undefined) {
+    normalized.computed = schemaDef.computed;
+  }
+  
+  // Preserve variants
+  if (schemaDef.variants !== undefined) {
+    normalized.variants = schemaDef.variants;
+  }
+  
+  // Preserve database config
+  if (schemaDef.database !== undefined) {
+    normalized.database = schemaDef.database;
+  }
+  
+  return normalized;
+}
+
+/**
+ * Normalize query/params from schema format to internal format
+ * Handles Record<string, SchemaField | string> format (supports shorthand)
+ */
+export function normalizeQueryOrParams(
+  queryOrParams: Record<string, SchemaField | string> | undefined
+): Record<string, SchemaField> | undefined {
+  if (!queryOrParams || typeof queryOrParams !== 'object' || queryOrParams === null) {
+    return undefined;
+  }
+
+  const fields: Record<string, SchemaField> = {};
+
+  for (const [fieldName, fieldDef] of Object.entries(queryOrParams)) {
+    if (typeof fieldDef === "string") {
+      // Shorthand syntax - parse it
+      fields[fieldName] = parseSchemaFieldDefinition(fieldName, fieldDef);
+    } else if (fieldDef && typeof fieldDef === "object") {
+      // Already an object - check if it has a type
+      if (fieldDef.type) {
+        // Has type - use as-is
+        fields[fieldName] = {
+          ...fieldDef,
+          required: fieldDef.required === true
+        };
+      } else {
+        // No type - try to parse it as an expanded field definition
+        const parsedType = TypeParser.parseExpanded(fieldDef as any);
+        fields[fieldName] = {
+          type: parsedType.type as SchemaField["type"],
+          required: !parsedType.nullable,
+          default: parsedType.default || (parsedType.defaultFn ? parsedType.defaultFn + "()" : undefined),
+          minLength: parsedType.minLength,
+          maxLength: parsedType.maxLength,
+          min: typeof parsedType.min === 'number' ? parsedType.min : undefined,
+          max: typeof parsedType.max === 'number' ? parsedType.max : undefined,
+          pattern: parsedType.pattern,
+          enum: parsedType.enumValues,
+          // Map new types to schema types
+          ...(parsedType.type === 'email' && { format: 'email' }),
+          ...(parsedType.type === 'url' && { format: 'uri' }),
+          ...(parsedType.type === 'date' && { format: 'date' }),
+          ...(parsedType.type === 'time' && { format: 'time' }),
+          ...((parsedType.type === 'timestamp' || parsedType.type === 'timestamptz' || 
+               parsedType.type === 'timestamplocal' || parsedType.type === 'datetime') && { format: 'date-time' }),
+        };
+      }
+    }
+  }
+
+  return fields;
+}
+
+/**
+ * Normalize body definition - handles string (schema reference), object with type, or object with fields
+ */
+export function normalizeBodyDefinition(
+  body: string | { type?: string; fields?: Record<string, SchemaField | string>; properties?: Record<string, SchemaField> } | undefined
+): { type?: string; fields?: Record<string, SchemaField> } | undefined {
+  if (!body) {
+    return undefined;
+  }
+
+  // String shorthand - schema reference
+  if (typeof body === "string") {
+    return { type: body };
+  }
+
+  // Object with type (schema reference)
+  if (body.type && typeof body.type === "string") {
+    return { type: body.type };
+  }
+
+  // Object with fields (new format)
+  if (body.fields && typeof body.fields === "object") {
+    const fields: Record<string, SchemaField> = {};
+    for (const [fieldName, fieldDef] of Object.entries(body.fields)) {
+      if (typeof fieldDef === "string") {
+        fields[fieldName] = parseSchemaFieldDefinition(fieldName, fieldDef);
+      } else if (fieldDef && typeof fieldDef === "object") {
+        // Expanded object syntax - parse using TypeParser.parseExpanded
+        const parsedType = TypeParser.parseExpanded(fieldDef as any);
+        fields[fieldName] = {
+          type: parsedType.type as SchemaField["type"],
+          required: !parsedType.nullable,
+          default: parsedType.default || (parsedType.defaultFn ? parsedType.defaultFn + "()" : undefined),
+          minLength: parsedType.minLength,
+          maxLength: parsedType.maxLength,
+          min: typeof parsedType.min === 'number' ? parsedType.min : undefined,
+          max: typeof parsedType.max === 'number' ? parsedType.max : undefined,
+          pattern: parsedType.pattern,
+          enum: parsedType.enumValues,
+          // Map new types to schema types
+          ...(parsedType.type === 'email' && { format: 'email' }),
+          ...(parsedType.type === 'url' && { format: 'uri' }),
+          ...(parsedType.type === 'date' && { format: 'date' }),
+          ...(parsedType.type === 'time' && { format: 'time' }),
+          ...((parsedType.type === 'timestamp' || parsedType.type === 'timestamptz' || 
+               parsedType.type === 'timestamplocal' || parsedType.type === 'datetime') && { format: 'date-time' }),
+        };
+      } else {
+        throw new Error(
+          `Invalid field definition for "${fieldName}" in body: expected a string or object, but got ${typeof fieldDef}`
+        );
+      }
+    }
+    return { fields };
+  }
+
+  // Legacy: object with properties (deprecated but handle for now)
+  if (body.properties && typeof body.properties === "object") {
+    const fields: Record<string, SchemaField> = {};
+    for (const [fieldName, fieldDef] of Object.entries(body.properties)) {
+      if (fieldDef && typeof fieldDef === "object") {
+        fields[fieldName] = {
+          ...fieldDef,
+          required: fieldDef.required === true
+        };
+      }
+    }
+    return { fields };
+  }
+
+  return undefined;
 }
 
 // Validation error result
@@ -58,12 +400,14 @@ function isSchemaReference(type: string, schemas?: YamaSchemas): boolean {
 
 /**
  * Convert Yama schema field to JSON Schema property
+ * @param useOpenAPIFormat - If true, use OpenAPI 3.0 format (#/components/schemas/), otherwise use JSON Schema format (#/definitions/)
  */
 export function fieldToJsonSchema(
   field: SchemaField,
   fieldName: string,
   schemas?: YamaSchemas,
-  visited: Set<string> = new Set()
+  visited: Set<string> = new Set(),
+  useOpenAPIFormat: boolean = true
 ): Record<string, unknown> {
   // Handle legacy $ref (deprecated but still supported)
   if (field.$ref) {
@@ -78,7 +422,7 @@ export function fieldToJsonSchema(
     // Recursively convert the referenced schema
     visited.add(field.$ref);
     const referencedSchema = schemas[field.$ref];
-    const schema = schemaToJsonSchema(field.$ref, referencedSchema, schemas, visited);
+    const schema = schemaToJsonSchema(field.$ref, referencedSchema, schemas, visited, useOpenAPIFormat);
     visited.delete(field.$ref);
     return schema;
   }
@@ -113,10 +457,11 @@ export function fieldToJsonSchema(
     }
     
     // Return JSON Schema array with $ref
+    const refPrefix = useOpenAPIFormat ? "#/components/schemas/" : "#/definitions/";
     return {
       type: "array",
       items: {
-        $ref: `#/definitions/${baseType}`
+        $ref: `${refPrefix}${baseType}`
       }
     };
   }
@@ -129,13 +474,35 @@ export function fieldToJsonSchema(
     }
     
     // Return JSON Schema $ref format
+    const refPrefix = useOpenAPIFormat ? "#/components/schemas/" : "#/definitions/";
     return {
-      $ref: `#/definitions/${typeStr}`
+      $ref: `${refPrefix}${typeStr}`
     };
   }
 
   // Handle primitive types
   const normalizedType = normalizeType(typeStr);
+  
+  // Special handling for uuid - convert to string with format in JSON Schema
+  if (typeStr === "uuid") {
+    const schema: Record<string, unknown> = {
+      type: "string",
+      format: "uuid"
+    };
+    // Add additional format if specified (shouldn't happen, but be safe)
+    if (field.format && field.format !== "uuid") {
+      schema.format = field.format;
+    }
+    // Continue with rest of field properties
+    if (field.enum) {
+      schema.enum = field.enum;
+    }
+    if (field.pattern) {
+      schema.pattern = field.pattern;
+    }
+    return schema;
+  }
+  
   const schema: Record<string, unknown> = {
     type: normalizedType === "integer" ? "integer" : normalizedType
   };
@@ -170,6 +537,14 @@ export function fieldToJsonSchema(
 
   // Handle object types
   if (normalizedType === "object" && field.properties) {
+    // Defensive check: ensure properties is a valid object before calling Object.entries
+    if (!field.properties || typeof field.properties !== 'object' || field.properties === null) {
+      throw new Error(
+        `Field "${fieldName}" has invalid properties. ` +
+        `Expected an object, but got: ${typeof field.properties}`
+      );
+    }
+
     const properties: Record<string, unknown> = {};
     const required: string[] = [];
     for (const [propName, propField] of Object.entries(field.properties)) {
@@ -187,21 +562,57 @@ export function fieldToJsonSchema(
 
 /**
  * Convert Yama schema definition to JSON Schema
+ * @param useOpenAPIFormat - If true, use OpenAPI 3.0 format (#/components/schemas/), otherwise use JSON Schema format (#/definitions/)
  */
 export function schemaToJsonSchema(
   schemaName: string,
-  schemaDef: SchemaDefinition,
+  schemaDef: SchemaDefinition | { fields?: Record<string, SchemaField | string> },
   schemas?: YamaSchemas,
-  visited: Set<string> = new Set()
+  visited: Set<string> = new Set(),
+  useOpenAPIFormat: boolean = true
 ): Record<string, unknown> {
+  // Normalize schema to internal format
+  let normalizedSchema: SchemaDefinition;
+  try {
+    normalizedSchema = normalizeSchemaDefinition(schemaDef);
+  } catch (error) {
+    throw new Error(
+      `Failed to normalize schema "${schemaName}": ${error instanceof Error ? error.message : String(error)}`
+    );
+  }
+
+  // Validate that fields exist and is an object
+  if (!normalizedSchema.fields || typeof normalizedSchema.fields !== 'object' || normalizedSchema.fields === null) {
+    throw new Error(
+      `Schema "${schemaName}" has invalid or missing fields. ` +
+      `Expected an object with field definitions, but got: ${typeof normalizedSchema.fields}. ` +
+      `Schema definition keys: ${Object.keys(normalizedSchema).join(', ')}`
+    );
+  }
+
   const properties: Record<string, unknown> = {};
   const required: string[] = [];
 
-  for (const [fieldName, field] of Object.entries(schemaDef.fields)) {
-    properties[fieldName] = fieldToJsonSchema(field, fieldName, schemas, visited);
-    
-    if (field.required) {
-      required.push(fieldName);
+  // Defensive check before Object.entries
+  const fieldsToProcess = normalizedSchema.fields;
+  if (!fieldsToProcess || typeof fieldsToProcess !== 'object' || fieldsToProcess === null) {
+    throw new Error(
+      `Schema "${schemaName}" has invalid fields object. ` +
+      `Cannot iterate over fields: ${typeof fieldsToProcess}`
+    );
+  }
+
+  for (const [fieldName, field] of Object.entries(fieldsToProcess)) {
+    try {
+      properties[fieldName] = fieldToJsonSchema(field, fieldName, schemas, visited, useOpenAPIFormat);
+      
+      if (field.required) {
+        required.push(fieldName);
+      }
+    } catch (error) {
+      throw new Error(
+        `Failed to convert field "${fieldName}" in schema "${schemaName}": ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 
@@ -215,11 +626,17 @@ export function schemaToJsonSchema(
 }
 
 /**
+ * Custom validator function type
+ */
+export type CustomValidator = (value: unknown, field: SchemaField, data: unknown) => boolean | string | Promise<boolean | string>;
+
+/**
  * Schema validator class
  */
 export class SchemaValidator {
   private ajv: Ajv;
   private validators: Map<string, ValidateFunction> = new Map();
+  private customValidators: Map<string, CustomValidator> = new Map();
 
   constructor() {
     this.ajv = new Ajv({ 
@@ -231,21 +648,35 @@ export class SchemaValidator {
   }
 
   /**
+   * Register a custom validator function
+   */
+  registerCustomValidator(name: string, validator: CustomValidator): void {
+    this.customValidators.set(name, validator);
+  }
+
+  /**
+   * Get a custom validator by name
+   */
+  getCustomValidator(name: string): CustomValidator | undefined {
+    return this.customValidators.get(name);
+  }
+
+  /**
    * Register schemas and create validators
    */
   registerSchemas(schemas: YamaSchemas): void {
     this.validators.clear();
 
-    // Build definitions map for $ref support
+    // Build definitions map for $ref support (use JSON Schema format for AJV)
     const definitions: Record<string, unknown> = {};
     for (const [schemaName, schemaDef] of Object.entries(schemas)) {
-      const schema = schemaToJsonSchema(schemaName, schemaDef, schemas);
+      const schema = schemaToJsonSchema(schemaName, schemaDef, schemas, new Set(), false); // false = JSON Schema format
       definitions[schemaName] = schema;
     }
 
     // Register each schema with definitions included
     for (const [schemaName, schemaDef] of Object.entries(schemas)) {
-      const schema = schemaToJsonSchema(schemaName, schemaDef, schemas);
+      const schema = schemaToJsonSchema(schemaName, schemaDef, schemas, new Set(), false); // false = JSON Schema format
       // Add definitions to support $ref
       const schemaWithDefs = {
         ...schema,
@@ -259,7 +690,7 @@ export class SchemaValidator {
   /**
    * Validate data against a schema
    */
-  validate(schemaName: string, data: unknown): ValidationResult {
+  async validate(schemaName: string, data: unknown): Promise<ValidationResult> {
     const validator = this.validators.get(schemaName);
 
     if (!validator) {
@@ -278,7 +709,46 @@ export class SchemaValidator {
       };
     }
 
+    // Run custom validators if schema has them
+    // Note: This requires access to the schema definition to check for custom validators
+    // For now, custom validators should be called explicitly by the handler
+
     return { valid: true };
+  }
+
+  /**
+   * Validate a field value with custom validator if specified
+   */
+  async validateField(
+    fieldName: string,
+    field: SchemaField,
+    value: unknown,
+    data: unknown
+  ): Promise<{ valid: boolean; error?: string }> {
+    if (!field.validator) {
+      return { valid: true };
+    }
+
+    const customValidator = this.customValidators.get(field.validator);
+    if (!customValidator) {
+      return {
+        valid: false,
+        error: `Custom validator "${field.validator}" not found for field "${fieldName}"`
+      };
+    }
+
+    try {
+      const result = await customValidator(value, field, data);
+      if (typeof result === "string") {
+        return { valid: false, error: result };
+      }
+      return { valid: result };
+    } catch (error) {
+      return {
+        valid: false,
+        error: error instanceof Error ? error.message : String(error)
+      };
+    }
   }
 
   /**
@@ -426,5 +896,8 @@ export interface RateLimitConfig {
     [key: string]: unknown;
   };
 }
+
+// Re-export ApisConfig from apis module
+export type { ApisConfig } from "./apis/types.js";
 
 

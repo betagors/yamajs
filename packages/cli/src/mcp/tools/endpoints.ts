@@ -21,7 +21,7 @@ export const yamaEndpointsTool = {
           content: [
             {
               type: "text" as const,
-              text: "No endpoints defined",
+              text: "No REST endpoints defined",
             },
           ],
         };

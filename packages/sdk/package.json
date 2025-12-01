@@ -24,7 +24,9 @@
     "test": "echo \"no tests yet\"",
     "clean": "rimraf dist"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@betagors/yama-core": "workspace:*"
+  },
   "devDependencies": {
     "rimraf": "^5.0.0",
     "@types/node": "^20.0.0"

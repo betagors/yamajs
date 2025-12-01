@@ -33,23 +33,6 @@ export async function endpointsCommand(options: EndpointsOptions): Promise<void>
       return;
     }
 
-    // Use TUI mode if appropriate (disabled in CI or non-interactive environments)
-    const { shouldUseTUI } = await import("../utils/tui-utils.ts");
-    const useTUI = shouldUseTUI();
-    
-    if (useTUI) {
-      const { runEndpointsTUI } = await import("../tui/EndpointsCommand.tsx");
-      runEndpointsTUI({ 
-        endpoints: config.endpoints.map(e => ({
-          ...e,
-          params: e.params as Record<string, unknown> | undefined,
-          query: e.query as Record<string, unknown> | undefined,
-        }))
-      });
-      return;
-    }
-
-    // Fallback to text output
     console.log(`📡 Endpoints (${config.endpoints.length}):\n`);
 
     config.endpoints.forEach((endpoint, index) => {

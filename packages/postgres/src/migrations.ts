@@ -1,4 +1,5 @@
 import type { YamaEntities, EntityDefinition, EntityField, MigrationStepUnion } from "@betagors/yama-core";
+import { DatabaseTypeMapper } from "@betagors/yama-core";
 import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync } from "fs";
 import { join } from "path";
 import { createHash } from "crypto";
@@ -10,40 +11,27 @@ function generateSQLColumn(fieldName: string, field: EntityField, dbColumnName: 
   let sqlType: string;
   const modifiers: string[] = [];
 
-  // Determine SQL type
+  // Determine SQL type using new type system
   if (field.dbType) {
     sqlType = field.dbType;
   } else {
-    switch (field.type) {
-      case "uuid":
-        sqlType = "UUID";
-        break;
-      case "string":
-        if (field.maxLength) {
-          sqlType = `VARCHAR(${field.maxLength})`;
-        } else {
-          sqlType = "VARCHAR(255)";
-        }
-        break;
-      case "text":
-        sqlType = "TEXT";
-        break;
-      case "number":
-      case "integer":
-        sqlType = "INTEGER";
-        break;
-      case "boolean":
-        sqlType = "BOOLEAN";
-        break;
-      case "timestamp":
-        sqlType = "TIMESTAMP";
-        break;
-      case "jsonb":
-        sqlType = "JSONB";
-        break;
-      default:
-        sqlType = "TEXT";
-    }
+    // Convert EntityField to FieldType for DatabaseTypeMapper
+    const fieldType = {
+      type: field.type as any,
+      nullable: field.nullable !== false && !field.required,
+      array: false,
+      length: (field as any).length,
+      maxLength: field.maxLength,
+      minLength: field.minLength,
+      precision: (field as any).precision,
+      scale: (field as any).scale,
+      currency: (field as any).currency,
+      enumValues: field.enum as string[],
+      pattern: field.pattern,
+    };
+    
+    // Use DatabaseTypeMapper for PostgreSQL
+    sqlType = DatabaseTypeMapper.toPostgreSQL(fieldType);
   }
 
   // Add primary key

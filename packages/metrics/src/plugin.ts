@@ -127,12 +127,12 @@ const plugin: YamaPlugin = {
     );
 
     // Listen to plugin lifecycle events
-    context.on("plugin:loaded", ({ name }) => {
+    context.on("plugin:loaded", ({ name }: { name: string }) => {
       // Metrics are already tracked by registry, but we can add custom tracking here
       context.logger.debug(`Plugin loaded: ${name}`);
     });
 
-    context.on("plugin:error", ({ name, error }) => {
+    context.on("plugin:error", ({ name, error }: { name: string; error: Error }) => {
       // Errors are already tracked, but we can add custom tracking here
       context.logger.debug(`Plugin error: ${name}`, error);
     });
@@ -141,7 +141,18 @@ const plugin: YamaPlugin = {
     const api: MetricsPluginAPI = {
       getPluginMetrics(pluginName?: string): PluginMetrics | PluginMetrics[] {
         if (pluginName) {
-          return pluginMetricsCollector.getMetrics(pluginName) || null;
+          const metrics = pluginMetricsCollector.getMetrics(pluginName);
+          if (!metrics) {
+            // Return empty metrics if not found
+            return {
+              pluginName,
+              loadTime: 0,
+              initTime: 0,
+              apiCalls: 0,
+              errors: 0,
+            };
+          }
+          return metrics;
         }
         return pluginMetricsCollector.getAllMetrics();
       },

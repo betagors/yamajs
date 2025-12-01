@@ -141,61 +141,6 @@ export async function dbInspectCommand(
         ]);
       }
 
-      // Use TUI mode if appropriate (disabled in CI or non-interactive environments)
-      const { shouldUseTUI } = await import("../utils/tui-utils.ts");
-      const useTUI = shouldUseTUI();
-      
-      const columnsData: Array<{
-        name: string;
-        type: string;
-        nullable: string;
-        default: string;
-        isPK: boolean;
-      }> = (columnsResult as Array<{
-        column_name: string;
-        data_type: string;
-        character_maximum_length: number | null;
-        is_nullable: string;
-        column_default: string | null;
-        is_identity: string;
-      }>).map((col) => {
-        let typeStr = col.data_type.toUpperCase();
-        if (col.character_maximum_length) {
-          typeStr += `(${col.character_maximum_length})`;
-        }
-        let defaultStr = col.column_default || "-";
-        if (defaultStr !== "-" && defaultStr.length > 30) {
-          defaultStr = defaultStr.substring(0, 27) + "...";
-        }
-        return {
-          name: col.column_name,
-          type: typeStr,
-          nullable: col.is_nullable === "YES" ? "Yes" : "No",
-          default: defaultStr,
-          isPK: primaryKeyColumns.has(col.column_name),
-        };
-      });
-
-      // Get sample data (first 10 rows)
-      let sampleData: Array<Record<string, unknown>> | undefined;
-      if (rowCount > 0) {
-        const sampleResult = await sql.unsafe(`SELECT * FROM ${quotedTableName} LIMIT 10`);
-        if (sampleResult.length > 0) {
-          sampleData = sampleResult as Array<Record<string, unknown>>;
-        }
-      }
-      
-      if (useTUI) {
-        const { runDbInspectTUI } = await import("../tui/DbInspectCommand.tsx");
-        runDbInspectTUI({
-          tableName,
-          columns: columnsData,
-          rowCount,
-          sampleData,
-        });
-        await dbPlugin.client.closeDatabase();
-        return;
-      }
 
       // Fallback to text output
       console.log("📐 Schema:\n");

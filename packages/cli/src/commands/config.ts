@@ -17,17 +17,6 @@ export async function configCommand(options: ConfigOptions): Promise<void> {
   try {
     const config = readYamaConfig(configPath);
     
-    // Use TUI mode if appropriate (disabled in CI or non-interactive environments)
-    const { shouldUseTUI } = await import("../utils/tui-utils.ts");
-    const useTUI = shouldUseTUI();
-    
-    if (useTUI) {
-      const { runConfigTUI } = await import("../tui/ConfigCommand.tsx");
-      runConfigTUI({ config, configPath });
-      return;
-    }
-    
-    // Fallback to text output
     console.log(`📋 Configuration (${configPath}):\n`);
     console.log(JSON.stringify(config, null, 2));
   } catch (error) {

@@ -32,26 +32,6 @@ export async function pluginListCommand(): Promise<void> {
       }
     }
 
-    // Use TUI mode if appropriate (disabled in CI or non-interactive environments)
-    const { shouldUseTUI } = await import("../utils/tui-utils.ts");
-    const useTUI = shouldUseTUI();
-    
-    if (useTUI) {
-      const pluginList = plugins.map((p) => {
-        const manifest = p.manifest as { type?: string; service?: string } | undefined;
-        return {
-          name: p.name,
-          version: p.version,
-          type: manifest?.type,
-          service: manifest?.service,
-        };
-      });
-      const { runPluginListTUI } = await import("../tui/PluginListCommand.tsx");
-      runPluginListTUI({ plugins: pluginList });
-      return;
-    }
-
-    // Fallback to text output
     console.log("📦 Installed Yama service plugins:\n");
 
     if (plugins.length === 0) {
@@ -150,18 +130,6 @@ export async function pluginValidateCommand(): Promise<void> {
       }
     }
 
-    // Use TUI mode if appropriate (disabled in CI or non-interactive environments)
-    const { shouldUseTUI } = await import("../utils/tui-utils.ts");
-    const useTUI = shouldUseTUI();
-    
-    if (useTUI) {
-      const { runPluginValidateTUI } = await import("../tui/PluginValidateCommand.tsx");
-      runPluginValidateTUI({
-        results,
-        summary: { valid: validCount, invalid: invalidCount },
-      });
-      return;
-    }
 
     // Fallback to text output
     console.log("🔍 Validating service plugins...\n");

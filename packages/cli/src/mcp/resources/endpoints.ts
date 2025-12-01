@@ -3,6 +3,7 @@ import { findYamaConfig } from "../../utils/project-detection.ts";
 import { existsSync } from "fs";
 import { resolve } from "path";
 import { getMCPWorkingDir } from "../utils/workdir.ts";
+import { normalizeApisConfig } from "@betagors/yama-core";
 
 export async function getEndpointsResource(uri: string): Promise<{
   contents: Array<{ uri: string; mimeType: string; text: string }>;
@@ -25,21 +26,32 @@ export async function getEndpointsResource(uri: string): Promise<{
       );
     }
 
-  const config = readYamaConfig(configPath) as {
-    endpoints?: Array<{
-      path: string;
-      method: string;
-      handler: string;
-      description?: string;
-      params?: unknown;
-      query?: unknown;
-      body?: { type: string };
-      response?: { type: string };
-    }>;
-  };
+    const config = readYamaConfig(configPath) as {
+      apis?: {
+        rest?: any;
+      };
+    };
 
-    const endpoints = config.endpoints || [];
-    const endpointsJson = JSON.stringify(endpoints, null, 2);
+    if (!config.apis?.rest) {
+      return {
+        contents: [{
+          uri: "yama://endpoints",
+          mimeType: "application/json",
+          text: "[]",
+        }],
+      };
+    }
+
+    const normalizedApis = normalizeApisConfig({ apis: config.apis });
+    const allEndpoints = normalizedApis.rest.flatMap(restConfig => 
+      restConfig.endpoints.map(e => ({
+        ...e,
+        basePath: restConfig.basePath,
+        configName: restConfig.name,
+      }))
+    );
+
+    const endpointsJson = JSON.stringify(allEndpoints, null, 2);
 
     return {
       contents: [

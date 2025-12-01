@@ -3,30 +3,22 @@
  * Generates OpenAPI 3.0 specifications and other documentation formats from yama.yaml
  */
 
-import { schemaToJsonSchema, type YamaSchemas, type SchemaDefinition, type YamaEntities, type DatabaseConfig, entitiesToSchemas, mergeSchemas } from "@betagors/yama-core";
+import { schemaToJsonSchema, type YamaSchemas, type SchemaDefinition, type YamaEntities, type DatabaseConfig, entitiesToSchemas, mergeSchemas, normalizeApisConfig, normalizeBodyDefinition, normalizeQueryOrParams } from "@betagors/yama-core";
 
 export interface EndpointDefinition {
   path: string;
   method: string;
-  handler?: string; // Optional - endpoints can work without handlers
+  handler?: string | object; // Optional - endpoints can work without handlers
   description?: string;
-  query?: Record<string, {
-    type?: string;
-    required?: boolean;
-    min?: number;
-    max?: number;
-    format?: string;
-    enum?: unknown[];
-  }>;
-  params?: Record<string, {
-    type?: string;
-    required?: boolean;
-  }>;
+  query?: Record<string, any>;
+  params?: Record<string, any>;
   body?: string | {
     type?: string;
+    fields?: Record<string, any>;
   };
   response?: string | {
     type?: string;
+    properties?: Record<string, any>;
   };
   auth?: {
     required?: boolean;
@@ -47,7 +39,9 @@ export interface YamaConfig {
       header?: string;
     }>;
   };
-  endpoints?: EndpointDefinition[];
+  apis?: {
+    rest?: any;
+  };
 }
 
 export interface OpenAPISpec {
@@ -59,6 +53,7 @@ export interface OpenAPISpec {
   };
   paths: Record<string, {
     [method: string]: {
+      operationId?: string;
       summary?: string;
       description?: string;
       parameters?: Array<{
@@ -155,10 +150,18 @@ function fieldToOpenAPISchema(field: {
 
 /**
  * Convert endpoint path parameters to OpenAPI path parameters
+ * Handles both :id (Yama format) and {id} (OpenAPI format)
  */
 function extractPathParams(path: string): string[] {
-  const matches = path.matchAll(/:(\w+)/g);
-  return Array.from(matches, m => m[1]);
+  // Try Yama format first (:id)
+  const yamaMatches = path.matchAll(/:(\w+)/g);
+  const yamaParams = Array.from(yamaMatches, m => m[1]);
+  if (yamaParams.length > 0) {
+    return yamaParams;
+  }
+  // Try OpenAPI format ({id})
+  const openAPIMatches = path.matchAll(/\{(\w+)\}/g);
+  return Array.from(openAPIMatches, m => m[1]);
 }
 
 /**
@@ -169,13 +172,26 @@ function endpointToOpenAPIOperation(
   schemas?: YamaSchemas,
   authConfig?: YamaConfig["auth"]
 ): OpenAPISpec["paths"][string][string] {
+  // Generate operationId from path and method
+  const operationId = `${endpoint.method.toLowerCase()}_${endpoint.path
+    .replace(/[{}:]/g, '')
+    .replace(/\//g, '_')
+    .replace(/^_|_$/g, '')}`;
+  
   const operation: OpenAPISpec["paths"][string][string] = {
+    operationId,
     responses: {}
   } as OpenAPISpec["paths"][string][string];
 
   if (endpoint.description) {
     operation.summary = endpoint.description;
     operation.description = endpoint.description;
+  } else {
+    // Generate a default summary if none provided
+    const method = endpoint.method.toUpperCase();
+    const pathParts = endpoint.path.split('/').filter(p => p);
+    const resource = pathParts[0] || 'resource';
+    operation.summary = `${method} ${endpoint.path}`;
   }
 
   // Parameters (path + query)
@@ -222,16 +238,54 @@ function endpointToOpenAPIOperation(
   }
 
   // Request body
-  const bodyType = typeof endpoint.body === "string" ? endpoint.body : endpoint.body?.type;
-  if (bodyType) {
+  if (endpoint.body) {
     let schema: Record<string, unknown>;
 
-    if (schemas && schemas[bodyType]) {
-      // Reference to a schema
-      schema = { $ref: `#/components/schemas/${bodyType}` };
+    // Handle inline fields definition
+    if (typeof endpoint.body === "object" && endpoint.body.fields) {
+      // Normalize the body fields and convert to JSON Schema
+      const normalizedBody = normalizeBodyDefinition(endpoint.body);
+      if (normalizedBody?.fields) {
+        // Convert fields to a schema definition and then to JSON Schema
+        const tempSchemaDef: SchemaDefinition = {
+          fields: normalizedBody.fields
+        };
+        schema = schemaToJsonSchema("_inline", tempSchemaDef, schemas);
+      } else {
+        schema = { type: "object" };
+      }
     } else {
-      // Fallback to basic type
-      schema = { type: yamaTypeToOpenAPIType(bodyType) };
+      // Handle type reference (string or object with type)
+      const bodyType = typeof endpoint.body === "string" ? endpoint.body : endpoint.body?.type;
+      if (bodyType) {
+        // Handle array syntax like "Post[]"
+        const arrayMatch = bodyType.match(/^(.+)\[\]$/);
+        if (arrayMatch) {
+          const baseType = arrayMatch[1];
+          if (schemas && schemas[baseType]) {
+            // Array of schema reference
+            schema = {
+              type: "array",
+              items: { $ref: `#/components/schemas/${baseType}` }
+            };
+          } else {
+            // Array of primitive type
+            schema = {
+              type: "array",
+              items: { type: yamaTypeToOpenAPIType(baseType) }
+            };
+          }
+        } else if (schemas && schemas[bodyType]) {
+          // Reference to a schema
+          schema = { $ref: `#/components/schemas/${bodyType}` };
+        } else {
+          // Fallback to basic type
+          schema = { type: yamaTypeToOpenAPIType(bodyType) };
+        }
+      } else {
+        // No body type specified
+        schema = { type: "object" };
+      }
     }
 
     operation.requestBody = {
@@ -257,7 +311,24 @@ function endpointToOpenAPIOperation(
   if (responseType) {
     let schema: Record<string, unknown>;
 
-    if (schemas && schemas[responseType]) {
+    // Handle array syntax like "PostWithAuthor[]"
+    const arrayMatch = responseType.match(/^(.+)\[\]$/);
+    if (arrayMatch) {
+      const baseType = arrayMatch[1];
+      if (schemas && schemas[baseType]) {
+        // Array of schema reference
+        schema = {
+          type: "array",
+          items: { $ref: `#/components/schemas/${baseType}` }
+        };
+      } else {
+        // Array of primitive type
+        schema = {
+          type: "array",
+          items: { type: yamaTypeToOpenAPIType(baseType) }
+        };
+      }
+    } else if (schemas && schemas[responseType]) {
       // Reference to a schema
       schema = { $ref: `#/components/schemas/${responseType}` };
     } else {
@@ -320,11 +391,15 @@ function endpointToOpenAPIOperation(
  * Generate OpenAPI 3.0 specification from Yama config
  */
 export function generateOpenAPI(config: YamaConfig): OpenAPISpec {
+  // Support both project.name/version and top-level name/version
+  const projectName = (config as any).project?.name || config.name || "API";
+  const projectVersion = (config as any).project?.version || config.version || "1.0.0";
+  
   const spec: OpenAPISpec = {
     openapi: "3.0.0",
     info: {
-      title: config.name || "API",
-      version: config.version || "1.0.0"
+      title: projectName,
+      version: projectVersion
     },
     paths: {},
     components: {
@@ -338,18 +413,62 @@ export function generateOpenAPI(config: YamaConfig): OpenAPISpec {
 
   // Convert all schemas to OpenAPI schemas
   for (const [schemaName, schemaDef] of Object.entries(allSchemas)) {
+    // Skip undefined or null schema definitions
+    if (!schemaDef || typeof schemaDef !== 'object' || schemaDef === null) {
+      console.warn(
+        `Warning: Skipping schema "${schemaName}" - invalid schema definition (${typeof schemaDef})`
+      );
+      continue;
+    }
+
     try {
       const schema = schemaToJsonSchema(schemaName, schemaDef, allSchemas);
       spec.components.schemas[schemaName] = schema;
     } catch (error) {
-      console.warn(`Warning: Failed to convert schema "${schemaName}" to OpenAPI schema:`, error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorDetails = error instanceof Error && error.stack ? `\n${error.stack}` : '';
+      console.error(
+        `Error: Failed to convert schema "${schemaName}" to OpenAPI schema.\n` +
+        `  Reason: ${errorMessage}${errorDetails}\n` +
+        `  This schema will be skipped in the OpenAPI specification.`
+      );
     }
   }
 
   // Convert endpoints to OpenAPI paths
-  if (config.endpoints) {
-    for (const endpoint of config.endpoints) {
-      // Convert path parameters to OpenAPI format (e.g., :id -> {id})
+  console.log("🔍 Debug: Starting endpoint processing...");
+  console.log(`  Config.apis exists: ${!!config.apis}`);
+  console.log(`  Config.apis.rest exists: ${!!config.apis?.rest}`);
+  if (config.apis?.rest) {
+    console.log(`  Config.apis.rest type: ${Array.isArray(config.apis.rest) ? 'array' : typeof config.apis.rest}`);
+    console.log(`  Config.apis.rest keys: ${Object.keys(config.apis.rest).join(', ')}`);
+  }
+  
+  const normalizedApis = normalizeApisConfig({ apis: config.apis });
+  console.log(`  Normalized APIs: ${normalizedApis.rest.length} REST config(s) found`);
+  
+  const allEndpoints = normalizedApis.rest.flatMap(restConfig => {
+    const endpointCount = restConfig.endpoints?.length || 0;
+    console.log(`    Config "${restConfig.name}": ${endpointCount} endpoint(s), basePath: ${restConfig.basePath || '(none)'}`);
+    return restConfig.endpoints || [];
+  });
+  
+  if (allEndpoints.length === 0) {
+    console.warn("Warning: No endpoints found in API configuration. OpenAPI spec will have no paths.");
+    console.warn(`  Config.apis: ${JSON.stringify(config.apis, null, 2)}`);
+    console.warn(`  Normalized APIs: ${JSON.stringify(normalizedApis, null, 2)}`);
+  } else {
+    console.log(`ℹ️  Found ${allEndpoints.length} endpoint(s) to document`);
+  }
+  
+  for (const endpoint of allEndpoints) {
+    if (!endpoint || !endpoint.path || !endpoint.method) {
+      console.warn(`Warning: Skipping invalid endpoint: ${JSON.stringify(endpoint)}`);
+      continue;
+    }
+    
+    try {
+      // Convert path parameters to OpenAPI format (e.g., :id -> {id} or {id} -> {id})
       const openAPIPath = endpoint.path.replace(/:(\w+)/g, "{$1}");
 
       if (!spec.paths[openAPIPath]) {
@@ -357,8 +476,35 @@ export function generateOpenAPI(config: YamaConfig): OpenAPISpec {
       }
 
       const method = endpoint.method.toLowerCase();
-      spec.paths[openAPIPath][method] = endpointToOpenAPIOperation(endpoint, allSchemas, config.auth);
+      const operation = endpointToOpenAPIOperation(endpoint as EndpointDefinition, allSchemas, config.auth);
+      
+      // Validate operation has required fields
+      if (!operation.responses || Object.keys(operation.responses).length === 0) {
+        console.warn(`⚠️  Warning: Endpoint "${endpoint.method} ${endpoint.path}" has no responses, adding default 200 response`);
+        operation.responses = {
+          "200": { description: "Success" }
+        };
+      }
+      
+      spec.paths[openAPIPath][method] = operation;
+      console.log(`  ✓ Added ${method.toUpperCase()} ${openAPIPath} (operationId: ${operation.operationId || 'none'})`);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorStack = error instanceof Error && error.stack ? `\n  Stack: ${error.stack}` : '';
+      console.error(
+        `❌ Error: Failed to convert endpoint "${endpoint.method} ${endpoint.path}" to OpenAPI operation.\n` +
+        `  Reason: ${errorMessage}${errorStack}\n` +
+        `  This endpoint will be skipped in the OpenAPI specification.`
+      );
     }
+  }
+
+  // Log summary
+  const pathCount = Object.keys(spec.paths).length;
+  if (pathCount > 0) {
+    console.log(`✓ OpenAPI spec generated with ${pathCount} path(s) and ${Object.keys(spec.components.schemas).length} schema(s)`);
+  } else {
+    console.warn("⚠️  OpenAPI spec generated but no paths were added. Check endpoint configuration.");
   }
 
   // Add security schemes to components
@@ -380,6 +526,17 @@ export function generateOpenAPI(config: YamaConfig): OpenAPISpec {
           in: "header"
         };
       }
+    }
+  }
+
+  // Final validation - ensure paths object exists and has content
+  if (!spec.paths || Object.keys(spec.paths).length === 0) {
+    console.warn("⚠️  WARNING: OpenAPI spec has no paths! This will result in 'No operations defined in spec!' in Swagger UI.");
+    console.warn(`  Total endpoints processed: ${allEndpoints.length}`);
+    console.warn(`  Total paths in spec: ${Object.keys(spec.paths || {}).length}`);
+    if (allEndpoints.length > 0) {
+      console.warn(`  This suggests endpoints are being processed but not added to spec.paths.`);
+      console.warn(`  First endpoint example: ${JSON.stringify(allEndpoints[0], null, 2)}`);
     }
   }
 

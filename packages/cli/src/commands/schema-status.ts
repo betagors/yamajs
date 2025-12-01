@@ -142,24 +142,6 @@ export async function schemaStatusCommand(options: SchemaStatusOptions): Promise
       }
     }
 
-    // Use TUI mode if appropriate (disabled in CI or non-interactive environments)
-    const { shouldUseTUI } = await import("../utils/tui-utils.ts");
-    const useTUI = shouldUseTUI();
-    
-    if (useTUI) {
-      const migrationStatus = tableData.slice(1).map((row) => ({
-        status: String(row[0]).includes('✅') ? ('applied' as const) : ('pending' as const),
-        migration: String(row[1]),
-        appliedAt: String(row[2]),
-        hash: String(row[3]),
-      }));
-      const { runSchemaStatusTUI } = await import("../tui/SchemaStatusCommand.tsx");
-      runSchemaStatusTUI({ migrations: migrationStatus, pendingCount });
-      await dbPlugin.client.closeDatabase();
-      return;
-    }
-
-    // Fallback to text output
     console.log("\n📊 Migration Status:\n");
     printTable(tableData);
 

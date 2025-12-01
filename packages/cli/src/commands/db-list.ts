@@ -91,22 +91,6 @@ export async function dbListCommand(options: DbListOptions): Promise<void> {
             : config.database.url)
         : "default";
 
-      // Use TUI mode if appropriate (disabled in CI or non-interactive environments)
-      const { shouldUseTUI } = await import("../utils/tui-utils.ts");
-      const useTUI = shouldUseTUI();
-      
-      if (useTUI) {
-        const tableInfo = tableData.slice(1).map((row) => ({
-          name: String(row[0]),
-          rowCount: String(row[1]),
-        }));
-        const { runDbListTUI } = await import("../tui/DbListCommand.tsx");
-        runDbListTUI({ tables: tableInfo, dbType, dbLocation });
-        await dbPlugin.client.closeDatabase();
-        return;
-      }
-
-      // Fallback to text output
       console.log(`\n📊 Database Tables (${dbType} - ${dbLocation}):\n`);
       printTable(tableData);
 

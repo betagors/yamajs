@@ -8,7 +8,7 @@
 
 import { startMCPServer } from "./mcp/server.ts";
 
-// Set environment to disable TUI mode for MCP
+// Set environment for MCP
 process.env.CI = "true";
 process.env.NODE_ENV = process.env.NODE_ENV || "development";
 

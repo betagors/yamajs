@@ -67,49 +67,11 @@ export async function pluginInfoCommand(
     const pkgInfo = (await response.json()) as NpmPackageInfo;
     const latestVersion = pkgInfo["dist-tags"]?.latest || pkgInfo.version;
 
-    // Use TUI mode if appropriate (disabled in CI or non-interactive environments)
-    const { shouldUseTUI } = await import("../utils/tui-utils.ts");
-    const useTUI = shouldUseTUI();
-    
     const versions = Object.keys(pkgInfo.versions);
     const recentVersions = versions.slice(-10).reverse();
-    const versionRows = recentVersions.map((version) => {
-      const versionInfo = pkgInfo.versions[version] as any;
-      const publishTime = versionInfo?.time || pkgInfo.time?.modified || "Unknown";
-      return { version, published: publishTime };
-    });
     
     const latestPkgVersion = pkgInfo.versions[latestVersion] as any;
     const yamaMetadata = latestPkgVersion?.yama;
-    
-    if (useTUI) {
-      const { runPluginInfoTUI } = await import("../tui/PluginInfoCommand.tsx");
-      runPluginInfoTUI({
-        packageName: pkgInfo.name,
-        version: latestVersion,
-        description: pkgInfo.description,
-        homepage: pkgInfo.homepage,
-        repository: pkgInfo.repository?.url,
-        license: pkgInfo.license,
-        yamaMetadata: yamaMetadata
-          ? {
-              category: yamaMetadata.category,
-              pluginApi: yamaMetadata.pluginApi,
-              yamaCore: yamaMetadata.yamaCore,
-              dependencies: yamaMetadata.dependencies,
-            }
-          : undefined,
-        isInstalled: !!localManifest,
-        installedVersion: localManifest?.yamaCore,
-        versions: versionRows,
-        totalVersions: versions.length,
-        created: pkgInfo.time?.created || "Unknown",
-        modified: pkgInfo.time?.modified || "Unknown",
-      });
-      return;
-    }
-
-    // Fallback to text output
     // Display plugin information
     console.log(`📦 ${pkgInfo.name}\n`);
     console.log(`Version: ${latestVersion}`);

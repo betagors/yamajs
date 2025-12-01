@@ -472,27 +472,6 @@ export async function validateCommand(options: ValidateOptions): Promise<void> {
       console.log("⚠️  No endpoints defined");
     }
 
-    // Use TUI mode if appropriate (disabled in CI or non-interactive environments)
-    const { shouldUseTUI } = await import("../utils/tui-utils.ts");
-    const useTUI = shouldUseTUI();
-    
-    if (useTUI) {
-      const { runValidateTUI } = await import("../tui/ValidateCommand.tsx");
-      const errorMessages: string[] = errors.map(e => e.line ? `${e.message} (line ${e.line})` : e.message);
-      runValidateTUI({
-        configPath,
-        result: {
-          isValid,
-          errors: errorMessages,
-          warnings: [],
-          schemaCount: Object.keys(allSchemas).length,
-          endpointCount: config.endpoints?.length,
-        },
-      });
-      return;
-    }
-
-    // Fallback to text output
     // Display results
     if (errors.length > 0) {
       console.log("\n❌ Validation errors:\n");

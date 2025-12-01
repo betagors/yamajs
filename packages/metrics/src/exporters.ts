@@ -5,7 +5,7 @@ import type { MetricRegistry } from "./metrics-api.js";
  * Base exporter interface
  */
 export interface MetricsExporter {
-  export(registry: MetricRegistry): string | Promise<string>;
+  export(registry: MetricRegistry): string;
 }
 
 /**

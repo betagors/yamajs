@@ -65,23 +65,6 @@ export async function schemaHistoryCommand(options: SchemaHistoryOptions): Promi
       return;
     }
 
-    // Use TUI mode if appropriate (disabled in CI or non-interactive environments)
-    const { shouldUseTUI } = await import("../utils/tui-utils.ts");
-    const useTUI = shouldUseTUI();
-    
-    if (useTUI) {
-      const migrationData = migrations.map((m) => ({
-        id: m.id,
-        name: m.name,
-        fromHash: m.from_model_hash || "",
-        toHash: m.to_model_hash || "",
-        appliedAt: m.applied_at.toISOString().split("T")[0],
-      }));
-      const { runSchemaHistoryTUI } = await import("../tui/SchemaHistoryCommand.tsx");
-      runSchemaHistoryTUI({ migrations: migrationData, showGraph: options.graph });
-      await dbPlugin.client.closeDatabase();
-      return;
-    }
 
     // Fallback to text output
     if (options.graph) {

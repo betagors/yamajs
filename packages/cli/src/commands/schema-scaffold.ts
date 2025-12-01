@@ -37,21 +37,15 @@ export async function schemaScaffoldCommand(
         process.exit(1);
       }
 
-      // Add basic entity structure
+      // Add basic entity structure with new shorthand syntax
+      // Note: This will be written as YAML, so we use string shorthand
+      // The actual YAML writing should use shorthand syntax
       entities[entityName] = {
         table: tableName,
         fields: {
-          id: {
-            type: "uuid",
-            primary: true,
-            generated: true,
-          },
-          createdAt: {
-            type: "timestamp",
-            dbColumn: "created_at",
-            default: "now()",
-            apiFormat: "date-time",
-          },
+          id: "uuid!",
+          createdAt: "timestamp",
+          updatedAt: "timestamp",
         },
       };
 

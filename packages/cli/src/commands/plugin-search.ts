@@ -85,23 +85,6 @@ export async function pluginSearchCommand(
       ]);
     }
 
-    // Use TUI mode if appropriate (disabled in CI or non-interactive environments)
-    const { shouldUseTUI } = await import("../utils/tui-utils.ts");
-    const useTUI = shouldUseTUI();
-    
-    if (useTUI) {
-      const pluginResults = rows.slice(1).map((row) => ({
-        name: row[0],
-        version: row[1],
-        description: row[2],
-        score: row[3],
-      }));
-      const { runPluginSearchTUI } = await import("../tui/PluginSearchCommand.tsx");
-      runPluginSearchTUI({ query, plugins: pluginResults });
-      return;
-    }
-
-    // Fallback to text output
     console.log(table(rows));
     console.log(`\nFound ${yamaPlugins.length} plugin(s)`);
     console.log(`\nInstall with: yama plugin install <plugin-name>`);

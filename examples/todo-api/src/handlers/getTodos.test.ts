@@ -142,7 +142,7 @@ describe("getTodos Handler", () => {
   });
 
   it("should return empty array when no todos exist", async () => {
-    vi.mocked(todoRepository.findAll).mockResolvedValue([]);
+    mockTodoRepository.findAll.mockResolvedValue([]);
 
     const result = await getTodos(
       mockContext as HandlerContext

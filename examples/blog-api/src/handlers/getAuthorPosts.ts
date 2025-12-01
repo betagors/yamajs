@@ -6,9 +6,10 @@ export async function getAuthorPosts(
   // context.params.id is already typed as string
   const { id } = context.params;
 
-  const posts = await context.entities.Post.findAll({
-    where: { authorId: id },
-  });
+  // Use CRUD findAll method (authorId is auto-generated from relation, not a queryable field)
+  // Filter in memory since repository doesn't have findByAuthorId variation method
+  const allPosts = await context.entities.Post.findAll();
+  const posts = allPosts.filter((post: any) => post.authorId === id);
 
   return posts;
 }

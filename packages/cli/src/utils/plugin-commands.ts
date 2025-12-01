@@ -26,22 +26,38 @@ export async function loadPluginCommands(configPath?: string): Promise<PluginCLI
     // Set plugin registry config
     setPluginRegistryConfig(config, configDir);
 
-    // Get plugin list
-    const pluginList: string[] = [];
+    // Get plugin list - plugins must be an array
+    const pluginEntries: Array<{ name: string; config: Record<string, unknown> }> = [];
     if (config.plugins) {
-      if (Array.isArray(config.plugins)) {
-        pluginList.push(...config.plugins);
-      } else {
-        pluginList.push(...Object.keys(config.plugins));
+      if (!Array.isArray(config.plugins)) {
+        throw new Error("plugins must be an array. Format: ['@plugin/name'] or [{ '@plugin/name': { config: {...} } }]");
+      }
+
+      for (const pluginItem of config.plugins) {
+        if (typeof pluginItem === "string") {
+          // String shorthand: "@betagors/yama-pglite"
+          pluginEntries.push({ name: pluginItem, config: {} });
+        } else if (pluginItem && typeof pluginItem === "object") {
+          // Object format: { "@betagors/yama-redis": { config: {...} } }
+          const keys = Object.keys(pluginItem);
+          if (keys.length !== 1) {
+            throw new Error(`Plugin object must have exactly one key (plugin name), got: ${keys.join(", ")}`);
+          }
+          const pluginName = keys[0];
+          const pluginValue = pluginItem[pluginName];
+          const pluginConfig = pluginValue && typeof pluginValue === "object" && "config" in pluginValue
+            ? (pluginValue.config as Record<string, unknown> || {})
+            : {};
+          pluginEntries.push({ name: pluginName, config: pluginConfig });
+        } else {
+          throw new Error(`Invalid plugin item: expected string or object, got ${typeof pluginItem}`);
+        }
       }
     }
 
     // Load all plugins
-    for (const pluginName of pluginList) {
+    for (const { name: pluginName, config: pluginConfig } of pluginEntries) {
       try {
-        const pluginConfig = typeof config.plugins === "object" && !Array.isArray(config.plugins)
-          ? config.plugins[pluginName] || {}
-          : {};
         await loadPlugin(pluginName, configDir, pluginConfig);
       } catch (error) {
         // Log but don't fail - some plugins might not be installed

@@ -59,23 +59,6 @@ export async function snapshotListCommand(options: SnapshotListOptions): Promise
       tableData.push([hash, createdAt, description, parent]);
     }
 
-    // Use TUI mode if appropriate (disabled in CI or non-interactive environments)
-    const { shouldUseTUI } = await import("../utils/tui-utils.ts");
-    const useTUI = shouldUseTUI();
-    
-    if (useTUI) {
-      const snapshotData = snapshots.map((s) => ({
-        hash: s.hash,
-        createdAt: new Date(s.metadata.createdAt).toLocaleString(),
-        description: s.metadata.description || "",
-        parent: s.metadata.parent,
-      }));
-      const { runSnapshotListTUI } = await import("../tui/SnapshotListCommand.tsx");
-      runSnapshotListTUI({ snapshots: snapshotData });
-      return;
-    }
-
-    // Fallback to text output
     console.log("\n📸 Schema Snapshots:\n");
     printTable(tableData);
     console.log(`\nTotal: ${snapshots.length} snapshot(s)`);

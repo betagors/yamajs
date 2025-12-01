@@ -1,4 +1,5 @@
 import type { YamaEntities, EntityDefinition, EntityField } from "@betagors/yama-core";
+import { parseFieldDefinition } from "@betagors/yama-core";
 
 /**
  * Convert snake_case to camelCase
@@ -33,11 +34,16 @@ function getApiFieldName(fieldName: string, field: EntityField): string | null {
 /**
  * Generate mapper function for a single entity
  */
-function generateEntityMapper(entityName: string, entityDef: EntityDefinition): string {
+function generateEntityMapper(entityName: string, entityDef: EntityDefinition, availableEntities: Set<string>): string {
   const mappings: string[] = [];
   const apiSchemaName = entityDef.apiSchema || entityName;
 
-  for (const [fieldName, field] of Object.entries(entityDef.fields)) {
+  for (const [fieldName, fieldDef] of Object.entries(entityDef.fields)) {
+    const field = parseFieldDefinition(fieldName, fieldDef, availableEntities);
+    // Skip inline relations
+    if (field._isInlineRelation) {
+      continue;
+    }
     const apiFieldName = getApiFieldName(fieldName, field);
     if (!apiFieldName) {
       continue; // Skip excluded fields
@@ -72,17 +78,31 @@ ${mappings.join("\n")}
 /**
  * Generate reverse mapper (API schema to entity)
  */
-function generateReverseMapper(entityName: string, entityDef: EntityDefinition): string {
+function generateReverseMapper(entityName: string, entityDef: EntityDefinition, availableEntities: Set<string>): string {
   const mappings: string[] = [];
   const apiSchemaName = entityDef.apiSchema || entityName;
 
   // Find primary field or id field to determine if we should skip it
-  const primaryField = Object.entries(entityDef.fields).find(([, f]) => f.primary);
-  const idField = primaryField ? primaryField[1] : entityDef.fields['id'];
-  const shouldSkipId = idField && typeof idField === 'object' && !Array.isArray(idField) && (idField.type === 'string' || idField.type === 'uuid') && !idField.generated;
-  const idFieldName = idField ? (primaryField ? primaryField[0] : 'id') : null;
+  let primaryField: [string, EntityField] | undefined;
+  let idField: EntityField | undefined;
+  for (const [fieldName, fieldDef] of Object.entries(entityDef.fields)) {
+    const field = parseFieldDefinition(fieldName, fieldDef, availableEntities);
+    if (field.primary) {
+      primaryField = [fieldName, field];
+    }
+    if (fieldName === 'id' && !primaryField) {
+      idField = field;
+    }
+  }
+  const shouldSkipId = (primaryField?.[1] || idField) && (primaryField?.[1] || idField)?.type && ((primaryField?.[1] || idField)?.type === 'string' || (primaryField?.[1] || idField)?.type === 'uuid') && !(primaryField?.[1] || idField)?.generated;
+  const idFieldName = primaryField ? primaryField[0] : (idField ? 'id' : null);
 
-  for (const [fieldName, field] of Object.entries(entityDef.fields)) {
+  for (const [fieldName, fieldDef] of Object.entries(entityDef.fields)) {
+    const field = parseFieldDefinition(fieldName, fieldDef, availableEntities);
+    // Skip inline relations
+    if (field._isInlineRelation) {
+      continue;
+    }
     const apiFieldName = getApiFieldName(fieldName, field);
     if (!apiFieldName) {
       continue; // Skip excluded fields
@@ -132,11 +152,12 @@ import type { ${Object.entries(entities).map(([name, def]) => def.apiSchema || n
 `;
 
   const mapperFunctions: string[] = [];
+  const availableEntities = new Set(Object.keys(entities));
 
   for (const [entityName, entityDef] of Object.entries(entities)) {
-    mapperFunctions.push(generateEntityMapper(entityName, entityDef));
+    mapperFunctions.push(generateEntityMapper(entityName, entityDef, availableEntities));
     mapperFunctions.push(""); // Empty line between mappers
-    mapperFunctions.push(generateReverseMapper(entityName, entityDef));
+    mapperFunctions.push(generateReverseMapper(entityName, entityDef, availableEntities));
   }
 
   return header + mapperFunctions.join("\n\n") + "\n";

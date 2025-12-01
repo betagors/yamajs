@@ -126,24 +126,6 @@ export async function devCommand(options: DevOptions): Promise<void> {
   // Load .env file with environment support
   loadEnvFile(configPath, environment);
 
-  // Use TUI mode if appropriate (disabled in CI or non-interactive environments)
-  const { shouldUseTUI } = await import("../utils/tui-utils.ts");
-  const useTUI = shouldUseTUI();
-  
-  if (useTUI) {
-    // Import and use TUI version
-    const { runDevTUI } = await import("../tui/DevCommand.tsx");
-    runDevTUI({
-      port,
-      configPath,
-      environment,
-      watch,
-      generate: options.generate || watch,
-    });
-    return;
-  }
-
-  // Fallback to original non-TUI implementation (for CI/non-interactive)
   const { info, warning } = await import("../utils/cli-utils.ts");
   
   currentPort = port;

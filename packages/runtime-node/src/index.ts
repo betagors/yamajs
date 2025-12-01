@@ -53,6 +53,10 @@ import {
   type MiddlewareDefinition,
   type MiddlewareContext,
   parseFieldDefinition,
+  normalizeBodyDefinition,
+  type ApisConfig,
+  normalizeApisConfig,
+  type NormalizedEndpoint,
 } from "@betagors/yama-core";
 import { createFastifyAdapter } from "@betagors/yama-fastify";
 
@@ -76,6 +80,37 @@ import { pathToFileURL } from "url";
 import { createRequire } from "module";
 import { tmpdir } from "os";
 
+// Query handler configuration type
+interface QueryHandlerConfig {
+  type: 'query';
+  entity: string;
+  filters?: Array<{
+    field: string;
+    operator?: string;
+    param?: string;  // Parameter reference like "query.search"
+    value?: any;
+  }>;
+  pagination?: PaginationConfig;
+  orderBy?: string | {
+    field: string;
+    direction?: 'asc' | 'desc';
+  };
+}
+
+// Endpoint definition for backward compatibility (compatible with NormalizedEndpoint from core)
+interface EndpointDefinition {
+  path: string;
+  method: string;
+  handler?: string | object;
+  description?: string;
+  query?: Record<string, any>;
+  params?: Record<string, any>;
+  body?: string | { type?: string; fields?: Record<string, any> };
+  response?: string | { type?: string; properties?: Record<string, any> };
+  auth?: { required?: boolean; roles?: string[]; permissions?: string[]; handler?: string };
+  rateLimit?: any;
+}
+
 interface YamaConfig {
   name?: string;
   version?: string;
@@ -84,7 +119,8 @@ interface YamaConfig {
   server?: ServerConfig;
   auth?: AuthConfig;
   rateLimit?: RateLimitConfig;
-  plugins?: Record<string, Record<string, unknown>> | string[]; // Plugin configs or list of plugin names
+  plugins?: Record<string, Record<string, unknown>> | Array<string | Record<string, any>>; // Plugin configs or list of plugin names
+  endpoints?: EndpointDefinition[];  // Legacy flat endpoints array
   middleware?: {
     global?: Array<{
       name: string;
@@ -139,35 +175,7 @@ interface YamaConfig {
       description?: string;
     }>;
   };
-  endpoints?: Array<{
-    path: string;
-    method: string;
-    handler?: string | {
-      type: "query";
-      entity: string;
-      filters?: Array<{
-        field: string;
-        operator: "eq" | "ilike" | "gt" | "gte" | "lt" | "lte";
-        param: string; // References query param or path param (e.g., "query.search" or "params.id")
-      }>;
-      pagination?: PaginationConfig;
-      orderBy?: {
-        field: string;
-        direction?: "asc" | "desc";
-      } | string; // Can be "query.orderBy" to read from query params
-    }; // Optional - if not provided, uses default handler
-    description?: string;
-    params?: Record<string, SchemaField>;
-    body?: string | {
-      type: string;
-    };
-    query?: Record<string, SchemaField>;
-    response?: string | {
-      type: string;
-    };
-    auth?: EndpointAuth;
-    rateLimit?: RateLimitConfig;
-  }>;
+  apis?: ApisConfig;  // New protocol-agnostic structure
 }
 
 // HandlerFunction is now imported from core, which uses HandlerContext
@@ -230,89 +238,102 @@ function resolveYamaImports(handlerContent: string, projectRoot: string, fromPat
 }
 
 /**
- * Load all handler functions from the handlers directory
+ * Load a handler function from a file path
+ * @param handlerPath - Path to the handler file (relative to configDir or absolute)
+ * @param configDir - Directory containing the yama.yaml config file
+ * @returns The handler function or null if not found
  */
-async function loadHandlers(handlersDir: string, projectRoot?: string): Promise<Record<string, HandlerFunction>> {
-  const handlers: Record<string, HandlerFunction> = {};
-
-  if (!existsSync(handlersDir)) {
-    console.warn(`⚠️  Handlers directory not found: ${handlersDir}`);
-    return handlers;
+async function loadHandlerByPath(handlerPath: string, configDir: string): Promise<HandlerFunction | null> {
+  // Resolve handler path relative to config directory
+  let absoluteHandlerPath: string;
+  if (resolve(handlerPath) === handlerPath) {
+    // Absolute path
+    absoluteHandlerPath = handlerPath;
+  } else {
+    // Relative path - resolve from config directory
+    absoluteHandlerPath = resolve(configDir, handlerPath);
   }
 
-  // Determine project root (directory containing package.json)
-  const configRoot = projectRoot || dirname(handlersDir);
-  let actualProjectRoot = configRoot;
-  let packageJsonPath = join(configRoot, "package.json");
-  
-  // Walk up to find package.json
-  while (!existsSync(packageJsonPath) && actualProjectRoot !== dirname(actualProjectRoot)) {
-    actualProjectRoot = dirname(actualProjectRoot);
-    packageJsonPath = join(actualProjectRoot, "package.json");
+  // Add .ts extension if not present
+  if (!extname(absoluteHandlerPath)) {
+    absoluteHandlerPath = `${absoluteHandlerPath}.ts`;
+  }
+
+  // Also try .js extension if .ts doesn't exist
+  if (!existsSync(absoluteHandlerPath) && !absoluteHandlerPath.endsWith('.js')) {
+    const jsPath = absoluteHandlerPath.replace(/\.ts$/, '.js');
+    if (existsSync(jsPath)) {
+      absoluteHandlerPath = jsPath;
+    }
+  }
+
+  if (!existsSync(absoluteHandlerPath)) {
+    console.warn(`⚠️  Handler file not found: ${absoluteHandlerPath}`);
+    return null;
   }
 
   try {
-    const files = readdirSync(handlersDir);
-    const tsFiles = files.filter(
-      (file) => extname(file) === ".ts" || extname(file) === ".ts"
-    );
+    // Determine project root (directory containing package.json)
+    let actualProjectRoot = configDir;
+    let packageJsonPath = join(configDir, "package.json");
+    
+    // Walk up to find package.json
+    while (!existsSync(packageJsonPath) && actualProjectRoot !== dirname(actualProjectRoot)) {
+      actualProjectRoot = dirname(actualProjectRoot);
+      packageJsonPath = join(actualProjectRoot, "package.json");
+    }
 
-    for (const file of tsFiles) {
-      const handlerName = file.replace(/\.(ts|js)$/, "");
-      const handlerPath = join(handlersDir, file);
-
-      try {
-        // Read handler content
-        let handlerContent = readFileSync(handlerPath, "utf-8");
-        let importPath = handlerPath;
-        
-        // Resolve @betagors/yama-* and @gen/* imports if package.json exists
-        if (existsSync(packageJsonPath)) {
-          // Determine where the file will be located (temp file or original)
-          const tempDir = join(tmpdir(), "yama-handlers");
-          const tempPath = join(tempDir, `${handlerName}-${Date.now()}.ts`);
-          
-          // Resolve imports relative to where the file will be (temp file location)
-          // This ensures relative paths are correct when the handler is loaded
-          const transformedContent = resolveYamaImports(handlerContent, actualProjectRoot, tempPath);
-          
-          // If content was transformed, write to temp file
-          if (transformedContent !== handlerContent) {
-            mkdirSync(tempDir, { recursive: true });
-            writeFileSync(tempPath, transformedContent, "utf-8");
-            importPath = tempPath;
-          }
-        }
-
-        // Convert to absolute path and then to file URL for ES module import
-        const absolutePath = resolve(importPath);
-        // Use file:// URL for ES module import
-        // Note: When running with tsx, it will handle .ts files automatically
-        const fileUrl = pathToFileURL(absolutePath).href;
-        
-        // Dynamic import for ES modules
-        // For TypeScript files to work, the process must be run with tsx
-        const handlerModule = await import(fileUrl);
-        
-        // Look for exported function with the same name as the file
-        // or default export
-        const handlerFn = handlerModule[handlerName] || handlerModule.default;
-        
-        if (typeof handlerFn === "function") {
-          handlers[handlerName] = handlerFn;
-          console.log(`✅ Loaded handler: ${handlerName}`);
-        } else {
-          console.warn(`⚠️  Handler ${handlerName} does not export a function`);
-        }
-      } catch (error) {
-        console.error(`❌ Failed to load handler ${handlerName}:`, error);
+    // Read handler content
+    let handlerContent = readFileSync(absoluteHandlerPath, "utf-8");
+    let importPath = absoluteHandlerPath;
+    
+    // Resolve @betagors/yama-* and @gen/* imports if package.json exists
+    if (existsSync(packageJsonPath)) {
+      // Determine where the file will be located (temp file or original)
+      const tempDir = join(tmpdir(), "yama-handlers");
+      const handlerFileName = absoluteHandlerPath.split(/[/\\]/).pop() || "handler";
+      const tempPath = join(tempDir, `${handlerFileName}-${Date.now()}.ts`);
+      
+      // Resolve imports relative to where the file will be (temp file location)
+      // This ensures relative paths are correct when the handler is loaded
+      const transformedContent = resolveYamaImports(handlerContent, actualProjectRoot, tempPath);
+      
+      // If content was transformed, write to temp file
+      if (transformedContent !== handlerContent) {
+        mkdirSync(tempDir, { recursive: true });
+        writeFileSync(tempPath, transformedContent, "utf-8");
+        importPath = tempPath;
       }
     }
-  } catch (error) {
-    console.error(`❌ Failed to read handlers directory:`, error);
-  }
 
-  return handlers;
+    // Convert to absolute path and then to file URL for ES module import
+    const absolutePath = resolve(importPath);
+    // Use file:// URL for ES module import
+    // Note: When running with tsx, it will handle .ts files automatically
+    const fileUrl = pathToFileURL(absolutePath).href;
+    
+    // Dynamic import for ES modules
+    // For TypeScript files to work, the process must be run with tsx
+    const handlerModule = await import(fileUrl);
+    
+    // Extract handler name from file path (filename without extension)
+    const handlerName = absoluteHandlerPath.split(/[/\\]/).pop()?.replace(/\.(ts|js)$/, "") || "handler";
+    
+    // Look for exported function with the same name as the file
+    // or default export
+    const handlerFn = handlerModule[handlerName] || handlerModule.default;
+    
+    if (typeof handlerFn === "function") {
+      console.log(`✅ Loaded handler: ${handlerPath}`);
+      return handlerFn;
+    } else {
+      console.warn(`⚠️  Handler ${handlerPath} does not export a function (expected ${handlerName} or default)`);
+      return null;
+    }
+  } catch (error) {
+    console.error(`❌ Failed to load handler ${handlerPath}:`, error);
+    return null;
+  }
 }
 
 /**
@@ -335,7 +356,9 @@ async function loadRepositories(
 
   // Check if repository index file exists
   if (!existsSync(dbIndexPath)) {
-    console.warn(`⚠️  Repository index not found: ${dbIndexPath} (repositories may not be generated yet)`);
+    console.warn(`⚠️  Repository index not found: ${dbIndexPath}`);
+    console.warn(`   Run 'yama generate' to generate database repositories.`);
+    console.warn(`   Handlers using context.entities.* will fail until repositories are generated.`);
     return repositories;
   }
 
@@ -542,6 +565,37 @@ function createHandlerContext(
 ): HandlerContext {
   let statusCode: number | undefined;
   
+  // Create a proxy for entities that provides better error messages
+  const entitiesProxy = repositories && Object.keys(repositories).length > 0 
+    ? new Proxy(repositories, {
+        get(target, prop: string | symbol) {
+          if (typeof prop === 'string' && !(prop in target)) {
+            throw new Error(
+              `Entity repository "${prop}" is not available. ` +
+              `This usually means the database code hasn't been generated yet. ` +
+              `Run 'yama generate' to generate the repository files. ` +
+              `If you've already run 'yama generate', ensure that:\n` +
+              `  1. The entity "${prop}" is defined in your yama.yaml\n` +
+              `  2. A database plugin is installed and configured\n` +
+              `  3. The generated files exist at .yama/gen/db/index.ts`
+            );
+          }
+          return target[prop as string];
+        }
+      })
+    : repositories || new Proxy({} as Record<string, unknown>, {
+        get(_target, prop: string | symbol) {
+          if (typeof prop === 'string') {
+            throw new Error(
+              `Entity repository "${prop}" is not available. ` +
+              `Database repositories have not been generated. ` +
+              `Run 'yama generate' to generate the repository files.`
+            );
+          }
+          return undefined;
+        }
+      });
+  
   const context: HandlerContext = {
     // Request data
     method: request.method,
@@ -557,7 +611,7 @@ function createHandlerContext(
     
     // Database access
     db: dbAdapter,
-    entities: repositories,
+    entities: entitiesProxy,
     
     // Cache access
     cache: cacheAdapter as any,
@@ -930,17 +984,17 @@ function resolveParameter(
  * Create a query handler from endpoint configuration
  */
 function createQueryHandler(
-  endpoint: NonNullable<YamaConfig["endpoints"]>[number],
+  endpoint: EndpointDefinition,
   config?: YamaConfig,
   entities?: YamaEntities
 ): HandlerFunction {
   return async (context: HandlerContext) => {
     // Handler config must be an object with type: "query"
-    if (typeof endpoint.handler !== "object" || endpoint.handler.type !== "query") {
+    if (!isQueryHandler(endpoint.handler)) {
       throw new Error("Invalid query handler configuration");
     }
 
-    const handlerConfig = endpoint.handler;
+    const handlerConfig = endpoint.handler as QueryHandlerConfig;
     const entityName = handlerConfig.entity;
 
     // Check if entity exists
@@ -965,6 +1019,11 @@ function createQueryHandler(
       let searchValue: string | undefined;
 
       for (const filter of handlerConfig.filters) {
+        // Skip if no param reference defined
+        if (!filter.param) {
+          continue;
+        }
+        
         const paramValue = resolveParameter(filter.param, context);
         
         // Skip if parameter value is undefined or null
@@ -1101,7 +1160,7 @@ function createQueryHandler(
 }
 
 function createDefaultHandler(
-  endpoint: NonNullable<YamaConfig["endpoints"]>[number],
+  endpoint: EndpointDefinition,
   responseType?: string,
   config?: YamaConfig,
   entities?: YamaEntities
@@ -1258,7 +1317,7 @@ function createDefaultHandler(
  */
 function needsAuthentication(
   config: YamaConfig,
-  endpoint: NonNullable<YamaConfig["endpoints"]>[number]
+  endpoint: EndpointDefinition
 ): boolean {
   const endpointAuth = endpoint.auth;
   const configAuth = config.auth;
@@ -1295,13 +1354,30 @@ function needsAuthentication(
 }
 
 /**
+ * Safely extract response type from endpoint response definition
+ */
+function getResponseType(response: { type?: string } | { properties?: Record<string, any> } | string | undefined): string | undefined {
+  if (!response) return undefined;
+  if (typeof response === 'string') return response;
+  if ('type' in response && response.type) return response.type;
+  return undefined;
+}
+
+/**
+ * Check if handler config is a query handler
+ */
+function isQueryHandler(handler: unknown): handler is { type: 'query'; [key: string]: any } {
+  return handler !== null && typeof handler === 'object' && 'type' in handler && (handler as any).type === 'query';
+}
+
+/**
  * Register routes from YAML config with validation
  */
-function registerRoutes(
+async function registerRoutes(
   serverAdapter: ReturnType<typeof createHttpServerAdapter>,
   server: unknown,
   config: YamaConfig,
-  handlers: Record<string, HandlerFunction>,
+  configDir: string,
   validator: ReturnType<typeof createSchemaValidator>,
   globalRateLimiter: RateLimiter | null,
   repositories?: Record<string, unknown>,
@@ -1315,55 +1391,70 @@ function registerRoutes(
   metricsService?: any,
   monitoringService?: any
 ) {
-  if (!config.endpoints) {
-    return;
+  // Normalize APIs config
+  const normalizedApis = normalizeApisConfig({ apis: config.apis });
+
+  if (normalizedApis.rest.length === 0) {
+    return; // No REST endpoints configured
   }
 
   // Cache for endpoint-specific rate limiters (keyed by config hash)
   const endpointRateLimiters = new Map<string, RateLimiter>();
 
-  for (const endpoint of config.endpoints) {
-    const { path, method, handler: handlerConfig, description, params, body, query, response } = endpoint;
-    
-    // Use custom handler if provided, otherwise use default handler
-    let handlerFn: HandlerFunction;
-    let handlerLabel: string;
-    
-    // Check if handler is a query handler (object with type: "query")
-    if (handlerConfig && typeof handlerConfig === "object" && handlerConfig.type === "query") {
-      handlerFn = createQueryHandler(endpoint, config, config.entities);
-      handlerLabel = "query";
-    } else if (typeof handlerConfig === "string") {
-      // Handler is a string - try to load from file
-      const handlerName = handlerConfig;
-      handlerFn = handlers[handlerName];
-      if (!handlerFn) {
-        console.warn(
-          `⚠️  Handler "${handlerName}" not found for ${method} ${path}, using default handler`
-        );
-        handlerFn = createDefaultHandler(endpoint, response?.type, config, config.entities);
-        handlerLabel = "default";
-      } else {
-        handlerLabel = handlerName;
-      }
-    } else {
-      // No handler specified - use default handler
-      handlerFn = createDefaultHandler(endpoint, response?.type, config, config.entities);
-      handlerLabel = "default";
-      console.log(
-        `ℹ️  No handler specified for ${method} ${path}, using default handler`
-      );
+  // Register routes from all REST configs
+  for (const restConfig of normalizedApis.rest) {
+    // Skip disabled configs
+    if (restConfig.enabled === false) {
+      continue;
     }
 
-    // Determine if this endpoint requires authentication
-    // This check happens once at route registration time, not on every request
-    const requiresAuth = needsAuthentication(config, endpoint);
+    for (const endpoint of restConfig.endpoints) {
+      const { path, method, handler: handlerConfig, description, params, body: rawBody, query, response } = endpoint;
+      
+      // Normalize body definition
+      const body = normalizeBodyDefinition(rawBody);
+      
+      // Use custom handler if provided, otherwise use default handler
+      let handlerFn: HandlerFunction;
+      let handlerLabel: string;
+      
+      // Check if handler is a query handler (object with type: "query")
+      const responseType = getResponseType(response);
+      if (isQueryHandler(handlerConfig)) {
+        handlerFn = createQueryHandler(endpoint, config, config.entities);
+        handlerLabel = "query";
+      } else if (typeof handlerConfig === "string") {
+        // Handler is a string - treat it as a path and load from file
+        const handlerPath = handlerConfig;
+        const loadedHandler = await loadHandlerByPath(handlerPath, configDir);
+        if (!loadedHandler) {
+          console.warn(
+            `⚠️  Handler "${handlerPath}" not found for ${method} ${path}, using default handler`
+          );
+          handlerFn = createDefaultHandler(endpoint, responseType, config, config.entities);
+          handlerLabel = "default";
+        } else {
+          handlerFn = loadedHandler;
+          handlerLabel = handlerPath;
+        }
+      } else {
+        // No handler specified - use default handler
+        handlerFn = createDefaultHandler(endpoint, responseType, config, config.entities);
+        handlerLabel = "default";
+        console.log(
+          `ℹ️  No handler specified for ${method} ${path}, using default handler`
+        );
+      }
 
-    // Wrap handler with validation and auth
-    // The wrapped handler receives request/reply from the adapter, then creates context for user handlers
-    const wrappedHandler: RouteHandler = async (request: HttpRequest, reply: HttpResponse) => {
-      // Record request start time for duration calculation
-      const startTime = Date.now();
+      // Determine if this endpoint requires authentication
+      // This check happens once at route registration time, not on every request
+      const requiresAuth = needsAuthentication(config, endpoint);
+
+      // Wrap handler with validation and auth
+      // The wrapped handler receives request/reply from the adapter, then creates context for user handlers
+      const wrappedHandler: RouteHandler = async (request: HttpRequest, reply: HttpResponse) => {
+        // Record request start time for duration calculation
+        const startTime = Date.now();
       
       // Create initial handler context (will be updated as we progress)
       let handlerContext: HandlerContext | null = null;
@@ -1416,8 +1507,8 @@ function registerRoutes(
           // For complex cases requiring request data, handlers can access it via closure
           let authHandler: ((authContext: AuthContext, ...args: unknown[]) => Promise<boolean> | boolean) | undefined;
           if (endpoint.auth?.handler) {
-            const handlerName = endpoint.auth.handler;
-            const loadedHandler = handlers[handlerName];
+            const authHandlerPath = endpoint.auth.handler;
+            const loadedHandler = await loadHandlerByPath(authHandlerPath, configDir);
             if (loadedHandler) {
               // Wrap handler - custom auth handlers should work with authContext
               // They can access request data through the closure if needed
@@ -1452,7 +1543,7 @@ function registerRoutes(
               };
             } else {
               console.warn(
-                `⚠️  Auth handler "${handlerName}" not found for ${method} ${path}, authorization will fail`
+                `⚠️  Auth handler "${authHandlerPath}" not found for ${method} ${path}, authorization will fail`
               );
             }
           }
@@ -1582,9 +1673,21 @@ function registerRoutes(
           request.query = coercedQuery;
         }
 
-        // Validate request body if model is specified
-        if (body?.type && request.body) {
-          const validation = validator.validate(body.type, request.body);
+        // Validate request body if specified
+        if (body && request.body) {
+          let validation: ValidationResult;
+          
+          // If body has type (schema reference), validate against that schema
+          if (body.type) {
+            validation = await validator.validate(body.type, request.body);
+          } 
+          // If body has fields (inline definition), create temporary schema and validate
+          else if (body.fields) {
+            const bodySchema = buildQuerySchema(body.fields, config.schemas);
+            validation = validator.validateSchema(bodySchema, request.body);
+          } else {
+            validation = { valid: true };
+          }
           
           if (!validation.valid) {
             reply.status(400).send({
@@ -1674,11 +1777,11 @@ function registerRoutes(
         }
         
         // Validate response if response model is specified
-        if (response?.type && result !== undefined) {
-          const responseValidation = validator.validate(response.type, result);
+        if (responseType && result !== undefined) {
+          const responseValidation = await validator.validate(responseType, result);
           
           if (!responseValidation.valid) {
-            const currentHandlerLabel = typeof handlerConfig === "object" && handlerConfig.type === "query" 
+            const currentHandlerLabel = isQueryHandler(handlerConfig)
               ? "query" 
               : (typeof handlerConfig === "string" ? handlerConfig : "default");
             console.error(`❌ Response validation failed for ${currentHandlerLabel}:`, responseValidation.errors);
@@ -1753,7 +1856,7 @@ function registerRoutes(
         // ============================================
         // MONITORING: Error Capture
         // ============================================
-        const currentHandlerLabel = typeof handlerConfig === "object" && handlerConfig.type === "query" 
+        const currentHandlerLabel = isQueryHandler(handlerConfig)
           ? "query" 
           : (typeof handlerConfig === "string" ? handlerConfig : "default");
         
@@ -1823,20 +1926,22 @@ function registerRoutes(
       }
     };
 
-    // Register route using adapter
-    serverAdapter.registerRoute(server, method, path, wrappedHandler);
+      // Register route using adapter
+      serverAdapter.registerRoute(server, method, path, wrappedHandler);
 
-    // Log route registration with clear auth status
-    const currentHandlerLabel = typeof handlerConfig === "object" && handlerConfig.type === "query" 
-      ? "query" 
-      : (typeof handlerConfig === "string" ? handlerConfig : "default");
-    const authStatus = requiresAuth 
-      ? ` [SECURED${endpoint.auth?.roles ? `, roles: ${endpoint.auth.roles.join(", ")}` : ""}]`
-      : " [PUBLIC]";
-    
-    console.log(
-      `✅ Registered route: ${method.toUpperCase()} ${path} -> ${currentHandlerLabel}${authStatus}${description ? ` (${description})` : ""}${params ? ` [validates path params]` : ""}${query ? ` [validates query params]` : ""}${body?.type ? ` [validates body: ${body.type}]` : ""}${response?.type ? ` [validates response: ${response.type}]` : ""}`
-    );
+      // Log route registration with clear auth status
+      const currentHandlerLabel = isQueryHandler(handlerConfig)
+        ? "query" 
+        : (typeof handlerConfig === "string" ? handlerConfig : "default");
+      const authStatus = requiresAuth 
+        ? ` [SECURED${endpoint.auth?.roles ? `, roles: ${endpoint.auth.roles.join(", ")}` : ""}]`
+        : " [PUBLIC]";
+      const bodyType = body && typeof body === 'object' && 'type' in body ? body.type : undefined;
+      
+      console.log(
+        `✅ Registered route: ${method.toUpperCase()} ${path} -> ${currentHandlerLabel}${authStatus}${description ? ` (${description})` : ""}${params ? ` [validates path params]` : ""}${query ? ` [validates query params]` : ""}${bodyType ? ` [validates body: ${bodyType}]` : ""}${responseType ? ` [validates response: ${responseType}]` : ""}`
+      );
+    }
   }
 }
 
@@ -1874,7 +1979,6 @@ export async function startYamaNodeRuntime(
 
   // Load and parse YAML config if provided
   let config: YamaConfig | null = null;
-  let handlersDir: string | null = null;
   let configDir: string | null = null;
   let dbAdapter: ReturnType<typeof createDatabaseAdapter> | null = null;
   let serverAdapter: ReturnType<typeof createHttpServerAdapter> | null = null;
@@ -1901,23 +2005,46 @@ export async function startYamaNodeRuntime(
       // Note: Plugin migrations run automatically during loadPlugin() if a database plugin is available.
       // Database plugin should be loaded first to ensure migrations can run for other plugins.
       if (config.plugins) {
-        const pluginList = Array.isArray(config.plugins) 
-          ? config.plugins 
-          : Object.keys(config.plugins);
+        // Plugins must be an array (new format only)
+        if (!Array.isArray(config.plugins)) {
+          throw new Error("plugins must be an array. Format: ['@plugin/name'] or [{ '@plugin/name': { config: {...} } }]");
+        }
+
+        // Extract plugin names and configs from array
+        const pluginEntries: Array<{ name: string; config: Record<string, unknown> }> = [];
+        
+        for (const pluginItem of config.plugins) {
+          if (typeof pluginItem === "string") {
+            // String shorthand: "@betagors/yama-pglite"
+            pluginEntries.push({ name: pluginItem, config: {} });
+          } else if (pluginItem && typeof pluginItem === "object") {
+            // Object format: { "@betagors/yama-redis": { config: {...} } }
+            const pluginObj = pluginItem as Record<string, any>;
+            const keys = Object.keys(pluginObj);
+            if (keys.length !== 1) {
+              throw new Error(`Plugin object must have exactly one key (plugin name), got: ${keys.join(", ")}`);
+            }
+            const pluginName = keys[0];
+            const pluginValue = pluginObj[pluginName];
+            const pluginConfig = pluginValue && typeof pluginValue === "object" && "config" in pluginValue
+              ? (pluginValue.config as Record<string, unknown> || {})
+              : {};
+            pluginEntries.push({ name: pluginName, config: pluginConfig });
+          } else {
+            throw new Error(`Invalid plugin item: expected string or object, got ${typeof pluginItem}`);
+          }
+        }
         
         // Load database plugin first if present, so migrations for other plugins can run
-        const dbPluginName = pluginList.find((name: string) => 
-          name.includes("postgres") || name.includes("pglite") || name.includes("database")
+        const dbPluginIndex = pluginEntries.findIndex((entry) => 
+          entry.name.includes("postgres") || entry.name.includes("pglite") || entry.name.includes("database")
         );
-        const otherPlugins = pluginList.filter((name: string) => name !== dbPluginName);
-        const orderedPlugins = dbPluginName ? [dbPluginName, ...otherPlugins] : pluginList;
+        const orderedPlugins = dbPluginIndex >= 0
+          ? [pluginEntries[dbPluginIndex], ...pluginEntries.filter((_, i) => i !== dbPluginIndex)]
+          : pluginEntries;
         
-        for (const pluginName of orderedPlugins) {
+        for (const { name: pluginName, config: pluginConfig } of orderedPlugins) {
           try {
-            const pluginConfig = typeof config.plugins === "object" && !Array.isArray(config.plugins)
-              ? config.plugins[pluginName] || {}
-              : {};
-            
             // Load plugin (init is called automatically with context in registry)
             const plugin = await loadPlugin(pluginName, configDir, pluginConfig);
             
@@ -2078,8 +2205,8 @@ export async function startYamaNodeRuntime(
         // Generate CRUD endpoints and merge with existing endpoints
         const crudEndpoints = generateAllCrudEndpoints(config.entities);
         if (crudEndpoints.length > 0) {
-          // Convert CrudEndpoint[] to YamaConfig["endpoints"] format
-          const convertedCrudEndpoints: NonNullable<YamaConfig["endpoints"]> = crudEndpoints.map(ep => ({
+          // Convert CrudEndpoint[] to EndpointDefinition[] format
+          const convertedCrudEndpoints: EndpointDefinition[] = crudEndpoints.map(ep => ({
             path: ep.path,
             method: ep.method,
             description: ep.description,
@@ -2091,11 +2218,28 @@ export async function startYamaNodeRuntime(
             // No handler specified - will use default handler
           }));
           
-          // Merge CRUD endpoints with existing endpoints
-          config.endpoints = [
-            ...(config.endpoints || []),
-            ...convertedCrudEndpoints,
-          ];
+          // Add CRUD endpoints to apis.rest.default
+          if (!config.apis) {
+            config.apis = {};
+          }
+          if (!config.apis.rest) {
+            config.apis.rest = { default: { endpoints: [] } };
+          }
+          // Handle both single config and named configs
+          if (Array.isArray((config.apis.rest as any).endpoints)) {
+            // Single config
+            (config.apis.rest as any).endpoints.push(...convertedCrudEndpoints);
+          } else {
+            // Named configs - add to default
+            const restConfig = config.apis.rest as any;
+            if (!restConfig.default) {
+              restConfig.default = { endpoints: [] };
+            }
+            if (!restConfig.default.endpoints) {
+              restConfig.default.endpoints = [];
+            }
+            restConfig.default.endpoints.push(...convertedCrudEndpoints);
+          }
           
           console.log(`✅ Generated ${crudEndpoints.length} CRUD endpoint(s) from entities`);
         }
@@ -2109,9 +2253,8 @@ export async function startYamaNodeRuntime(
         }
       }
 
-      // Determine handlers directory (src/handlers relative to YAML file)
+      // Determine config directory (directory containing yama.yaml)
       configDir = dirname(yamlConfigPath);
-      handlersDir = join(configDir, "src", "handlers");
     } catch (error) {
       console.error("❌ Failed to load YAML config:", error);
     }
@@ -2556,9 +2699,10 @@ export async function startYamaNodeRuntime(
     console.log(`✅ Registered metrics endpoint: GET /_metrics`);
   }
 
-  // Load handlers and register routes
-  if (config?.endpoints && handlersDir && serverAdapter && configDir) {
-    const handlers = await loadHandlers(handlersDir, configDir);
+  // Register routes (handlers are loaded on-demand by path)
+  // Check for endpoints in both old (config.endpoints) and new (config.apis.rest) formats
+  const hasEndpoints = config && (config.endpoints || config.apis?.rest);
+  if (hasEndpoints && serverAdapter && configDir && config) {
     // Get email service from email plugin (if available)
     let emailService: any = null;
     const emailPlugin = pluginRegistry.getPluginsByCategory("email")[0];
@@ -2568,7 +2712,7 @@ export async function startYamaNodeRuntime(
         emailService = emailPluginApi.service;
       }
     }
-    registerRoutes(serverAdapter, server, config, handlers, validator, globalRateLimiter, repositories, dbAdapter || null, cacheAdapter || null, storageBuckets, realtimeAdapter || null, middlewareRegistry, emailService, loggerService, metricsService, monitoringService);
+    await registerRoutes(serverAdapter, server, config, configDir, validator, globalRateLimiter, repositories, dbAdapter || null, cacheAdapter || null, storageBuckets, realtimeAdapter || null, middlewareRegistry, emailService, loggerService, metricsService, monitoringService);
   }
 
   // Call onStart lifecycle hooks for all plugins

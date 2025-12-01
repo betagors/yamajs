@@ -16,7 +16,7 @@ export async function getPost(
   }
 
   // Fetch author
-  const author = await context.entities.Author.findById(post.authorId);
+  const author = await context.entities.Author.findById(post.author?.id ?? "");
 
   return {
     ...post,

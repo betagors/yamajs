@@ -109,48 +109,6 @@ export async function pluginMetricsCommand(
       return;
     }
 
-    // Use TUI mode if appropriate (disabled in CI or non-interactive environments)
-    const { shouldUseTUI } = await import("../utils/tui-utils.ts");
-    const useTUI = shouldUseTUI();
-    
-    if (useTUI) {
-      const pluginMetrics: Array<{
-        plugin: string;
-        loadTime: number;
-        initTime: number;
-        apiCalls: number;
-        errors: number;
-        lastError?: string;
-      }> = [];
-
-      for (const pluginName of pluginsToShow) {
-        const metrics = metricsService
-          ? metricsService.getPluginMetrics(pluginName)
-          : pluginMetricsCollector.getMetrics(pluginName);
-        if (metrics) {
-          pluginMetrics.push({
-            plugin: pluginName,
-            loadTime: metrics.loadTime,
-            initTime: metrics.initTime,
-            apiCalls: metrics.apiCalls,
-            errors: metrics.errors,
-            lastError: metrics.lastError?.message,
-          });
-        } else {
-          pluginMetrics.push({
-            plugin: pluginName,
-            loadTime: 0,
-            initTime: 0,
-            apiCalls: 0,
-            errors: 0,
-          });
-        }
-      }
-
-      const { runPluginMetricsTUI } = await import("../tui/PluginMetricsCommand.tsx");
-      runPluginMetricsTUI({ summary, plugins: pluginMetrics });
-      return;
-    }
 
     // Fallback to text output
     console.log("\n📊 Plugin Metrics Summary\n");

@@ -48,6 +48,7 @@ import { getSchemasResource } from "./resources/schemas.ts";
 import { getMigrationStatusResource } from "./resources/migration-status.ts";
 import { getSchemaSyntaxResource } from "./resources/schema-syntax.ts";
 import { getSchemaExamplesResource } from "./resources/schema-examples.ts";
+import { getTypeSystemResource } from "./resources/type-system.ts";
 
 // Core tools (always available)
 const coreTools = [
@@ -101,22 +102,38 @@ async function loadPluginTools(): Promise<PluginMCPTool[]> {
     // Set plugin registry config
     setPluginRegistryConfig(config, configDir);
 
-    // Get plugin list
-    const pluginList: string[] = [];
+    // Get plugin list - plugins must be an array
+    const pluginEntries: Array<{ name: string; config: Record<string, unknown> }> = [];
     if (config.plugins) {
-      if (Array.isArray(config.plugins)) {
-        pluginList.push(...config.plugins);
-      } else {
-        pluginList.push(...Object.keys(config.plugins));
+      if (!Array.isArray(config.plugins)) {
+        throw new Error("plugins must be an array. Format: ['@plugin/name'] or [{ '@plugin/name': { config: {...} } }]");
+      }
+
+      for (const pluginItem of config.plugins) {
+        if (typeof pluginItem === "string") {
+          // String shorthand: "@betagors/yama-pglite"
+          pluginEntries.push({ name: pluginItem, config: {} });
+        } else if (pluginItem && typeof pluginItem === "object") {
+          // Object format: { "@betagors/yama-redis": { config: {...} } }
+          const keys = Object.keys(pluginItem);
+          if (keys.length !== 1) {
+            throw new Error(`Plugin object must have exactly one key (plugin name), got: ${keys.join(", ")}`);
+          }
+          const pluginName = keys[0];
+          const pluginValue = pluginItem[pluginName];
+          const pluginConfig = pluginValue && typeof pluginValue === "object" && "config" in pluginValue
+            ? (pluginValue.config as Record<string, unknown> || {})
+            : {};
+          pluginEntries.push({ name: pluginName, config: pluginConfig });
+        } else {
+          throw new Error(`Invalid plugin item: expected string or object, got ${typeof pluginItem}`);
+        }
       }
     }
 
     // Load all plugins
-    for (const pluginName of pluginList) {
+    for (const { name: pluginName, config: pluginConfig } of pluginEntries) {
       try {
-        const pluginConfig = typeof config.plugins === "object" && !Array.isArray(config.plugins)
-          ? config.plugins[pluginName] || {}
-          : {};
         await loadPlugin(pluginName, configDir, pluginConfig);
       } catch (error) {
         // Log but don't fail - some plugins might not be installed
@@ -169,6 +186,12 @@ const resources = [
     uri: "schema://docs/examples",
     name: "Schema Examples",
     description: "Common schema patterns and examples",
+    mimeType: "text/markdown",
+  },
+  {
+    uri: "schema://docs/type-system",
+    name: "Type System Documentation",
+    description: "Complete reference for YAMA's schema-first type system",
     mimeType: "text/markdown",
   },
 ];
@@ -289,6 +312,8 @@ export async function createMCPServer(): Promise<Server> {
           return await getSchemaSyntaxResource(uri);
         case "schema://docs/examples":
           return await getSchemaExamplesResource(uri);
+        case "schema://docs/type-system":
+          return await getTypeSystemResource(uri);
         default:
           throw new Error(`Resource not found: ${uri}`);
       }
