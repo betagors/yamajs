@@ -2,7 +2,7 @@ import { existsSync } from "fs";
 import { findYamaConfig } from "../utils/project-detection.ts";
 import { readYamaConfig, getConfigDir } from "../utils/file-utils.ts";
 import { loadEnvFile, resolveEnvVars } from "@betagors/yama-core";
-import type { DatabaseConfig } from "@betagors/yama-core";
+import type { DatabaseConfig, YamaSchemas } from "@betagors/yama-core";
 import {
   entitiesToModel,
   computeModelHash,
@@ -33,22 +33,44 @@ export async function schemaCheckCommand(options: SchemaCheckOptions): Promise<v
     const environment = options.env || process.env.NODE_ENV || "development";
     loadEnvFile(configPath, environment);
     let config = readYamaConfig(configPath) as {
-      entities?: YamaEntities;
+      schemas?: YamaSchemas;
       plugins?: Record<string, Record<string, unknown>> | string[];
       database?: DatabaseConfig;
     };
     config = resolveEnvVars(config) as typeof config;
 
-    if (!config.entities || Object.keys(config.entities).length === 0) {
+    // Extract entities from schemas that have database properties
+    function extractEntitiesFromSchemas(schemas?: YamaSchemas): YamaEntities {
+      const entities: YamaEntities = {};
+      if (!schemas || typeof schemas !== 'object') {
+        return entities;
+      }
+      for (const [schemaName, schemaDef] of Object.entries(schemas)) {
+        if (schemaDef && typeof schemaDef === 'object' && 'database' in schemaDef) {
+          const dbConfig = (schemaDef as any).database;
+          if (dbConfig && (
+            (typeof dbConfig === 'object' && 'table' in dbConfig) || 
+            typeof dbConfig === 'string'
+          )) {
+            entities[schemaName] = schemaDef as any;
+          }
+        }
+      }
+      return entities;
+    }
+
+    const allEntities = extractEntitiesFromSchemas(config.schemas);
+
+    if (!allEntities || Object.keys(allEntities).length === 0) {
       if (options.ci) {
         process.exit(0);
       }
-      console.log("ℹ️  No entities defined in yama.yaml");
+      console.log("ℹ️  No database entities found in yama.yaml. Define schemas with 'database:' property to create database tables.");
       return;
     }
 
     // Compute target model from YAML
-    const targetModel = entitiesToModel(config.entities);
+    const targetModel = entitiesToModel(allEntities);
     const targetHash = targetModel.hash;
 
     // Get current model hash from database

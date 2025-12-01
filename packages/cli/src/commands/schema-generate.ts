@@ -3,7 +3,7 @@ import { join } from "path";
 import { findYamaConfig } from "../utils/project-detection.ts";
 import { readYamaConfig, getConfigDir } from "../utils/file-utils.ts";
 import { loadEnvFile, resolveEnvVars } from "@betagors/yama-core";
-import type { DatabaseConfig } from "@betagors/yama-core";
+import type { DatabaseConfig, YamaSchemas } from "@betagors/yama-core";
 import {
   entitiesToModel,
   computeModelHash,
@@ -18,10 +18,41 @@ import {
   type IndexModel,
   type YamaEntities,
 } from "@betagors/yama-core";
+import type { ForeignKeyModel } from "@betagors/yama-core";
 import { success, error, info, warning, printBox, printHints } from "../utils/cli-utils.ts";
 import { promptMigrationName, confirm, hasDestructiveOperation } from "../utils/interactive.ts";
 import { generateMigrationNameFromBranch } from "../utils/git-utils.ts";
 import { getDatabasePlugin, getDatabasePluginAndConfig } from "../utils/db-plugin.ts";
+
+/**
+ * Extract entities from schemas that have database properties
+ * Schemas with database.table are treated as entities for database code generation
+ */
+function extractEntitiesFromSchemas(schemas?: YamaSchemas): YamaEntities {
+  const entities: YamaEntities = {};
+  
+  if (!schemas || typeof schemas !== 'object') {
+    return entities;
+  }
+  
+  for (const [schemaName, schemaDef] of Object.entries(schemas)) {
+    // Check if schema has database property (indicating it's an entity)
+    if (schemaDef && typeof schemaDef === 'object' && 'database' in schemaDef) {
+      const dbConfig = (schemaDef as any).database;
+      // If database is an object with table property, or if database.table exists, or if database is a string (table name)
+      if (dbConfig && (
+        (typeof dbConfig === 'object' && 'table' in dbConfig) || 
+        typeof dbConfig === 'string'
+      )) {
+        // Convert schema definition to entity definition
+        // The schema fields should already be in entity format
+        entities[schemaName] = schemaDef as any;
+      }
+    }
+  }
+  
+  return entities;
+}
 
 /**
  * Normalize entities to ensure table names are set
@@ -30,15 +61,23 @@ function normalizeEntities(entities: YamaEntities): YamaEntities {
   const normalized: YamaEntities = {};
   
   for (const [entityName, entityDef] of Object.entries(entities)) {
+    // Handle database shorthand (string) or object
+    const dbConfig = typeof entityDef.database === "string"
+      ? { table: entityDef.database }
+      : entityDef.database;
+    
     // Convert entity name to snake_case for table name if not specified
     const defaultTableName = entityName
       .replace(/([A-Z])/g, '_$1')
       .toLowerCase()
       .replace(/^_/, ''); // Remove leading underscore
     
+    const tableName = dbConfig?.table || entityDef.table || defaultTableName;
+    
     normalized[entityName] = {
       ...entityDef,
-      table: entityDef.table || defaultTableName
+      table: tableName,
+      database: dbConfig || { table: tableName }
     };
   }
   
@@ -318,26 +357,25 @@ export async function schemaGenerateCommand(options: SchemaGenerateOptions): Pro
     const environment = process.env.NODE_ENV || "development";
     loadEnvFile(configPath, environment);
     let config = readYamaConfig(configPath) as {
-      entities?: YamaEntities;
+      schemas?: YamaSchemas;
       plugins?: Record<string, Record<string, unknown>> | string[];
       database?: DatabaseConfig;
     };
     config = resolveEnvVars(config) as typeof config;
 
-    if (!config.entities || Object.keys(config.entities).length === 0) {
-      error("No entities defined in yama.yaml");
+    // Extract entities from schemas that have database properties
+    const allEntities = extractEntitiesFromSchemas(config.schemas);
+
+    if (!allEntities || Object.keys(allEntities).length === 0) {
+      error("No database entities found in yama.yaml. Define schemas with 'database:' property to create database tables.");
       process.exit(1);
     }
 
     // Normalize entities to ensure table names are set
-    const normalizedEntities = normalizeEntities(config.entities);
+    const normalizedEntities = normalizeEntities(allEntities);
 
     const configDir = getConfigDir(configPath);
     const migrationsDir = join(configDir, "migrations");
-
-    // Compute target model
-    const targetModel = entitiesToModel(normalizedEntities);
-    const targetHash = targetModel.hash;
 
     // Get current model hash from database
     let currentHash: string | null = null;
@@ -384,105 +422,35 @@ export async function schemaGenerateCommand(options: SchemaGenerateOptions): Pro
       currentHash = null;
     }
 
+    // Use entitiesToModel to get target model (handles all normalization, indexes, etc.)
+    // This ensures we properly handle:
+    // - database.indexes from database property (e.g., database: { table: "posts", indexes: [...] })
+    // - field-level indexes from "indexed" constraint (e.g., "title: string! indexed")
+    // - unique constraints (e.g., "email: string! unique")
+    // - foreign key columns from inline relations (e.g., "author: Author! cascade" creates authorId column)
+    // - generated fields (e.g., "id: uuid! generated")
+    // - default values (e.g., "published: boolean = false", "createdAt: timestamp = now")
+    // - table names from database.table or database: tableName
+    const targetModel = entitiesToModel(normalizedEntities);
+    const targetHash = targetModel.hash;
+
     // If no current hash, start from empty
     const fromHash = currentHash || ""; // Empty string means first migration
 
     // Compute diff between current and target models
     let steps: any[] = [];
     
+    // Create empty model for first migration or get current model from database
+    let fromModel: Model;
     if (!fromHash || fromHash === "") {
-      // First migration - create all tables from entities
-      for (const [entityName, entityDef] of Object.entries(normalizedEntities)) {
-        const columns = Object.entries(entityDef.fields).map(([fieldName, field]) => {
-          const dbColumnName = field.dbColumn || fieldName;
-          let sqlType = field.dbType || field.type.toUpperCase();
-          
-          // Map types to SQL
-          if (!field.dbType) {
-            switch (field.type) {
-              case "uuid":
-                sqlType = "UUID";
-                break;
-              case "string":
-                sqlType = field.maxLength ? `VARCHAR(${field.maxLength})` : "VARCHAR(255)";
-                break;
-              case "text":
-                sqlType = "TEXT";
-                break;
-              case "number":
-              case "integer":
-                sqlType = "INTEGER";
-                break;
-              case "boolean":
-                sqlType = "BOOLEAN";
-                break;
-              case "timestamp":
-                sqlType = "TIMESTAMP";
-                break;
-              case "jsonb":
-                sqlType = "JSONB";
-                break;
-              default:
-                sqlType = "TEXT";
-            }
-          }
-
-          return {
-            name: dbColumnName,
-            type: sqlType,
-            nullable: field.nullable !== false && !field.required,
-            primary: field.primary || false,
-            default: field.default,
-            generated: field.generated,
-          };
-        });
-
-        steps.push({
-          type: "add_table",
-          table: entityDef.table,
-          columns,
-        });
-
-        // Add indexes
-        if (entityDef.indexes) {
-          for (const index of entityDef.indexes) {
-            steps.push({
-              type: "add_index",
-              table: entityDef.table,
-              index: {
-                name: index.name || `${entityDef.table}_${index.fields.join("_")}_idx`,
-                columns: index.fields.map((f) => {
-                  const field = entityDef.fields[f];
-                  return field?.dbColumn || f;
-                }),
-                unique: index.unique || false,
-              },
-            });
-          }
-        }
-
-        // Add field-level indexes
-        for (const [fieldName, field] of Object.entries(entityDef.fields)) {
-          if (field.index) {
-            const dbColumnName = field.dbColumn || fieldName;
-            steps.push({
-              type: "add_index",
-              table: entityDef.table,
-              index: {
-                name: `${entityDef.table}_${dbColumnName}_idx`,
-                columns: [dbColumnName],
-                unique: false,
-              },
-            });
-          }
-        }
-      }
+      // First migration - use empty model
+      fromModel = {
+        hash: "",
+        entities: {},
+        tables: new Map<string, TableModel>(),
+      };
     } else {
-      // Subsequent migrations - use diff-based generation
-      // 1. Reconstruct current model from database schema
-      // 2. Compute diff between current and target
-      // 3. Generate steps from diff
-      
+      // Subsequent migrations - read current model from database
       try {
         // Get database plugin and config (builds from plugin config if needed)
         const { plugin: dbPlugin, dbConfig } = await getDatabasePluginAndConfig(config, configPath);
@@ -490,30 +458,14 @@ export async function schemaGenerateCommand(options: SchemaGenerateOptions): Pro
         const sql = dbPlugin.client.getSQL();
 
         // Read current database schema
-        const currentModel = await readCurrentModelFromDB(sql);
+        fromModel = await readCurrentModelFromDB(sql);
         await dbPlugin.client.closeDatabase();
 
         // Check if database schema matches target (after reading actual schema)
-        if (currentModel.hash === targetHash) {
+        if (fromModel.hash === targetHash) {
           info("Schema is already in sync. No migration needed.");
           process.exit(0);
         }
-
-        // Compute target model from yama.yaml
-        const targetModel = entitiesToModel(normalizedEntities);
-
-        // Compute diff
-        const diff = computeDiff(currentModel, targetModel);
-
-        // Convert diff to steps
-        steps = diffToSteps(diff, currentModel, targetModel);
-
-        if (steps.length === 0) {
-          info("No changes detected. Schema is already in sync.");
-          process.exit(0);
-        }
-
-        info(`Detected ${steps.length} change(s) to apply`);
       } catch (err) {
         try {
           const dbPlugin = await getDatabasePlugin();
@@ -523,6 +475,19 @@ export async function schemaGenerateCommand(options: SchemaGenerateOptions): Pro
         process.exit(1);
       }
     }
+
+    // Compute diff between from and target models
+    const diff = computeDiff(fromModel, targetModel);
+
+    // Convert diff to steps (handles all table/column/index/foreign key operations)
+    steps = diffToSteps(diff, fromModel, targetModel);
+
+    if (steps.length === 0) {
+      info("No changes detected. Schema is already in sync.");
+      process.exit(0);
+    }
+
+    info(`Detected ${steps.length} change(s) to apply`);
 
     // Generate migration name from steps if not provided
     let migrationName = options.name;
