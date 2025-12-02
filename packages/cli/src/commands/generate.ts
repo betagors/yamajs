@@ -467,6 +467,11 @@ function normalizeEntities(entities: YamaEntities): YamaEntities {
   }
   
   for (const [entityName, entityDef] of Object.entries(entities)) {
+    // Handle database shorthand (string) or object
+    const dbConfig = typeof entityDef.database === "string"
+      ? { table: entityDef.database }
+      : entityDef.database;
+    
     // Convert entity name to snake_case for table name if not specified
     const defaultTableName = entityName
       .replace(/([A-Z])/g, '_$1')
@@ -475,7 +480,7 @@ function normalizeEntities(entities: YamaEntities): YamaEntities {
     
     normalized[entityName] = {
       ...entityDef,
-      table: entityDef.table || defaultTableName
+      table: dbConfig?.table || entityDef.table || defaultTableName
     };
   }
   

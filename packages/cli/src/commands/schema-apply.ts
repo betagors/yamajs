@@ -72,7 +72,8 @@ function splitSQLStatements(sql: string): string[] {
  * Read current database schema into a Model
  */
 async function readCurrentModelFromDB(sql: any): Promise<Model> {
-  const tablesResult = await sql`
+  // Use unsafe() method for compatibility with both postgres and pglite
+  const tablesResult = await sql.unsafe(`
     SELECT table_name 
     FROM information_schema.tables 
     WHERE table_schema = 'public' 
@@ -81,29 +82,29 @@ async function readCurrentModelFromDB(sql: any): Promise<Model> {
       AND table_name NOT LIKE '%_before_%'
       AND table_name NOT LIKE '%_snapshot_%'
     ORDER BY table_name
-  `;
+  `);
 
   const tables = new Map<string, TableModel>();
 
   for (const row of tablesResult as Array<{ table_name: string }>) {
     const tableName = row.table_name;
 
-    const columnsResult = await sql`
+    const columnsResult = await sql.unsafe(`
       SELECT column_name, data_type, character_maximum_length, is_nullable, column_default, is_identity
       FROM information_schema.columns
-      WHERE table_schema = 'public' AND table_name = ${tableName}
+      WHERE table_schema = 'public' AND table_name = '${tableName}'
       ORDER BY ordinal_position
-    `;
+    `);
 
     const columns = new Map<string, ColumnModel>();
     let primaryKeyColumn: string | null = null;
 
-    const pkResult = await sql`
+    const pkResult = await sql.unsafe(`
       SELECT column_name
       FROM information_schema.table_constraints tc
       JOIN information_schema.constraint_column_usage ccu ON tc.constraint_name = ccu.constraint_name
-      WHERE tc.table_schema = 'public' AND tc.table_name = ${tableName} AND tc.constraint_type = 'PRIMARY KEY'
-    `;
+      WHERE tc.table_schema = 'public' AND tc.table_name = '${tableName}' AND tc.constraint_type = 'PRIMARY KEY'
+    `);
 
     if (pkResult && pkResult.length > 0) {
       primaryKeyColumn = (pkResult[0] as { column_name: string }).column_name;
@@ -140,12 +141,12 @@ async function readCurrentModelFromDB(sql: any): Promise<Model> {
       });
     }
 
-    const indexesResult = await sql`
+    const indexesResult = await sql.unsafe(`
       SELECT i.indexname, i.indexdef, ix.indisunique
       FROM pg_indexes i
       JOIN pg_index ix ON i.indexname = (SELECT relname FROM pg_class WHERE oid = ix.indexrelid)
-      WHERE i.schemaname = 'public' AND i.tablename = ${tableName} AND i.indexname NOT LIKE '%_pkey'
-    `;
+      WHERE i.schemaname = 'public' AND i.tablename = '${tableName}' AND i.indexname NOT LIKE '%_pkey'
+    `);
 
     const indexes: { name: string; columns: string[]; unique: boolean }[] = [];
     for (const idx of indexesResult as Array<{ indexname: string; indexdef: string; indisunique: boolean }>) {
@@ -301,6 +302,8 @@ export async function schemaApplyCommand(options: SchemaApplyOptions): Promise<v
       } else if (step.type === "drop_column") {
         console.log(fmt.red(`- DROP COLUMN ${step.table}.${step.column}`));
         hasDestructive = true;
+      } else if (step.type === "rename_column") {
+        console.log(fmt.yellow(`~ RENAME COLUMN ${step.table}.${step.column} -> ${step.newName}`));
       } else if (step.type === "modify_column") {
         console.log(fmt.yellow(`~ ALTER COLUMN ${step.table}.${step.column}`));
       } else if (step.type === "add_index") {

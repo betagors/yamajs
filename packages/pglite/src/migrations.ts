@@ -264,6 +264,14 @@ export function generateSQLFromSteps(steps: MigrationStepUnion[]): string {
         statements.push(`ALTER TABLE ${step.table} DROP COLUMN IF EXISTS ${step.column} CASCADE;`);
         break;
 
+      case "rename_column":
+        statements.push(`-- Rename column: ${step.table}.${step.column} -> ${step.newName}`);
+        // PostgreSQL stores unquoted identifiers as lowercase
+        // Old name is lowercase (from database), new name should be camelCase (quoted)
+        // If old name might be quoted, try both - but typically it's lowercase
+        statements.push(`ALTER TABLE ${step.table} RENAME COLUMN "${step.column}" TO "${step.newName}";`);
+        break;
+
       case "modify_column":
         statements.push(`-- Modify column: ${step.table}.${step.column}`);
         // PostgreSQL ALTER COLUMN syntax
@@ -294,8 +302,10 @@ export function generateSQLFromSteps(steps: MigrationStepUnion[]): string {
       case "add_index":
         statements.push(`-- Add index: ${step.index.name} on ${step.table}`);
         const unique = step.index.unique ? "UNIQUE " : "";
+        // Quote column names to preserve case (they should be camelCase after renames)
+        const quotedColumns = step.index.columns.map(col => `"${col}"`).join(", ");
         statements.push(
-          `CREATE ${unique}INDEX IF NOT EXISTS ${step.index.name} ON ${step.table} (${step.index.columns.join(", ")});`
+          `CREATE ${unique}INDEX IF NOT EXISTS ${step.index.name} ON ${step.table} (${quotedColumns});`
         );
         break;
 
