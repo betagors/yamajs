@@ -780,6 +780,8 @@ export async function registerRoutes(
       };
 
       // ===== Register route using adapter =====
+      // Debug: Log the exact path being registered
+      console.log(`🔍 Registering route: ${method.toUpperCase()} ${path} (raw path from endpoint)`);
       serverAdapter.registerRoute(server, method, path, wrappedHandler);
 
       // ===== Log route registration =====

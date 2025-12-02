@@ -28,7 +28,36 @@ export interface CrudEndpoint {
  * Pluralize a word (simple implementation)
  */
 function pluralize(word: string): string {
-  // Simple pluralization rules
+  // Check if word is already plural (ends with 's' or 'es' but not singular words that end in 's')
+  // Words that are already plural typically end with 's' (but not 'ss', 'us', 'is', 'as', 'os')
+  // or 'es' (but not 'ies', 'ches', 'shes', 'xes', 'zes')
+  if (word.length > 1) {
+    // Already ends with 's' - check if it's likely already plural
+    if (word.endsWith("s")) {
+      // Exceptions: words ending in 'ss', 'us', 'is', 'as', 'os' might be singular
+      // But for entity names, if it ends with 's', it's likely already plural
+      // Check if it ends with 'es' (likely already plural)
+      if (word.endsWith("es")) {
+        // Check if it's a plural form (not 'ies', 'ches', 'shes', 'xes', 'zes')
+        if (!word.endsWith("ies") && !word.endsWith("ches") && !word.endsWith("shes") && 
+            !word.endsWith("xes") && !word.endsWith("zes")) {
+          // Already plural (e.g., "posts", "authors", "publishedposts")
+          return word;
+        }
+      } else {
+        // Ends with 's' but not 'es' - likely already plural (e.g., "posts", "authors")
+        // But check for singular words ending in 's' (like "class", "bus")
+        // For entity names, if it ends with 's' and is not a known singular exception, assume plural
+        const singularExceptions = ["class", "bus", "gas", "plus", "minus", "status", "focus", "virus"];
+        if (!singularExceptions.includes(word.toLowerCase())) {
+          // Likely already plural
+          return word;
+        }
+      }
+    }
+  }
+  
+  // Apply pluralization rules for singular words
   if (word.endsWith("y")) {
     return word.slice(0, -1) + "ies";
   }
@@ -39,15 +68,54 @@ function pluralize(word: string): string {
 }
 
 /**
- * Convert entity name to path (e.g., "Example" -> "/examples")
+ * Convert camelCase/PascalCase to kebab-case
+ * Examples: "PublishedPosts" -> "published-posts", "AuthorPosts" -> "author-posts"
+ */
+function toKebabCase(str: string): string {
+  return str
+    .replace(/([a-z])([A-Z])/g, '$1-$2') // Insert hyphen between lowercase and uppercase
+    .replace(/([A-Z])([A-Z][a-z])/g, '$1-$2') // Insert hyphen between consecutive capitals followed by lowercase
+    .toLowerCase();
+}
+
+/**
+ * Check if a word is already plural by checking the last segment
+ */
+function isLastWordPlural(words: string[]): boolean {
+  if (words.length === 0) return false;
+  const lastWord = words[words.length - 1];
+  // Check if last word ends with 's' (and not in exceptions)
+  if (lastWord.endsWith('s') && !lastWord.endsWith('ss')) {
+    const singularExceptions = ["class", "bus", "gas", "plus", "minus", "status", "focus", "virus"];
+    return !singularExceptions.includes(lastWord.toLowerCase());
+  }
+  return false;
+}
+
+/**
+ * Convert entity name to path (e.g., "Example" -> "/examples", "PublishedPosts" -> "/published-posts")
  */
 function entityNameToPath(entityName: string, customPath?: string): string {
   if (customPath) {
     return customPath.startsWith("/") ? customPath : `/${customPath}`;
   }
-  const lower = entityName.toLowerCase();
-  const plural = pluralize(lower);
-  return `/${plural}`;
+  
+  // Convert to kebab-case and split into words
+  const kebab = toKebabCase(entityName);
+  const words = kebab.split('-');
+  
+  // Check if the last word is already plural
+  if (isLastWordPlural(words)) {
+    // Already plural, return as-is
+    return `/${kebab}`;
+  }
+  
+  // Pluralize the last word only
+  const lastWord = words[words.length - 1];
+  const pluralizedLast = pluralize(lastWord);
+  words[words.length - 1] = pluralizedLast;
+  
+  return `/${words.join('-')}`;
 }
 
 /**
