@@ -525,15 +525,15 @@ async function generateDatabaseCode(
     // Generate index.ts with exports
     const entityNames = Object.keys(normalizedEntities);
     const indexContent = `// Auto-generated - do not edit
-export * from "./schema";
-export * from "./mapper";
-export * from "./repository";
-export * from "./repository-types";
+export * from "./schema.ts";
+export * from "./mapper.ts";
+export * from "./repository.ts";
+export * from "./repository-types.ts";
 
 // Re-export repository instances (already created in repository.ts)
 ${entityNames.map(name => {
   const camelName = name.charAt(0).toLowerCase() + name.slice(1);
-  return `export { ${camelName}Repository } from "./repository";`;
+  return `export { ${camelName}Repository } from "./repository.ts";`;
 }).join("\n")}
 `;
     const indexPath = join(dbOutputDir, "index.ts");

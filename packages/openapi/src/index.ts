@@ -3,7 +3,7 @@
  * Generates OpenAPI 3.0 specifications and other documentation formats from yama.yaml
  */
 
-import { schemaToJsonSchema, type YamaSchemas, type SchemaDefinition, type YamaEntities, type DatabaseConfig, entitiesToSchemas, mergeSchemas, normalizeApisConfig, normalizeBodyDefinition, normalizeQueryOrParams, generateCrudInputSchemas, generateArraySchema, generateAllCrudEndpoints, entityToSchema } from "@betagors/yama-core";
+import { schemaToJsonSchema, type YamaSchemas, type SchemaDefinition, type YamaEntities, type DatabaseConfig, entitiesToSchemas, mergeSchemas, normalizeApisConfig, normalizeBodyDefinition, normalizeQueryOrParams, generateCrudInputSchemas, generateArraySchema, generateAllCrudEndpoints, entityToSchema, normalizeEntityDefinition } from "@betagors/yama-core";
 
 export interface EndpointDefinition {
   path: string;
@@ -426,23 +426,30 @@ export function generateOpenAPI(config: YamaConfig): OpenAPISpec {
   const entitySchemas = config.entities ? entitiesToSchemas(config.entities) : {};
   
   // Generate CRUD input schemas (CreateXInput, UpdateXInput) and array schemas for entities with CRUD enabled
+  // Also check schemas with database properties (they should be treated as entities)
   const crudInputSchemas: YamaSchemas = {};
   const crudArraySchemas: YamaSchemas = {};
   
-  if (config.entities) {
-    for (const [entityName, entityDef] of Object.entries(config.entities)) {
-      // Check if CRUD is enabled (handles both boolean and object with enabled property)
-      const crudEnabled = typeof entityDef.crud === 'boolean' 
-        ? entityDef.crud 
-        : entityDef.crud && entityDef.crud.enabled !== false;
-      
-      if (crudEnabled) {
-        const inputSchemas = generateCrudInputSchemas(entityName, entityDef);
-        const arraySchemas = generateArraySchema(entityName, entityDef);
-        Object.assign(crudInputSchemas, inputSchemas);
-        Object.assign(crudArraySchemas, arraySchemas);
-        console.log(`  Generated CRUD input schemas for ${entityName}: ${Object.keys(inputSchemas).join(', ')}`);
+  // Combine entities and schemas with database properties
+  const allEntities: YamaEntities = config.entities ? { ...config.entities } : {};
+  if (config.schemas) {
+    for (const [schemaName, schemaDef] of Object.entries(config.schemas)) {
+      // Treat schemas with database properties as entities
+      if (schemaDef && typeof schemaDef === 'object' && (schemaDef.database || (schemaDef as any).table)) {
+        allEntities[schemaName] = schemaDef as any;
       }
+    }
+  }
+  
+  if (Object.keys(allEntities).length > 0) {
+    for (const [entityName, entityDef] of Object.entries(allEntities)) {
+      // Generate input schemas for all entities/schemas with database properties
+      // (not just those with crud enabled, since operations might use them)
+      const inputSchemas = generateCrudInputSchemas(entityName, entityDef);
+      const arraySchemas = generateArraySchema(entityName, entityDef);
+      Object.assign(crudInputSchemas, inputSchemas);
+      Object.assign(crudArraySchemas, arraySchemas);
+      console.log(`  Generated input schemas for ${entityName}: ${Object.keys(inputSchemas).join(', ')}`);
     }
   }
   
@@ -453,33 +460,9 @@ export function generateOpenAPI(config: YamaConfig): OpenAPISpec {
   // Merge schemas in order: entity schemas -> CRUD input schemas -> CRUD array schemas -> explicit schemas
   const mergedWithInputs = mergeSchemas(crudInputSchemas, entitySchemas);
   const mergedWithArrays = mergeSchemas(crudArraySchemas, mergedWithInputs);
-  const allSchemas = mergeSchemas(config.schemas, mergedWithArrays);
+  let allSchemas = mergeSchemas(config.schemas, mergedWithArrays);
   
   console.log(`  Total schemas available: ${Object.keys(allSchemas).length} (including ${Object.keys(crudInputSchemas).length} CRUD input schemas)`);
-
-  // Convert all schemas to OpenAPI schemas
-  for (const [schemaName, schemaDef] of Object.entries(allSchemas)) {
-    // Skip undefined or null schema definitions
-    if (!schemaDef || typeof schemaDef !== 'object' || schemaDef === null) {
-      console.warn(
-        `Warning: Skipping schema "${schemaName}" - invalid schema definition (${typeof schemaDef})`
-      );
-      continue;
-    }
-
-    try {
-      const schema = schemaToJsonSchema(schemaName, schemaDef, allSchemas);
-      spec.components.schemas[schemaName] = schema;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      const errorDetails = error instanceof Error && error.stack ? `\n${error.stack}` : '';
-      console.error(
-        `Error: Failed to convert schema "${schemaName}" to OpenAPI schema.\n` +
-        `  Reason: ${errorMessage}${errorDetails}\n` +
-        `  This schema will be skipped in the OpenAPI specification.`
-      );
-    }
-  }
 
   // Convert endpoints to OpenAPI paths
   console.log("🔍 Debug: Starting endpoint processing...");
@@ -551,7 +534,11 @@ export function generateOpenAPI(config: YamaConfig): OpenAPISpec {
   for (const endpoint of allEndpoints) {
     if ((endpoint.method === 'POST' || endpoint.method === 'PUT' || endpoint.method === 'PATCH') && !endpoint.body) {
       // Check if response references a schema
-      const responseType = typeof endpoint.response === 'string' ? endpoint.response : endpoint.response?.type;
+      const responseType = typeof endpoint.response === 'string' 
+        ? endpoint.response 
+        : (endpoint.response && typeof endpoint.response === 'object' && 'type' in endpoint.response)
+          ? endpoint.response.type
+          : undefined;
       if (responseType && allSchemas[responseType]) {
         // Extract base schema name (remove array syntax)
         const baseSchemaName = responseType.replace(/\[\]$/, '');
@@ -561,30 +548,81 @@ export function generateOpenAPI(config: YamaConfig): OpenAPISpec {
             ? generateInputSchemaName(baseSchemaName, 'Create')
             : generateInputSchemaName(baseSchemaName, 'Update');
           
+          // Check if CRUD input schema already exists (e.g., CreateAuthorInput from CRUD generation)
+          if (allSchemas[inputSchemaName]) {
+            // Use existing CRUD input schema
+            (endpoint as any).body = { type: inputSchemaName };
+            console.log(`  Using existing CRUD input schema: ${inputSchemaName} for ${endpoint.method} ${endpoint.path}`);
+            continue;
+          }
+          
           // Only generate if it doesn't already exist
-          if (!allSchemas[inputSchemaName] && !operationInputSchemas[inputSchemaName]) {
+          if (!operationInputSchemas[inputSchemaName]) {
             // Get the entity/schema definition - check both schemas and entities
             let schemaDef = allSchemas[baseSchemaName];
             let entityDef: any = undefined;
             
-            // If not in schemas, check entities
-            if (!schemaDef && config.entities && config.entities[baseSchemaName]) {
+            // Check entities first
+            if (config.entities && config.entities[baseSchemaName]) {
               entityDef = config.entities[baseSchemaName];
-              // Convert entity to schema to get proper API fields (relations -> foreign keys)
-              schemaDef = entityToSchema(baseSchemaName, entityDef);
+              if (!schemaDef) {
+                // Convert entity to schema to get proper API fields (relations -> foreign keys)
+                schemaDef = entityToSchema(baseSchemaName, entityDef);
+              }
+            } else if (config.schemas && config.schemas[baseSchemaName]) {
+              // Check if schema has database property (treat as entity)
+              const schema = config.schemas[baseSchemaName];
+              if (schema && typeof schema === 'object' && (schema.database || (schema as any).table)) {
+                entityDef = schema as any;
+                if (!schemaDef) {
+                  schemaDef = entityToSchema(baseSchemaName, entityDef);
+                }
+              }
             }
             
             if (schemaDef && typeof schemaDef === 'object' && 'fields' in schemaDef) {
-              // Generate input schema similar to CRUD
+              // Generate input schema similar to CRUD - need to get normalized entity fields
+              // to check for readonly, autoUpdate, etc.
+              let normalizedFields: Record<string, any> | undefined;
+              if (entityDef) {
+                const normalized = normalizeEntityDefinition(baseSchemaName, entityDef, undefined);
+                normalizedFields = normalized.fields;
+              }
+              
               const inputFields: Record<string, any> = {};
               for (const [fieldName, field] of Object.entries(schemaDef.fields)) {
-                // For create: exclude primary key and generated fields
+                // For create: exclude primary key, generated fields, readonly, autoUpdate, and timestamp fields
                 if (endpoint.method === 'POST') {
                   const fieldDef = field as any;
-                  if (fieldDef.primary || fieldDef.generated) {
+                  // Check normalized entity field for additional metadata
+                  const normalizedField = normalizedFields?.[fieldName];
+                  
+                  if (fieldDef.primary || fieldDef.generated || normalizedField?.primary || normalizedField?.generated) {
                     continue;
                   }
-                  if (fieldDef.api === false) {
+                  // Skip readonly fields
+                  if (normalizedField?.readonly) {
+                    continue;
+                  }
+                  // Skip auto-updated fields
+                  if (normalizedField?.autoUpdate) {
+                    continue;
+                  }
+                  // Skip fields with default functions like now()
+                  // Check both normalized field and schema field for default values
+                  const defaultValue = normalizedField?.default || fieldDef.default;
+                  if (defaultValue && typeof defaultValue === 'string' && 
+                      (defaultValue === 'now()' || defaultValue === 'now' || 
+                       defaultValue.includes('()') && (defaultValue.includes('now') || defaultValue.includes('uuid')))) {
+                    continue;
+                  }
+                  // Skip common timestamp fields
+                  const timestampFieldNames = ['createdAt', 'updatedAt', 'deletedAt', 'created_at', 'updated_at', 'deleted_at'];
+                  const fieldType = normalizedField?.type || fieldDef.type;
+                  if (timestampFieldNames.includes(fieldName) && (fieldType === 'timestamp' || fieldType === 'timestamptz' || fieldType === 'datetimelocal' || fieldType === 'datetime' || fieldType === 'string' && fieldDef.format === 'date-time')) {
+                    continue;
+                  }
+                  if (fieldDef.api === false || normalizedField?.api === false) {
                     continue;
                   }
                   // Skip relation objects (they should be foreign keys already from entityToSchema)
@@ -593,12 +631,43 @@ export function generateOpenAPI(config: YamaConfig): OpenAPISpec {
                   }
                   inputFields[fieldName] = { ...field };
                 } else {
-                  // For update: all fields optional except primary key
+                  // For update: exclude primary key (in path), generated fields, readonly, autoUpdate, and timestamp fields
                   const fieldDef = field as any;
-                  if (fieldDef.primary) {
+                  const normalizedField = normalizedFields?.[fieldName];
+                  
+                  if (fieldDef.primary || normalizedField?.primary) {
                     continue;
                   }
-                  if (fieldDef.api === false) {
+                  // Skip generated fields
+                  if (normalizedField?.generated) {
+                    continue;
+                  }
+                  // Skip readonly fields
+                  if (normalizedField?.readonly) {
+                    continue;
+                  }
+                  // Skip auto-updated fields
+                  if (normalizedField?.autoUpdate) {
+                    continue;
+                  }
+                  // Skip fields with default functions like now()
+                  const defaultValue = normalizedField?.default || fieldDef.default;
+                  if (defaultValue && typeof defaultValue === 'string' && 
+                      (defaultValue === 'now()' || defaultValue === 'now' || 
+                       defaultValue.includes('()') && (defaultValue.includes('now') || defaultValue.includes('uuid')))) {
+                    continue;
+                  }
+                  // Skip common timestamp fields
+                  const timestampFieldNames = ['createdAt', 'updatedAt', 'deletedAt', 'created_at', 'updated_at', 'deleted_at'];
+                  const fieldType = normalizedField?.type || fieldDef.type;
+                  if (timestampFieldNames.includes(fieldName) && (fieldType === 'timestamp' || fieldType === 'timestamptz' || fieldType === 'datetimelocal' || fieldType === 'datetime' || fieldType === 'string' && fieldDef.format === 'date-time')) {
+                    continue;
+                  }
+                  // Skip id field (it's in the path)
+                  if (fieldName === 'id') {
+                    continue;
+                  }
+                  if (fieldDef.api === false || normalizedField?.api === false) {
                     continue;
                   }
                   // Skip relation objects
@@ -625,10 +694,35 @@ export function generateOpenAPI(config: YamaConfig): OpenAPISpec {
     }
   }
   
-  // Merge operation input schemas into allSchemas
+  // Merge operation input schemas into allSchemas BEFORE converting to OpenAPI schemas
   if (Object.keys(operationInputSchemas).length > 0) {
     Object.assign(allSchemas, operationInputSchemas);
     console.log(`  Added ${Object.keys(operationInputSchemas).length} operation input schema(s) to schemas collection`);
+  }
+  
+  // Now convert all schemas (including operation input schemas) to OpenAPI schemas
+  // This needs to happen after we've added operation input schemas
+  for (const [schemaName, schemaDef] of Object.entries(allSchemas)) {
+    // Skip undefined or null schema definitions
+    if (!schemaDef || typeof schemaDef !== 'object' || schemaDef === null) {
+      console.warn(
+        `Warning: Skipping schema "${schemaName}" - invalid schema definition (${typeof schemaDef})`
+      );
+      continue;
+    }
+
+    try {
+      const schema = schemaToJsonSchema(schemaName, schemaDef, allSchemas);
+      spec.components.schemas[schemaName] = schema;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorDetails = error instanceof Error && error.stack ? `\n${error.stack}` : '';
+      console.error(
+        `Error: Failed to convert schema "${schemaName}" to OpenAPI schema.\n` +
+        `  Reason: ${errorMessage}${errorDetails}\n` +
+        `  This schema will be skipped in the OpenAPI specification.`
+      );
+    }
   }
   
   if (allEndpoints.length === 0) {

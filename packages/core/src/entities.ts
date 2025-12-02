@@ -786,6 +786,10 @@ export function entityToSchema(
   // Process fields - optimized loop
   for (let i = 0; i < fieldEntries.length; i++) {
     const [fieldName, entityField] = fieldEntries[i];
+    // Skip inline relations - they're handled via foreign keys, not as direct fields
+    if (entityField._isInlineRelation) {
+      continue;
+    }
     const result = entityFieldToSchemaField(fieldName, entityField);
     if (result) {
       schemaFields[result.apiFieldName] = result.schemaField;

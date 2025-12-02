@@ -301,11 +301,15 @@ export function createDefaultHandler(
     // Try to detect entity from response type
     if (entities && config) {
       const entityName = extractEntityNameFromResponseType(responseType, entities);
+      console.log(`🔍 createDefaultHandler: responseType="${responseType}", entityName="${entityName}"`);
+      console.log(`🔍 Available entities in context:`, context.entities ? Object.keys(context.entities) : 'none');
+      console.log(`🔍 Available entities in config:`, entities ? Object.keys(entities) : 'none');
       
       if (entityName && context.entities && context.entities[entityName]) {
         const repository = context.entities[entityName] as any;
         const entityDef = entities[entityName];
         const method = endpoint.method.toUpperCase();
+        console.log(`✅ Found repository for ${entityName}, method=${method}`);
 
         try {
           // ===== GET /path (list) =====
@@ -355,7 +359,12 @@ export function createDefaultHandler(
             if (!context.body) {
               throw new Error("Request body is required");
             }
+            console.log(`📤 Creating ${entityName} with body:`, JSON.stringify(context.body, null, 2));
             const result = await repository.create(context.body);
+            console.log(`📥 Repository.create returned:`, JSON.stringify(result, null, 2));
+            if (!result) {
+              throw new Error(`Failed to create ${entityName}: repository returned null/undefined`);
+            }
             context.status(201);
             return result;
           }

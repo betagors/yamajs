@@ -41,13 +41,17 @@ export async function loadRepositories(
 ): Promise<Record<string, unknown>> {
   const repositories: Record<string, unknown> = {};
 
+  console.log(`🔍 loadRepositories called with configDir="${configDir}", entities count=${entities ? Object.keys(entities).length : 0}`);
+
   // If no entities defined, return empty object
   if (!entities || Object.keys(entities).length === 0) {
+    console.warn(`⚠️  No entities provided to loadRepositories`);
     return repositories;
   }
 
   // Construct path to .yama/gen/db/index.ts
   const dbIndexPath = join(configDir, ".yama", "gen", "db", "index.ts");
+  console.log(`🔍 Looking for repository index at: ${dbIndexPath}`);
 
   // Check if repository index file exists
   if (!existsSync(dbIndexPath)) {
@@ -57,13 +61,34 @@ export async function loadRepositories(
     return repositories;
   }
 
-  try {
-    // Convert to absolute path and then to file URL for ES module import
-    const absolutePath = resolve(dbIndexPath);
-    const fileUrl = pathToFileURL(absolutePath).href;
+  console.log(`✅ Repository index file found at: ${dbIndexPath}`);
 
-    // Dynamic import for ES modules
-    const repositoryModule = await import(fileUrl);
+  try {
+    // Convert to absolute path
+    const absolutePath = resolve(dbIndexPath);
+    
+    // Change to configDir temporarily to ensure relative imports resolve correctly
+    // This is necessary because the module's relative imports (./schema, ./mapper)
+    // need to be resolved relative to the configDir, not the current working directory
+    const originalCwd = process.cwd();
+    let repositoryModule;
+    
+    try {
+      // Change to configDir so relative imports in the module resolve correctly
+      process.chdir(configDir);
+      
+      // Import using relative path from configDir
+      // This ensures ./schema, ./mapper etc. resolve correctly
+      const relativeImportPath = join(".yama", "gen", "db", "index.ts");
+      repositoryModule = await import(relativeImportPath);
+    } catch (chdirError) {
+      // If chdir fails or import fails, try with file:// URL
+      const fileUrl = pathToFileURL(absolutePath).href;
+      repositoryModule = await import(fileUrl);
+    } finally {
+      // Always restore original working directory
+      process.chdir(originalCwd);
+    }
 
     // Map entity names to repository instances
     // Entity "Product" → repository export "productRepository"

@@ -571,15 +571,103 @@ export function generateCrudInputSchemas(
   // Get the base schema
   const baseSchema = entityToSchema(entityName, entityDef);
   
+  // Check if variants are defined - if so, use them for explicit control
+  // Variants allow you to explicitly include/exclude fields like id, createdAt, updatedAt
+  if (entityDef.variants && (entityDef.variants.create || entityDef.variants.update)) {
+    const { VariantGenerator } = require('./variants/generator.js');
+    const result: Record<string, { fields: Record<string, SchemaField> }> = {};
+    
+    // Convert baseSchema fields to FieldType format for VariantGenerator
+    const baseFieldsAsFieldType: Record<string, any> = {};
+    for (const [fieldName, schemaField] of Object.entries(baseSchema.fields)) {
+      baseFieldsAsFieldType[fieldName] = {
+        type: schemaField.type,
+        nullable: !schemaField.required,
+        default: schemaField.default,
+      };
+    }
+    
+    // Use create variant if defined
+    if (entityDef.variants.create) {
+      const createVariant = VariantGenerator.generate(
+        { fields: baseFieldsAsFieldType, computed: entityDef.computed },
+        entityDef.variants.create
+      );
+      // Convert FieldType back to SchemaField
+      const createFields: Record<string, SchemaField> = {};
+      for (const [fieldName, fieldType] of Object.entries(createVariant.fields)) {
+        const ft = fieldType as any; // FieldType from VariantGenerator
+        createFields[fieldName] = {
+          type: ft.type as SchemaField['type'],
+          required: !ft.nullable,
+          default: ft.default,
+          format: (ft.type === 'timestamp' || ft.type === 'timestamptz' || ft.type === 'datetime') ? 'date-time' : undefined,
+        };
+      }
+      result[createInputName] = { fields: createFields };
+    }
+    
+    // Use update variant if defined
+    if (entityDef.variants.update) {
+      const updateVariant = VariantGenerator.generate(
+        { fields: baseFieldsAsFieldType, computed: entityDef.computed },
+        entityDef.variants.update
+      );
+      // Convert FieldType back to SchemaField
+      const updateFields: Record<string, SchemaField> = {};
+      for (const [fieldName, fieldType] of Object.entries(updateVariant.fields)) {
+        const ft = fieldType as any; // FieldType from VariantGenerator
+        updateFields[fieldName] = {
+          type: ft.type as SchemaField['type'],
+          required: false, // Update fields are always optional (partial: true is implied)
+          default: ft.default,
+          format: (ft.type === 'timestamp' || ft.type === 'timestamptz' || ft.type === 'datetime') ? 'date-time' : undefined,
+        };
+      }
+      result[updateInputName] = { fields: updateFields };
+    }
+    
+    // Fill in missing variants with auto-generated ones
+    if (!result[createInputName] || !result[updateInputName]) {
+      // Continue to auto-generation for missing variants
+    } else {
+      // Both variants defined, return early
+      return result;
+    }
+  }
+  
   // Normalize entity definition to handle shorthand syntax
   const normalized = normalizeEntityDefinition(entityName, entityDef, undefined);
 
-  // Create input: exclude primary key and generated fields
+  // Create input: exclude primary key, generated fields, readonly fields, and auto-updated fields
   // Use the base schema fields directly (they already have correct API field names)
   const createFields: Record<string, SchemaField> = {};
+  // Common timestamp field names that should be excluded from create input
+  const timestampFieldNames = ['createdAt', 'updatedAt', 'deletedAt', 'created_at', 'updated_at', 'deleted_at'];
+  
   for (const [fieldName, field] of Object.entries(normalized.fields)) {
     // Skip primary key and generated fields for create
     if (field.primary || field.generated) {
+      continue;
+    }
+    // Skip readonly fields (e.g., createdAt, updatedAt with readonly modifier)
+    if (field.readonly) {
+      continue;
+    }
+    // Skip auto-updated fields (e.g., updatedAt with autoUpdate modifier)
+    if (field.autoUpdate) {
+      continue;
+    }
+    // Skip fields with default functions like now() - these are auto-generated
+    // Check if default is a function name (string) that suggests auto-generation
+    if (field.default && typeof field.default === 'string' && 
+        (field.default === 'now()' || field.default === 'now' || 
+         field.default.includes('()') && (field.default.includes('now') || field.default.includes('uuid')))) {
+      continue;
+    }
+    // Skip common timestamp fields that are conventionally auto-generated
+    // (createdAt, updatedAt, deletedAt, etc.) - these should not be in create input
+    if (timestampFieldNames.includes(fieldName) && (field.type === 'timestamp' || field.type === 'timestamptz' || field.type === 'datetimelocal' || field.type === 'datetime')) {
       continue;
     }
     // Skip if api is false
@@ -595,17 +683,51 @@ export function generateCrudInputSchemas(
       ? field.dbColumn.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase())
       : fieldName;
 
+    // Double-check: if this field was excluded above, don't add it even if it exists in baseSchema
+    // (baseSchema might have it for response schemas, but we don't want it in input schemas)
+    if (timestampFieldNames.includes(apiFieldName) || timestampFieldNames.includes(fieldName)) {
+      continue; // Skip timestamp fields even if they exist in baseSchema
+    }
+    
+    // Also skip 'id' field - it's always auto-generated for create operations
+    if (apiFieldName === 'id' || fieldName === 'id') {
+      continue;
+    }
+
     const schemaField = baseSchema.fields[apiFieldName];
     if (schemaField) {
       createFields[apiFieldName] = { ...schemaField };
     }
   }
 
-  // Update input: all fields optional except primary key
+  // Update input: exclude primary key (in path), generated fields, readonly fields, auto-updated fields, and timestamps
   const updateFields: Record<string, SchemaField> = {};
   for (const [fieldName, field] of Object.entries(normalized.fields)) {
     // Skip primary key for update (it's in the path)
     if (field.primary) {
+      continue;
+    }
+    // Skip generated fields
+    if (field.generated) {
+      continue;
+    }
+    // Skip readonly fields (e.g., createdAt, updatedAt with readonly modifier)
+    if (field.readonly) {
+      continue;
+    }
+    // Skip auto-updated fields (e.g., updatedAt with autoUpdate modifier)
+    if (field.autoUpdate) {
+      continue;
+    }
+    // Skip fields with default functions like now() - these are auto-generated
+    if (field.default && typeof field.default === 'string' && 
+        (field.default === 'now()' || field.default === 'now' || 
+         field.default.includes('()') && (field.default.includes('now') || field.default.includes('uuid')))) {
+      continue;
+    }
+    // Skip common timestamp fields that are conventionally auto-generated
+    // (createdAt, updatedAt, deletedAt, etc.) - these should not be in update input
+    if (timestampFieldNames.includes(fieldName) && (field.type === 'timestamp' || field.type === 'timestamptz' || field.type === 'datetimelocal' || field.type === 'datetime')) {
       continue;
     }
     // Skip if api is false
@@ -619,6 +741,14 @@ export function generateCrudInputSchemas(
       : field.dbColumn
       ? field.dbColumn.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase())
       : fieldName;
+
+    // Double-check: skip timestamp fields and id even if they exist in baseSchema
+    if (timestampFieldNames.includes(apiFieldName) || timestampFieldNames.includes(fieldName)) {
+      continue;
+    }
+    if (apiFieldName === 'id' || fieldName === 'id') {
+      continue;
+    }
 
     const schemaField = baseSchema.fields[apiFieldName];
     if (schemaField) {

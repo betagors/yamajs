@@ -808,12 +808,12 @@ export function generateRepository(
 // Do not edit manually - your changes will be overwritten
 
 import { pgliteAdapter } from "@betagors/yama-pglite";
-import { ${schemaImports.join(', ')} } from "./schema";
-import { ${mapperImports.join(', ')} } from "./mapper";
+import { ${schemaImports.join(', ')} } from "./schema.ts";
+import { ${mapperImports.join(', ')} } from "./mapper.ts";
 import { eq, and, or, ilike, gt, lt, desc, asc } from "drizzle-orm";
 import type { SQL } from "drizzle-orm";
 import type { ${typeImports.join(', ')} } from "${typesImportPath.replace(/\.ts$/, '')}";
-import type { ${repositoryTypeImports.join(', ')} } from "./repository-types";
+import type { ${repositoryTypeImports.join(', ')} } from "./repository-types.ts";
 import type { drizzle } from "drizzle-orm/pglite";
 import { randomUUID } from "crypto";
 

@@ -22,6 +22,7 @@ import {
   type HttpRequest,
   type HttpResponse,
   type YamaSchemas,
+  type YamaEntities,
   loadPlugin,
   pluginRegistry,
   setPluginRegistryConfig,
@@ -405,12 +406,29 @@ export async function startYamaNodeRuntime(
   }
 
   // ===== Load entity repositories =====
+  // Combine entities and schemas with database properties for repository loading
+  let allEntitiesForRepos: YamaEntities = config?.entities ? { ...config.entities } : {};
+  if (config?.schemas) {
+    for (const [schemaName, schemaDef] of Object.entries(config.schemas)) {
+      // Treat schemas with database properties as entities
+      if (schemaDef && typeof schemaDef === 'object' && (schemaDef.database || (schemaDef as any).table)) {
+        allEntitiesForRepos[schemaName] = schemaDef as any;
+      }
+    }
+  }
+  
+  console.log(`🔍 Repository loading: found ${Object.keys(allEntitiesForRepos).length} entities/schemas with database:`, Object.keys(allEntitiesForRepos));
+  console.log(`🔍 configDir for repository loading:`, configDir);
+  
   let repositories: Record<string, unknown> = {};
-  if (config?.entities && configDir) {
+  if (Object.keys(allEntitiesForRepos).length > 0 && configDir) {
     try {
-      repositories = await loadRepositories(configDir, config.entities);
+      repositories = await loadRepositories(configDir, allEntitiesForRepos);
+      console.log(`🔍 After loadRepositories, repositories object has ${Object.keys(repositories).length} keys:`, Object.keys(repositories));
       if (Object.keys(repositories).length > 0) {
         console.log(`✅ Loaded ${Object.keys(repositories).length} repository/repositories for handler context`);
+      } else {
+        console.warn(`⚠️  No repositories were loaded. Check that 'yama generate' has been run.`);
       }
     } catch (error) {
       console.warn(
@@ -418,6 +436,8 @@ export async function startYamaNodeRuntime(
         error instanceof Error ? error.message : String(error)
       );
     }
+  } else {
+    console.warn(`⚠️  Skipping repository loading: ${Object.keys(allEntitiesForRepos).length === 0 ? 'no entities found' : 'configDir missing'}`);
   }
 
   // ===== Initialize rate limiter =====
