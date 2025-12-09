@@ -14,6 +14,7 @@ export interface PathModule {
   dirname(path: string): string;
   resolve(...paths: string[]): string;
   extname?(path: string): string;
+  basename?(path: string, ext?: string): string;
 }
 
 let fileSystem: FileSystem | null = null;

@@ -73,12 +73,108 @@ function detectWebCryptoProvider(): CryptoProvider | null {
   };
 }
 
+// Token Signing Abstraction
+export interface TokenSigner {
+  sign(payload: object, secret: string, options?: SignOptions): Promise<string>;
+  verify(token: string, secret: string, options?: VerifyOptions): Promise<object>;
+  decode(token: string): object | null;
+}
+
+export interface SignOptions {
+  expiresIn?: string | number;
+  issuer?: string;
+  audience?: string | string[];
+  algorithm?: string;
+  [key: string]: any;
+}
+
+export interface VerifyOptions {
+  algorithms?: string[];
+  issuer?: string | string[];
+  audience?: string | string[];
+  [key: string]: any;
+}
+
+// Standardized Auth Errors for the platform to use
+export class TokenExpiredError extends Error {
+  constructor(message: string, public expiredAt: Date) {
+    super(message);
+    this.name = "TokenExpiredError";
+  }
+}
+
+export class JsonWebTokenError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "JsonWebTokenError";
+  }
+}
+
+let tokenSigner: TokenSigner | null = null;
+
+export function setTokenSigner(signer: TokenSigner | null): void {
+  tokenSigner = signer;
+}
+
+export async function getTokenSigner(): Promise<TokenSigner> {
+  if (tokenSigner) {
+    return tokenSigner;
+  }
+  tokenSigner = await createJwtTokenSigner();
+  return tokenSigner;
+}
+
+async function createJwtTokenSigner(): Promise<TokenSigner> {
+  try {
+    const jwt = await import("jsonwebtoken");
+
+    return {
+      async sign(payload: object, secret: string, options?: SignOptions): Promise<string> {
+        // Cast options to jwt types implicitly by passing them through
+        return new Promise((resolve, reject) => {
+          jwt.default.sign(payload, secret, options as any, (err: Error | null, token: string | undefined) => {
+            if (err) reject(err);
+            else resolve(token!);
+          });
+        });
+      },
+
+      async verify(token: string, secret: string, options?: VerifyOptions): Promise<object> {
+        return new Promise((resolve, reject) => {
+          jwt.default.verify(token, secret, options as any, (err: Error | null, decoded: any) => {
+            if (err) {
+              if (err instanceof jwt.TokenExpiredError) {
+                reject(new TokenExpiredError(err.message, err.expiredAt));
+              } else if (err instanceof jwt.JsonWebTokenError) {
+                reject(new JsonWebTokenError(err.message));
+              } else {
+                reject(err);
+              }
+            } else {
+              resolve(decoded);
+            }
+          });
+        });
+      },
+
+      decode(token: string): object | null {
+        const decoded = jwt.default.decode(token);
+        return typeof decoded === 'object' ? decoded : null;
+      }
+    };
+  } catch (error) {
+    throw new Error(
+      "Token signing requires jsonwebtoken. Provide a signer via setTokenSigner() or install jsonwebtoken in your runtime."
+    );
+  }
+}
+
 async function createBcryptPasswordHasher(): Promise<PasswordHasher> {
   try {
     const bcrypt = await import("bcryptjs");
     return {
-      hash: (password: string, saltRounds = 12) => bcrypt.hash(password, saltRounds),
-      verify: (password: string, hash: string) => bcrypt.compare(password, hash),
+      hash: (password: string, saltRounds = 12) => bcrypt.default ? bcrypt.default.hash(password, saltRounds) : bcrypt.hash(password, saltRounds),
+      verify: (password: string, hash: string) => bcrypt.default ? bcrypt.default.compare(password, hash) : bcrypt.compare(password, hash),
     };
   } catch (error) {
     throw new Error(

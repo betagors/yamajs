@@ -1,7 +1,19 @@
-import jwt from "jsonwebtoken";
 import type { AuthProviderHandler, AuthResult, AuthUser, TokenPair, TokenGenerationOptions } from "../types.js";
 import type { JwtAuthProvider, AuthContext } from "../../schemas.js";
 import { ErrorCodes } from "@betagors/yama-errors";
+import { getTokenSigner, TokenExpiredError, JsonWebTokenError } from "../../platform/crypto.js";
+
+// Local definition to avoid importing from jsonwebtoken
+export type JwtPayload = {
+  [key: string]: any;
+  iss?: string;
+  sub?: string;
+  aud?: string | string[];
+  exp?: number;
+  nbf?: number;
+  iat?: number;
+  jti?: string;
+};
 
 /**
  * Resolve environment variable references in strings
@@ -32,15 +44,15 @@ function extractBearerToken(authHeader?: string): string | null {
  */
 function parseDuration(duration: string | number): number {
   if (typeof duration === 'number') return duration;
-  
+
   const match = duration.match(/^(\d+)(s|m|h|d|w)$/);
   if (!match) {
     throw new Error(`Invalid duration format: ${duration}. Use format like "15m", "1h", "7d"`);
   }
-  
+
   const value = parseInt(match[1], 10);
   const unit = match[2];
-  
+
   switch (unit) {
     case 's': return value;
     case 'm': return value * 60;
@@ -57,13 +69,14 @@ function parseDuration(duration: string | number): number {
 async function validateJwt(
   token: string,
   provider: JwtAuthProvider
-): Promise<{ valid: boolean; payload?: jwt.JwtPayload; error?: string; errorCode?: string }> {
+): Promise<{ valid: boolean; payload?: JwtPayload; error?: string; errorCode?: string }> {
   try {
+    const signer = await getTokenSigner();
     const secret = resolveEnvVar(provider.secret);
-    const options: jwt.VerifyOptions = {};
+    const options: any = {};
 
     if (provider.algorithm) {
-      options.algorithms = [provider.algorithm as jwt.Algorithm];
+      options.algorithms = [provider.algorithm];
     }
     if (provider.issuer) {
       options.issuer = provider.issuer;
@@ -72,17 +85,17 @@ async function validateJwt(
       options.audience = provider.audience;
     }
 
-    const payload = jwt.verify(token, secret, options) as jwt.JwtPayload;
+    const payload = await signer.verify(token, secret, options) as JwtPayload;
     return { valid: true, payload };
   } catch (error) {
-    if (error instanceof jwt.TokenExpiredError) {
+    if (error instanceof TokenExpiredError) {
       return {
         valid: false,
         error: "Token has expired",
         errorCode: ErrorCodes.AUTH_TOKEN_EXPIRED,
       };
     }
-    if (error instanceof jwt.JsonWebTokenError) {
+    if (error instanceof JsonWebTokenError) {
       return {
         valid: false,
         error: error.message,
@@ -101,7 +114,7 @@ async function validateJwt(
  * Create auth context from JWT payload
  */
 function createAuthContextFromJwt(
-  payload: jwt.JwtPayload,
+  payload: JwtPayload,
   provider: string
 ): AuthContext {
   return {
@@ -165,18 +178,19 @@ const jwtHandler: AuthProviderHandler = {
     config: JwtAuthProvider,
     options?: TokenGenerationOptions
   ): Promise<TokenPair> {
+    const signer = await getTokenSigner();
     const secret = resolveEnvVar(config.secret);
-    
+
     // Determine expiration times
-    const accessExpiresIn = options?.accessTokenExpiresIn 
-      || config.accessToken?.expiresIn 
+    const accessExpiresIn = options?.accessTokenExpiresIn
+      || config.accessToken?.expiresIn
       || '15m';
-    const refreshExpiresIn = options?.refreshTokenExpiresIn 
-      || config.refreshToken?.expiresIn 
+    const refreshExpiresIn = options?.refreshTokenExpiresIn
+      || config.refreshToken?.expiresIn
       || '7d';
-    
+
     // Build access token payload
-    const accessPayload: jwt.JwtPayload = {
+    const accessPayload: JwtPayload = {
       sub: user.id,
       email: user.email,
       name: user.name,
@@ -185,19 +199,19 @@ const jwtHandler: AuthProviderHandler = {
       emailVerified: user.emailVerified,
       ...options?.additionalClaims,
     };
-    
+
     // Remove undefined values
     Object.keys(accessPayload).forEach(key => {
       if (accessPayload[key] === undefined) {
         delete accessPayload[key];
       }
     });
-    
+
     // Sign options
-    const signOptions: jwt.SignOptions = {
+    const signOptions: any = {
       expiresIn: accessExpiresIn as string | number,
     };
-    
+
     if (options?.issuer || config.issuer) {
       signOptions.issuer = options?.issuer || config.issuer;
     }
@@ -205,37 +219,37 @@ const jwtHandler: AuthProviderHandler = {
       signOptions.audience = options?.audience || config.audience;
     }
     if (config.algorithm) {
-      signOptions.algorithm = config.algorithm as jwt.Algorithm;
+      signOptions.algorithm = config.algorithm;
     }
-    
+
     // Generate access token
-    const accessToken = jwt.sign(accessPayload, secret, signOptions);
-    
+    const accessToken = await signer.sign(accessPayload, secret, signOptions);
+
     // Generate refresh token (simpler payload)
-    const refreshPayload: jwt.JwtPayload = {
+    const refreshPayload: JwtPayload = {
       sub: user.id,
       type: 'refresh',
     };
-    
-    const refreshSignOptions: jwt.SignOptions = {
+
+    const refreshSignOptions: any = {
       expiresIn: refreshExpiresIn as string | number,
     };
-    
+
     if (options?.issuer || config.issuer) {
       refreshSignOptions.issuer = options?.issuer || config.issuer;
     }
     if (config.algorithm) {
-      refreshSignOptions.algorithm = config.algorithm as jwt.Algorithm;
+      refreshSignOptions.algorithm = config.algorithm;
     }
-    
-    const refreshToken = config.refreshToken?.enabled !== false 
-      ? jwt.sign(refreshPayload, secret, refreshSignOptions)
+
+    const refreshToken = config.refreshToken?.enabled !== false
+      ? await signer.sign(refreshPayload, secret, refreshSignOptions)
       : undefined;
-    
+
     // Calculate expiration in seconds
     const accessExpiresInSeconds = parseDuration(accessExpiresIn);
     const refreshExpiresInSeconds = refreshToken ? parseDuration(refreshExpiresIn) : undefined;
-    
+
     return {
       accessToken,
       refreshToken,
@@ -252,22 +266,23 @@ const jwtHandler: AuthProviderHandler = {
     refreshToken: string,
     config: JwtAuthProvider
   ): Promise<TokenPair> {
+    const signer = await getTokenSigner();
     const secret = resolveEnvVar(config.secret);
-    
+
     // Verify the refresh token
-    let payload: jwt.JwtPayload;
+    let payload: JwtPayload;
     try {
-      const verifyOptions: jwt.VerifyOptions = {};
+      const verifyOptions: any = {};
       if (config.algorithm) {
-        verifyOptions.algorithms = [config.algorithm as jwt.Algorithm];
+        verifyOptions.algorithms = [config.algorithm];
       }
       if (config.issuer) {
         verifyOptions.issuer = config.issuer;
       }
-      
-      payload = jwt.verify(refreshToken, secret, verifyOptions) as jwt.JwtPayload;
+
+      payload = await signer.verify(refreshToken, secret, verifyOptions) as JwtPayload;
     } catch (error) {
-      if (error instanceof jwt.TokenExpiredError) {
+      if (error instanceof TokenExpiredError) {
         const err = new Error('Refresh token has expired');
         (err as any).code = ErrorCodes.AUTH_REFRESH_TOKEN_EXPIRED;
         throw err;
@@ -276,21 +291,21 @@ const jwtHandler: AuthProviderHandler = {
       (err as any).code = ErrorCodes.AUTH_REFRESH_TOKEN_INVALID;
       throw err;
     }
-    
+
     // Verify it's a refresh token
     if (payload.type !== 'refresh') {
       const err = new Error('Invalid token type');
       (err as any).code = ErrorCodes.AUTH_REFRESH_TOKEN_INVALID;
       throw err;
     }
-    
+
     // Generate new tokens
     // Note: In a real implementation, you'd look up the user from the database
     // to get the latest user data (roles, permissions, etc.)
     const user: AuthUser = {
-      id: payload.sub,
+      id: payload.sub!,
     };
-    
+
     return this.generateTokens!(user, config);
   },
 

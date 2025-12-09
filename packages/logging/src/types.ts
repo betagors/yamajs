@@ -11,7 +11,7 @@ export enum LogLevel {
 /**
  * Log format types
  */
-export type LogFormat = "json" | "text";
+export type LogFormat = "json" | "text" | "pretty";
 
 /**
  * Log entry structure
@@ -23,6 +23,8 @@ export interface LogEntry {
   message: string;
   metadata?: Record<string, unknown>;
   error?: Error;
+  /** Bindings from child loggers (e.g., requestId, userId) */
+  bindings?: Record<string, unknown>;
 }
 
 /**
@@ -85,11 +87,27 @@ export type AnyTransportConfig =
   | S3TransportConfig;
 
 /**
+ * Redaction configuration
+ */
+export interface RedactionConfig {
+  /** Keys to redact (e.g., 'password', 'token', 'authorization') */
+  keys?: string[];
+  /** Paths to redact (e.g., 'user.password', 'headers.authorization') */
+  paths?: string[];
+  /** Replacement string (default: '[REDACTED]') */
+  replacement?: string;
+}
+
+/**
  * Logging plugin configuration
  */
 export interface LoggingPluginConfig {
   level?: string; // Global log level: "debug" | "info" | "warn" | "error"
   transports?: AnyTransportConfig[];
+  /** Redaction config for sensitive data */
+  redact?: RedactionConfig;
+  /** Auto-detect pretty format in development (default: true) */
+  autoPretty?: boolean;
 }
 
 /**

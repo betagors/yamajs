@@ -49,14 +49,23 @@
     "clean": "rimraf dist tsconfig.build.tsbuildinfo"
   },
   "dependencies": {
-    "bcryptjs": "^2.4.3",
-    "@noble/hashes": "^1.4.0",
     "@betagors/yama-errors": "workspace:*",
     "ajv": "^8.12.0",
     "ajv-formats": "^2.1.1",
     "js-yaml": "^4.1.1",
-    "jsonwebtoken": "^9.0.2",
     "semver": "^7.7.3"
+  },
+  "peerDependencies": {
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2"
+  },
+  "peerDependenciesMeta": {
+    "bcryptjs": {
+      "optional": true
+    },
+    "jsonwebtoken": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",

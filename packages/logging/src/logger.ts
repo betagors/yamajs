@@ -21,10 +21,26 @@ export class Logger {
   private transports: Transport[] = [];
   private level: LogLevelEnum;
   private config: LoggingPluginConfig;
+  private bindings: Record<string, unknown> = {};
 
-  constructor(config: LoggingPluginConfig) {
+  constructor(config: LoggingPluginConfig, bindings?: Record<string, unknown>) {
     this.config = config;
     this.level = parseLogLevel(config.level || "info");
+    this.bindings = bindings ?? {};
+  }
+
+  /**
+   * Create a child logger with additional bound context
+   * Useful for request-scoped logging with requestId, userId, etc.
+   */
+  child(bindings: Record<string, unknown>): Logger {
+    const childLogger = new Logger(this.config, {
+      ...this.bindings,
+      ...bindings,
+    });
+    // Share transports with parent
+    childLogger.transports = this.transports;
+    return childLogger;
   }
 
   /**
@@ -66,10 +82,62 @@ export class Logger {
   }
 
   /**
+   * Get current bindings
+   */
+  getBindings(): Record<string, unknown> {
+    return { ...this.bindings };
+  }
+
+  /**
    * Check if a log level should be logged
    */
   private shouldLog(level: LogLevelEnum): boolean {
     return level >= this.level;
+  }
+
+  /**
+   * Apply redaction to metadata
+   */
+  private redactMetadata(metadata: Record<string, unknown>): Record<string, unknown> {
+    const redactConfig = this.config.redact;
+    if (!redactConfig) {
+      return metadata;
+    }
+
+    const replacement = redactConfig.replacement ?? "[REDACTED]";
+    const keysToRedact = new Set(redactConfig.keys?.map(k => k.toLowerCase()) ?? []);
+
+    const redact = (obj: Record<string, unknown>, path: string[] = []): Record<string, unknown> => {
+      const result: Record<string, unknown> = {};
+
+      for (const [key, value] of Object.entries(obj)) {
+        const keyLower = key.toLowerCase();
+        const currentPath = [...path, key].join(".");
+
+        // Check if key should be redacted
+        if (keysToRedact.has(keyLower)) {
+          result[key] = replacement;
+          continue;
+        }
+
+        // Check if path should be redacted
+        if (redactConfig.paths?.includes(currentPath)) {
+          result[key] = replacement;
+          continue;
+        }
+
+        // Recursively redact nested objects
+        if (value && typeof value === "object" && !Array.isArray(value)) {
+          result[key] = redact(value as Record<string, unknown>, [...path, key]);
+        } else {
+          result[key] = value;
+        }
+      }
+
+      return result;
+    };
+
+    return redact(metadata);
   }
 
   /**
@@ -81,13 +149,21 @@ export class Logger {
     metadata?: Record<string, unknown>,
     error?: Error
   ): LogEntry {
+    // Merge bindings with metadata (bindings are lower priority)
+    const mergedMetadata = metadata
+      ? this.redactMetadata({ ...this.bindings, ...metadata })
+      : Object.keys(this.bindings).length > 0
+        ? this.redactMetadata(this.bindings)
+        : undefined;
+
     return {
       timestamp: new Date(),
       level,
       levelName: getLogLevelName(level),
       message,
-      metadata,
+      metadata: mergedMetadata,
       error,
+      bindings: Object.keys(this.bindings).length > 0 ? this.bindings : undefined,
     };
   }
 

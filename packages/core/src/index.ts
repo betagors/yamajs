@@ -223,6 +223,30 @@ export {
   resolveEnvVars,
 } from "./env.js";
 
+// Export configuration system
+export {
+  // Types
+  type ConfigValueType,
+  type ConfigVarDefinition,
+  type ConfigSchema,
+  type ConfigValidationError,
+  type ConfigValidationResult,
+  type ResolvedConfig,
+  type YamaConfigSection,
+  type ConfigSource,
+  type ConfigLoaderOptions,
+  // Validation
+  validateConfig,
+  validateConfigOrThrow,
+  createConfigAccessor,
+  // Loading
+  loadConfig,
+  loadConfigFromYaml,
+  isConfigValid,
+  getMissingConfig,
+  getCurrentEnvironment,
+} from "./config/index.js";
+
 // Export infrastructure adapters
 export {
   type DatabaseAdapter,

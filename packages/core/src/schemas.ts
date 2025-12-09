@@ -69,7 +69,7 @@ export function parseSchemaFieldDefinition(
   }
 
   const str = fieldDef.trim();
-  
+
   // Handle empty string
   if (!str) {
     throw new Error(`Field "${fieldName}" has an empty type definition`);
@@ -87,7 +87,7 @@ export function parseSchemaFieldDefinition(
   const paramMatch = schemaCheckStr.match(/^(\w+)(?:\(.*?\))?$/);
   const baseName = paramMatch ? paramMatch[1] : schemaCheckStr;
 
-  const isSchemaReference = /^[A-Z][a-zA-Z0-9]*$/.test(baseName) && 
+  const isSchemaReference = /^[A-Z][a-zA-Z0-9]*$/.test(baseName) &&
     (availableSchemas?.has(baseName) ?? true);
 
   if (isSchemaReference) {
@@ -102,7 +102,7 @@ export function parseSchemaFieldDefinition(
 
   // Use TypeParser for all type parsing
   const parsedType = TypeParser.parse(str);
-  
+
   // Convert FieldType to SchemaField
   const field: SchemaField = {
     type: parsedType.type as SchemaField["type"],
@@ -126,15 +126,15 @@ export function parseSchemaFieldDefinition(
     }
   } else if (parsedType.type === 'text') {
     field.type = "string";
-  } else if (parsedType.type === 'int' || parsedType.type === 'int8' || parsedType.type === 'int16' || 
-             parsedType.type === 'int32' || parsedType.type === 'int64' || parsedType.type === 'uint') {
+  } else if (parsedType.type === 'int' || parsedType.type === 'int8' || parsedType.type === 'int16' ||
+    parsedType.type === 'int32' || parsedType.type === 'int64' || parsedType.type === 'uint') {
     field.type = "integer";
-  } else if (parsedType.type === 'decimal' || parsedType.type === 'money' || 
-             parsedType.type === 'float' || parsedType.type === 'double') {
+  } else if (parsedType.type === 'decimal' || parsedType.type === 'money' ||
+    parsedType.type === 'float' || parsedType.type === 'double') {
     field.type = "number";
-  } else if (parsedType.type === 'timestamp' || parsedType.type === 'timestamptz' || 
-             parsedType.type === 'timestamplocal' || parsedType.type === 'datetime' ||
-             parsedType.type === 'datetimetz' || parsedType.type === 'datetimelocal') {
+  } else if (parsedType.type === 'timestamp' || parsedType.type === 'timestamptz' ||
+    parsedType.type === 'timestamplocal' || parsedType.type === 'datetime' ||
+    parsedType.type === 'datetimetz' || parsedType.type === 'datetimelocal') {
     field.type = "string";
     field.format = "date-time";
   } else if (parsedType.type === 'date') {
@@ -219,8 +219,8 @@ export function normalizeSchemaDefinition(
         ...(parsedType.type === 'url' && { format: 'uri' }),
         ...(parsedType.type === 'date' && { format: 'date' }),
         ...(parsedType.type === 'time' && { format: 'time' }),
-        ...((parsedType.type === 'timestamp' || parsedType.type === 'timestamptz' || 
-             parsedType.type === 'timestamplocal' || parsedType.type === 'datetime') && { format: 'date-time' }),
+        ...((parsedType.type === 'timestamp' || parsedType.type === 'timestamptz' ||
+          parsedType.type === 'timestamplocal' || parsedType.type === 'datetime') && { format: 'date-time' }),
       };
     } else {
       throw new Error(
@@ -230,22 +230,22 @@ export function normalizeSchemaDefinition(
   }
 
   const normalized: SchemaDefinition = { fields };
-  
+
   // Preserve computed fields
   if (schemaDef.computed !== undefined) {
     normalized.computed = schemaDef.computed;
   }
-  
+
   // Preserve variants
   if (schemaDef.variants !== undefined) {
     normalized.variants = schemaDef.variants;
   }
-  
+
   // Preserve database config
   if (schemaDef.database !== undefined) {
     normalized.database = schemaDef.database;
   }
-  
+
   return normalized;
 }
 
@@ -292,8 +292,8 @@ export function normalizeQueryOrParams(
           ...(parsedType.type === 'url' && { format: 'uri' }),
           ...(parsedType.type === 'date' && { format: 'date' }),
           ...(parsedType.type === 'time' && { format: 'time' }),
-          ...((parsedType.type === 'timestamp' || parsedType.type === 'timestamptz' || 
-               parsedType.type === 'timestamplocal' || parsedType.type === 'datetime') && { format: 'date-time' }),
+          ...((parsedType.type === 'timestamp' || parsedType.type === 'timestamptz' ||
+            parsedType.type === 'timestamplocal' || parsedType.type === 'datetime') && { format: 'date-time' }),
         };
       }
     }
@@ -346,8 +346,8 @@ export function normalizeBodyDefinition(
           ...(parsedType.type === 'url' && { format: 'uri' }),
           ...(parsedType.type === 'date' && { format: 'date' }),
           ...(parsedType.type === 'time' && { format: 'time' }),
-          ...((parsedType.type === 'timestamp' || parsedType.type === 'timestamptz' || 
-               parsedType.type === 'timestamplocal' || parsedType.type === 'datetime') && { format: 'date-time' }),
+          ...((parsedType.type === 'timestamp' || parsedType.type === 'timestamptz' ||
+            parsedType.type === 'timestamplocal' || parsedType.type === 'datetime') && { format: 'date-time' }),
         };
       } else {
         throw new Error(
@@ -387,13 +387,13 @@ export interface ValidationResult {
  */
 function isSchemaReference(type: string, schemas?: YamaSchemas): boolean {
   if (!schemas) return false;
-  
+
   // Check for array syntax like "User[]"
   const arrayMatch = type.match(/^(.+)\[\]$/);
   if (arrayMatch) {
     return schemas[arrayMatch[1]] !== undefined;
   }
-  
+
   // Check for direct schema reference
   return schemas[type] !== undefined;
 }
@@ -433,11 +433,11 @@ export function fieldToJsonSchema(
   }
 
   const typeStr = String(field.type);
-  
+
   // Define primitive types that should NOT be treated as schema references
   const primitiveTypes = ["string", "number", "boolean", "integer", "array", "list", "object"];
   const isPrimitive = primitiveTypes.includes(typeStr);
-  
+
   // Handle array syntax like "User[]" - this is the preferred way
   const arrayMatch = typeStr.match(/^(.+)\[\]$/);
   if (arrayMatch) {
@@ -447,15 +447,15 @@ export function fieldToJsonSchema(
       // This is invalid - can't have "string[]" as a type, should use items instead
       throw new Error(`Invalid array type "${typeStr}". Use type: "array" with items instead.`);
     }
-    
+
     if (!schemas || !schemas[baseType]) {
       throw new Error(`Schema reference "${baseType}" not found (in array type "${typeStr}")`);
     }
-    
+
     if (visited.has(baseType)) {
       throw new Error(`Circular reference detected: ${baseType}`);
     }
-    
+
     // Return JSON Schema array with $ref
     const refPrefix = useOpenAPIFormat ? "#/components/schemas/" : "#/definitions/";
     return {
@@ -465,14 +465,14 @@ export function fieldToJsonSchema(
       }
     };
   }
-  
+
   // Handle direct schema reference (e.g., type: "User")
   // Only if it's NOT a primitive type and it exists in schemas
   if (!isPrimitive && schemas && schemas[typeStr]) {
     if (visited.has(typeStr)) {
       throw new Error(`Circular reference detected: ${typeStr}`);
     }
-    
+
     // Return JSON Schema $ref format
     const refPrefix = useOpenAPIFormat ? "#/components/schemas/" : "#/definitions/";
     return {
@@ -482,7 +482,7 @@ export function fieldToJsonSchema(
 
   // Handle primitive types
   const normalizedType = normalizeType(typeStr);
-  
+
   // Special handling for uuid - convert to string with format in JSON Schema
   if (typeStr === "uuid") {
     const schema: Record<string, unknown> = {
@@ -502,7 +502,7 @@ export function fieldToJsonSchema(
     }
     return schema;
   }
-  
+
   const schema: Record<string, unknown> = {
     type: normalizedType === "integer" ? "integer" : normalizedType
   };
@@ -575,7 +575,7 @@ export function schemaToJsonSchema(
     throw new Error(`Circular reference detected in schema: ${schemaName}`);
   }
   visited.add(schemaName);
-  
+
   // Normalize schema to internal format first
   let normalizedSchema: SchemaDefinition;
   try {
@@ -585,7 +585,7 @@ export function schemaToJsonSchema(
       `Failed to normalize schema "${schemaName}": ${error instanceof Error ? error.message : String(error)}`
     );
   }
-  
+
   // Handle source inheritance - merge fields from source
   let fieldsToProcess: Record<string, SchemaField> = {};
   if ((schemaDef as any).source && schemas) {
@@ -597,13 +597,13 @@ export function schemaToJsonSchema(
       if (normalizedSource.fields && typeof normalizedSource.fields === 'object') {
         // Convert source fields to SchemaField format
         for (const [fieldName, fieldDef] of Object.entries(normalizedSource.fields)) {
-          const field = typeof fieldDef === "string" 
+          const field = typeof fieldDef === "string"
             ? parseSchemaFieldDefinition(fieldName, fieldDef)
             : fieldDef as SchemaField;
           fieldsToProcess[fieldName] = field;
         }
       }
-      
+
       // If include is specified, only include those fields
       const includeFields = (schemaDef as any).include;
       if (Array.isArray(includeFields)) {
@@ -622,7 +622,7 @@ export function schemaToJsonSchema(
   if (normalizedSchema.fields && typeof normalizedSchema.fields === 'object' && normalizedSchema.fields !== null) {
     // Convert normalized fields to SchemaField format for merging
     for (const [fieldName, fieldDef] of Object.entries(normalizedSchema.fields)) {
-      const field = typeof fieldDef === "string" 
+      const field = typeof fieldDef === "string"
         ? parseSchemaFieldDefinition(fieldName, fieldDef)
         : fieldDef as SchemaField;
       fieldsToProcess[fieldName] = field;
@@ -643,7 +643,7 @@ export function schemaToJsonSchema(
   for (const [fieldName, field] of Object.entries(fieldsToProcess)) {
     try {
       properties[fieldName] = fieldToJsonSchema(field, fieldName, schemas, new Set(visited), useOpenAPIFormat);
-      
+
       if (field.required) {
         required.push(fieldName);
       }
@@ -653,7 +653,7 @@ export function schemaToJsonSchema(
       );
     }
   }
-  
+
   // Add computed fields
   if (normalizedSchema.computed && typeof normalizedSchema.computed === 'object') {
     for (const [fieldName, computedDef] of Object.entries(normalizedSchema.computed)) {
@@ -696,8 +696,8 @@ export class SchemaValidator {
   private customValidators: Map<string, CustomValidator> = new Map();
 
   constructor() {
-    this.ajv = new Ajv({ 
-      allErrors: true, 
+    this.ajv = new Ajv({
+      allErrors: true,
       strict: false,
       validateSchema: false // Don't validate schema structure itself
     });
@@ -862,6 +862,13 @@ export interface JwtAuthProvider {
   algorithm?: string;
   issuer?: string;
   audience?: string;
+  accessToken?: {
+    expiresIn?: string | number;
+  };
+  refreshToken?: {
+    enabled?: boolean;
+    expiresIn?: string | number;
+  };
 }
 
 export interface ApiKeyAuthProvider {
