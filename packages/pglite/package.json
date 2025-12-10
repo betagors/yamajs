@@ -42,7 +42,8 @@
   },
   "dependencies": {
     "@betagors/yama-core": "workspace:*",
-    "@electric-sql/pglite": "^0.2.0"
+    "drizzle-orm": "^0.30.0",
+    "@electric-sql/pglite": "^0.3.14"
   },
   "peerDependencies": {
     "drizzle-orm": "^0.30.0"
