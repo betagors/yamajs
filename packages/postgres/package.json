@@ -42,7 +42,7 @@
   },
   "dependencies": {
     "@betagors/yama-core": "workspace:*",
-    "drizzle-orm": "^0.30.0",
+    "drizzle-orm": "^0.44.7",
     "postgres": "^3.4.3"
   },
   "devDependencies": {
