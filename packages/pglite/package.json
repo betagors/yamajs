@@ -33,7 +33,8 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "dev": "tsc -w -p tsconfig.build.json",
-    "lint": "echo \"no lint yet\"",
+    "lint": "eslint . --ext .ts,.tsx",
+    "lint:fix": "eslint . --ext .ts,.tsx --fix",
     "test": "vitest",
     "test:watch": "vitest --watch",
     "test:coverage": "vitest --coverage",
@@ -44,9 +45,13 @@
     "drizzle-orm": "^0.30.0",
     "@electric-sql/pglite": "^0.3.14"
   },
+  "peerDependencies": {
+    "drizzle-orm": "^0.30.0"
+  },
   "devDependencies": {
     "rimraf": "^5.0.0",
     "@types/node": "^20.0.0",
+    "@vitest/coverage-v8": "^1.0.0",
     "vitest": "^1.0.0",
     "esbuild": "^0.27.0"
   },

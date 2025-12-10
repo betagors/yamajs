@@ -1,3 +1,4 @@
+import { normalizeEntityDefinition } from "../entities.js";
 import { createHash } from "crypto";
 /**
  * Normalize entities to a canonical JSON representation
@@ -55,9 +56,17 @@ export function computeModelHash(entities) {
 export function entitiesToModel(entities) {
     const hash = computeModelHash(entities);
     const tables = new Map();
-    for (const [entityName, entityDef] of Object.entries(entities)) {
+    // Process entities efficiently
+    const entityEntries = Object.entries(entities);
+    for (let i = 0; i < entityEntries.length; i++) {
+        const [entityName, entityDef] = entityEntries[i];
         const columns = new Map();
-        for (const [fieldName, field] of Object.entries(entityDef.fields)) {
+        // Normalize once per entity
+        const normalized = normalizeEntityDefinition(entityName, entityDef, entities);
+        const fieldEntries = Object.entries(normalized.fields);
+        // Process fields efficiently
+        for (let j = 0; j < fieldEntries.length; j++) {
+            const [fieldName, field] = fieldEntries[j];
             const dbColumnName = field.dbColumn || fieldName;
             // Convert entity type to SQL type if dbType not provided
             let sqlType = field.dbType || "";
@@ -102,32 +111,37 @@ export function entitiesToModel(entities) {
             });
         }
         const indexes = [];
-        // Add indexes from entity definition
-        if (entityDef.indexes) {
-            for (const index of entityDef.indexes) {
+        // Add indexes from entity definition - optimized
+        if (normalized.indexes) {
+            for (let k = 0; k < normalized.indexes.length; k++) {
+                const index = normalized.indexes[k];
+                const indexColumns = [];
+                for (let m = 0; m < index.fields.length; m++) {
+                    const f = index.fields[m];
+                    const field = normalized.fields[f];
+                    indexColumns.push(field?.dbColumn || f);
+                }
                 indexes.push({
-                    name: index.name || `${entityDef.table}_${index.fields.join("_")}_idx`,
-                    columns: index.fields.map((f) => {
-                        const field = entityDef.fields[f];
-                        return field?.dbColumn || f;
-                    }),
+                    name: index.name || `${normalized.table}_${index.fields.join("_")}_idx`,
+                    columns: indexColumns,
                     unique: index.unique || false,
                 });
             }
         }
-        // Add indexes from field index: true
-        for (const [fieldName, field] of Object.entries(entityDef.fields)) {
+        // Add indexes from field index: true - optimized loop
+        for (let k = 0; k < fieldEntries.length; k++) {
+            const [fieldName, field] = fieldEntries[k];
             if (field.index) {
                 const dbColumnName = field.dbColumn || fieldName;
                 indexes.push({
-                    name: `${entityDef.table}_${dbColumnName}_idx`,
+                    name: `${normalized.table}_${dbColumnName}_idx`,
                     columns: [dbColumnName],
                     unique: false,
                 });
             }
         }
-        tables.set(entityDef.table, {
-            name: entityDef.table,
+        tables.set(normalized.table, {
+            name: normalized.table,
             columns,
             indexes,
             foreignKeys: [], // Foreign keys not yet supported in entity definitions

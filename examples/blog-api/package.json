@@ -1,0 +1,31 @@
+{
+  "name": "examples/blog-api",
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    "@gen/db": "./.yama/gen/db/index.ts",
+    "@gen/types": "./.yama/gen/types.ts",
+    "@gen/sdk": "./.yama/gen/sdk/index.ts"
+  },
+  "scripts": {
+    "yama": "yama",
+    "dev": "yama dev",
+    "build": "yama generate",
+    "start": "yama dev",
+    "status": "yama status",
+    "history": "yama history",
+    "deploy:staging": "yama deploy --env staging",
+    "deploy:prod": "yama deploy --env production --plan"
+  },
+  "dependencies": {
+    "@betagors/yama-core": "file:../../packages/core",
+    "@betagors/yama-pglite": "file:../../packages/pglite",
+    "@betagors/yama-postgres": "file:../../packages/postgres",
+    "@betagors/yama-node": "file:../../packages/node",
+    "drizzle-orm": "^0.30.0",
+    "postgres": "^3.4.3"
+  },
+  "devDependencies": {
+    "@betagors/yama-cli": "file:../../packages/cli"
+  }
+}

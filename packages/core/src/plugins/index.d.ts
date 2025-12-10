@@ -1,4 +1,12 @@
-export { type PluginManifest, type PluginLifecycle, type YamaPlugin, type ServicePlugin, type PluginContext, } from "./base";
-export { loadPluginFromPackage, importPlugin, } from "./loader";
-export { type ValidationResult, validateManifest, validateYamaPlugin, validateServicePlugin, validatePluginVersion, } from "./validator";
-export { pluginRegistry, loadPlugin, getPlugin, getAllPlugins, getPluginByCategory, getPluginsByCategory, getPluginByType, servicePluginRegistry, loadServicePlugin, getServicePlugin, getServicePluginByType, } from "./registry";
+export { type PluginManifest, type PluginLifecycle, type YamaPlugin, type PluginContext, type PluginMigrationDefinition, type PluginDependencies, type Logger, type PluginCLICommand, type PluginCLICommandOption, type PluginMCPTool, type MCPToolResult, type MCPToolResultContent, } from "./base.js";
+export { loadPluginFromPackage, importPlugin, } from "./loader.js";
+export { type ValidationResult, validateManifest, validateYamaPlugin, validatePluginVersion, validateMigrations, validatePluginConfig, } from "./validator.js";
+export { pluginRegistry, loadPlugin, getPlugin, getPluginAPI, getAllPlugins, getPluginByCategory, getPluginsByCategory, getPluginByType, setPluginRegistryConfig, getAllCLICommands, getAllMCPTools, } from "./registry.js";
+export { PLUGIN_MIGRATIONS_TABLE_SQL, PLUGIN_VERSIONS_TABLE_SQL, type PluginMigration, type MigrationResult, ensurePluginMigrationTables, getInstalledPluginVersion, getPendingPluginMigrations, executePluginMigration, rollbackPluginMigration, updatePluginVersion, getPluginPackageDir, getPluginMigrationHistory, } from "./migrations.js";
+export { type MigrationPlan, validateMigrationFile, getMigrationPlan, formatMigrationPlan, getPluginMigrationStatus, } from "./migration-utils.js";
+export { PluginContextImpl, } from "./context.js";
+export { type DependencyResolution, buildDependencyGraph, detectCircularDependencies, topologicalSort, resolvePluginDependencies, validateDependencies, } from "./dependencies.js";
+export { createMockLogger, createTestPluginContext, mockPlugin, testPluginIntegration, createTestRegistry, waitForEvent, } from "./testing.js";
+export { type PluginSecurityPolicy, type SecurityValidationResult, validateSecurityPolicy, isPluginTrusted, getSecurityWarnings, } from "./security.js";
+export { type PluginMetrics, type SummaryStats, type MetricsConfig, pluginMetricsCollector, trackPluginLoad, trackPluginInit, recordPluginLoaded, recordPluginInitialized, recordPluginAPICall, recordPluginError, } from "./metrics.js";
+export { type PluginDocumentation, generatePluginDocs, generateMarkdownDocs, generateHTMLDocs, } from "./docs-generator.js";

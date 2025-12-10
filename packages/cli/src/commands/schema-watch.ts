@@ -26,7 +26,7 @@ export async function schemaWatchCommand(options: SchemaWatchOptions): Promise<v
     console.log(`\n📝 File changed: ${path}`);
     
     try {
-      // Run schema:check
+      // Run migration:check
       await schemaCheckCommand({ config: options.config, diff: true });
       
       // Prompt to generate migration

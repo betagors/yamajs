@@ -73,7 +73,7 @@ console.log(JSON.stringify(openAPISpec, null, 2));
 The Yama runtime automatically generates OpenAPI documentation and serves it at `/openapi.json` and `/docs`:
 
 ```typescript
-import { startYamaNodeRuntime } from '@betagors/yama-runtime-node';
+import { startYamaNodeRuntime } from '@betagors/yama-node';
 
 const server = await startYamaNodeRuntime(3000, './yama.yaml');
 

@@ -17,6 +17,29 @@ export const colors = {
 };
 
 /**
+ * Formatting helpers for concise output
+ */
+export const fmt = {
+  bold: chalk.bold,
+  dim: chalk.dim,
+  green: chalk.green,
+  red: chalk.red,
+  yellow: chalk.yellow,
+  cyan: chalk.cyan,
+  blue: chalk.blue,
+  magenta: chalk.magenta,
+  white: chalk.white,
+  gray: chalk.gray,
+};
+
+/**
+ * Dim text helper
+ */
+export function dim(text: string): string {
+  return chalk.dim(text);
+}
+
+/**
  * Print a success message
  */
 export function success(message: string): void {

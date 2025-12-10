@@ -137,7 +137,7 @@ npm init -y
 yama init
 
 # 4. Install runtime
-npm install @betagors/yama-runtime-node
+npm install @betagors/yama-node
 
 # 5. Start developing
 yama dev

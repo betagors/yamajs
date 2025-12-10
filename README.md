@@ -11,7 +11,7 @@
   [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](https://nodejs.org/)
   [![npm version](https://img.shields.io/npm/v/@betagors/yama-cli)](https://www.npmjs.com/package/@betagors/yama-cli)
   
-  [Documentation](https://yamajs.org) • [Examples](./examples) • [GitHub](https://github.com/BetagorsLabs/yama) • [Discussions](https://github.com/BetagorsLabs/yama/discussions)
+  [Documentation](https://yamajs.org) • [Examples](./examples) • [GitHub](https://github.com/betagors/yamajs) • [Discussions](https://github.com/betagors/yamajs/discussions)
 </div>
 
 ---
@@ -184,10 +184,10 @@ yama sdk                 # Generate SDK only
 ### Database Migrations
 
 ```bash
-yama schema:generate      # Generate migration from schema
-yama schema:apply         # Apply pending migrations
-yama schema:status        # Check migration status
-yama schema:history       # View migration history
+yama migration:generate   # Generate migration from entities
+yama migration:apply      # Apply pending migrations
+yama migration:status    # Check migration status
+yama migration:history    # View migration history
 ```
 
 ### Validation
@@ -197,6 +197,23 @@ yama validate            # Validate yama.yaml
 yama validate --strict   # Strict validation
 yama endpoints          # List all endpoints
 yama schemas            # List all schemas
+```
+
+## 🧰 Dev Admin (AdminX)
+
+- Optional plugin `@betagors/yama-adminx` for a dev-only admin UI (CRUD, schema/endpoints view, migrations summary).
+- Enabled by default in development, disabled in production unless explicitly allowed.
+- Requires a token: `Authorization: Bearer dev-adminx` by default. Set `ADMINX_PASSWORD` (or `YAMA_ADMINX_PASSWORD`) to override.
+- Default path: `/adminx`
+
+```yaml
+plugins:
+  "@betagors/yama-adminx":
+    enabled: true            # auto-true in dev, false in prod
+    path: /adminx
+    requireAuth: true
+    allowInProduction: false # set true only if you intentionally expose it
+    # devPassword: ${ADMINX_PASSWORD}
 ```
 
 ## 🏗️ Architecture
@@ -210,7 +227,7 @@ yama/
 │   ├── core/             # Core runtime and types
 │   ├── postgres/         # PostgreSQL adapter
 │   ├── pglite/           # PGLite adapter
-│   ├── runtime-node/     # Node.js runtime
+│   ├── node/     # Node.js runtime
 │   └── ...
 ├── apps/
 │   └── docs/             # Documentation site
@@ -261,7 +278,7 @@ Found a security vulnerability? Please see our [Security Policy](SECURITY.md) fo
 
 This project is licensed under the **Mozilla Public License 2.0 (MPL-2.0)** - see the [LICENSE](LICENSE) file for details.
 
-The documentation site (`apps/docs`) is licensed under **MIT** - see [apps/docs/LICENSE](apps/docs/LICENSE) for details.
+The documentation site (`apps/docs-site`) is licensed under **MIT** - see [apps/docs-site/LICENSE](apps/docs-site/LICENSE) for details.
 
 ## 🗺️ Roadmap
 
@@ -289,8 +306,8 @@ See the [full roadmap](./docs/ROADMAP.md) for detailed plans.
 ## 📞 Support
 
 - 📖 [Documentation](https://yamajs.org)
-- 💬 [GitHub Discussions](https://github.com/BetagorsLabs/yama/discussions)
-- 🐛 [Issue Tracker](https://github.com/BetagorsLabs/yama/issues)
+- 💬 [GitHub Discussions](https://github.com/betagors/yamajs/discussions)
+- 🐛 [Issue Tracker](https://github.com/betagors/yamajs/issues)
 
 ---
 

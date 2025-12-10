@@ -1,7 +1,0 @@
-.nx-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin:24px 0}
-.nx-card{border:1px solid rgba(0,0,0,0.08);border-radius:10px;padding:16px;background:var(--nextra-card-bg,var(--nx-bg));transition:box-shadow .12s ease}
-.nx-card:hover{box-shadow:0 8px 16px rgba(0,0,0,0.08)}
-.nx-card-title{font-weight:600;margin-bottom:6px}
-.nx-card-desc{color:var(--nx-text-muted)}
-.nx-card-link{display:block;text-decoration:none;color:inherit}
-.nx-card-link:focus,.nx-card-link:hover{text-decoration:none}

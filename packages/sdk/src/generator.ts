@@ -1,28 +1,31 @@
 /**
+ * Legacy SDK generator removed.
+ * Use Yama IR and the runtime client (YamaClient).
+ */
+export function generateSDK(): string {
+  throw new Error("generateSDK has been removed. Use Yama IR and YamaClient.");
+}
+/**
  * SDK Generator for Yama
  * Generates TypeScript SDK client from yama.yaml endpoint definitions
  */
+
+import type { SchemaField } from "@betagors/yama-core";
+import { normalizeQueryOrParams, normalizeApisConfig } from "@betagors/yama-core";
 
 export interface EndpointDefinition {
   path: string;
   method: string;
   handler?: string; // Optional - endpoints can work without handlers
   description?: string;
-  query?: Record<string, {
-    type?: string;
-    required?: boolean;
-    min?: number;
-    max?: number;
-  }>;
-  params?: Record<string, {
-    type?: string;
-    required?: boolean;
-  }>;
-  body?: {
+  query?: Record<string, SchemaField> | { type?: string; properties?: Record<string, SchemaField>; required?: string[] };
+  params?: Record<string, SchemaField> | { type?: string; properties?: Record<string, SchemaField>; required?: string[] };
+  body?: string | {
     type?: string;
   };
-  response?: {
+  response?: string | {
     type?: string;
+    properties?: Record<string, SchemaField>;
   };
   auth?: {
     required?: boolean;
@@ -42,7 +45,9 @@ export interface YamaConfig {
   auth?: {
     providers?: AuthProvider[];
   };
-  endpoints?: EndpointDefinition[];
+  apis?: {
+    rest?: any;
+  };
 }
 
 export interface GenerateSDKOptions {
@@ -86,16 +91,34 @@ function extractPathParams(path: string): string[] {
 /**
  * Generate TypeScript type for query parameters
  */
-function generateQueryType(query?: Record<string, unknown>): string {
-  if (!query || Object.keys(query).length === 0) {
+function generateQueryType(query?: Record<string, SchemaField> | { type?: string; properties?: Record<string, SchemaField>; required?: string[] }): string {
+  // Normalize query from schema format to internal format
+  const normalizedQuery = normalizeQueryOrParams(query);
+  
+  if (!normalizedQuery || Object.keys(normalizedQuery).length === 0) {
     return "Record<string, never>";
   }
 
   const props: string[] = [];
-  for (const [key, def] of Object.entries(query)) {
-    const defObj = def as { type?: string; required?: boolean };
-    const optional = defObj.required ? "" : "?";
-    const type = defObj.type === "integer" ? "number" : (defObj.type || "unknown");
+  for (const [key, field] of Object.entries(normalizedQuery)) {
+    const optional = field.required ? "" : "?";
+    let type: string;
+    
+    // Handle type conversion
+    if (field.type === "integer" || field.type === "number") {
+      type = "number";
+    } else if (field.type === "boolean") {
+      type = "boolean";
+    } else if (field.type === "string") {
+      type = "string";
+    } else if (field.type === "array" || field.type === "list") {
+      // For arrays, we'd need to handle items, but for query params, arrays are typically strings
+      type = "string[]";
+    } else {
+      // Could be a schema reference or unknown
+      type = field.type || "unknown";
+    }
+    
     props.push(`  ${key}${optional}: ${type};`);
   }
 
@@ -105,15 +128,28 @@ function generateQueryType(query?: Record<string, unknown>): string {
 /**
  * Generate TypeScript type for path parameters
  */
-function generateParamsType(params?: Record<string, unknown>): string {
-  if (!params || Object.keys(params).length === 0) {
+function generateParamsType(params?: Record<string, SchemaField> | { type?: string; properties?: Record<string, SchemaField>; required?: string[] }): string {
+  // Normalize params from schema format to internal format
+  const normalizedParams = normalizeQueryOrParams(params);
+  
+  if (!normalizedParams || Object.keys(normalizedParams).length === 0) {
     return "Record<string, never>";
   }
 
   const props: string[] = [];
-  for (const [key, def] of Object.entries(params)) {
-    const defObj = def as { type?: string; required?: boolean };
-    const type = defObj.type === "integer" ? "number" : (defObj.type || "string");
+  for (const [key, field] of Object.entries(normalizedParams)) {
+    let type: string;
+    
+    // Handle type conversion
+    if (field.type === "integer" || field.type === "number") {
+      type = "number";
+    } else if (field.type === "boolean") {
+      type = "boolean";
+    } else {
+      // Path params are typically strings
+      type = field.type || "string";
+    }
+    
     props.push(`  ${key}: ${type};`);
   }
 
@@ -133,18 +169,28 @@ function generateEndpointMethod(
   const methodName = pathToMethodName(endpoint.path, endpoint.method, endpoint.handler);
   const pathParams = extractPathParams(endpoint.path);
   const hasPathParams = pathParams.length > 0;
-  const hasQuery = endpoint.query && Object.keys(endpoint.query).length > 0;
+  // Normalize query to check if it has any fields
+  const normalizedQuery = normalizeQueryOrParams(endpoint.query);
+  const hasQuery = normalizedQuery && Object.keys(normalizedQuery).length > 0;
   const hasBody = endpoint.body !== undefined;
   // For DELETE without response, use void; otherwise use the response type or unknown
-  let responseType = endpoint.response?.type || (endpoint.method === "DELETE" ? "void" : "unknown");
+  let responseType: string;
+  if (typeof endpoint.response === "string") {
+    responseType = endpoint.response;
+  } else if (endpoint.response?.type) {
+    responseType = endpoint.response.type;
+  } else {
+    responseType = endpoint.method === "DELETE" ? "void" : "unknown";
+  }
   
   // Detect if this endpoint uses pagination and should return PaginatedResponse
-  const hasPagination = endpoint.query && (
-    endpoint.query.page !== undefined ||
-    endpoint.query.pageSize !== undefined ||
-    endpoint.query.cursor !== undefined ||
-    endpoint.query.limit !== undefined ||
-    endpoint.query.offset !== undefined
+  const normalizedQueryForPagination = normalizeQueryOrParams(endpoint.query);
+  const hasPagination = normalizedQueryForPagination && (
+    normalizedQueryForPagination.page !== undefined ||
+    normalizedQueryForPagination.pageSize !== undefined ||
+    normalizedQueryForPagination.cursor !== undefined ||
+    normalizedQueryForPagination.limit !== undefined ||
+    normalizedQueryForPagination.offset !== undefined
   );
   
   // If pagination is detected and response is an array type, wrap with PaginatedResponse
@@ -174,7 +220,9 @@ function generateEndpointMethod(
   }
   
   if (hasBody) {
-    const bodyType = endpoint.body?.type || "unknown";
+    const bodyType = typeof endpoint.body === "string" 
+      ? endpoint.body 
+      : (endpoint.body?.type || "unknown");
     params.push(`body: ${bodyType}`);
   }
 
@@ -208,16 +256,19 @@ function generateEndpointMethod(
   // Build query string construction
   let queryCode = "";
   if (hasQuery) {
+    // Normalize query to get the actual fields
+    const normalizedQuery = normalizeQueryOrParams(endpoint.query);
     queryCode = `\n    const queryParams = new URLSearchParams();\n`;
     queryCode += `    if (query) {\n`;
-    for (const [key, def] of Object.entries(endpoint.query || {})) {
-      const defObj = def as { required?: boolean };
-      if (defObj.required) {
-        queryCode += `      queryParams.append("${key}", String(query.${key}));\n`;
-      } else {
-        queryCode += `      if (query.${key} !== undefined) {\n`;
-        queryCode += `        queryParams.append("${key}", String(query.${key}));\n`;
-        queryCode += `      }\n`;
+    if (normalizedQuery) {
+      for (const [key, field] of Object.entries(normalizedQuery)) {
+        if (field.required) {
+          queryCode += `      queryParams.append("${key}", String(query.${key}));\n`;
+        } else {
+          queryCode += `      if (query.${key} !== undefined) {\n`;
+          queryCode += `        queryParams.append("${key}", String(query.${key}));\n`;
+          queryCode += `      }\n`;
+        }
       }
     }
     queryCode += `    }\n`;
@@ -278,29 +329,47 @@ export function generateSDK(
 ): string {
   const baseUrl = options.baseUrl || "http://localhost:3000";
   const typesImportPath = options.typesImportPath || "./types";
-  const endpoints = config.endpoints || [];
+  
+  // Normalize APIs config and extract all endpoints
+  const normalizedApis = normalizeApisConfig({ apis: config.apis });
+  const endpoints = normalizedApis.rest.flatMap(restConfig => restConfig.endpoints);
 
   // Collect all type names used
   const typeNames = new Set<string>();
   let needsPaginatedResponse = false;
   
   for (const endpoint of endpoints) {
-    if (endpoint.body?.type) {
-      typeNames.add(endpoint.body.type);
+    // Handle body type
+    if (endpoint.body) {
+      const bodyType = typeof endpoint.body === "string" 
+        ? endpoint.body 
+        : endpoint.body?.type;
+      if (bodyType) {
+        typeNames.add(bodyType);
+      }
     }
-    if (endpoint.response?.type) {
+    
+    // Handle response type
+    let responseType: string | undefined;
+    if (typeof endpoint.response === "string") {
+      responseType = endpoint.response;
+    } else if (endpoint.response?.type) {
+      responseType = endpoint.response.type;
+    }
+    
+    if (responseType) {
       // Check if this endpoint uses pagination
-      const hasPagination = endpoint.query && (
-        endpoint.query.page !== undefined ||
-        endpoint.query.pageSize !== undefined ||
-        endpoint.query.cursor !== undefined ||
-        endpoint.query.limit !== undefined ||
-        endpoint.query.offset !== undefined
+      const normalizedQueryForPagination = normalizeQueryOrParams(endpoint.query);
+      const hasPagination = normalizedQueryForPagination && (
+        normalizedQueryForPagination.page !== undefined ||
+        normalizedQueryForPagination.pageSize !== undefined ||
+        normalizedQueryForPagination.cursor !== undefined ||
+        normalizedQueryForPagination.limit !== undefined ||
+        normalizedQueryForPagination.offset !== undefined
       );
       
-      if (hasPagination && endpoint.response.type !== "void") {
+      if (hasPagination && responseType !== "void") {
         // Extract item type for paginated responses
-        const responseType = endpoint.response.type;
         if (responseType.endsWith("Array") || responseType.toLowerCase().includes("list")) {
           const itemType = responseType.replace(/Array$/i, "").replace(/List$/i, "");
           typeNames.add(itemType);
@@ -310,7 +379,7 @@ export function generateSDK(
           needsPaginatedResponse = true;
         }
       } else {
-        typeNames.add(endpoint.response.type);
+        typeNames.add(responseType);
       }
     }
   }

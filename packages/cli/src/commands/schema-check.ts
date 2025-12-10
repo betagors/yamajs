@@ -2,15 +2,14 @@ import { existsSync } from "fs";
 import { findYamaConfig } from "../utils/project-detection.ts";
 import { readYamaConfig, getConfigDir } from "../utils/file-utils.ts";
 import { loadEnvFile, resolveEnvVars } from "@betagors/yama-core";
-import type { DatabaseConfig } from "@betagors/yama-core";
+import type { DatabaseConfig, YamaSchemas } from "@betagors/yama-core";
 import {
   entitiesToModel,
   computeModelHash,
   computeDiff,
   diffToSteps,
-  getCurrentModelHashFromDB,
 } from "@betagors/yama-core";
-import { getDatabasePlugin } from "../utils/db-plugin.ts";
+import { getDatabasePluginAndConfig } from "../utils/db-plugin.ts";
 import { colors, success, error, printBox, printTable } from "../utils/cli-utils.ts";
 import type { YamaEntities } from "@betagors/yama-core";
 
@@ -33,28 +32,52 @@ export async function schemaCheckCommand(options: SchemaCheckOptions): Promise<v
     const environment = options.env || process.env.NODE_ENV || "development";
     loadEnvFile(configPath, environment);
     let config = readYamaConfig(configPath) as {
-      entities?: YamaEntities;
+      schemas?: YamaSchemas;
+      plugins?: Record<string, Record<string, unknown>> | string[];
       database?: DatabaseConfig;
     };
     config = resolveEnvVars(config) as typeof config;
 
-    if (!config.entities || Object.keys(config.entities).length === 0) {
+    // Extract entities from schemas that have database properties
+    function extractEntitiesFromSchemas(schemas?: YamaSchemas): YamaEntities {
+      const entities: YamaEntities = {};
+      if (!schemas || typeof schemas !== 'object') {
+        return entities;
+      }
+      for (const [schemaName, schemaDef] of Object.entries(schemas)) {
+        if (schemaDef && typeof schemaDef === 'object' && 'database' in schemaDef) {
+          const dbConfig = (schemaDef as any).database;
+          if (dbConfig && (
+            (typeof dbConfig === 'object' && 'table' in dbConfig) || 
+            typeof dbConfig === 'string'
+          )) {
+            entities[schemaName] = schemaDef as any;
+          }
+        }
+      }
+      return entities;
+    }
+
+    const allEntities = extractEntitiesFromSchemas(config.schemas);
+
+    if (!allEntities || Object.keys(allEntities).length === 0) {
       if (options.ci) {
         process.exit(0);
       }
-      console.log("ℹ️  No entities defined in yama.yaml");
+      console.log("ℹ️  No database entities found in yama.yaml. Define schemas with 'database:' property to create database tables.");
       return;
     }
 
     // Compute target model from YAML
-    const targetModel = entitiesToModel(config.entities);
+    const targetModel = entitiesToModel(allEntities);
     const targetHash = targetModel.hash;
 
     // Get current model hash from database
     let currentHash: string | null = null;
-    if (config.database) {
-      const dbPlugin = await getDatabasePlugin();
-      await dbPlugin.client.initDatabase(config.database);
+    try {
+      // Try to get database plugin and config (builds from plugin config if needed)
+      const { plugin: dbPlugin, dbConfig } = await getDatabasePluginAndConfig(config, configPath);
+      await dbPlugin.client.initDatabase(dbConfig);
       const sql = dbPlugin.client.getSQL();
 
       // Ensure migration tables exist
@@ -88,6 +111,9 @@ export async function schemaCheckCommand(options: SchemaCheckOptions): Promise<v
       }
 
       await dbPlugin.client.closeDatabase();
+    } catch (err) {
+      // No database plugin or config available - skip database check
+      // This is fine for schema-check, it can work without a database
     }
 
     // If no current hash, assume empty database
@@ -97,7 +123,7 @@ export async function schemaCheckCommand(options: SchemaCheckOptions): Promise<v
         process.exit(1);
       }
       console.log(colors.warning("⚠️  No migrations applied yet. Database appears to be empty."));
-      console.log(colors.info("💡 Run 'yama schema:generate' to create your first migration."));
+      console.log(colors.info("💡 Run 'yama migration:generate' to create your first migration."));
       process.exit(1);
     }
 
@@ -125,10 +151,10 @@ export async function schemaCheckCommand(options: SchemaCheckOptions): Promise<v
 
     if (options.diff) {
       // TODO: Reconstruct current model from DB and show detailed diff
-      console.log(colors.info("\n💡 Run 'yama schema:generate' to create a migration for these changes."));
+      console.log(colors.info("\n💡 Run 'yama migration:generate' to create a migration for these changes."));
     } else {
-      console.log(colors.info("\n💡 Run 'yama schema:check --diff' to see detailed changes."));
-      console.log(colors.info("💡 Run 'yama schema:generate' to create a migration."));
+      console.log(colors.info("\n💡 Run 'yama migration:check --diff' to see detailed changes."));
+      console.log(colors.info("💡 Run 'yama migration:generate' to create a migration."));
     }
 
     process.exit(1);

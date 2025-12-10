@@ -21,8 +21,8 @@ export async function endpointsCommand(options: EndpointsOptions): Promise<void>
         method: string;
         handler: string;
         description?: string;
-        params?: unknown;
-        query?: unknown;
+        params?: Record<string, unknown>;
+        query?: Record<string, unknown>;
         body?: { type: string };
         response?: { type: string };
       }>;

@@ -3,7 +3,7 @@ import { findYamaConfig } from "../utils/project-detection.ts";
 import { readYamaConfig, getConfigDir } from "../utils/file-utils.ts";
 import { loadEnvFile, resolveEnvVars } from "@betagors/yama-core";
 import type { DatabaseConfig } from "@betagors/yama-core";
-import { getDatabasePlugin } from "../utils/db-plugin.ts";
+import { getDatabasePluginAndConfig } from "../utils/db-plugin.ts";
 import { success, error, info, printTable } from "../utils/cli-utils.ts";
 import { confirm } from "../utils/interactive.ts";
 
@@ -25,19 +25,18 @@ export async function schemaRestoreCommand(options: SchemaRestoreOptions): Promi
   try {
     const environment = process.env.NODE_ENV || "development";
     loadEnvFile(configPath, environment);
-    let config = readYamaConfig(configPath) as { database?: DatabaseConfig };
-    config = resolveEnvVars(config) as { database?: DatabaseConfig };
+    let config = readYamaConfig(configPath) as {
+      plugins?: Record<string, Record<string, unknown>> | string[];
+      database?: DatabaseConfig;
+    };
+    config = resolveEnvVars(config) as typeof config;
 
-    if (!config.database) {
-      error("No database configuration found in yama.yaml");
-      process.exit(1);
-    }
-
-    const dbPlugin = await getDatabasePlugin();
+    // Get database plugin and config (builds from plugin config if needed)
+    const { plugin: dbPlugin, dbConfig } = await getDatabasePluginAndConfig(config, configPath);
     
     if (options.list) {
       // List available snapshots
-      const snapshots = await dbPlugin.snapshots.list(config.database);
+      const snapshots = await dbPlugin.snapshots.list(dbConfig);
 
       if (snapshots.length === 0) {
         info("No snapshots found");
@@ -70,7 +69,7 @@ export async function schemaRestoreCommand(options: SchemaRestoreOptions): Promi
         return;
       }
 
-      await dbPlugin.snapshots.restore(options.snapshot, options.table, config.database);
+      await dbPlugin.snapshots.restore(options.snapshot, options.table, dbConfig);
       success(`Restored ${options.table} from snapshot ${options.snapshot}`);
     } else {
       error("Usage: yama schema:restore --list");

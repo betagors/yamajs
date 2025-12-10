@@ -15,6 +15,10 @@
       "dependsOn": ["build", "^test"],
       "outputs": [".turbo/test-cache/**"]
     },
+    "test:coverage": {
+      "dependsOn": ["build", "^test"],
+      "outputs": ["coverage/**", ".turbo/test-cache/**"]
+    },
     "clean": {
       "cache": false
     }

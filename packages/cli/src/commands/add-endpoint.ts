@@ -318,14 +318,27 @@ export async function addEndpointCommand(options: AddEndpointOptions): Promise<v
       const { dirname } = await import("path");
       mkdirSync(dirname(handlerFile), { recursive: true });
 
-      const handlerTemplate = `import type { HttpRequest, HttpResponse } from "@betagors/yama-core";
+      // Generate handler context type name
+      const handlerContextTypeName = basicInfo.handler.charAt(0).toUpperCase() + basicInfo.handler.slice(1) + "HandlerContext";
+      
+      // Determine return type from endpoint response
+      const returnTypeName = endpoint.response?.type || "unknown";
+      const returnType = `Promise<${returnTypeName}>`;
+      
+      // Build imports
+      const importedTypes = [handlerContextTypeName];
+      if (endpoint.response?.type) {
+        importedTypes.push(endpoint.response.type);
+      }
+      const imports = `import type { ${importedTypes.join(", ")} } from "@yama/gen";`;
+
+      const handlerTemplate = `${imports}
 
 export async function ${basicInfo.handler}(
-  request: HttpRequest,
-  reply: HttpResponse
-): Promise<unknown> {
+  context: ${handlerContextTypeName}
+): ${returnType} {
   // TODO: Implement handler logic
-  return {};
+  ${endpoint.response?.type ? `return {} as ${endpoint.response.type};` : 'return {};'}
 }
 `;
 

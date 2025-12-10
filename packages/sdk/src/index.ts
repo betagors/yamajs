@@ -1,8 +1,3 @@
-export { generateSDK } from "./generator";
-export type { 
-  EndpointDefinition, 
-  GenerateSDKOptions, 
-  YamaConfig,
-  AuthProvider
-} from "./generator";
+export { YamaClient } from "./client.js";
+export type { YamaClientOptions, RequestOptions } from "./client.js";
 

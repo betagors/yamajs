@@ -59,19 +59,19 @@ yama <command>
 
 ```bash
 # Check migration status
-pnpm yama schema:status
+pnpm yama migration:status
 
 # Generate migration
-pnpm yama schema:generate
+pnpm yama migration:generate
 
 # Apply migrations
-pnpm yama schema:apply
+pnpm yama migration:apply
 
 # Check schema sync
-pnpm yama schema:check
+pnpm yama migration:check
 
 # View migration history
-pnpm yama schema:history
+pnpm yama migration:history
 ```
 
 ## Notes

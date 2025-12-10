@@ -114,6 +114,14 @@ yama/
 - Break down complex functions into smaller, focused utilities
 - Don't hesitate to refactor for better structure and readability
 
+### Package Naming
+
+When creating new packages, follow our [Naming Conventions](docs/NAMING_CONVENTIONS.md). Key rules:
+
+- All packages use the format `@betagors/yama-{descriptor}`
+- Use single words or compound words (no hyphens after `yama-`)
+- For vendor services with generic names, use abbreviated prefixes (e.g., `yama-supaauth`)
+
 ### Commit Messages
 
 Write clear, descriptive commit messages. We follow a loose convention:

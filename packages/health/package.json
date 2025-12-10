@@ -1,0 +1,65 @@
+{
+  "name": "@betagors/yama-health",
+  "version": "0.1.0-alpha.0",
+  "type": "module",
+  "description": "Yama health check plugin with comprehensive health monitoring and aggregation",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/betagors/yama.git",
+    "directory": "packages/health"
+  },
+  "keywords": [
+    "yama",
+    "health",
+    "healthcheck",
+    "monitoring",
+    "status",
+    "plugin"
+  ],
+  "license": "MPL-2.0",
+  "yama": {
+    "pluginApi": "1.0",
+    "yamaCore": "^0.1.0",
+    "category": "observability",
+    "entryPoint": "./dist/plugin.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsc -w -p tsconfig.build.json",
+    "lint": "eslint . --ext .ts,.tsx",
+    "lint:fix": "eslint . --ext .ts,.tsx --fix",
+    "test": "vitest",
+    "test:watch": "vitest --watch",
+    "test:coverage": "vitest --coverage",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "@betagors/yama-core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@vitest/coverage-v8": "^1.0.0",
+    "rimraf": "^5.0.0",
+    "vitest": "^1.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
+
+
+
+
+
+
+
+
+

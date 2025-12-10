@@ -128,10 +128,10 @@ export function installPreCommitHook(): boolean {
   }
 
   const hookContent = `#!/bin/sh
-# Yama schema check pre-commit hook
-yama schema:check --ci
+# Yama migration check pre-commit hook
+yama migration:check --ci
 if [ $? -ne 0 ]; then
-  echo "❌ Schema check failed. Please run 'yama schema:check' to see details."
+  echo "❌ Migration check failed. Please run 'yama migration:check' to see details."
   exit 1
 fi
 `;

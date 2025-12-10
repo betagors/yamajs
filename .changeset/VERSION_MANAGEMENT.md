@@ -109,7 +109,7 @@ Your `.changeset/config.json` settings:
 - `"updateInternalDependencies": "patch"` → Dependents always get patch bumps
 - `"access": "public"` → Packages publish to public npm registry
 - `"baseBranch": "main"` → Version PRs created when merged to main
-- `"ignore": ["@betagors/yama-docs"]` → Docs package never gets versioned
+- `"ignore": ["@betagors/yama-docs-site"]` → Docs site package never gets versioned
 
 ## Summary
 

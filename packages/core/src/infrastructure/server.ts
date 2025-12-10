@@ -39,18 +39,76 @@ export interface HandlerContext {
   params: Record<string, unknown>;
   body: unknown;
   headers: Record<string, string | undefined>;
-  
+
+  // Request identification (for tracing/logging)
+  requestId?: string;
+
   // Authentication context
   auth?: AuthContext;
-  
+
   // Response helpers
   status(code: number): HandlerContext;
-  
+
   // Framework services (for future extensibility)
   db?: unknown; // Direct database adapter access
   entities?: Record<string, unknown>; // Entity repositories (e.g., context.entities.Product)
   cache?: CacheAdapter; // Cache adapter (Redis, Memcached, etc.)
   storage?: Record<string, StorageBucket>; // Storage buckets (e.g., context.storage.images, context.storage.documents)
+  email?: {
+    /**
+     * Send an email
+     */
+    send(options: {
+      to: string | string[];
+      cc?: string | string[];
+      bcc?: string | string[];
+      subject: string;
+      text?: string;
+      html?: string;
+      attachments?: Array<{
+        filename?: string;
+        path?: string;
+        content?: Buffer | string;
+        contentType?: string;
+        cid?: string;
+      }>;
+      replyTo?: string | string[];
+      from?: string;
+      headers?: Record<string, string>;
+    }): Promise<{
+      messageId: string;
+      accepted: string[];
+      rejected: string[];
+      response?: string;
+    }>;
+
+    /**
+     * Send multiple emails in batch
+     */
+    sendBatch(emails: Array<{
+      to: string | string[];
+      cc?: string | string[];
+      bcc?: string | string[];
+      subject: string;
+      text?: string;
+      html?: string;
+      attachments?: Array<{
+        filename?: string;
+        path?: string;
+        content?: Buffer | string;
+        contentType?: string;
+        cid?: string;
+      }>;
+      replyTo?: string | string[];
+      from?: string;
+      headers?: Record<string, string>;
+    }>): Promise<Array<{
+      messageId: string;
+      accepted: string[];
+      rejected: string[];
+      response?: string;
+    }>>;
+  };
   realtime?: {
     /**
      * Publish an event to a channel (throws on error)
@@ -64,7 +122,7 @@ export interface HandlerContext {
         excludeUserId?: string; // Send to all except this user
       }
     ): Promise<void>;
-    
+
     /**
      * Publish an event to a channel (fire-and-forget, logs errors but doesn't throw)
      */
@@ -77,7 +135,7 @@ export interface HandlerContext {
         excludeUserId?: string;
       }
     ): void;
-    
+
     /**
      * Broadcast an event to all clients in a channel
      */
@@ -90,34 +148,102 @@ export interface HandlerContext {
         excludeUserId?: string;
       }
     ): Promise<void>;
-    
+
     /**
      * Get connected clients for a channel
      * Returns user IDs or connection IDs
      */
     getClients(channel: string): Promise<string[]>;
-    
+
     /**
      * Check if realtime is available
      */
     readonly available: boolean;
   };
   logger?: {
-    info(message: string): void;
-    warn(message: string): void;
-    error(message: string): void;
+    /**
+     * Log an info message with optional metadata
+     */
+    info(message: string, meta?: Record<string, unknown>): void;
+    /**
+     * Log a warning message with optional metadata
+     */
+    warn(message: string, meta?: Record<string, unknown>): void;
+    /**
+     * Log an error message with optional error and metadata
+     */
+    error(message: string, error?: Error, meta?: Record<string, unknown>): void;
+    /**
+     * Log a debug message with optional metadata
+     */
+    debug(message: string, meta?: Record<string, unknown>): void;
+    /**
+     * Create a child logger with additional bound context
+     * Useful for adding request-scoped metadata (e.g., requestId, userId)
+     */
+    child?(bindings: Record<string, unknown>): HandlerContext['logger'];
   };
-  
+
+  /**
+   * Resolved configuration values
+   * Validated at startup based on the config schema in yama.yaml
+   */
+  config?: Record<string, string | number | boolean | undefined>;
+
+  metrics?: {
+    /**
+     * Increment a counter metric
+     */
+    increment(name: string, value?: number, tags?: Record<string, string>): void;
+    /**
+     * Record a histogram value
+     */
+    histogram(name: string, value: number, tags?: Record<string, string>): void;
+    /**
+     * Set a gauge value
+     */
+    gauge(name: string, value: number, tags?: Record<string, string>): void;
+  };
+
+  tracing?: {
+    /**
+     * Start a trace span (for future tracing support)
+     */
+    startSpan(name: string): TraceSpan;
+    /**
+     * Get the current active span
+     */
+    getCurrentSpan(): TraceSpan | undefined;
+  };
+
   // Original request/reply for edge cases
   _original?: {
     request: HttpRequest;
     reply: HttpResponse;
   };
-  
+
   // Internal: status code set by handler (used by runtime)
   _statusCode?: number;
-  
+
   [key: string]: unknown; // Allow additional properties
+}
+
+/**
+ * Trace span interface (for future tracing support)
+ */
+export interface TraceSpan {
+  /**
+   * Set a tag on the span
+   */
+  setTag(key: string, value: string | number | boolean): void;
+  /**
+   * Add an event to the span
+   */
+  addEvent(name: string, attributes?: Record<string, unknown>): void;
+  /**
+   * Finish the span
+   */
+  finish(): void;
 }
 
 /**

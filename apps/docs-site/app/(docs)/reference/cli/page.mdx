@@ -1,0 +1,363 @@
+# CLI Reference
+
+Complete reference for all Yama CLI commands.
+
+## Project Commands
+
+### `yama create`
+
+Create a new Yama project.
+
+```bash
+yama create <project-name> [options]
+```
+
+**Alias:** `yama new`
+
+**Options:**
+| Option | Description |
+|--------|-------------|
+| `--database <type>` | Database type: `postgresql`, `pglite`, `none` |
+| `-y, --yes` | Skip prompts and use defaults |
+| `--template <name>` | Project template to use |
+
+**Examples:**
+```bash
+yama create my-api
+yama create my-api --database postgresql
+yama create my-api -y
+```
+
+### `yama dev`
+
+Start the development server with hot reload.
+
+```bash
+yama dev [options]
+```
+
+**Options:**
+| Option | Description |
+|--------|-------------|
+| `-p, --port <port>` | Server port (default: 4000) |
+| `--host <host>` | Server host (default: localhost) |
+| `--no-watch` | Disable file watching |
+| `--config <path>` | Path to config file |
+| `--env <environment>` | Environment to use |
+| `--generate` | Auto-generate on startup |
+
+**Examples:**
+```bash
+yama dev
+yama dev --port 3000
+yama dev --env staging
+```
+
+### `yama start`
+
+Start the production server.
+
+```bash
+yama start [options]
+```
+
+**Options:**
+| Option | Description |
+|--------|-------------|
+| `-p, --port <port>` | Server port |
+| `--config <path>` | Path to config file |
+
+### `yama build`
+
+Build the application for production.
+
+```bash
+yama build [options]
+```
+
+---
+
+## Code Generation
+
+### `yama generate`
+
+Generate TypeScript types and SDK from your configuration.
+
+```bash
+yama generate [options]
+```
+
+**Alias:** `yama gen`
+
+**Options:**
+| Option | Description |
+|--------|-------------|
+| `--types-only` | Generate types only |
+| `--sdk-only` | Generate SDK only |
+| `--watch` | Watch for changes |
+| `--framework <name>` | Target framework: `react`, `nextjs`, `node` |
+| `--output <dir>` | Output directory |
+
+**Examples:**
+```bash
+yama generate
+yama generate --types-only
+yama generate --watch
+```
+
+### `yama docs`
+
+Generate API documentation.
+
+```bash
+yama docs [options]
+```
+
+**Options:**
+| Option | Description |
+|--------|-------------|
+| `--format <type>` | Output format: `openapi`, `markdown` |
+| `--output <path>` | Output file path |
+
+**Examples:**
+```bash
+yama docs --format openapi --output openapi.json
+yama docs --format markdown --output API.md
+```
+
+---
+
+## Migrations
+
+### `yama migration:generate`
+
+Generate a new migration from entity changes.
+
+```bash
+yama migration:generate [options]
+```
+
+**Options:**
+| Option | Description |
+|--------|-------------|
+| `--name <name>` | Migration name (required) |
+| `--env <environment>` | Target environment |
+
+**Example:**
+```bash
+yama migration:generate --name add_users_table
+```
+
+### `yama migration:apply`
+
+Apply pending migrations to the database.
+
+```bash
+yama migration:apply [options]
+```
+
+**Options:**
+| Option | Description |
+|--------|-------------|
+| `--env <environment>` | Target environment |
+| `--force` | Skip confirmation prompts |
+| `--dry-run` | Show what would be applied |
+
+**Examples:**
+```bash
+yama migration:apply
+yama migration:apply --env production
+yama migration:apply --dry-run
+```
+
+### `yama migration:status`
+
+Check migration status.
+
+```bash
+yama migration:status [options]
+```
+
+**Options:**
+| Option | Description |
+|--------|-------------|
+| `--env <environment>` | Target environment |
+
+### `yama migration:history`
+
+View migration history.
+
+```bash
+yama migration:history [options]
+```
+
+### `yama migration:rollback`
+
+Roll back migrations.
+
+```bash
+yama migration:rollback [options]
+```
+
+**Options:**
+| Option | Description |
+|--------|-------------|
+| `--steps <n>` | Number of migrations to roll back |
+| `--env <environment>` | Target environment |
+
+### `yama migration:check`
+
+Check if database is in sync with entities.
+
+```bash
+yama migration:check [options]
+```
+
+### `yama schema:scaffold`
+
+Scaffold common schema changes.
+
+```bash
+yama schema:scaffold <action> [args]
+```
+
+**Actions:**
+| Action | Description |
+|--------|-------------|
+| `add-table <name>` | Add a new table |
+| `add-column <table> <column>` | Add a column to a table |
+| `add-index <table> <column>` | Add an index |
+
+**Examples:**
+```bash
+yama schema:scaffold add-table posts
+yama schema:scaffold add-column users avatar_url
+```
+
+---
+
+## Database Commands
+
+### `yama db list`
+
+List database tables.
+
+```bash
+yama db list [options]
+```
+
+### `yama db inspect`
+
+Inspect a table's schema and data.
+
+```bash
+yama db inspect <table> [options]
+```
+
+**Options:**
+| Option | Description |
+|--------|-------------|
+| `--limit <n>` | Number of rows to show |
+
+---
+
+## Validation
+
+### `yama validate`
+
+Validate your configuration file.
+
+```bash
+yama validate [options]
+```
+
+**Options:**
+| Option | Description |
+|--------|-------------|
+| `--strict` | Enable strict validation |
+| `--config <path>` | Path to config file |
+
+### `yama endpoints`
+
+List all defined endpoints.
+
+```bash
+yama endpoints
+```
+
+### `yama schemas`
+
+List all defined schemas.
+
+```bash
+yama schemas
+```
+
+---
+
+## Plugin Commands
+
+### `yama plugin list`
+
+List installed plugins.
+
+```bash
+yama plugin list
+```
+
+### `yama plugin install`
+
+Install a plugin.
+
+```bash
+yama plugin install <name>
+```
+
+### `yama plugin validate`
+
+Validate plugin configuration.
+
+```bash
+yama plugin validate
+```
+
+---
+
+## Utility Commands
+
+### `yama config`
+
+Show current configuration.
+
+```bash
+yama config [options]
+```
+
+**Options:**
+| Option | Description |
+|--------|-------------|
+| `--env <environment>` | Target environment |
+
+### `yama add`
+
+Add resources to your project.
+
+```bash
+yama add:endpoint
+yama add:schema
+yama add:entity
+yama add:plugin
+```
+
+---
+
+## Global Options
+
+These options work with all commands:
+
+| Option | Description |
+|--------|-------------|
+| `--help` | Show help for a command |
+| `--version` | Show CLI version |
+| `--debug` | Enable debug output |
+| `--quiet` | Suppress output |

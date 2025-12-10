@@ -3,8 +3,14 @@ import { findYamaConfig } from "../utils/project-detection.ts";
 import { readYamaConfig, getConfigDir } from "../utils/file-utils.ts";
 import { loadEnvFile, resolveEnvVars } from "@betagors/yama-core";
 import type { DatabaseConfig } from "@betagors/yama-core";
-import { getDatabasePlugin } from "../utils/db-plugin.ts";
-import { success, error, info, printTable, colors } from "../utils/cli-utils.ts";
+import {
+  getAllSnapshots,
+  getAllTransitions,
+  getCurrentSnapshot,
+  getAllStates,
+} from "@betagors/yama-core";
+import { getDatabasePluginAndConfig } from "../utils/db-plugin.ts";
+import { error, info, dim, fmt, printTable } from "../utils/cli-utils.ts";
 
 interface SchemaHistoryOptions {
   config?: string;
@@ -16,91 +22,152 @@ export async function schemaHistoryCommand(options: SchemaHistoryOptions): Promi
   const configPath = options.config || findYamaConfig() || "yama.yaml";
 
   if (!existsSync(configPath)) {
-    error(`Config file not found: ${configPath}`);
+    error(`Config not found: ${configPath}`);
     process.exit(1);
   }
 
   try {
     const environment = options.env || process.env.NODE_ENV || "development";
     loadEnvFile(configPath, environment);
-    let config = readYamaConfig(configPath) as { database?: DatabaseConfig };
-    config = resolveEnvVars(config) as { database?: DatabaseConfig };
+    const configDir = getConfigDir(configPath);
 
-    if (!config.database) {
-      error("No database configuration found in yama.yaml");
-      process.exit(1);
-    }
+    // Get local snapshots and transitions
+    const snapshots = getAllSnapshots(configDir);
+    const transitions = getAllTransitions(configDir);
+    const states = getAllStates(configDir);
+    const currentSnapshot = getCurrentSnapshot(configDir, environment);
 
-    const dbPlugin = await getDatabasePlugin();
-    dbPlugin.client.initDatabase(config.database);
-    const sql = dbPlugin.client.getSQL();
-
-    // Get migration history
-    let migrations: Array<{
-      id: number;
-      name: string;
-      type: string;
-      from_model_hash: string;
-      to_model_hash: string;
-      description: string | null;
-      applied_at: Date;
-    }> = [];
-
-    try {
-      const result = await sql`
-        SELECT id, name, type, from_model_hash, to_model_hash, description, applied_at
-        FROM _yama_migrations
-        ORDER BY applied_at DESC
-      `;
-      migrations = result as unknown as typeof migrations;
-    } catch {
-      info("No migration history found.");
-      await dbPlugin.client.closeDatabase();
-      return;
-    }
-
-    if (migrations.length === 0) {
-      info("No migrations in history.");
-      await dbPlugin.client.closeDatabase();
-      return;
-    }
+    console.log("");
+    console.log(fmt.bold("Schema History"));
+    console.log(dim("─".repeat(40)));
+    console.log("");
 
     if (options.graph) {
-      // Simple timeline visualization
-      console.log("\n📅 Migration Timeline:\n");
-      migrations.forEach((m, index) => {
-        const arrow = index < migrations.length - 1 ? "↓" : "";
-        console.log(
-          `${colors.dim(m.applied_at.toISOString().split("T")[0])} ${m.name} ${arrow}`
-        );
-        if (m.description) {
-          console.log(colors.dim(`   ${m.description}`));
+      // Graph visualization
+      console.log(fmt.bold("Transition Graph"));
+      console.log("");
+      
+      if (transitions.length === 0) {
+        info("No transitions recorded.");
+      } else {
+        // Build adjacency for simple visualization
+        const nodes = new Set<string>();
+        for (const t of transitions) {
+          if (t.fromHash) nodes.add(t.fromHash);
+          nodes.add(t.toHash);
         }
-      });
-    } else {
-      // Table view
-      const tableData: unknown[][] = [
-        ["ID", "Name", "From Hash", "To Hash", "Applied At"],
-      ];
 
-      for (const m of migrations) {
-        tableData.push([
-          m.id,
-          m.name,
-          m.from_model_hash ? m.from_model_hash.substring(0, 8) + "..." : "-",
-          m.to_model_hash ? m.to_model_hash.substring(0, 8) + "..." : "-",
-          m.applied_at.toISOString().split("T")[0],
-        ]);
+        // Show transitions
+        for (const t of transitions) {
+          const from = t.fromHash ? t.fromHash.substring(0, 8) : "empty";
+          const to = t.toHash.substring(0, 8);
+          const isCurrent = t.toHash === currentSnapshot;
+          const marker = isCurrent ? fmt.green(" ← current") : "";
+          console.log(`  ${from} → ${to}${marker}`);
+          console.log(dim(`    ${t.steps.length} step(s): ${t.metadata.description || ""}`));
+        }
       }
-
-      console.log("\n📜 Migration History:\n");
-      printTable(tableData);
+      console.log("");
+      return;
     }
 
-    await dbPlugin.client.closeDatabase();
+    // Snapshots table
+    if (snapshots.length > 0) {
+      console.log(fmt.bold(`Snapshots (${snapshots.length})`));
+      
+      const snapshotData: unknown[][] = [["Hash", "Created", "Description"]];
+      
+      // Sort by date descending
+      snapshots.sort((a, b) => 
+        new Date(b.metadata.createdAt).getTime() - new Date(a.metadata.createdAt).getTime()
+      );
+      
+      for (const s of snapshots.slice(0, 10)) {
+        const isCurrent = s.hash === currentSnapshot;
+        const hash = `${s.hash.substring(0, 8)}${isCurrent ? " ✓" : ""}`;
+        snapshotData.push([
+          hash,
+          new Date(s.metadata.createdAt).toLocaleDateString(),
+          s.metadata.description || "-",
+        ]);
+      }
+      
+      printTable(snapshotData);
+      if (snapshots.length > 10) {
+        console.log(dim(`  ... and ${snapshots.length - 10} more`));
+      }
+      console.log("");
+    }
+
+    // Transitions table
+    if (transitions.length > 0) {
+      console.log(fmt.bold(`Transitions (${transitions.length})`));
+      
+      const transitionData: unknown[][] = [["From", "To", "Steps", "Description"]];
+      
+      for (const t of transitions.slice(-10)) {
+        transitionData.push([
+          t.fromHash ? t.fromHash.substring(0, 8) : "empty",
+          t.toHash.substring(0, 8),
+          t.steps.length.toString(),
+          t.metadata.description || "-",
+        ]);
+      }
+      
+      printTable(transitionData);
+      if (transitions.length > 10) {
+        console.log(dim(`  ... and ${transitions.length - 10} more`));
+      }
+      console.log("");
+    }
+
+    // Database history (if available)
+    try {
+      const config = resolveEnvVars(readYamaConfig(configPath)) as any;
+      const { plugin: dbPlugin, dbConfig } = await getDatabasePluginAndConfig(config, configPath);
+      await dbPlugin.client.initDatabase(dbConfig);
+      const sql = dbPlugin.client.getSQL();
+
+      const dbMigrations = await sql.unsafe(`
+        SELECT name, from_model_hash, to_model_hash, applied_at
+        FROM _yama_migrations
+        ORDER BY applied_at DESC
+        LIMIT 10
+      `) as any[];
+
+      if (dbMigrations.length > 0) {
+        console.log(fmt.bold("Applied Migrations (Database)"));
+        
+        const dbData: unknown[][] = [["Name", "From", "To", "Applied"]];
+        for (const m of dbMigrations) {
+          dbData.push([
+            m.name.replace("transition_", "").substring(0, 20),
+            m.from_model_hash ? m.from_model_hash.substring(0, 8) : "-",
+            m.to_model_hash ? m.to_model_hash.substring(0, 8) : "-",
+            new Date(m.applied_at).toLocaleDateString(),
+          ]);
+        }
+        printTable(dbData);
+      }
+
+      await dbPlugin.client.closeDatabase();
+    } catch {
+      // No database connection or table - skip DB history
+    }
+
+    // Environment states
+    if (states.length > 0) {
+      console.log("");
+      console.log(fmt.bold("Environment States"));
+      for (const state of states) {
+        const marker = state.environment === environment ? " ←" : "";
+        console.log(`  ${state.environment}: ${state.currentSnapshot?.substring(0, 8) || dim("none")}${marker}`);
+      }
+    }
+
+    console.log("");
   } catch (err) {
-    error(`Failed to get migration history: ${err instanceof Error ? err.message : String(err)}`);
+    error(`Failed: ${err instanceof Error ? err.message : String(err)}`);
     process.exit(1);
   }
 }
-

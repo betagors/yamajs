@@ -3,7 +3,7 @@ import { findYamaConfig } from "../utils/project-detection.ts";
 import { readYamaConfig } from "../utils/file-utils.ts";
 import { loadEnvFile, resolveEnvVars } from "@betagors/yama-core";
 import type { DatabaseConfig } from "@betagors/yama-core";
-import { getDatabasePlugin } from "../utils/db-plugin.ts";
+import { getDatabasePluginAndConfig } from "../utils/db-plugin.ts";
 import { success, error, info, printTable, colors } from "../utils/cli-utils.ts";
 
 interface DbListOptions {
@@ -22,17 +22,15 @@ export async function dbListCommand(options: DbListOptions): Promise<void> {
   try {
     const environment = options.env || process.env.NODE_ENV || "development";
     loadEnvFile(configPath, environment);
-    let config = readYamaConfig(configPath) as { database?: DatabaseConfig };
-    config = resolveEnvVars(config) as { database?: DatabaseConfig };
+    let config = readYamaConfig(configPath) as {
+      plugins?: Record<string, Record<string, unknown>> | string[];
+      database?: DatabaseConfig;
+    };
+    config = resolveEnvVars(config) as typeof config;
 
-    if (!config.database) {
-      error("No database configuration found in yama.yaml");
-      process.exit(1);
-    }
-
-    // Initialize database
-    const dbPlugin = await getDatabasePlugin();
-    await dbPlugin.client.initDatabase(config.database);
+    // Get database plugin and config (builds from plugin config if needed)
+    const { plugin: dbPlugin, dbConfig } = await getDatabasePluginAndConfig(config, configPath);
+    await dbPlugin.client.initDatabase(dbConfig);
     const sql = dbPlugin.client.getSQL();
 
     try {
@@ -84,11 +82,11 @@ export async function dbListCommand(options: DbListOptions): Promise<void> {
       }
 
       // Show database type/location if available
-      const dbType = config.database.dialect === "pglite" ? "PGLite" : "PostgreSQL";
-      const dbLocation = config.database.url 
-        ? (config.database.url === ":memory:" || config.database.url === "pglite" 
+      const dbType = dbConfig.dialect === "pglite" ? "PGLite" : "PostgreSQL";
+      const dbLocation = dbConfig.url 
+        ? (dbConfig.url === ":memory:" || dbConfig.url === "pglite" 
             ? "in-memory" 
-            : config.database.url)
+            : dbConfig.url)
         : "default";
 
       console.log(`\n📊 Database Tables (${dbType} - ${dbLocation}):\n`);

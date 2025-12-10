@@ -2,9 +2,8 @@ import { describe, it, expect } from "vitest";
 import {
   validateManifest,
   validateYamaPlugin,
-  validateServicePlugin,
 } from "./validator";
-import type { PluginManifest, YamaPlugin, ServicePlugin } from "./base";
+import type { PluginManifest, YamaPlugin } from "./base";
 
 describe("Plugin Validator", () => {
   describe("validateManifest", () => {
@@ -88,46 +87,5 @@ describe("Plugin Validator", () => {
     });
   });
 
-  describe("validateServicePlugin (backward compatibility)", () => {
-    it("should validate correct plugin", () => {
-      const plugin: ServicePlugin = {
-        name: "@betagors/yama-service-stripe",
-        version: "1.0.0",
-        manifest: {
-          pluginApi: "1.0",
-          yamaCore: "^0.1.0",
-          category: "service",
-          type: "payment",
-        },
-        init: async () => {},
-      };
-
-      const result = validateServicePlugin(plugin);
-      expect(result.valid).toBe(true);
-    });
-
-    it("should reject plugin without init method", () => {
-      const plugin = {
-        name: "@betagors/yama-service-stripe",
-        version: "1.0.0",
-        manifest: {
-          pluginApi: "1.0",
-          yamaCore: "^0.1.0",
-          category: "service",
-          type: "payment",
-        },
-      } as ServicePlugin;
-
-      const result = validateServicePlugin(plugin);
-      expect(result.valid).toBe(false);
-      expect(result.errors).toContain("Plugin must implement init() method");
-    });
-
-    it("should reject non-object plugin", () => {
-      const result = validateServicePlugin(null as any);
-      expect(result.valid).toBe(false);
-      expect(result.errors).toContain("Plugin must be an object");
-    });
-  });
 });
 

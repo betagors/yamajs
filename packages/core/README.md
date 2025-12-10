@@ -13,6 +13,18 @@ The core package provides the foundational runtime, types, and utilities for the
 npm install @betagors/yama-core
 ```
 
+### Deno
+
+```bash
+deno add npm:@betagors/yama-core
+```
+
+### Bun
+
+```bash
+bun add @betagors/yama-core
+```
+
 ## Features
 
 - **Schema Validation** - JSON Schema validation with AJV
@@ -26,7 +38,75 @@ npm install @betagors/yama-core
 - **Entity System** - Convert entities to schemas and manage database models
 - **Pagination** - Multiple pagination types (offset, page, cursor) with metadata support
 
-## Usage
+## Usage (runtime-neutral)
+
+The core is runtime-neutral and expects the host to provide web-standard APIs (`fetch`, `URL`, `crypto.subtle`, `ReadableStream`, etc.). Node-specific globals are not required. Platform-specific concerns (fs/path/env/crypto/password hashing) are injected via providers.
+
+### Platform providers
+
+- `setFileSystem`, `setPathModule`: provide minimal fs/path for features that need the file system (migrations, plugins). Node adapter wires these automatically.
+- `setEnvProvider`: provide `getEnv`/`setEnv`/`cwd`.
+- `setCryptoProvider`, `setPasswordHasher`: override random bytes/ints/timingSafeEqual and password hashing.
+
+If you use `@betagors/yama-node`, these are configured for you. Other runtimes (Deno/Bun/edge) can inject equivalents before calling APIs that need them.
+
+#### Deno adapter example (npm mode)
+
+```ts
+import { setFileSystem, setPathModule, setEnvProvider } from "@betagors/yama-core";
+
+setFileSystem({
+  readFileSync: (p) => Deno.readTextFileSync(p),
+  writeFileSync: (p, data) =>
+    Deno.writeTextFileSync(p, typeof data === "string" ? data : new TextDecoder().decode(data)),
+  existsSync: (p) => {
+    try {
+      Deno.statSync(p);
+      return true;
+    } catch {
+      return false;
+    }
+  },
+  mkdirSync: (p, opts) => Deno.mkdirSync(p, { recursive: opts?.recursive }),
+  readdirSync: (p) => Array.from(Deno.readDirSync(p)).map((e) => e.name),
+  statSync: (p) => Deno.statSync(p),
+  unlinkSync: (p) => Deno.removeSync(p),
+});
+
+setPathModule({
+  join: (...xs) => xs.join("/"),
+  dirname: (p) => p.split("/").slice(0, -1).join("/") || "/",
+  resolve: (...xs) => xs.join("/"),
+});
+
+setEnvProvider({
+  getEnv: (k) => Deno.env.get(k),
+  setEnv: (k, v) => (v === undefined ? Deno.env.delete(k) : Deno.env.set(k, v)),
+  cwd: () => Deno.cwd(),
+});
+```
+
+#### Bun adapter example
+
+```ts
+import { setFileSystem, setPathModule, setEnvProvider } from "@betagors/yama-core";
+import fs from "node:fs";
+import path from "node:path";
+
+setFileSystem(fs);
+setPathModule(path);
+setEnvProvider({
+  getEnv: (k) => process.env[k],
+  setEnv: (k, v) => {
+    if (v === undefined) {
+      delete process.env[k];
+    } else {
+      process.env[k] = v;
+    }
+  },
+  cwd: () => process.cwd(),
+});
+```
 
 ### Schema Validation
 

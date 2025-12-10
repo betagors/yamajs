@@ -1,6 +1,6 @@
 import { execSync } from "child_process";
 import { readPackageJson } from "../utils/file-utils.ts";
-import { loadServicePlugin, getServicePlugin } from "@betagors/yama-core";
+import { loadPluginFromPackage } from "@betagors/yama-core";
 
 interface PluginOptions {
   package?: string;
@@ -10,8 +10,6 @@ interface PluginOptions {
  * List installed service plugins
  */
 export async function pluginListCommand(): Promise<void> {
-  console.log("📦 Installed Yama service plugins:\n");
-
   try {
     const pkg = readPackageJson();
     const deps = {
@@ -23,16 +21,18 @@ export async function pluginListCommand(): Promise<void> {
 
     for (const [packageName, version] of Object.entries(deps)) {
       try {
-        const plugin = await loadServicePlugin(packageName);
+        const manifest = await loadPluginFromPackage(packageName);
         plugins.push({
           name: packageName,
           version,
-          manifest: plugin.manifest,
+          manifest,
         });
       } catch {
         // Not a Yama plugin, skip
       }
     }
+
+    console.log("📦 Installed Yama service plugins:\n");
 
     if (plugins.length === 0) {
       console.log("  No service plugins installed.");
@@ -80,14 +80,14 @@ export async function pluginInstallCommand(options: PluginOptions): Promise<void
 
     // Try to load and validate the plugin
     console.log("\nValidating plugin...");
-    const plugin = await loadServicePlugin(packageName);
+    const manifest = await loadPluginFromPackage(packageName);
 
     console.log(`\n✅ Plugin installed successfully!`);
-    console.log(`   Name: ${plugin.name}`);
-    console.log(`   Version: ${plugin.version}`);
-    console.log(`   Type: ${plugin.manifest.type}`);
-    if (plugin.manifest.service) {
-      console.log(`   Service: ${plugin.manifest.service}`);
+    console.log(`   Name: ${manifest.name || packageName}`);
+    console.log(`   Version: ${manifest.version || "unknown"}`);
+    console.log(`   Type: ${manifest.type}`);
+    if (manifest.service) {
+      console.log(`   Service: ${manifest.service}`);
     }
     console.log("\n💡 Configure the plugin in your yama.yaml file");
   } catch (error) {
@@ -100,8 +100,6 @@ export async function pluginInstallCommand(options: PluginOptions): Promise<void
  * Validate all installed service plugins
  */
 export async function pluginValidateCommand(): Promise<void> {
-  console.log("🔍 Validating service plugins...\n");
-
   try {
     const pkg = readPackageJson();
     const deps = {
@@ -109,26 +107,38 @@ export async function pluginValidateCommand(): Promise<void> {
       ...((pkg.devDependencies || {}) as Record<string, string>),
     };
 
+    const results: Array<{ plugin: string; valid: boolean; error?: string }> = [];
     let validCount = 0;
     let invalidCount = 0;
 
     for (const [packageName] of Object.entries(deps)) {
       try {
-        const plugin = await loadServicePlugin(packageName);
-        console.log(`✅ ${packageName} - Valid`);
+        await loadPluginFromPackage(packageName);
+        results.push({ plugin: packageName, valid: true });
         validCount++;
       } catch (error) {
         // Check if it's a Yama plugin that failed validation
-        try {
-          // Try to load manifest to see if it's a Yama plugin
-          const { loadPluginFromPackage } = await import("@betagors/yama-core");
-          await loadPluginFromPackage(packageName);
-          // If we get here, it's a Yama plugin but failed validation
-          console.log(`❌ ${packageName} - Invalid: ${error instanceof Error ? error.message : String(error)}`);
-          invalidCount++;
-        } catch {
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        // If error mentions "Cannot find module", it's not a Yama plugin
+        if (errorMsg.includes("Cannot find module") || errorMsg.includes("not found")) {
           // Not a Yama plugin, skip
+        } else {
+          // It's a Yama plugin but failed validation
+          results.push({ plugin: packageName, valid: false, error: errorMsg });
+          invalidCount++;
         }
+      }
+    }
+
+
+    // Fallback to text output
+    console.log("🔍 Validating service plugins...\n");
+
+    for (const result of results) {
+      if (result.valid) {
+        console.log(`✅ ${result.plugin} - Valid`);
+      } else {
+        console.log(`❌ ${result.plugin} - Invalid: ${result.error || "Unknown error"}`);
       }
     }
 

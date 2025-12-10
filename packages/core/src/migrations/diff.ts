@@ -30,6 +30,7 @@ export type MigrationStepType =
   | "drop_table"
   | "add_column"
   | "drop_column"
+  | "rename_column"
   | "modify_column"
   | "add_index"
   | "drop_index"
@@ -86,6 +87,15 @@ export interface AddColumnStep extends MigrationStep {
 export interface DropColumnStep extends MigrationStep {
   type: "drop_column";
   column: string;
+}
+
+/**
+ * Rename column step
+ */
+export interface RenameColumnStep extends MigrationStep {
+  type: "rename_column";
+  column: string;
+  newName: string;
 }
 
 /**
@@ -152,6 +162,7 @@ export type MigrationStepUnion =
   | DropTableStep
   | AddColumnStep
   | DropColumnStep
+  | RenameColumnStep
   | ModifyColumnStep
   | AddIndexStep
   | DropIndexStep
@@ -328,8 +339,29 @@ export function diffToSteps(diff: DiffResult, from: Model, to: Model): Migration
     });
   }
 
-  // Add columns to existing tables
+  // Optimize: Detect case-only renames (drop + add with same name, different case)
+  // PostgreSQL treats unquoted identifiers as case-insensitive, so we need to rename
+  const caseOnlyRenames = new Map<string, { table: string; oldName: string; newName: string }>();
+  
   for (const { table: tableName, column: columnName } of diff.added.columns) {
+    // Check if there's a matching drop_column with same name (case-insensitive)
+    const matchingDrop = diff.removed.columns.find(
+      r => r.table === tableName && r.column.toLowerCase() === columnName.toLowerCase() && r.column !== columnName
+    );
+    
+    if (matchingDrop) {
+      // This is a case-only rename, mark it for rename instead of drop+add
+      caseOnlyRenames.set(`${tableName}.${matchingDrop.column}`, {
+        table: tableName,
+        oldName: matchingDrop.column,
+        newName: columnName,
+      });
+      // Remove from both lists so we don't process them as drop/add
+      diff.removed.columns = diff.removed.columns.filter(r => r !== matchingDrop);
+      continue;
+    }
+    
+    // Regular add column
     const table = to.tables.get(tableName)!;
     const column = table.columns.get(columnName)!;
     steps.push({
@@ -342,6 +374,16 @@ export function diffToSteps(diff: DiffResult, from: Model, to: Model): Migration
         default: column.default,
         generated: column.generated,
       },
+    });
+  }
+  
+  // Add rename steps for case-only renames
+  for (const rename of caseOnlyRenames.values()) {
+    steps.push({
+      type: "rename_column",
+      table: rename.table,
+      column: rename.oldName,
+      newName: rename.newName,
     });
   }
 
@@ -374,6 +416,7 @@ export function diffToSteps(diff: DiffResult, from: Model, to: Model): Migration
   }
 
   // Add indexes
+  // Note: Indexes are created AFTER renames, so they should use the NEW column names
   for (const { table: tableName, index: indexName } of diff.added.indexes) {
     const table = to.tables.get(tableName)!;
     const index = table.indexes.find((idx) => idx.name === indexName)!;
@@ -382,7 +425,7 @@ export function diffToSteps(diff: DiffResult, from: Model, to: Model): Migration
       table: tableName,
       index: {
         name: index.name,
-        columns: index.columns,
+        columns: index.columns, // Use new names (renames happen before indexes)
         unique: index.unique,
       },
     });
@@ -421,8 +464,12 @@ export function diffToSteps(diff: DiffResult, from: Model, to: Model): Migration
     });
   }
 
-  // Drop columns
+  // Drop columns (excluding those that were converted to renames)
   for (const { table: tableName, column: columnName } of diff.removed.columns) {
+    // Skip if this was handled as a rename
+    if (caseOnlyRenames.has(`${tableName}.${columnName}`)) {
+      continue;
+    }
     steps.push({
       type: "drop_column",
       table: tableName,

@@ -111,6 +111,28 @@ function TodoList() {
 }
 ```
 
+## Yama IR and runtime client
+
+You can also consume the Yama IR (intermediate representation) directly and use the lightweight runtime client:
+
+```bash
+# emit IR from your project
+yama generate --ir ./.yama/yama-ir.json
+```
+
+```typescript
+import { YamaClient } from '@betagors/yama-sdk';
+import ir from './.yama/yama-ir.json';
+
+async function main() {
+  const client = await YamaClient.create({ ir, baseUrl: 'http://localhost:4000' });
+  const users = await client.request({ method: 'GET', path: '/users' });
+  console.log(users);
+}
+```
+
+For private APIs, keep the IR local or serve `/yama/ir` with authentication enabled.
+
 #### Next.js
 
 ```typescript

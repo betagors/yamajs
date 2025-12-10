@@ -4,30 +4,218 @@
   "description": "Schema for Yama YAML configuration files",
   "type": "object",
   "properties": {
+    "project": {
+      "type": "object",
+      "description": "Project metadata (new syntax). Alternative to top-level name/version.",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Project name"
+        },
+        "version": {
+          "type": "string",
+          "description": "Project version (e.g., '1.0.0')"
+        }
+      }
+    },
     "name": {
       "type": "string",
-      "description": "Project name"
+      "description": "Project name (legacy syntax, use 'project.name' for new syntax)"
     },
     "version": {
       "type": "string",
-      "description": "Project version (e.g., '1.0.0')"
+      "description": "Project version (e.g., '1.0.0') (legacy syntax, use 'project.version' for new syntax)"
     },
     "plugins": {
-      "description": "Plugin configurations. Can be a map of plugin names to their configs, or an array of plugin names.",
-      "oneOf": [
-        {
-          "type": "object",
-          "additionalProperties": {
-            "type": "object"
+      "description": "Plugin configurations. Array format where items can be strings (plugin name) or objects (plugin name as key with config).",
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "type": "string",
+            "description": "Plugin name (shorthand, no config)"
+          },
+          {
+            "type": "object",
+            "description": "Plugin object with name as key and config as value",
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "config": {
+                  "type": "object",
+                  "description": "Plugin configuration",
+                  "additionalProperties": true
+                }
+              }
+            },
+            "minProperties": 1,
+            "maxProperties": 1
           }
-        },
-        {
-          "type": "array",
-          "items": {
-            "type": "string"
+        ]
+      }
+    },
+    "operations": {
+      "type": "object",
+      "description": "Operation definitions. Operations are first-class citizens with naming conventions for automatic path/method inference. Format: operationName: OutputType (shorthand) or operationName: { input, output, parent, handler, hooks, filter } (full config).",
+      "additionalProperties": {
+        "oneOf": [
+          {
+            "type": "string",
+            "pattern": "^[A-Za-z_][A-Za-z0-9_]*(\\[\\])?$",
+            "description": "Shorthand: Output schema name (e.g., 'Post', 'PostSummary[]'). Input, method, and path are inferred from operation name."
+          },
+          {
+            "type": "null",
+            "description": "Shorthand: No response body (204 No Content). Use for delete operations that don't return data."
+          },
+          {
+            "type": "object",
+            "properties": {
+              "input": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "description": "Shorthand: 'id' for standard get-by-id, or schema name"
+                  },
+                  {
+                    "type": "object",
+                    "description": "Input schema definition",
+                    "additionalProperties": {
+                      "oneOf": [
+                        {
+                          "type": "string",
+                          "description": "Field type shorthand (e.g., 'uuid!', 'string?', 'number = 10')"
+                        },
+                        {
+                          "$ref": "#/definitions/schemaField"
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              "output": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^[A-Za-z_][A-Za-z0-9_]*(\\[\\])?$",
+                    "description": "Output schema name (e.g., 'Post', 'PostSummary[]')"
+                  },
+                  {
+                    "type": "object",
+                    "description": "Inline output schema",
+                    "properties": {
+                      "fields": {
+                        "type": "object",
+                        "additionalProperties": {
+                          "oneOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "$ref": "#/definitions/schemaField"
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "type": "null",
+                    "description": "No response body (204 No Content)"
+                  }
+                ]
+              },
+              "parent": {
+                "type": "string",
+                "description": "Parent entity for nested resources (e.g., 'Post' for listComments creates /posts/{postId}/comments)"
+              },
+              "handler": {
+                "type": "string",
+                "description": "Path to custom handler file (only needed for complex logic)"
+              },
+              "hooks": {
+                "type": "object",
+                "description": "Lifecycle hooks for simple customization without full handler",
+                "properties": {
+                  "beforeCreate": {
+                    "type": "string",
+                    "description": "Path to hook handler"
+                  },
+                  "afterCreate": {
+                    "type": "string"
+                  },
+                  "beforeUpdate": {
+                    "type": "string"
+                  },
+                  "afterUpdate": {
+                    "type": "string"
+                  },
+                  "beforeDelete": {
+                    "type": "string"
+                  },
+                  "afterDelete": {
+                    "type": "string"
+                  }
+                }
+              },
+              "filter": {
+                "type": "object",
+                "description": "Auto-applied filter conditions (e.g., { published: true })",
+                "additionalProperties": true
+              },
+              "path": {
+                "type": "string",
+                "description": "Custom path override (overrides convention-based inference)"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "policies": {
+      "type": "object",
+      "description": "Reusable access control policies",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "auth": {
+            "oneOf": [
+              {
+                "type": "boolean",
+                "description": "Authentication required (true) or public (false)"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "required": {
+                    "type": "boolean",
+                    "description": "Authentication required"
+                  },
+                  "roles": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Required roles (user must have at least one)"
+                  },
+                  "permissions": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Required permissions"
+                  },
+                  "check": {
+                    "type": "string",
+                    "description": "Path to custom policy check handler"
+                  }
+                }
+              }
+            ]
           }
         }
-      ]
+      }
     },
     "database": {
       "type": "object",
@@ -35,7 +223,9 @@
       "properties": {
         "dialect": {
           "type": "string",
-          "enum": ["postgresql"],
+          "enum": [
+            "postgresql"
+          ],
           "description": "Database dialect"
         },
         "url": {
@@ -61,7 +251,9 @@
           "additionalProperties": true
         }
       },
-      "required": ["dialect"]
+      "required": [
+        "dialect"
+      ]
     },
     "server": {
       "type": "object",
@@ -69,7 +261,9 @@
       "properties": {
         "engine": {
           "type": "string",
-          "enum": ["fastify"],
+          "enum": [
+            "fastify"
+          ],
           "default": "fastify",
           "description": "Server engine (currently only 'fastify' is supported)"
         },
@@ -98,7 +292,9 @@
                 "description": "List of permissions for this role (supports wildcards: '*', 'posts:*')"
               }
             },
-            "required": ["permissions"]
+            "required": [
+              "permissions"
+            ]
           }
         },
         "providers": {
@@ -110,7 +306,9 @@
                 "properties": {
                   "type": {
                     "type": "string",
-                    "enum": ["jwt"]
+                    "enum": [
+                      "jwt"
+                    ]
                   },
                   "secret": {
                     "type": "string",
@@ -129,32 +327,45 @@
                     "description": "JWT audience"
                   }
                 },
-                "required": ["type", "secret"]
+                "required": [
+                  "type",
+                  "secret"
+                ]
               },
               {
                 "type": "object",
                 "properties": {
                   "type": {
                     "type": "string",
-                    "enum": ["api-key"]
+                    "enum": [
+                      "api-key"
+                    ]
                   },
                   "header": {
                     "type": "string",
                     "description": "Header name for API key (e.g., 'X-API-Key')"
                   }
                 },
-                "required": ["type", "header"]
+                "required": [
+                  "type",
+                  "header"
+                ]
               },
               {
                 "type": "object",
                 "properties": {
                   "type": {
                     "type": "string",
-                    "enum": ["basic"]
+                    "enum": [
+                      "basic"
+                    ]
                   },
                   "mode": {
                     "type": "string",
-                    "enum": ["static", "database"],
+                    "enum": [
+                      "static",
+                      "database"
+                    ],
                     "description": "Validation mode: 'static' for hardcoded credentials, 'database' for database lookup"
                   },
                   "identifier": {
@@ -178,19 +389,31 @@
                     "description": "Field name containing password hash in database mode (default: 'passwordHash')"
                   }
                 },
-                "required": ["type", "mode"],
+                "required": [
+                  "type",
+                  "mode"
+                ],
                 "oneOf": [
                   {
                     "properties": {
-                      "mode": { "const": "static" }
+                      "mode": {
+                        "const": "static"
+                      }
                     },
-                    "required": ["identifier", "password"]
+                    "required": [
+                      "identifier",
+                      "password"
+                    ]
                   },
                   {
                     "properties": {
-                      "mode": { "const": "database" }
+                      "mode": {
+                        "const": "database"
+                      }
                     },
-                    "required": ["userEntity"]
+                    "required": [
+                      "userEntity"
+                    ]
                   }
                 ]
               },
@@ -220,13 +443,19 @@
                     "default": true
                   }
                 },
-                "required": ["type", "clientId", "clientSecret"]
+                "required": [
+                  "type",
+                  "clientId",
+                  "clientSecret"
+                ]
               }
             ]
           }
         }
       },
-      "required": ["providers"]
+      "required": [
+        "providers"
+      ]
     },
     "rateLimit": {
       "type": "object",
@@ -244,24 +473,37 @@
         },
         "keyBy": {
           "type": "string",
-          "enum": ["ip", "user", "both"],
+          "enum": [
+            "ip",
+            "user",
+            "both"
+          ],
           "default": "ip",
           "description": "How to identify clients: 'ip' (by IP address), 'user' (by authenticated user ID), or 'both'"
         },
         "store": {
           "type": "string",
-          "enum": ["memory", "cache"],
+          "enum": [
+            "memory",
+            "cache"
+          ],
           "default": "memory",
           "description": "Storage backend: 'memory' (in-memory, single-instance) or 'cache' (uses cache adapter from plugin - works with Redis, Memcached, etc.)"
         },
         "onFailure": {
           "type": "string",
-          "enum": ["fail-open", "fail-closed"],
+          "enum": [
+            "fail-open",
+            "fail-closed"
+          ],
           "default": "fail-open",
           "description": "Behavior when cache/store is unavailable: 'fail-open' (allow requests, graceful degradation) or 'fail-closed' (deny requests, more secure)"
         }
       },
-      "required": ["maxRequests", "windowMs"]
+      "required": [
+        "maxRequests",
+        "windowMs"
+      ]
     },
     "realtime": {
       "type": "object",
@@ -281,7 +523,11 @@
                 "type": "array",
                 "items": {
                   "type": "string",
-                  "enum": ["created", "updated", "deleted"]
+                  "enum": [
+                    "created",
+                    "updated",
+                    "deleted"
+                  ]
                 },
                 "description": "Which events to emit (default: all)"
               },
@@ -344,7 +590,64 @@
                 }
               }
             },
-            "required": ["name", "path"]
+            "required": [
+              "name",
+              "path"
+            ]
+          }
+        }
+      }
+    },
+    "rateLimits": {
+      "type": "object",
+      "description": "Rate limiting configuration per operation",
+      "properties": {
+        "default": {
+          "type": "object",
+          "description": "Default rate limit applied to all operations",
+          "properties": {
+            "window": {
+              "type": "string",
+              "description": "Time window (e.g., '15m', '1h', '1d')"
+            },
+            "max": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Maximum number of requests in the window"
+            }
+          },
+          "required": [
+            "window",
+            "max"
+          ]
+        },
+        "operations": {
+          "type": "object",
+          "description": "Operation-specific rate limits (overrides default)",
+          "additionalProperties": {
+            "oneOf": [
+              {
+                "type": "string",
+                "description": "Reference to a named rate limit preset"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "window": {
+                    "type": "string",
+                    "description": "Time window (e.g., '15m', '1h')"
+                  },
+                  "max": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                },
+                "required": [
+                  "window",
+                  "max"
+                ]
+              }
+            ]
           }
         }
       }
@@ -356,12 +659,220 @@
         "provider": {
           "type": "string",
           "description": "Cache provider (e.g., 'redis', 'memcache') - configured via plugins"
+        },
+        "default": {
+          "type": "object",
+          "description": "Default cache settings",
+          "properties": {
+            "ttl": {
+              "type": "string",
+              "description": "Default TTL (e.g., '5m', '1h')"
+            }
+          }
+        },
+        "operations": {
+          "type": "object",
+          "description": "Operation-specific cache configuration",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "ttl": {
+                "type": "string",
+                "description": "Cache TTL for this operation"
+              },
+              "key": {
+                "type": "string",
+                "description": "Custom cache key pattern (e.g., 'post:{id}')"
+              },
+              "invalidateOn": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Operations that invalidate this cache"
+              },
+              "enabled": {
+                "type": "boolean",
+                "description": "Enable/disable caching for this operation (default: true)"
+              }
+            }
+          }
         }
+      }
+    },
+    "monitoring": {
+      "type": "object",
+      "description": "Monitoring and observability configuration",
+      "properties": {
+        "level": {
+          "type": "string",
+          "enum": [
+            "debug",
+            "info",
+            "warn",
+            "error"
+          ],
+          "description": "Log level for monitoring (default: 'info')"
+        },
+        "sampling": {
+          "type": "object",
+          "description": "Sampling configuration for high-traffic applications",
+          "properties": {
+            "rate": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "Sample rate for requests (0-1, e.g., 0.1 = 10% of requests)"
+            },
+            "errors": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "Sample rate for errors (usually 1.0 to always track errors)"
+            }
+          }
+        },
+        "custom": {
+          "type": "array",
+          "description": "Custom metrics to register",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Metric name"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "counter",
+                  "gauge",
+                  "histogram"
+                ],
+                "description": "Metric type"
+              },
+              "description": {
+                "type": "string",
+                "description": "Metric description"
+              }
+            },
+            "required": [
+              "name",
+              "type"
+            ]
+          }
+        }
+      }
+    },
+    "config": {
+      "type": "object",
+      "description": "Configuration schema for environment variables. Provides T3-style validation at startup with type-safe access via ctx.config.",
+      "additionalProperties": {
+        "oneOf": [
+          {
+            "type": "boolean",
+            "description": "Shorthand: true = required, false = optional"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "string",
+                  "number",
+                  "boolean",
+                  "url",
+                  "email"
+                ],
+                "default": "string",
+                "description": "Value type for coercion"
+              },
+              "required": {
+                "type": "boolean",
+                "default": false,
+                "description": "Whether this config value is required"
+              },
+              "default": {
+                "description": "Default value if not provided"
+              },
+              "description": {
+                "type": "string",
+                "description": "Human-readable description for error messages"
+              },
+              "enum": {
+                "type": "array",
+                "items": {
+                  "oneOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ]
+                },
+                "description": "Allowed values"
+              },
+              "format": {
+                "type": "string",
+                "enum": [
+                  "url",
+                  "email",
+                  "uuid"
+                ],
+                "description": "Format validation (for string types)"
+              },
+              "envVar": {
+                "type": "string",
+                "description": "Override environment variable name (default: key name)"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "enums": {
+      "type": "object",
+      "description": "Named enum definitions (reusable across entities)",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "values": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Enum values"
+          },
+          "default": {
+            "type": "string",
+            "description": "Default enum value"
+          }
+        },
+        "required": [
+          "values"
+        ]
+      }
+    },
+    "types": {
+      "type": "object",
+      "description": "Reusable custom type definitions (e.g., 'Money: decimal(19, 4, min: 0)', 'Email: email(255)', 'Slug: slug(3..100)')",
+      "additionalProperties": {
+        "oneOf": [
+          {
+            "type": "string",
+            "description": "Type definition shorthand (e.g., 'decimal(19, 4, min: 0)', 'email(255)', 'slug(3..100)')"
+          },
+          {
+            "$ref": "#/definitions/schemaField"
+          }
+        ]
       }
     },
     "entities": {
       "type": "object",
-      "description": "Entity definitions (database models)",
+      "description": "Entity definitions (legacy - use 'schemas:' instead). This key is supported for backward compatibility. Prefer using 'schemas:' for new projects.",
       "additionalProperties": {
         "type": "object",
         "properties": {
@@ -369,113 +880,677 @@
             "type": "string",
             "description": "Database table name"
           },
+          "primaryKey": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Composite primary key (array of field names). For single field primary keys, use 'primary: true' in the field definition."
+          },
           "fields": {
             "type": "object",
-            "description": "Entity fields",
+            "description": "Entity fields. Supports new concise syntax (e.g., 'email: email(255)! unique', 'price: money(usd, min: 0)!', 'username: slug(3..100)! unique') or expanded object syntax. Also supports inline relations (e.g., 'author: User!', 'posts: Post[]', 'tags: Tag[] through:post_tags') and modifiers (e.g., 'readonly', 'sensitive', 'writeOnly', 'generated', 'autoUpdate'). New types: email, url, phone, slug, money(currency), decimal(p,s), int8, int16, int32, int64, uint, timestamp, timestamptz, timestamplocal, date, time, interval, json, jsonb, binary, base64, enum(values...). Examples: 'id: uuid! readonly generated', 'email: email(255)! unique', 'price: money(usd, min: 0)!', 'publishedAt: timestamp?', 'tags: string[](max: 10)'.",
+            "additionalProperties": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "New concise syntax: 'type!' (required), 'type?' (nullable), 'type(params)' (with parameters), 'type[]' (array), 'type(min..max)' (range), 'type = default' (default value). Types: string, text, email, url, phone, slug, uuid, int, int8, int16, int32, int64, uint, decimal(p,s), money(currency), float, double, boolean, date, time, timestamp, timestamptz, timestamplocal, interval, json, jsonb, binary, base64, enum(values...). Modifiers: readonly, unique, indexed, writeOnly, sensitive, generated, autoUpdate. Examples: 'email: email(255)! unique', 'price: money(usd, min: 0)!', 'username: slug(3..100)! unique', 'age: int(0..120)', 'tags: string[](max: 10)', 'createdAt: timestamp readonly = now()'"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "uuid",
+                        "string",
+                        "text",
+                        "email",
+                        "url",
+                        "phone",
+                        "slug",
+                        "number",
+                        "integer",
+                        "int",
+                        "int8",
+                        "int16",
+                        "int32",
+                        "int64",
+                        "bigint",
+                        "uint",
+                        "decimal",
+                        "money",
+                        "float",
+                        "double",
+                        "boolean",
+                        "timestamp",
+                        "timestamptz",
+                        "timestamplocal",
+                        "datetime",
+                        "datetimetz",
+                        "datetimelocal",
+                        "date",
+                        "time",
+                        "interval",
+                        "duration",
+                        "jsonb",
+                        "json",
+                        "binary",
+                        "base64",
+                        "enum"
+                      ],
+                      "description": "Field type. New types: email, url, phone, slug, money, int8, int16, int32, int64, uint, timestamptz, timestamplocal, interval, binary, base64"
+                    },
+                    "dbType": {
+                      "type": "string",
+                      "description": "PostgreSQL-specific type override (e.g., 'varchar(255)')"
+                    },
+                    "dbColumn": {
+                      "type": "string",
+                      "description": "Explicit DB column name (for snake_case mapping)"
+                    },
+                    "primary": {
+                      "oneOf": [
+                        {
+                          "type": "boolean",
+                          "description": "Primary key field (single field)"
+                        },
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "Composite primary key (array of field names)"
+                        }
+                      ]
+                    },
+                    "primaryKey": {
+                      "oneOf": [
+                        {
+                          "type": "boolean",
+                          "description": "Primary key field (single field)"
+                        },
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "Composite primary key (array of field names)"
+                        }
+                      ]
+                    },
+                    "generated": {
+                      "type": "boolean",
+                      "description": "Auto-generate value (UUID, serial, etc.)"
+                    },
+                    "nullable": {
+                      "type": "boolean",
+                      "description": "Allow null values"
+                    },
+                    "default": {
+                      "description": "Default value or function name (e.g., 'now()')"
+                    },
+                    "index": {
+                      "type": "boolean",
+                      "description": "Create index on this field"
+                    },
+                    "api": {
+                      "oneOf": [
+                        {
+                          "type": "string",
+                          "description": "API field name"
+                        },
+                        {
+                          "type": "boolean",
+                          "enum": [
+                            false
+                          ],
+                          "description": "Set to false to exclude from API"
+                        }
+                      ]
+                    },
+                    "apiFormat": {
+                      "type": "string",
+                      "description": "Format hint for API (e.g., 'date-time')"
+                    },
+                    "required": {
+                      "type": "boolean",
+                      "description": "Required field in API"
+                    },
+                    "minLength": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "maxLength": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "min": {
+                      "type": "number"
+                    },
+                    "max": {
+                      "type": "number"
+                    },
+                    "precision": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "description": "Precision for decimal type (total number of digits)"
+                    },
+                    "scale": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "Scale for decimal type (number of digits after decimal point)"
+                    },
+                    "pattern": {
+                      "type": "string",
+                      "description": "Regex pattern for validation"
+                    },
+                    "enum": {
+                      "type": "array",
+                      "description": "Allowed enum values"
+                    },
+                    "readonly": {
+                      "type": "boolean",
+                      "description": "Read-only field (excluded from create/update operations)"
+                    },
+                    "writeOnly": {
+                      "type": "boolean",
+                      "description": "Write-only field (excluded from responses, e.g., password)"
+                    },
+                    "sensitive": {
+                      "type": "boolean",
+                      "description": "Sensitive field (excluded from responses by default)"
+                    },
+                    "autoUpdate": {
+                      "type": "boolean",
+                      "description": "Auto-update field (e.g., updatedAt)"
+                    },
+                    "currency": {
+                      "type": "string",
+                      "description": "Currency code for money type (e.g., 'USD', 'EUR')"
+                    },
+                    "length": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "description": "Fixed length for string types"
+                    },
+                    "minItems": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "Minimum array items"
+                    },
+                    "maxItems": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "description": "Maximum array items"
+                    },
+                    "array": {
+                      "type": "boolean",
+                      "description": "Array type (e.g., string[])"
+                    }
+                  },
+                  "required": [
+                    "type"
+                  ]
+                }
+              ]
+            }
+          },
+          "relations": {
+            "type": "object",
+            "description": "Entity relationships. Supports shorthand syntax (e.g., 'hasMany(Post)', 'belongsTo(User)') or full object syntax. Note: Relations can also be defined inline in the 'fields:' section using entity references (e.g., 'author: User!', 'posts: Post[]'). Explicit relations in this section take precedence over inline relations.",
+            "additionalProperties": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "pattern": "^(hasMany|belongsTo|hasOne|manyToMany)\\(.+?\\)$",
+                  "description": "Shorthand relation syntax: hasMany(Entity), belongsTo(Entity), hasOne(Entity), manyToMany(Entity)"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "hasMany",
+                        "belongsTo",
+                        "hasOne",
+                        "manyToMany"
+                      ],
+                      "description": "Relation type"
+                    },
+                    "entity": {
+                      "type": "string",
+                      "description": "Target entity name (legacy, use 'target' for new syntax)"
+                    },
+                    "target": {
+                      "type": "string",
+                      "description": "Target entity name"
+                    },
+                    "foreignKey": {
+                      "type": "string",
+                      "description": "Foreign key field name (for belongsTo/hasMany)"
+                    },
+                    "references": {
+                      "type": "string",
+                      "description": "Column name in target table to reference (default: primary key)"
+                    },
+                    "through": {
+                      "type": "string",
+                      "description": "Junction table name (for manyToMany)"
+                    },
+                    "localKey": {
+                      "type": "string",
+                      "description": "Local key field (for manyToMany, legacy)"
+                    },
+                    "foreignKeyTarget": {
+                      "type": "string",
+                      "description": "Foreign key target field (for manyToMany, legacy)"
+                    },
+                    "joinColumns": {
+                      "type": "object",
+                      "description": "Custom join column names for manyToMany",
+                      "properties": {
+                        "from": {
+                          "type": "string",
+                          "description": "Column name for source entity"
+                        },
+                        "to": {
+                          "type": "string",
+                          "description": "Column name for target entity"
+                        }
+                      }
+                    },
+                    "onDelete": {
+                      "type": "string",
+                      "enum": [
+                        "cascade",
+                        "setNull",
+                        "restrict",
+                        "noAction"
+                      ],
+                      "description": "On delete behavior for belongsTo/hasMany relations"
+                    },
+                    "onUpdate": {
+                      "type": "string",
+                      "enum": [
+                        "cascade",
+                        "setNull",
+                        "restrict",
+                        "noAction"
+                      ],
+                      "description": "On update behavior for belongsTo/hasMany relations"
+                    },
+                    "indexed": {
+                      "type": "boolean",
+                      "description": "Create index on foreign key"
+                    },
+                    "nullable": {
+                      "type": "boolean",
+                      "description": "Allow null foreign key values"
+                    },
+                    "orderBy": {
+                      "oneOf": [
+                        {
+                          "type": "string",
+                          "description": "Order by clause (e.g., 'createdAt desc', 'name asc')"
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "field": {
+                              "type": "string",
+                              "description": "Field name to order by"
+                            },
+                            "direction": {
+                              "type": "string",
+                              "enum": [
+                                "asc",
+                                "desc"
+                              ],
+                              "description": "Sort direction"
+                            }
+                          },
+                          "required": [
+                            "field"
+                          ]
+                        }
+                      ],
+                      "description": "Ordering for hasMany relations"
+                    },
+                    "where": {
+                      "type": "object",
+                      "description": "Filter condition for hasMany relations (e.g., { published: true })",
+                      "additionalProperties": true
+                    },
+                    "timestamps": {
+                      "type": "boolean",
+                      "description": "Add timestamps to join table (for manyToMany)"
+                    },
+                    "fields": {
+                      "type": "object",
+                      "description": "Extra fields on join table (for manyToMany)",
+                      "additionalProperties": {
+                        "oneOf": [
+                          {
+                            "type": "string",
+                            "description": "Field type shorthand (e.g., 'integer', 'boolean default:false')"
+                          },
+                          {
+                            "$ref": "#/definitions/schemaField"
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "type"
+                  ]
+                }
+              ]
+            }
+          },
+          "validations": {
+            "type": "object",
+            "description": "Field validations (declarative). Maps field names to validation rules. Legacy format - use 'validation:' for new syntax.",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "description": "Validation rule shorthand: 'email', 'unique', 'minLength(2)', 'maxLength(100)', etc."
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "description": "Validation rule type"
+                      },
+                      "value": {
+                        "description": "Validation rule value"
+                      },
+                      "message": {
+                        "type": "string",
+                        "description": "Custom error message"
+                      }
+                    },
+                    "required": [
+                      "type"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "validation": {
+            "type": "object",
+            "description": "Validation rules (new syntax). Supports field-level and entity-level validation.",
+            "additionalProperties": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Field-level validation",
+                  "properties": {
+                    "field": {
+                      "type": "string",
+                      "description": "Field name to validate"
+                    },
+                    "rule": {
+                      "type": "string",
+                      "description": "Validation rule type (email, between, regex, etc.)"
+                    },
+                    "params": {
+                      "type": "array",
+                      "description": "Validation rule parameters"
+                    },
+                    "pattern": {
+                      "type": "string",
+                      "description": "Regex pattern (for regex rule)"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Custom error message"
+                    }
+                  },
+                  "required": [
+                    "field",
+                    "rule"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "description": "Entity-level validation",
+                  "properties": {
+                    "rule": {
+                      "type": "string",
+                      "enum": [
+                        "custom"
+                      ],
+                      "description": "Validation rule type (custom for entity-level)"
+                    },
+                    "expression": {
+                      "type": "string",
+                      "description": "Validation expression (SQL-like or custom logic)"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Custom error message"
+                    }
+                  },
+                  "required": [
+                    "rule",
+                    "expression"
+                  ]
+                }
+              ]
+            }
+          },
+          "computed": {
+            "type": "object",
+            "description": "Computed fields (virtual fields calculated from other fields)",
+            "additionalProperties": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Computed field expression (e.g., 'concat(firstName, \" \", lastName)', 'count(posts)')"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "expression": {
+                      "type": "string",
+                      "description": "Computed field expression"
+                    },
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "uuid",
+                        "string",
+                        "text",
+                        "email",
+                        "url",
+                        "phone",
+                        "slug",
+                        "number",
+                        "integer",
+                        "int",
+                        "int8",
+                        "int16",
+                        "int32",
+                        "int64",
+                        "uint",
+                        "decimal",
+                        "money",
+                        "float",
+                        "double",
+                        "boolean",
+                        "timestamp",
+                        "timestamptz",
+                        "date",
+                        "time",
+                        "json",
+                        "jsonb"
+                      ],
+                      "description": "Computed field type"
+                    },
+                    "dependsOn": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Fields this computed field depends on"
+                    }
+                  },
+                  "required": [
+                    "expression"
+                  ]
+                }
+              ]
+            }
+          },
+          "variants": {
+            "type": "object",
+            "description": "Schema variants for auto-generating DTOs (create, update, response, etc.)",
             "additionalProperties": {
               "type": "object",
               "properties": {
-                "type": {
-                  "type": "string",
-                  "enum": ["uuid", "string", "number", "boolean", "timestamp", "text", "jsonb", "integer"],
-                  "description": "Field type"
-                },
-                "dbType": {
-                  "type": "string",
-                  "description": "PostgreSQL-specific type override (e.g., 'varchar(255)')"
-                },
-                "dbColumn": {
-                  "type": "string",
-                  "description": "Explicit DB column name (for snake_case mapping)"
-                },
-                "primary": {
-                  "type": "boolean",
-                  "description": "Primary key field"
-                },
-                "generated": {
-                  "type": "boolean",
-                  "description": "Auto-generate value (UUID, serial, etc.)"
-                },
-                "nullable": {
-                  "type": "boolean",
-                  "description": "Allow null values"
-                },
-                "default": {
-                  "description": "Default value or function name (e.g., 'now()')"
-                },
-                "index": {
-                  "type": "boolean",
-                  "description": "Create index on this field"
-                },
-                "api": {
-                  "oneOf": [
-                    {
-                      "type": "string",
-                      "description": "API field name"
-                    },
-                    {
-                      "type": "boolean",
-                      "enum": [false],
-                      "description": "Set to false to exclude from API"
-                    }
-                  ]
-                },
-                "apiFormat": {
-                  "type": "string",
-                  "description": "Format hint for API (e.g., 'date-time')"
-                },
-                "required": {
-                  "type": "boolean",
-                  "description": "Required field in API"
-                },
-                "minLength": {
-                  "type": "integer",
-                  "minimum": 0
-                },
-                "maxLength": {
-                  "type": "integer",
-                  "minimum": 1
-                },
-                "min": {
-                  "type": "number"
-                },
-                "max": {
-                  "type": "number"
-                },
-                "pattern": {
-                  "type": "string",
-                  "description": "Regex pattern for validation"
-                },
-                "enum": {
-                  "type": "array",
-                  "description": "Allowed enum values"
-                }
-              },
-              "required": ["type"]
-            }
-          },
-          "indexes": {
-            "type": "array",
-            "description": "Database indexes",
-            "items": {
-              "type": "object",
-              "properties": {
-                "fields": {
+                "exclude": {
                   "type": "array",
                   "items": {
                     "type": "string"
+                  },
+                  "description": "Fields to exclude from this variant"
+                },
+                "pick": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Fields to include (if specified, only these fields are included)"
+                },
+                "override": {
+                  "type": "object",
+                  "description": "Override field definitions for this variant",
+                  "additionalProperties": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "description": "Field type shorthand (e.g., 'string(8..100)!')"
+                      },
+                      {
+                        "$ref": "#/definitions/schemaField"
+                      }
+                    ]
                   }
                 },
-                "name": {
-                  "type": "string",
-                  "description": "Index name"
-                },
-                "unique": {
+                "partial": {
                   "type": "boolean",
-                  "description": "Unique index"
+                  "description": "Make all fields optional (for update variants)"
+                },
+                "include": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Additional computed fields to include"
                 }
+              }
+            }
+          },
+          "hooks": {
+            "type": "object",
+            "description": "Entity lifecycle hooks (paths to handler files)",
+            "properties": {
+              "beforeCreate": {
+                "type": "string",
+                "description": "Path to handler file (e.g., './hooks/user.beforeCreate.ts')"
               },
-              "required": ["fields"]
+              "afterCreate": {
+                "type": "string"
+              },
+              "beforeUpdate": {
+                "type": "string"
+              },
+              "afterUpdate": {
+                "type": "string"
+              },
+              "beforeDelete": {
+                "type": "string"
+              },
+              "afterDelete": {
+                "type": "string"
+              },
+              "beforeSave": {
+                "type": "string"
+              },
+              "afterSave": {
+                "type": "string"
+              }
+            }
+          },
+          "softDelete": {
+            "type": "boolean",
+            "description": "Enable soft deletes (adds deletedAt timestamp instead of hard delete)"
+          },
+          "indexes": {
+            "type": "array",
+            "description": "Database indexes. Supports shorthand syntax (array of field names or single field name) or full object syntax.",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "array",
+                  "description": "Composite index as array of field names (e.g., [authorId, publishedAt])",
+                  "items": {
+                    "type": "string"
+                  },
+                  "minItems": 1
+                },
+                {
+                  "type": "string",
+                  "description": "Single field index (e.g., 'published')"
+                },
+                {
+                  "type": "object",
+                  "description": "Full index definition with options",
+                  "properties": {
+                    "fields": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Field names for the index"
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "Index name"
+                    },
+                    "unique": {
+                      "type": "boolean",
+                      "description": "Unique index"
+                    },
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "btree",
+                        "hash",
+                        "gin",
+                        "fulltext"
+                      ],
+                      "description": "Index type (default: btree)"
+                    },
+                    "where": {
+                      "type": "object",
+                      "description": "Partial index condition (e.g., { deletedAt: null })",
+                      "additionalProperties": true
+                    }
+                  },
+                  "required": [
+                    "fields"
+                  ]
+                }
+              ]
             }
           },
           "apiSchema": {
@@ -502,7 +1577,13 @@
                         "type": "array",
                         "items": {
                           "type": "string",
-                          "enum": ["GET", "POST", "PUT", "PATCH", "DELETE"]
+                          "enum": [
+                            "GET",
+                            "POST",
+                            "PUT",
+                            "PATCH",
+                            "DELETE"
+                          ]
                         },
                         "description": "Array of HTTP methods to generate (e.g., ['GET', 'POST'])"
                       },
@@ -602,78 +1683,434 @@
             "description": "Optional CRUD endpoint generation. Set to true to generate all CRUD endpoints, or use object for fine-grained control."
           }
         },
-        "required": ["table", "fields"]
+        "required": [
+          "table",
+          "fields"
+        ]
       }
     },
     "schemas": {
       "type": "object",
-      "description": "API schema definitions",
+      "description": "Schema definitions (preferred). Supports new concise type syntax (e.g., 'id: uuid! readonly generated', 'email: email(255)! unique', 'price: money(usd, min: 0)!', 'username: slug(3..100)! unique'). Also supports variants for auto-generating DTOs (create, update, response), computed fields, and database configuration via 'database:' section. Use 'schemas:' as the primary way to define your data models. The 'entities:' key is supported as a fallback for backward compatibility.",
       "additionalProperties": {
         "type": "object",
         "properties": {
+          "source": {
+            "type": "string",
+            "description": "Source entity/schema name. This schema is derived from the source, inheriting all fields. Use with 'fields' to override specific fields or add new ones, or with 'include' to select a subset."
+          },
+          "include": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Include only these fields from source (used with 'source'). If specified, only these fields are included."
+          },
           "fields": {
             "type": "object",
-            "description": "Schema fields",
+            "description": "Schema fields. Supports new concise syntax (e.g., 'email: email(255)! unique', 'price: money(usd, min: 0)!', 'username: slug(3..100)! unique') or expanded object syntax. Can also use inline nested types (e.g., 'author: { id: uuid!, name: string! }').",
             "additionalProperties": {
-              "type": "object",
-              "properties": {
-                "type": {
+              "oneOf": [
+                {
                   "type": "string",
-                  "enum": ["string", "number", "boolean", "integer", "array", "list", "object"],
-                  "description": "Field type"
+                  "description": "New concise syntax: 'type!' (required), 'type?' (nullable), 'type(params)' (with parameters), 'type[]' (array), 'type(min..max)' (range), 'type = default' (default value). Types: string, text, email, url, phone, slug, uuid, int, int8, int16, int32, int64, uint, decimal(p,s), money(currency), float, double, boolean, date, time, timestamp, timestamptz, timestamplocal, interval, json, jsonb, binary, base64, enum(values...). Modifiers: readonly, unique, indexed, writeOnly, sensitive, generated, autoUpdate. Examples: 'email: email(255)! unique', 'price: money(usd, min: 0)!', 'username: slug(3..100)! unique', 'age: int(0..120)', 'tags: string[](max: 10)', 'createdAt: timestamp readonly = now()'. Inline nested types: 'author: { id: uuid!, name: string! }'"
                 },
-                "required": {
-                  "type": "boolean",
-                  "description": "Required field"
-                },
-                "default": {
-                  "description": "Default value"
-                },
-                "format": {
-                  "type": "string",
-                  "description": "Format (e.g., 'date-time', 'email', 'uri')"
-                },
-                "items": {
-                  "description": "Item schema for array types",
+                {
                   "$ref": "#/definitions/schemaField"
                 },
-                "properties": {
+                {
                   "type": "object",
-                  "description": "Properties for object types",
-                  "additionalProperties": {
-                    "$ref": "#/definitions/schemaField"
+                  "description": "Inline nested type definition",
+                  "properties": {
+                    "fields": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "oneOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "$ref": "#/definitions/schemaField"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "computed": {
+            "type": "object",
+            "description": "Computed fields (virtual fields calculated from other fields or expressions)",
+            "additionalProperties": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Computed field expression (e.g., '{{firstName}} {{lastName}}', 'count(comments)', 'avg(ratings)')"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "expression": {
+                      "type": "string",
+                      "description": "Computed field expression"
+                    },
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "string",
+                        "number",
+                        "integer",
+                        "boolean",
+                        "timestamp"
+                      ],
+                      "description": "Computed field type"
+                    }
+                  },
+                  "required": [
+                    "expression"
+                  ]
+                }
+              ]
+            }
+          },
+          "variants": {
+            "$ref": "#/properties/entities/additionalProperties/properties/variants"
+          },
+          "database": {
+            "oneOf": [
+              {
+                "type": "string",
+                "description": "Shorthand: Database table name"
+              },
+              {
+                "type": "object",
+                "description": "Database-specific configuration",
+                "properties": {
+                  "table": {
+                    "type": "string",
+                    "description": "Database table name (for schemas that map to database tables)"
+                  },
+                  "indexes": {
+                    "type": "array",
+                    "description": "Database indexes",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "fields": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "unique": {
+                          "type": "boolean"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    "apis": {
+      "type": "object",
+      "description": "Protocol-specific API configurations",
+      "properties": {
+        "rest": {
+          "oneOf": [
+            {
+              "type": "object",
+              "description": "Single REST API configuration",
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "description": "Enable or disable this REST API configuration"
+                },
+                "basePath": {
+                  "type": "string",
+                  "description": "Base path prefix for all endpoints (e.g., '/api/v1')"
+                },
+                "defaultPolicy": {
+                  "type": "string",
+                  "description": "Default policy name to apply to all operations (default: 'public')"
+                },
+                "operations": {
+                  "type": "array",
+                  "description": "Operations to expose in this API. Can be operation names (strings) or objects with policy/path overrides.",
+                  "items": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "description": "Operation name (uses default policy)"
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "operation": {
+                            "type": "string",
+                            "description": "Operation name"
+                          },
+                          "policy": {
+                            "type": "string",
+                            "description": "Policy name to apply (overrides defaultPolicy)"
+                          },
+                          "path": {
+                            "type": "string",
+                            "description": "Custom path override (overrides convention-based path)"
+                          }
+                        },
+                        "required": [
+                          "operation"
+                        ]
+                      }
+                    ]
                   }
                 },
-                "min": {
-                  "type": "number",
-                  "description": "Minimum value (for numbers) or length (for strings)"
-                },
-                "max": {
-                  "type": "number",
-                  "description": "Maximum value (for numbers) or length (for strings)"
-                },
-                "pattern": {
-                  "type": "string",
-                  "description": "Regex pattern for validation"
-                },
-                "enum": {
+                "exclude": {
                   "type": "array",
-                  "description": "Allowed enum values"
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Operations to exclude from this API"
                 },
-                "$ref": {
-                  "type": "string",
-                  "description": "Reference to another schema name"
+                "include": {
+                  "oneOf": [
+                    {
+                      "type": "string",
+                      "enum": [
+                        "all"
+                      ],
+                      "description": "Include all operations"
+                    },
+                    {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Specific operations to include"
+                    }
+                  ]
+                },
+                "endpoints": {
+                  "type": "array",
+                  "description": "REST API endpoints (legacy - use operations instead)",
+                  "items": {
+                    "$ref": "#/definitions/restEndpoint"
+                  }
+                }
+              }
+            },
+            {
+              "type": "object",
+              "description": "Multiple named REST API configurations",
+              "patternProperties": {
+                "^[a-zA-Z0-9_]+$": {
+                  "type": "object",
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean",
+                      "description": "Enable or disable this REST API configuration"
+                    },
+                    "basePath": {
+                      "type": "string",
+                      "description": "Base path prefix for all endpoints in this config"
+                    },
+                    "defaultPolicy": {
+                      "type": "string",
+                      "description": "Default policy name to apply to all operations (default: 'public')"
+                    },
+                    "operations": {
+                      "type": "array",
+                      "description": "Operations to expose in this API",
+                      "items": {
+                        "oneOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "operation": {
+                                "type": "string"
+                              },
+                              "policy": {
+                                "type": "string"
+                              },
+                              "path": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "operation"
+                            ]
+                          }
+                        ]
+                      }
+                    },
+                    "exclude": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "include": {
+                      "oneOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "all"
+                          ]
+                        },
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      ]
+                    },
+                    "paths": {
+                      "type": "object",
+                      "description": "Custom path overrides per operation",
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    },
+                    "endpoints": {
+                      "type": "array",
+                      "description": "REST API endpoints (legacy - use operations instead)",
+                      "items": {
+                        "$ref": "#/definitions/restEndpoint"
+                      }
+                    }
+                  }
                 }
               }
             }
+          ]
+        },
+        "graphql": {
+          "type": "object",
+          "description": "GraphQL API configurations",
+          "patternProperties": {
+            "^[a-zA-Z0-9_]+$": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "description": "GraphQL endpoint path (e.g., '/graphql')"
+                },
+                "defaultPolicy": {
+                  "type": "string",
+                  "description": "Default policy for all operations"
+                },
+                "queries": {
+                  "type": "array",
+                  "description": "Operations to expose as Query fields",
+                  "items": {
+                    "oneOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "operation": {
+                            "type": "string"
+                          },
+                          "policy": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "operation"
+                        ]
+                      }
+                    ]
+                  }
+                },
+                "mutations": {
+                  "type": "array",
+                  "description": "Operations to expose as Mutation fields",
+                  "items": {
+                    "oneOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "operation": {
+                            "type": "string"
+                          },
+                          "policy": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "operation"
+                        ]
+                      }
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "path"
+              ]
+            }
           }
         },
-        "required": ["fields"]
+        "mcp": {
+          "type": "object",
+          "description": "MCP (Model Context Protocol) API configurations",
+          "patternProperties": {
+            "^[a-zA-Z0-9_]+$": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "MCP server name"
+                },
+                "description": {
+                  "type": "string",
+                  "description": "MCP server description"
+                },
+                "tools": {
+                  "type": "object",
+                  "description": "Operation-specific MCP tool configurations",
+                  "additionalProperties": {
+                    "type": "object",
+                    "properties": {
+                      "description": {
+                        "type": "string"
+                      },
+                      "requiresConfirmation": {
+                        "type": "boolean"
+                      }
+                    }
+                  }
+                }
+              },
+              "required": [
+                "name"
+              ]
+            }
+          }
+        }
       }
     },
     "endpoints": {
       "type": "array",
-      "description": "API endpoint definitions",
+      "description": "API endpoint definitions (deprecated - use apis.rest instead)",
       "items": {
         "type": "object",
         "properties": {
@@ -683,14 +2120,22 @@
           },
           "method": {
             "type": "string",
-            "enum": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"],
+            "enum": [
+              "GET",
+              "POST",
+              "PUT",
+              "PATCH",
+              "DELETE",
+              "OPTIONS",
+              "HEAD"
+            ],
             "description": "HTTP method"
           },
           "handler": {
             "oneOf": [
               {
                 "type": "string",
-                "description": "Handler function name (file in src/handlers without extension)"
+                "description": "Path to handler file (relative to yama.yaml directory, e.g., 'src/handlers/listPosts.ts' or './handlers/listPosts')"
               },
               {
                 "type": "object",
@@ -698,7 +2143,9 @@
                 "properties": {
                   "type": {
                     "type": "string",
-                    "enum": ["query"],
+                    "enum": [
+                      "query"
+                    ],
                     "description": "Handler type"
                   },
                   "entity": {
@@ -717,7 +2164,14 @@
                         },
                         "operator": {
                           "type": "string",
-                          "enum": ["eq", "ilike", "gt", "gte", "lt", "lte"],
+                          "enum": [
+                            "eq",
+                            "ilike",
+                            "gt",
+                            "gte",
+                            "lt",
+                            "lte"
+                          ],
                           "description": "Filter operator"
                         },
                         "param": {
@@ -725,7 +2179,11 @@
                           "description": "Parameter reference (e.g., 'query.search' or 'params.id')"
                         }
                       },
-                      "required": ["field", "operator", "param"]
+                      "required": [
+                        "field",
+                        "operator",
+                        "param"
+                      ]
                     }
                   },
                   "pagination": {
@@ -740,34 +2198,62 @@
                         "properties": {
                           "type": {
                             "type": "string",
-                            "enum": ["offset", "page", "cursor"],
+                            "enum": [
+                              "offset",
+                              "page",
+                              "cursor"
+                            ],
                             "description": "Pagination type (default: 'offset')"
                           },
                           "limit": {
                             "oneOf": [
-                              {"type": "string", "description": "Parameter reference (e.g., 'query.limit')"},
-                              {"type": "number", "description": "Direct limit value"}
+                              {
+                                "type": "string",
+                                "description": "Parameter reference (e.g., 'query.limit')"
+                              },
+                              {
+                                "type": "number",
+                                "description": "Direct limit value"
+                              }
                             ],
                             "description": "Number of items per page (default: 20)"
                           },
                           "offset": {
                             "oneOf": [
-                              {"type": "string", "description": "Parameter reference (e.g., 'query.offset')"},
-                              {"type": "number", "description": "Direct offset value"}
+                              {
+                                "type": "string",
+                                "description": "Parameter reference (e.g., 'query.offset')"
+                              },
+                              {
+                                "type": "number",
+                                "description": "Direct offset value"
+                              }
                             ],
                             "description": "Offset for offset-based pagination"
                           },
                           "page": {
                             "oneOf": [
-                              {"type": "string", "description": "Parameter reference (e.g., 'query.page')"},
-                              {"type": "number", "description": "Direct page number (1-indexed)"}
+                              {
+                                "type": "string",
+                                "description": "Parameter reference (e.g., 'query.page')"
+                              },
+                              {
+                                "type": "number",
+                                "description": "Direct page number (1-indexed)"
+                              }
                             ],
                             "description": "Page number for page-based pagination"
                           },
                           "pageSize": {
                             "oneOf": [
-                              {"type": "string", "description": "Parameter reference (e.g., 'query.pageSize')"},
-                              {"type": "number", "description": "Direct page size value (default: 20)"}
+                              {
+                                "type": "string",
+                                "description": "Parameter reference (e.g., 'query.pageSize')"
+                              },
+                              {
+                                "type": "number",
+                                "description": "Direct page size value (default: 20)"
+                              }
                             ],
                             "description": "Number of items per page for page-based pagination"
                           },
@@ -781,14 +2267,23 @@
                           },
                           "direction": {
                             "type": "string",
-                            "enum": ["forward", "backward"],
+                            "enum": [
+                              "forward",
+                              "backward"
+                            ],
                             "description": "Direction for cursor pagination (default: 'forward')"
                           },
                           "metadata": {
                             "type": "array",
                             "items": {
                               "type": "string",
-                              "enum": ["total", "hasNext", "hasPrev", "nextCursor", "prevCursor"]
+                              "enum": [
+                                "total",
+                                "hasNext",
+                                "hasPrev",
+                                "nextCursor",
+                                "prevCursor"
+                              ]
                             },
                             "description": "Specific metadata fields to include (default: all fields included)"
                           }
@@ -807,11 +2302,16 @@
                           },
                           "direction": {
                             "type": "string",
-                            "enum": ["asc", "desc"],
+                            "enum": [
+                              "asc",
+                              "desc"
+                            ],
                             "description": "Sort direction"
                           }
                         },
-                        "required": ["field"]
+                        "required": [
+                          "field"
+                        ]
                       },
                       {
                         "type": "string",
@@ -820,7 +2320,10 @@
                     ]
                   }
                 },
-                "required": ["type", "entity"]
+                "required": [
+                  "type",
+                  "entity"
+                ]
               }
             ]
           },
@@ -843,24 +2346,164 @@
             }
           },
           "body": {
-            "type": "object",
-            "properties": {
-              "type": {
+            "oneOf": [
+              {
                 "type": "string",
-                "description": "Schema name for request body"
+                "pattern": "^[A-Za-z_][A-Za-z0-9_]*(\\[\\])?$",
+                "description": "Shorthand: Schema name as string (e.g., 'Post', 'Post[]')"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^[A-Za-z_][A-Za-z0-9_]*(\\[\\])?$",
+                        "description": "Schema name reference (e.g., 'Post', 'Post[]')"
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "object",
+                          "array",
+                          "string",
+                          "number",
+                          "boolean",
+                          "integer"
+                        ]
+                      }
+                    ]
+                  },
+                  "fields": {
+                    "type": "object",
+                    "description": "Schema fields (supports shorthand syntax)",
+                    "additionalProperties": {
+                      "oneOf": [
+                        {
+                          "type": "string",
+                          "description": "Shorthand syntax: 'type!', 'type?', 'type format:format', etc."
+                        },
+                        {
+                          "$ref": "#/definitions/schemaField"
+                        }
+                      ]
+                    }
+                  },
+                  "properties": {
+                    "type": "object",
+                    "description": "Deprecated: Use fields instead",
+                    "additionalProperties": {
+                      "$ref": "#/definitions/schemaField"
+                    }
+                  },
+                  "items": {
+                    "$ref": "#/definitions/schemaField"
+                  },
+                  "required": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "format": {
+                    "type": "string"
+                  },
+                  "nullable": {
+                    "type": "boolean"
+                  },
+                  "default": {
+                    "description": "Default value"
+                  },
+                  "min": {
+                    "type": "number"
+                  },
+                  "max": {
+                    "type": "number"
+                  },
+                  "pattern": {
+                    "type": "string"
+                  },
+                  "enum": {
+                    "type": "array"
+                  }
+                },
+                "description": "Request body schema. Can be a schema reference (type: 'Post') or full schema definition with fields:."
               }
-            },
-            "required": ["type"]
+            ],
+            "description": "Request body schema. Can be a string (shorthand), schema reference object, or full schema definition with fields:."
           },
           "response": {
-            "type": "object",
-            "properties": {
-              "type": {
+            "oneOf": [
+              {
                 "type": "string",
-                "description": "Schema name for response"
+                "pattern": "^[A-Za-z_][A-Za-z0-9_]*(\\[\\])?$",
+                "description": "Shorthand: Schema name as string (e.g., 'Post', 'Post[]')"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^[A-Za-z_][A-Za-z0-9_]*(\\[\\])?$",
+                        "description": "Schema name reference (e.g., 'Post', 'Post[]')"
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "object",
+                          "array",
+                          "string",
+                          "number",
+                          "boolean",
+                          "integer"
+                        ]
+                      }
+                    ]
+                  },
+                  "properties": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "$ref": "#/definitions/schemaField"
+                    }
+                  },
+                  "items": {
+                    "$ref": "#/definitions/schemaField"
+                  },
+                  "required": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "format": {
+                    "type": "string"
+                  },
+                  "nullable": {
+                    "type": "boolean"
+                  },
+                  "default": {
+                    "description": "Default value"
+                  },
+                  "min": {
+                    "type": "number"
+                  },
+                  "max": {
+                    "type": "number"
+                  },
+                  "pattern": {
+                    "type": "string"
+                  },
+                  "enum": {
+                    "type": "array"
+                  }
+                },
+                "description": "Response schema. Can be a schema reference (type: 'Post') or full schema definition (type: 'object' with properties)."
               }
-            },
-            "required": ["type"]
+            ],
+            "description": "Response schema. Can be a string (shorthand), schema reference object, or full schema definition."
           },
           "auth": {
             "type": "object",
@@ -909,14 +2552,24 @@
               },
               "keyBy": {
                 "type": "string",
-                "enum": ["ip", "user", "both"],
+                "enum": [
+                  "ip",
+                  "user",
+                  "both"
+                ],
                 "description": "How to identify clients (overrides global setting)"
               }
             },
-            "required": ["maxRequests", "windowMs"]
+            "required": [
+              "maxRequests",
+              "windowMs"
+            ]
           }
         },
-        "required": ["path", "method"]
+        "required": [
+          "path",
+          "method"
+        ]
       }
     }
   },
@@ -925,8 +2578,26 @@
       "type": "object",
       "properties": {
         "type": {
-          "type": "string",
-          "enum": ["string", "number", "boolean", "integer", "array", "list", "object"]
+          "oneOf": [
+            {
+              "type": "string",
+              "enum": [
+                "uuid",
+                "string",
+                "number",
+                "boolean",
+                "integer",
+                "array",
+                "list",
+                "object"
+              ]
+            },
+            {
+              "type": "string",
+              "pattern": "^[A-Z][A-Za-z0-9_]*(\\[\\])?$",
+              "description": "Schema name reference (e.g., 'Author', 'Post', 'Author[]')"
+            }
+          ]
         },
         "required": {
           "type": "boolean"
@@ -935,7 +2606,12 @@
           "description": "Default value"
         },
         "format": {
-          "type": "string"
+          "type": "string",
+          "description": "Format hint (e.g., 'uuid', 'email', 'date-time')"
+        },
+        "validator": {
+          "type": "string",
+          "description": "Custom validator function name"
         },
         "items": {
           "$ref": "#/definitions/schemaField"
@@ -952,6 +2628,14 @@
         "max": {
           "type": "number"
         },
+        "minLength": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "maxLength": {
+          "type": "integer",
+          "minimum": 1
+        },
         "pattern": {
           "type": "string"
         },
@@ -959,10 +2643,413 @@
           "type": "array"
         },
         "$ref": {
-          "type": "string"
+          "type": "string",
+          "description": "Deprecated: Use type with schema name instead"
         }
       }
+    },
+    "restEndpoint": {
+      "type": "object",
+      "description": "REST API endpoint definition (structured format)",
+      "properties": {
+        "method": {
+          "type": "string",
+          "enum": [
+            "GET",
+            "POST",
+            "PUT",
+            "PATCH",
+            "DELETE",
+            "OPTIONS",
+            "HEAD"
+          ],
+          "description": "HTTP method"
+        },
+        "path": {
+          "type": "string",
+          "description": "Endpoint path (e.g., '/todos' or '/todos/:id')"
+        },
+        "handler": {
+          "oneOf": [
+            {
+              "type": "string",
+              "description": "Path to handler file (relative to yama.yaml directory, e.g., 'src/handlers/listPosts.ts' or './handlers/listPosts')"
+            },
+            {
+              "type": "object",
+              "description": "Built-in handler configuration",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "query"
+                  ],
+                  "description": "Handler type"
+                },
+                "entity": {
+                  "type": "string",
+                  "description": "Entity name to query"
+                },
+                "filters": {
+                  "type": "array",
+                  "description": "Query filters",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "field": {
+                        "type": "string",
+                        "description": "Entity field name to filter on"
+                      },
+                      "operator": {
+                        "type": "string",
+                        "enum": [
+                          "eq",
+                          "ilike",
+                          "gt",
+                          "gte",
+                          "lt",
+                          "lte"
+                        ],
+                        "description": "Filter operator"
+                      },
+                      "param": {
+                        "type": "string",
+                        "description": "Parameter reference (e.g., 'query.search' or 'params.id')"
+                      }
+                    },
+                    "required": [
+                      "field",
+                      "operator",
+                      "param"
+                    ]
+                  }
+                },
+                "pagination": {
+                  "oneOf": [
+                    {
+                      "type": "boolean",
+                      "description": "Enable pagination with defaults (offset type, limit=20)"
+                    },
+                    {
+                      "type": "object",
+                      "description": "Pagination configuration",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "offset",
+                            "page",
+                            "cursor"
+                          ],
+                          "description": "Pagination type (default: 'offset')"
+                        },
+                        "limit": {
+                          "oneOf": [
+                            {
+                              "type": "string",
+                              "description": "Parameter reference (e.g., 'query.limit')"
+                            },
+                            {
+                              "type": "number",
+                              "description": "Direct limit value"
+                            }
+                          ],
+                          "description": "Number of items per page (default: 20)"
+                        },
+                        "offset": {
+                          "oneOf": [
+                            {
+                              "type": "string",
+                              "description": "Parameter reference (e.g., 'query.offset')"
+                            },
+                            {
+                              "type": "number",
+                              "description": "Direct offset value"
+                            }
+                          ],
+                          "description": "Offset for offset-based pagination"
+                        },
+                        "page": {
+                          "oneOf": [
+                            {
+                              "type": "string",
+                              "description": "Parameter reference (e.g., 'query.page')"
+                            },
+                            {
+                              "type": "number",
+                              "description": "Direct page number (1-indexed)"
+                            }
+                          ],
+                          "description": "Page number for page-based pagination"
+                        },
+                        "pageSize": {
+                          "oneOf": [
+                            {
+                              "type": "string",
+                              "description": "Parameter reference (e.g., 'query.pageSize')"
+                            },
+                            {
+                              "type": "number",
+                              "description": "Direct page size value (default: 20)"
+                            }
+                          ],
+                          "description": "Number of items per page for page-based pagination"
+                        },
+                        "cursor": {
+                          "type": "string",
+                          "description": "Parameter reference for cursor value (e.g., 'query.cursor')"
+                        },
+                        "cursorField": {
+                          "type": "string",
+                          "description": "Field to use for cursor pagination (default: primary key)"
+                        },
+                        "direction": {
+                          "type": "string",
+                          "enum": [
+                            "forward",
+                            "backward"
+                          ],
+                          "description": "Direction for cursor pagination (default: 'forward')"
+                        },
+                        "metadata": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "total",
+                              "hasNext",
+                              "hasPrev",
+                              "nextCursor",
+                              "prevCursor"
+                            ]
+                          },
+                          "description": "Specific metadata fields to include (default: all fields included)"
+                        }
+                      }
+                    }
+                  ]
+                },
+                "orderBy": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "field": {
+                          "type": "string",
+                          "description": "Field name to order by"
+                        },
+                        "direction": {
+                          "type": "string",
+                          "enum": [
+                            "asc",
+                            "desc"
+                          ],
+                          "description": "Sort direction"
+                        }
+                      },
+                      "required": [
+                        "field"
+                      ]
+                    },
+                    {
+                      "type": "string",
+                      "description": "Parameter reference (e.g., 'query.orderBy')"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "type",
+                "entity"
+              ]
+            }
+          ]
+        },
+        "description": {
+          "type": "string",
+          "description": "Endpoint description"
+        },
+        "params": {
+          "type": "object",
+          "description": "Path parameters",
+          "additionalProperties": {
+            "oneOf": [
+              {
+                "type": "string",
+                "description": "Shorthand syntax: 'type!', 'type?', 'type format:format', etc."
+              },
+              {
+                "$ref": "#/definitions/schemaField"
+              }
+            ]
+          }
+        },
+        "query": {
+          "type": "object",
+          "description": "Query parameters",
+          "additionalProperties": {
+            "oneOf": [
+              {
+                "type": "string",
+                "description": "Shorthand syntax: 'type!', 'type?', 'type format:format', etc."
+              },
+              {
+                "$ref": "#/definitions/schemaField"
+              }
+            ]
+          }
+        },
+        "body": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z0-9_]*(\\[\\])?$",
+              "description": "Shorthand: Schema name as string (e.g., 'Post', 'Post[]')"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "oneOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^[A-Za-z_][A-Za-z0-9_]*(\\[\\])?$",
+                      "description": "Schema name reference (e.g., 'Post', 'Post[]')"
+                    },
+                    {
+                      "type": "string",
+                      "enum": [
+                        "object",
+                        "array",
+                        "string",
+                        "number",
+                        "boolean",
+                        "integer"
+                      ]
+                    }
+                  ]
+                },
+                "fields": {
+                  "type": "object",
+                  "description": "Schema fields (supports shorthand syntax)",
+                  "additionalProperties": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "description": "Shorthand syntax: 'type!', 'type?', 'type format:format', etc."
+                      },
+                      {
+                        "$ref": "#/definitions/schemaField"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          ],
+          "description": "Request body schema"
+        },
+        "response": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z0-9_]*(\\[\\])?$",
+              "description": "Shorthand: Schema name as string (e.g., 'Post', 'Post[]')"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "oneOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^[A-Za-z_][A-Za-z0-9_]*(\\[\\])?$",
+                      "description": "Schema name reference (e.g., 'Post', 'Post[]')"
+                    },
+                    {
+                      "type": "string",
+                      "enum": [
+                        "object",
+                        "array",
+                        "string",
+                        "number",
+                        "boolean",
+                        "integer"
+                      ]
+                    }
+                  ]
+                }
+              },
+              "description": "Response schema"
+            }
+          ],
+          "description": "Response schema"
+        },
+        "auth": {
+          "type": "object",
+          "properties": {
+            "required": {
+              "type": "boolean",
+              "description": "Authentication required"
+            },
+            "roles": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Required roles"
+            },
+            "permissions": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Required permissions"
+            },
+            "handler": {
+              "type": "string",
+              "description": "Custom authorization handler function name"
+            },
+            "provider": {
+              "type": "string",
+              "description": "Provider type or name to use"
+            }
+          }
+        },
+        "rateLimit": {
+          "type": "object",
+          "description": "Per-endpoint rate limiting configuration",
+          "properties": {
+            "maxRequests": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Maximum number of requests allowed in the window"
+            },
+            "windowMs": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Time window in milliseconds"
+            },
+            "keyBy": {
+              "type": "string",
+              "enum": [
+                "ip",
+                "user",
+                "both"
+              ],
+              "description": "How to identify clients"
+            }
+          },
+          "required": [
+            "maxRequests",
+            "windowMs"
+          ]
+        }
+      },
+      "required": [
+        "method",
+        "path"
+      ]
     }
   }
 }
-

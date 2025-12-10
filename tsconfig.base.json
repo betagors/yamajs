@@ -13,10 +13,17 @@
     "baseUrl": ".",
     "paths": {
       "@betagors/yama-core": ["packages/core/src"],
-      "@betagors/yama-runtime-node": ["packages/runtime-node/src"],
+      "@betagors/yama-node": ["packages/node/src"],
       "@betagors/yama-sdk": ["packages/sdk/src"],
       "@betagors/yama-openapi": ["packages/openapi/src"],
-      "@betagors/yama": ["packages/yama/src"]
+      "@betagors/yama": ["packages/yama/src"],
+      "@betagors/yama-docker": ["packages/docker/src"],
+      "@betagors/yama-ci": ["packages/ci/src"],
+      "@betagors/yama-cli": ["packages/cli/src"],
+      "@betagors/yama-postgres": ["packages/postgres/src"],
+      "@betagors/yama-fastify": ["packages/fastify/src"],
+      "@betagors/yama-errors": ["packages/errors/src"],
+      "@betagors/yama-adminx": ["packages/adminx/src"]
     }
   }
 }

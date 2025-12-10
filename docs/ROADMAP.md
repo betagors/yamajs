@@ -760,29 +760,42 @@ plugins:
 
 ---
 
-##### 3.4 SMTP Plugin (`@betagors/yama-email-smtp`)
+##### 3.4 SMTP Plugin (`@betagors/yama-smtp`)
 **Priority: Medium | TIER 2**
 
-Generic SMTP email plugin.
+Generic SMTP email plugin with Mailpit support for local development.
 
 **Implementation:**
 - SMTP server connection
 - TLS/SSL support
 - Authentication support
 - Multiple SMTP providers
+- Mailpit auto-detection (zero-config local development)
+- HTML and plain text support
+- Attachments
+- Batch sending
 
 **Example Configuration:**
 ```yaml
 plugins:
-  "@betagors/yama-email-smtp":
-    host: smtp.example.com
-    port: 587
-    secure: false
-    auth:
-      user: ${SMTP_USER}
-      pass: ${SMTP_PASSWORD}
+  "@betagors/yama-smtp":
+    host: localhost  # Auto-detects Mailpit on port 1025
+    port: 1025
     from: noreply@example.com
+    # Production:
+    # host: smtp.example.com
+    # port: 587
+    # secure: false
+    # auth:
+    #   user: ${SMTP_USER}
+    #   pass: ${SMTP_PASSWORD}
 ```
+
+**Mailpit Auto-Detection:**
+When `host` is `localhost` and `port` is `1025`, the plugin automatically configures for Mailpit:
+- Skips authentication (not required for Mailpit)
+- Sets `secure: false`
+- Skips connection verification for faster startup
 
 ---
 
@@ -2025,7 +2038,7 @@ Web-based plugin directory and marketplace.
 
 1. `@betagors/yama-tracing` - Distributed tracing
 2. `@betagors/yama-email-ses` - AWS SES email plugin
-3. `@betagors/yama-email-smtp` - Generic SMTP plugin
+3. `@betagors/yama-smtp` - Generic SMTP plugin
 4. Payment plugins (Stripe, PayPal)
 5. Additional auth providers (Clerk, Auth0, Supabase)
 6. Additional database adapters (MySQL, SQLite)

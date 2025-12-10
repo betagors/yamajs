@@ -1,0 +1,76 @@
+# Runtime Compatibility (Node, Bun, Deno, Edge, future runtimes)
+
+This document codifies how Yama JS stays portable across runtimes today and as new “powerful” runtimes emerge.
+
+## Principles
+
+- ESM-only surface (`"type": "module"`, `exports.import/default/types` → ESM + DTS).
+- Web/WinterCG-first APIs: `fetch`, `Request/Response`, `URL`, `TextEncoder/Decoder`, `crypto.subtle`, `Blob`, `ReadableStream`, `setTimeout`.
+- Capability detection, not runtime sniffing (feature flags > `process` checks).
+- Dependency injection for host services: fetch, crypto, storage/cache, logging.
+- Optional acceleration layers (Wasm/native) must be optional and fall back to the TypeScript core.
+- No side effects at import time; explicit initialization when setup is required.
+
+## Supported runtimes (intent)
+
+- Node 18+ (ESM)
+- Bun (latest)
+- Deno (npm mode today; `jsr:` imports when published)
+- Edge-style runtimes that follow the WinterCG minimum common API (e.g., Workers/Workerd)
+
+## Package & build contract
+
+- ESM only; no CommonJS entrypoints.
+- Neutral build: `platform: "neutral"`, `target: "es2022"` (or newer), tree-shakeable.
+- `tsconfig`: `moduleResolution: "bundler"`, `module: "esnext"`, `lib: ["es2022", "dom", "dom.iterable"]`, `types: []` (avoid leaking Node types).
+- Keep dependencies minimal; avoid Node-only deps in core packages.
+- Do not bundle polyfills; if a host lacks an API, let the consumer polyfill or inject.
+
+## Dependency injection & adapters
+
+- Accept injected implementations for:
+  - `fetch`/HTTP
+  - `crypto` (prefer `crypto.subtle`; allow injected primitives if absent)
+  - Storage/cache (in-memory default; optional adapters for fs, Deno KV, edge caches, etc.)
+  - Time/clock if precision matters
+- Provide runtime-specific adapters as optional modules; never hard-require Node/Bun/Deno globals.
+- Fail fast with clear errors when a required capability is missing.
+
+## Optional acceleration (Wasm/native)
+
+- Keep the TypeScript core as the baseline path.
+- Wasm (e.g., Rust → `wasm32-unknown-unknown`) is optional:
+  - Host provides networking (`fetch`); Wasm handles CPU-heavy work only.
+  - If Wasm fails to load, automatically fall back to the TS core.
+- Native binaries (if ever added) must remain opt-in and behind the same public interface.
+
+## Publishing & imports
+
+- npm/pnpm/Yarn/Bun: `@betagors/yama-*`
+- Deno (npm mode): `npm:@betagors/yama-*`
+- Deno (JSR): `jsr:@betagors/yama-*` (after JSR publish)
+- `deno.json` example:
+
+```json
+{
+  "imports": {
+    "@betagors/yama-core": "npm:@betagors/yama-core"
+  }
+}
+```
+
+## Testing & CI expectations
+
+- Matrix smoke tests: Node LTS, Bun, Deno.
+- Each runtime: import the package, run a minimal hot path, and ensure no Node globals are required.
+- Edge/Workers smoke (where feasible): basic import + `fetch` call to catch sandbox issues.
+- Lint/type checks guard against Node globals in shared code.
+
+## Contribution checklist
+
+- No new Node-only APIs in shared code; if unavoidable, hide behind an adapter and keep the core path web/WinterCG-safe.
+- Keep exports ESM-only and tree-shakeable; avoid bundler-specific magic.
+- Document any new required host capability.
+- Preserve TS fallback when adding acceleration.
+- Add/extend matrix smoke tests when touching runtime-sensitive areas.
+

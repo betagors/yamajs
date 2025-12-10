@@ -15,7 +15,7 @@ npm install @betagors/yama-fastify fastify
 
 ## Usage
 
-The adapter is typically used internally by `@betagors/yama-runtime-node`, but you can also use it directly:
+The adapter is typically used internally by `@betagors/yama-node`, but you can also use it directly:
 
 ```typescript
 import { createFastifyAdapter } from '@betagors/yama-fastify';
@@ -45,7 +45,7 @@ await adapter.start(server, 3000, '0.0.0.0');
 
 ## Integration with Yama Runtime
 
-When using `@betagors/yama-runtime-node`, the Fastify adapter is automatically registered and used. You don't need to manually set it up:
+When using `@betagors/yama-node`, the Fastify adapter is automatically registered and used. You don't need to manually set it up:
 
 ```yaml
 # yama.yaml

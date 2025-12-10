@@ -27,8 +27,9 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "dev": "tsc -w -p tsconfig.build.json",
-    "lint": "echo \"no lint yet\"",
-    "test": "echo \"no tests yet\"",
+    "lint": "eslint . --ext .ts,.tsx",
+    "lint:fix": "eslint . --ext .ts,.tsx --fix",
+    "test": "vitest",
     "test:watch": "vitest --watch",
     "test:coverage": "vitest --coverage",
     "clean": "rimraf dist"
@@ -36,6 +37,7 @@
   "devDependencies": {
     "rimraf": "^5.0.0",
     "@types/node": "^20.0.0",
+    "@vitest/coverage-v8": "^1.0.0",
     "vitest": "^1.0.0"
   },
   "engines": {

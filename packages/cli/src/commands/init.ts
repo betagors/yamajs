@@ -200,12 +200,10 @@ ${yamlContent}`;
   // Create example handler
   const exampleHandlerPath = join(handlersDir, "getExamples.ts");
   if (!existsSync(exampleHandlerPath)) {
-    const handlerContent = `import type { HttpRequest, HttpResponse } from "@betagors/yama-core";
-import type { Example } from "@gen/types";
+    const handlerContent = `import type { GetExamplesHandlerContext, Example } from "@yama/gen";
 
 export async function getExamples(
-  request: HttpRequest,
-  reply: HttpResponse
+  context: GetExamplesHandlerContext
 ): Promise<Example> {
   return {
     id: "1",
@@ -352,7 +350,7 @@ export async function getExamples(
 
   console.log("\n✨ Yama project initialized!");
   console.log("\nNext steps:");
-  console.log("  1. Install dependencies: npm install @betagors/yama-runtime-node");
+  console.log("  1. Install dependencies: npm install @betagors/yama-node");
   console.log("  2. Start dev server: yama dev");
   console.log("  3. Generate types: yama generate");
 }

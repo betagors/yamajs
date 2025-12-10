@@ -1,4 +1,4 @@
-import type { Model } from "./model";
+import type { Model } from "./model.js";
 /**
  * Result of comparing two models
  */

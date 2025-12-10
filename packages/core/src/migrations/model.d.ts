@@ -1,4 +1,4 @@
-import type { YamaEntities } from "../entities";
+import type { YamaEntities } from "../entities.js";
 /**
  * Represents the schema state of the database
  */

@@ -1,0 +1,6 @@
+{
+  "imports": {
+    "@betagors/yama-core": "npm:@betagors/yama-core"
+  }
+}
+

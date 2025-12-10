@@ -29,9 +29,10 @@
   ],
   "license": "MPL-2.0",
   "scripts": {
-    "build": "tsc -p tsconfig.build.json && node scripts/build.mjs",
+    "build": "node scripts/build.mjs",
     "dev": "tsc -w -p tsconfig.build.json",
-    "lint": "echo \"no lint yet\"",
+    "lint": "eslint . --ext .ts,.tsx",
+    "lint:fix": "eslint . --ext .ts,.tsx --fix",
     "test": "echo \"no tests yet\"",
     "clean": "rimraf dist",
     "link": "pnpm link --global",
@@ -41,10 +42,12 @@
   },
   "dependencies": {
     "@betagors/yama-core": "workspace:*",
+    "@betagors/yama-errors": "workspace:*",
     "@betagors/yama-openapi": "workspace:*",
     "@betagors/yama-postgres": "workspace:*",
-    "@betagors/yama-runtime-node": "workspace:*",
+    "@betagors/yama-node": "workspace:*",
     "@betagors/yama-sdk": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.0.4",
     "boxen": "^8.0.1",
     "chalk": "^5.3.0",
     "chokidar": "^4.0.0",
@@ -53,16 +56,19 @@
     "inquirer": "^10.2.2",
     "js-yaml": "^4.1.1",
     "ora": "^8.1.1",
-    "table": "^6.8.1"
+    "semver": "^7.7.3",
+    "table": "^6.8.1",
+    "zod": "^3.23.8",
+    "zod-to-json-schema": "^3.25.0"
   },
   "devDependencies": {
     "@types/inquirer": "^9.0.7",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^20.19.25",
+    "@types/semver": "^7.5.8",
     "esbuild": "^0.27.0",
     "rimraf": "^5.0.0",
     "ts-node": "^10.9.2",
-    "tsx": "^4.7.0",
     "typescript": "^5.9.2"
   },
   "engines": {

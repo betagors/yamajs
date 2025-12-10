@@ -1,0 +1,67 @@
+{
+  "name": "@betagors/yama-logging",
+  "version": "0.1.0-alpha.0",
+  "type": "module",
+  "description": "Yama logging plugin with console, file, and S3 transports",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/betagors/yama.git",
+    "directory": "packages/logging"
+  },
+  "keywords": [
+    "yama",
+    "logging",
+    "logger",
+    "log",
+    "console",
+    "file",
+    "s3",
+    "plugin"
+  ],
+  "license": "MPL-2.0",
+  "yama": {
+    "pluginApi": "1.0",
+    "yamaCore": "^0.1.0",
+    "category": "logging",
+    "entryPoint": "./dist/plugin.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsc -w -p tsconfig.build.json",
+    "lint": "eslint . --ext .ts,.tsx",
+    "lint:fix": "eslint . --ext .ts,.tsx --fix",
+    "test": "vitest",
+    "test:watch": "vitest --watch",
+    "test:coverage": "vitest --coverage",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "@betagors/yama-core": "workspace:*"
+  },
+  "devDependencies": {
+    "rimraf": "^5.0.0",
+    "@types/node": "^20.0.0",
+    "@vitest/coverage-v8": "^1.0.0",
+    "vitest": "^1.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
+
+
+
+
+
+
+
+
+

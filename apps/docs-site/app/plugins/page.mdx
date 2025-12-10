@@ -1,0 +1,67 @@
+# Plugins
+
+Extend Yama with plugins for databases, storage, caching, and more.
+
+<Cards>
+  <Card title="Official Plugins" href="/plugins/official">
+    Plugins maintained by the Yama team
+  </Card>
+</Cards>
+
+## Installing Plugins
+
+Install a plugin using npm or pnpm:
+
+```bash
+pnpm add @betagors/yama-postgres
+```
+
+Configure in `yama.yaml`:
+
+```yaml
+plugins:
+  - name: "@betagors/yama-postgres"
+    config:
+      url: ${DATABASE_URL}
+```
+
+## Plugin Types
+
+### Database Adapters
+Connect to different databases:
+- `@betagors/yama-postgres` — PostgreSQL
+- `@betagors/yama-pglite` — PGLite (embedded)
+
+### Storage
+File and object storage:
+- `@betagors/yama-s3` — AWS S3
+
+### Caching
+Caching and session storage:
+- `@betagors/yama-redis` — Redis
+
+### Realtime
+Live updates and subscriptions:
+- `@betagors/yama-realtime` — WebSocket realtime
+
+## Using Plugins
+
+Access plugins in your handlers:
+
+```typescript
+export async function uploadFile(context: HandlerContext) {
+  const { s3 } = context.services;
+  
+  const url = await s3.upload({
+    bucket: 'my-bucket',
+    key: 'file.pdf',
+    body: context.request.body,
+  });
+  
+  return { url };
+}
+```
+
+## Creating Plugins
+
+See the [plugin development guide](https://github.com/betagors/yamajs/blob/main/docs/PLUGIN_DEVELOPMENT.md) for creating custom plugins.

@@ -1,0 +1,12 @@
+{
+  "yaml": {
+    "schemas": {
+      "../../packages/cli/src/yama.schema.json": [
+        "yama.yaml",
+        "yama.yml",
+        "*.yama.yaml",
+        "*.yama.yml"
+      ]
+    }
+  }
+}

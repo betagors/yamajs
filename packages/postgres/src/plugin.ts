@@ -1,4 +1,4 @@
-import type { YamaPlugin } from "@betagors/yama-core";
+import type { YamaPlugin, PluginContext } from "@betagors/yama-core";
 import { registerDatabaseAdapter } from "@betagors/yama-core";
 import { postgresqlAdapter } from "./adapter";
 import {
@@ -34,12 +34,12 @@ const plugin: YamaPlugin = {
   pluginApi: "1.0",
   yamaCore: "^0.1.0",
 
-  async init(opts?: Record<string, unknown>) {
+  async init(opts: Record<string, unknown>, context: PluginContext) {
     // Register the database adapter
     registerDatabaseAdapter("postgresql", () => postgresqlAdapter);
 
-    // Return plugin API
-    return {
+    // Register database service in context
+    const pluginApi = {
       adapter: postgresqlAdapter,
       client: {
         initDatabase,
@@ -67,6 +67,22 @@ const plugin: YamaPlugin = {
         restore: restoreFromSnapshot,
         delete: deleteSnapshot,
         list: listSnapshots,
+      },
+    };
+
+    // Register as database service in context
+    context.registerService("database", pluginApi);
+    context.logger.info(`Registered database service for @betagors/yama-postgres`);
+
+    return pluginApi;
+  },
+
+  async onHealthCheck() {
+    // Basic health check - in a real implementation, test database connection
+    return {
+      healthy: true,
+      details: {
+        adapter: "postgresql",
       },
     };
   },

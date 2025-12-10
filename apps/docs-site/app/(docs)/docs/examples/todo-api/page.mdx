@@ -1,0 +1,319 @@
+# Example: Todo API
+
+A complete REST API for managing todos using Yama, PostgreSQL, and Fastify.
+
+## Overview
+
+This example demonstrates:
+- CRUD operations (Create, Read, Update, Delete)
+- Database migrations
+- Request validation
+- API testing
+
+## Project Setup
+
+Clone and run the example:
+
+```bash
+git clone https://github.com/betagors/yamajs
+cd yama/examples/todo-api
+pnpm install
+pnpm dev
+```
+
+The API will be available at `http://localhost:4000`.
+
+## Configuration
+
+### yama.yaml
+
+```yaml
+name: todo-api
+version: 1.0.0
+
+database:
+  url: ${DATABASE_URL}
+
+schemas:
+  Todo:
+    type: object
+    required:
+      - title
+    properties:
+      id:
+        type: string
+        format: uuid
+      title:
+        type: string
+        minLength: 1
+        maxLength: 200
+      completed:
+        type: boolean
+        default: false
+      createdAt:
+        type: string
+        format: date-time
+
+  CreateTodoInput:
+    type: object
+    required:
+      - title
+    properties:
+      title:
+        type: string
+      completed:
+        type: boolean
+
+  UpdateTodoInput:
+    type: object
+    properties:
+      title:
+        type: string
+      completed:
+        type: boolean
+
+endpoints:
+  /todos:
+    get:
+      handler: handlers/listTodos
+      summary: List all todos
+      response:
+        type: array
+        items:
+          $ref: "#/schemas/Todo"
+    
+    post:
+      handler: handlers/createTodo
+      summary: Create a new todo
+      request:
+        $ref: "#/schemas/CreateTodoInput"
+      response:
+        $ref: "#/schemas/Todo"
+
+  /todos/{id}:
+    get:
+      handler: handlers/getTodo
+      summary: Get a todo by ID
+      response:
+        $ref: "#/schemas/Todo"
+    
+    put:
+      handler: handlers/updateTodo
+      summary: Update a todo
+      request:
+        $ref: "#/schemas/UpdateTodoInput"
+      response:
+        $ref: "#/schemas/Todo"
+    
+    delete:
+      handler: handlers/deleteTodo
+      summary: Delete a todo
+      response:
+        type: object
+        properties:
+          success:
+            type: boolean
+```
+
+## Handlers
+
+### List Todos
+
+```typescript
+// src/handlers/listTodos.ts
+import { HandlerContext } from '@betagors/yama-core';
+
+export async function listTodos(context: HandlerContext) {
+  const todos = await context.db.query(
+    'SELECT * FROM todos ORDER BY created_at DESC'
+  );
+  return todos;
+}
+```
+
+### Create Todo
+
+```typescript
+// src/handlers/createTodo.ts
+import { HandlerContext } from '@betagors/yama-core';
+
+export async function createTodo(context: HandlerContext) {
+  const { title, completed = false } = context.request.body;
+  
+  const [todo] = await context.db.query(
+    `INSERT INTO todos (title, completed) 
+     VALUES ($1, $2) 
+     RETURNING *`,
+    [title, completed]
+  );
+  
+  context.reply.code(201);
+  return todo;
+}
+```
+
+### Get Todo
+
+```typescript
+// src/handlers/getTodo.ts
+import { HandlerContext } from '@betagors/yama-core';
+
+export async function getTodo(context: HandlerContext) {
+  const { id } = context.params;
+  
+  const [todo] = await context.db.query(
+    'SELECT * FROM todos WHERE id = $1',
+    [id]
+  );
+  
+  if (!todo) {
+    context.reply.code(404);
+    return { error: 'Todo not found' };
+  }
+  
+  return todo;
+}
+```
+
+### Update Todo
+
+```typescript
+// src/handlers/updateTodo.ts
+import { HandlerContext } from '@betagors/yama-core';
+
+export async function updateTodo(context: HandlerContext) {
+  const { id } = context.params;
+  const { title, completed } = context.request.body;
+  
+  const [todo] = await context.db.query(
+    `UPDATE todos 
+     SET title = COALESCE($1, title),
+         completed = COALESCE($2, completed)
+     WHERE id = $3
+     RETURNING *`,
+    [title, completed, id]
+  );
+  
+  if (!todo) {
+    context.reply.code(404);
+    return { error: 'Todo not found' };
+  }
+  
+  return todo;
+}
+```
+
+### Delete Todo
+
+```typescript
+// src/handlers/deleteTodo.ts
+import { HandlerContext } from '@betagors/yama-core';
+
+export async function deleteTodo(context: HandlerContext) {
+  const { id } = context.params;
+  
+  const result = await context.db.query(
+    'DELETE FROM todos WHERE id = $1 RETURNING id',
+    [id]
+  );
+  
+  if (!result.length) {
+    context.reply.code(404);
+    return { error: 'Todo not found' };
+  }
+  
+  return { success: true };
+}
+```
+
+## Database Migration
+
+Create the todos table:
+
+```sql
+-- migrations/001_create_todos.sql
+CREATE TABLE todos (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  title VARCHAR(200) NOT NULL,
+  completed BOOLEAN DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_todos_created_at ON todos(created_at DESC);
+```
+
+Apply the migration:
+
+```bash
+yama migration:apply
+```
+
+## Testing
+
+Run the tests:
+
+```bash
+pnpm test
+```
+
+### Example Test
+
+```typescript
+import { describe, it, expect } from 'vitest';
+import { createTestClient } from '@betagors/yama-test';
+
+describe('Todo API', () => {
+  const client = createTestClient();
+
+  it('should create a todo', async () => {
+    const response = await client.post('/todos', {
+      title: 'Learn Yama',
+    });
+    
+    expect(response.status).toBe(201);
+    expect(response.data.title).toBe('Learn Yama');
+    expect(response.data.completed).toBe(false);
+  });
+
+  it('should list todos', async () => {
+    const response = await client.get('/todos');
+    
+    expect(response.status).toBe(200);
+    expect(Array.isArray(response.data)).toBe(true);
+  });
+});
+```
+
+## API Usage
+
+### Create a Todo
+
+```bash
+curl -X POST http://localhost:4000/todos \
+  -H "Content-Type: application/json" \
+  -d '{"title": "Learn Yama"}'
+```
+
+### List Todos
+
+```bash
+curl http://localhost:4000/todos
+```
+
+### Update a Todo
+
+```bash
+curl -X PUT http://localhost:4000/todos/{id} \
+  -H "Content-Type: application/json" \
+  -d '{"completed": true}'
+```
+
+### Delete a Todo
+
+```bash
+curl -X DELETE http://localhost:4000/todos/{id}
+```
+
+## Source Code
+
+View the complete source code on [GitHub](https://github.com/betagors/yamajs/tree/main/examples/todo-api).

@@ -35,7 +35,11 @@ export function createFastifyAdapter(
         | "head"
         | "options";
 
-      app[methodLower](path, async (request: FastifyRequest, reply: FastifyReply) => {
+      // Normalize path parameters: convert {id} to :id (Fastify format)
+      // Fastify uses :param syntax, but some generators use {param}
+      const normalizedPath = path.replace(/\{(\w+)\}/g, ':$1');
+
+      app[methodLower](normalizedPath, async (request: FastifyRequest, reply: FastifyReply) => {
         const normalizedRequest = this.getRequestAdapter(request);
         const normalizedReply = this.getResponseAdapter(reply);
         return await handler(normalizedRequest, normalizedReply);

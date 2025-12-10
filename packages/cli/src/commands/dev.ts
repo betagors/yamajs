@@ -1,12 +1,27 @@
 import { existsSync, statSync } from "fs";
 import { dirname, join, relative, extname } from "path";
-import { startYamaNodeRuntime, type YamaServer } from "@betagors/yama-runtime-node";
+import { startYamaNodeRuntime, type YamaServer } from "@betagors/yama-node";
 import type { FSWatcher } from "chokidar";
 import chokidar from "chokidar";
 import { findYamaConfig } from "../utils/project-detection.ts";
 import { generateOnce } from "./generate.ts";
-import { loadEnvFile } from "@betagors/yama-core";
-import { readYamaConfig } from "../utils/file-utils.ts";
+import { 
+  loadEnvFile, 
+  resolveEnvVars,
+  createSnapshot,
+  saveSnapshot,
+  loadSnapshot,
+  getCurrentSnapshot,
+  updateState,
+  entitiesToModel,
+  computeDiff,
+  diffToSteps,
+  createTransition,
+  saveTransition,
+  snapshotExists,
+} from "@betagors/yama-core";
+import { readYamaConfig, getConfigDir } from "../utils/file-utils.ts";
+import { info } from "../utils/cli-utils.ts";
 
 interface DevOptions {
   port?: string;
@@ -97,36 +112,40 @@ export async function devCommand(options: DevOptions): Promise<void> {
   const configPath = options.config || findYamaConfig() || "yama.yaml";
 
   if (!existsSync(configPath)) {
-    console.error(`❌ Config file not found: ${configPath}`);
-    console.error("\n💡 Quick fix:");
-    console.error("   Run: yama init");
-    console.error("   Or:  yama setup");
+    const { error, info } = await import("../utils/cli-utils.ts");
+    error(`Config file not found: ${configPath}`);
+    info("Quick fix:");
+    info("   Run: yama init");
+    info("   Or:  yama setup");
     process.exit(1);
   }
 
-  currentPort = port;
-  currentConfigPath = configPath;
-
   // Determine environment
-  currentEnvironment = options.env || process.env.NODE_ENV || "development";
+  const environment = options.env || process.env.NODE_ENV || "development";
 
   // Load .env file with environment support
-  loadEnvFile(configPath, currentEnvironment);
+  loadEnvFile(configPath, environment);
 
-  console.log(`🚀 Starting Yama dev server...\n`);
-  console.log(`   Config: ${configPath}`);
-  console.log(`   Port: ${port}`);
-  console.log(`   Environment: ${currentEnvironment}`);
-  console.log(`   Watch mode: ${watch ? "enabled" : "disabled"}\n`);
+  const { info, warning } = await import("../utils/cli-utils.ts");
+  
+  currentPort = port;
+  currentConfigPath = configPath;
+  currentEnvironment = environment;
+
+  info(`Starting Yama dev server...`);
+  info(`   Config: ${configPath}`);
+  info(`   Port: ${port}`);
+  info(`   Environment: ${currentEnvironment}`);
+  info(`   Watch mode: ${watch ? "enabled" : "disabled"}`);
+  console.log(""); // Empty line for spacing
 
   // Auto-generate SDK/types if requested or in watch mode
   if (options.generate || watch) {
     try {
-      console.log("📦 Generating SDK and types...");
+      info("Generating SDK and types...");
       await generateOnce(configPath, {});
-      console.log("");
     } catch (error) {
-      console.warn("⚠️  Generation failed, continuing anyway:", error instanceof Error ? error.message : String(error));
+      warning(`Generation failed, continuing anyway: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -140,19 +159,22 @@ export async function devCommand(options: DevOptions): Promise<void> {
 
   // Handle graceful shutdown
   const shutdown = async (signal: string) => {
+    const { warning, error: errorUtil } = await import("../utils/cli-utils.ts");
+    
     if (isShuttingDown) {
       // Force exit if already shutting down
-      console.log("\n⚠️  Force exit...");
+      warning("Force exit...");
       process.exit(1);
       return;
     }
     
     isShuttingDown = true;
-    console.log(`\n\n🛑 Shutting down (${signal})...`);
+    const { info } = await import("../utils/cli-utils.ts");
+    info(`Shutting down (${signal})...`);
     
     // Set a timeout to force exit if cleanup takes too long
     const forceExitTimeout = setTimeout(() => {
-      console.log("\n⚠️  Cleanup timeout - forcing exit...");
+      warning("Cleanup timeout - forcing exit...");
       process.exit(1);
     }, 5000); // 5 second timeout
     
@@ -162,7 +184,7 @@ export async function devCommand(options: DevOptions): Promise<void> {
       process.exit(0);
     } catch (error) {
       clearTimeout(forceExitTimeout);
-      console.error("❌ Error during shutdown:", error instanceof Error ? error.message : String(error));
+      errorUtil(`Error during shutdown: ${error instanceof Error ? error.message : String(error)}`);
       process.exit(1);
     }
   };
@@ -188,39 +210,43 @@ async function startServer(port: number, configPath: string, environment?: strin
     consecutiveFailures = 0;
     
     // Enhanced startup messages
+    const { success, info } = await import("../utils/cli-utils.ts");
     if (isRestart) {
-      console.log(`   ✅ Server restarted successfully!`);
+      success("Server restarted successfully!");
     } else {
-      console.log(`\n✅ Yama dev server ready!`);
-      console.log(`📝 Edit yama.yaml to update API`);
-      console.log(`🔄 Changes auto-sync`);
-      console.log(`🌐 Server: http://localhost:${port}`);
-      console.log(`   Health: http://localhost:${port}/health`);
-      console.log(`   Config: http://localhost:${port}/config`);
-      console.log(`   📚 Docs: http://localhost:${port}/docs\n`);
+      success("Yama dev server ready!");
+      info("Edit yama.yaml to update API");
+      info("Changes auto-sync");
+      info(`Server: http://localhost:${port}`);
+      info(`   Health: http://localhost:${port}/health`);
+      info(`   Config: http://localhost:${port}/config`);
+      info(`   Docs: http://localhost:${port}/docs`);
+      console.log(""); // Empty line for spacing
     }
   } catch (error) {
     consecutiveFailures++;
     const errorMessage = error instanceof Error ? error.message : String(error);
     
+    const { error: errorUtil, info: infoUtil } = await import("../utils/cli-utils.ts");
+    
     if (!isRestart) {
       // Initial startup failure - exit
-      console.error("❌ Failed to start server:", errorMessage);
+      errorUtil(`Failed to start server: ${errorMessage}`);
       if (errorMessage.includes("EADDRINUSE")) {
-        console.error("\n💡 Port is already in use. Try:");
-        console.error(`   yama dev --port ${port + 1}`);
+        info("Port is already in use. Try:");
+        info(`   yama dev --port ${port + 1}`);
       }
       process.exit(1);
     } else {
       // Restart failure - log but keep watching
-      console.error(`   ❌ Failed to restart server (attempt ${consecutiveFailures}):`, errorMessage);
+      errorUtil(`Failed to restart server (attempt ${consecutiveFailures}): ${errorMessage}`);
       
       if (errorMessage.includes("EADDRINUSE")) {
-        console.error("   💡 Port is still in use. Waiting before retry...");
+        infoUtil("Port is still in use. Waiting before retry...");
       } else if (errorMessage.includes("Invalid YAML")) {
-        console.error("   💡 Fix the YAML syntax error and save again");
+        infoUtil("Fix the YAML syntax error and save again");
       } else {
-        console.error("   💡 Server will retry on next file change");
+        infoUtil("Server will retry on next file change");
       }
       
       // Don't throw - keep watching for fixes
@@ -292,12 +318,13 @@ function hasFileChanged(filePath: string): boolean {
 /**
  * Setup optimized watch mode with comprehensive patterns
  */
-function setupWatchMode(configPath: string): void {
+async function setupWatchMode(configPath: string): Promise<void> {
   const configDir = dirname(configPath);
   const handlersDir = join(configDir, "src", "handlers");
   const projectRoot = configDir;
 
-  console.log("👀 Watching for changes...\n");
+  const { info } = await import("../utils/cli-utils.ts");
+  info("Watching for changes...\n");
 
   // Build watch patterns - consolidated single watcher
   // Normalize paths for cross-platform compatibility (chokidar works better with forward slashes)
@@ -365,7 +392,9 @@ function setupWatchMode(configPath: string): void {
     const isConfig = normalizedFilePath === normalizedConfigPath || filePath.endsWith(".yaml") || filePath.endsWith(".yml");
     const changeType: "config" | "handler" = isConfig ? "config" : "handler";
     
-    console.log(`\n📝 ${relativePath} changed...`);
+    // Note: File change notifications are informational and fine to keep as console.log
+    // in fallback mode since they're real-time events
+    console.log(`📝 ${relativePath} changed...`);
     queueRestart({ type: changeType, path: filePath, timestamp: Date.now() });
   });
 
@@ -386,7 +415,9 @@ function setupWatchMode(configPath: string): void {
     const isConfig = normalizedFilePath === normalizedConfigPath || filePath.endsWith(".yaml") || filePath.endsWith(".yml");
     const changeType: "config" | "handler" = isConfig ? "config" : "handler";
     
-    console.log(`\n➕ ${relativePath} added...`);
+    // Note: File change notifications are informational and fine to keep as console.log
+    // in fallback mode since they're real-time events
+    console.log(`➕ ${relativePath} added...`);
     queueRestart({ type: changeType, path: filePath, timestamp: Date.now() });
   });
 
@@ -404,24 +435,104 @@ function setupWatchMode(configPath: string): void {
     fileModTimes.delete(filePath);
     
     const relativePath = relative(projectRoot, filePath);
-    console.log(`\n🗑️  ${relativePath} removed...`);
+    // Note: File change notifications are informational and fine to keep as console.log
+    // in fallback mode since they're real-time events
+    console.log(`🗑️  ${relativePath} removed...`);
     queueRestart({ type: "handler", path: filePath, timestamp: Date.now() });
   });
 
   // Handle errors gracefully
-  watcher.on("error", (error: unknown) => {
+  watcher.on("error", async (error: unknown) => {
+    const { warning } = await import("../utils/cli-utils.ts");
     const message = error instanceof Error ? error.message : String(error);
-    console.warn("   ⚠️  Watch error (continuing):", message);
+    warning(`Watch error (continuing): ${message}`);
   });
 
   // Log what we're watching
-  console.log("   - Watching yama.yaml");
+  const { info: infoUtil } = await import("../utils/cli-utils.ts");
+  infoUtil("   - Watching yama.yaml");
   if (existsSync(handlersDir)) {
-    console.log("   - Watching src/handlers/");
+    infoUtil("   - Watching src/handlers/");
   }
-  console.log("   - Ignoring node_modules, .git, dist, build, .yama, etc.");
-  console.log("   - Only watching: .ts, .js, .yaml, .yml, .json files\n");
+  infoUtil("   - Ignoring node_modules, .git, dist, build, .yama, etc.");
+  infoUtil("   - Only watching: .ts, .js, .yaml, .yml, .json files");
+  console.log(""); // Empty line for spacing
 }
+
+/**
+ * Handle schema changes - create snapshots and transitions
+ */
+async function handleSchemaChanges(configPath: string, environment: string): Promise<void> {
+  try {
+    const configDir = getConfigDir(configPath);
+    const config = readYamaConfig(configPath) as any;
+    const resolvedConfig = resolveEnvVars(config) as any;
+    
+    if (!resolvedConfig.entities) {
+      return; // No entities, skip
+    }
+    
+    // Get current snapshot
+    const currentSnapshotHash = getCurrentSnapshot(configDir, environment);
+    
+    // Create snapshot from current entities
+    const newSnapshot = createSnapshot(
+      resolvedConfig.entities,
+      {
+        createdAt: new Date().toISOString(),
+        createdBy: process.env.USER || "dev",
+        description: "Auto-generated from yama dev",
+      },
+      currentSnapshotHash || undefined
+    );
+    
+    // Check if snapshot already exists (no changes)
+    if (snapshotExists(configDir, newSnapshot.hash)) {
+      return; // No changes
+    }
+    
+    // Save snapshot
+    saveSnapshot(configDir, newSnapshot);
+    const { success, info: infoUtil } = await import("../utils/cli-utils.ts");
+    success(`Snapshot created: ${newSnapshot.hash.substring(0, 8)}`);
+    
+    // Create transition if we have a previous snapshot
+    if (currentSnapshotHash) {
+      const fromSnapshot = loadSnapshot(configDir, currentSnapshotHash);
+      if (fromSnapshot) {
+        const fromModel = entitiesToModel(fromSnapshot.entities);
+        const toModel = entitiesToModel(newSnapshot.entities);
+        const diff = computeDiff(fromModel, toModel);
+        const steps = diffToSteps(diff, fromModel, toModel);
+        
+        if (steps.length > 0) {
+          const transition = createTransition(
+            currentSnapshotHash,
+            newSnapshot.hash,
+            steps,
+            {
+              description: "Auto-generated transition",
+              createdAt: new Date().toISOString(),
+            }
+          );
+          
+          saveTransition(configDir, transition);
+          success(`Transition created: ${currentSnapshotHash.substring(0, 8)} -> ${newSnapshot.hash.substring(0, 8)}`);
+          infoUtil(`Steps: ${steps.length}`);
+        }
+      }
+    }
+    
+    // Update state
+    updateState(configDir, environment, newSnapshot.hash);
+    
+  } catch (err) {
+    // Don't fail dev server if snapshot creation fails
+    const { warning } = await import("../utils/cli-utils.ts");
+    warning(`Failed to create snapshot: ${err instanceof Error ? err.message : String(err)}`);
+  }
+}
+
 
 /**
  * Queue a restart with adaptive debouncing
@@ -496,6 +607,17 @@ async function processRestartQueue(): Promise<void> {
   const hasConfigChange = changes.some(c => c.type === "config");
   const latestChange = changes[changes.length - 1];
   
+  // Handle schema changes (snapshot/transition system)
+  if (hasConfigChange) {
+    try {
+      await handleSchemaChanges(currentConfigPath, currentEnvironment);
+    } catch (err) {
+      const { warning } = await import("../utils/cli-utils.ts");
+      warning(`Schema change handling failed: ${err instanceof Error ? err.message : String(err)}`);
+      // Continue with restart anyway
+    }
+  }
+  
   // Update last restart time
   lastRestartTime = now;
   
@@ -518,15 +640,17 @@ async function performRestart(regenerate: boolean, change: { type: "config" | "h
     // 1. Regenerate SDK/types if config changed
     if (regenerate) {
       try {
-        console.log("   🔄 Regenerating SDK and types...");
+        const { info, success, warning } = await import("../utils/cli-utils.ts");
+        info("Regenerating SDK and types...");
         const genStart = Date.now();
         await generateOnce(currentConfigPath, {});
         const genDuration = Date.now() - genStart;
         if (genDuration > 1000) {
-          console.log(`   ✅ Generated in ${(genDuration / 1000).toFixed(2)}s`);
+          success(`Generated in ${(genDuration / 1000).toFixed(2)}s`);
         }
       } catch (error) {
-        console.warn("   ⚠️  Generation failed, continuing with restart:", error instanceof Error ? error.message : String(error));
+        const { warning } = await import("../utils/cli-utils.ts");
+        warning(`Generation failed, continuing with restart: ${error instanceof Error ? error.message : String(error)}`);
         // Continue anyway - generation errors shouldn't block restart
       }
     }
@@ -542,7 +666,8 @@ async function performRestart(regenerate: boolean, change: { type: "config" | "h
     
     // Show performance hint if restarts are slow
     if (duration > 3000 && restartCount % 5 === 0) {
-      console.log(`   ⚡ Average restart time: ${metrics.averageRestartTime.toFixed(0)}ms`);
+      const { info } = await import("../utils/cli-utils.ts");
+      info(`Average restart time: ${metrics.averageRestartTime.toFixed(0)}ms`);
     }
     
   } catch (error) {
@@ -570,7 +695,8 @@ async function restartServerWithRetry(): Promise<void> {
   }
   
   if (!serverInstance) {
-    console.log("   ⚠️  No server instance to restart");
+    const { warning } = await import("../utils/cli-utils.ts");
+    warning("No server instance to restart");
     return;
   }
 
@@ -582,12 +708,13 @@ async function restartServerWithRetry(): Promise<void> {
       // Stop existing server
       const instance = serverInstance;
       if (instance) {
-        console.log("   🛑 Stopping server...");
+        const { info, warning: warningUtil } = await import("../utils/cli-utils.ts");
+        info("Stopping server...");
         try {
           await instance.stop();
         } catch (error) {
           // Ignore stop errors - server might already be stopped
-          console.warn("   ⚠️  Error stopping server (continuing):", error instanceof Error ? error.message : String(error));
+          warningUtil(`Error stopping server (continuing): ${error instanceof Error ? error.message : String(error)}`);
         }
       }
       serverInstance = null;
@@ -595,7 +722,8 @@ async function restartServerWithRetry(): Promise<void> {
       // Calculate delay based on consecutive failures (exponential backoff)
       const delay = Math.min(1000 * Math.pow(2, consecutiveFailures), MAX_RETRY_DELAY);
       if (delay > 1000) {
-        console.log(`   ⏳ Waiting ${delay}ms before restart (backoff)...`);
+        const { info } = await import("../utils/cli-utils.ts");
+        info(`Waiting ${delay}ms before restart (backoff)...`);
         await new Promise(resolve => setTimeout(resolve, delay));
       } else {
         // Standard delay to ensure port is released
@@ -603,7 +731,8 @@ async function restartServerWithRetry(): Promise<void> {
       }
 
       // Start new server
-      console.log("   🚀 Restarting server...");
+      const { info } = await import("../utils/cli-utils.ts");
+      info("Restarting server...");
       await startServer(currentPort, currentConfigPath, currentEnvironment, true);
       
       // Success - exit retry loop
@@ -616,14 +745,16 @@ async function restartServerWithRetry(): Promise<void> {
       if (attempt < maxRetries) {
         // Calculate retry delay (exponential backoff)
         const retryDelay = Math.min(1000 * Math.pow(2, attempt), MAX_RETRY_DELAY);
-        console.log(`   ⏳ Retry ${attempt}/${maxRetries} in ${retryDelay}ms...`);
+        const { info } = await import("../utils/cli-utils.ts");
+        info(`Retry ${attempt}/${maxRetries} in ${retryDelay}ms...`);
         await new Promise(resolve => setTimeout(resolve, retryDelay));
       } else {
         // Max retries reached
-        console.error(`   ❌ Failed to restart after ${maxRetries} attempts`);
-        console.error("   💡 The server will keep watching for changes");
-        console.error("   💡 Fix the error and save again to retry");
-        console.error("   💡 Or press Ctrl+C and restart manually");
+        const { error: errorUtil, info: infoUtil } = await import("../utils/cli-utils.ts");
+        errorUtil(`Failed to restart after ${maxRetries} attempts`);
+        infoUtil("The server will keep watching for changes");
+        infoUtil("Fix the error and save again to retry");
+        infoUtil("Or press Ctrl+C and restart manually");
         throw error;
       }
     }
@@ -662,7 +793,8 @@ async function cleanup(): Promise<void> {
     } catch (error) {
       // Ignore stop errors during cleanup
       if (error instanceof Error && !error.message.includes("timeout")) {
-        console.warn("⚠️  Error stopping server:", error.message);
+        const { warning } = await import("../utils/cli-utils.ts");
+        warning(`Error stopping server: ${error.message}`);
       }
     }
     serverInstance = null;
@@ -686,9 +818,10 @@ async function cleanup(): Promise<void> {
   // Clear file modification time cache
   fileModTimes.clear();
   
-  // Log performance summary if we had restarts
+    // Log performance summary if we had restarts
   if (metrics.totalRestarts > 0) {
-    console.log(`\n📊 Watch mode stats: ${metrics.totalRestarts} restarts, avg ${metrics.averageRestartTime.toFixed(0)}ms`);
+    const { info } = await import("../utils/cli-utils.ts");
+    info(`Watch mode stats: ${metrics.totalRestarts} restarts, avg ${metrics.averageRestartTime.toFixed(0)}ms`);
   }
 }
 

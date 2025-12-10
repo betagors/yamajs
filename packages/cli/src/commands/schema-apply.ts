@@ -1,30 +1,180 @@
-import { existsSync, readdirSync, readFileSync } from "fs";
-import { join } from "path";
+import { existsSync } from "fs";
 import { findYamaConfig } from "../utils/project-detection.ts";
 import { readYamaConfig, getConfigDir } from "../utils/file-utils.ts";
 import { loadEnvFile, resolveEnvVars } from "@betagors/yama-core";
 import type { DatabaseConfig } from "@betagors/yama-core";
 import {
-  deserializeMigration,
-  validateMigration,
   entitiesToModel,
-  getCurrentModelHashFromDB,
+  getCurrentSnapshot,
+  findPath,
+  loadSnapshot,
+  updateState,
+  snapshotExists,
+  createSnapshot,
+  saveSnapshot,
+  createTransition,
+  saveTransition,
+  computeDiff,
+  diffToSteps,
+  type Model,
+  type TableModel,
+  type ColumnModel,
+  type YamaEntities,
 } from "@betagors/yama-core";
 import {
   success,
   error,
   info,
   warning,
-  pending,
-  printBox,
+  dim,
+  fmt,
   createSpinner,
   formatDuration,
-  printHints,
 } from "../utils/cli-utils.ts";
-import { printError } from "../utils/error-handler.ts";
-import { confirmMigration, hasDestructiveOperation } from "../utils/interactive.ts";
-import { TrashManager } from "../utils/trash-manager.ts";
-import { getDatabasePlugin } from "../utils/db-plugin.ts";
+import { confirm, hasDestructiveOperation } from "../utils/interactive.ts";
+import { getDatabasePluginAndConfig } from "../utils/db-plugin.ts";
+
+/**
+ * Split SQL into individual statements
+ */
+function splitSQLStatements(sql: string): string[] {
+  const statements: string[] = [];
+  const lines = sql.split('\n');
+  let currentStatement = '';
+  
+  for (const line of lines) {
+    const trimmedLine = line.trim();
+    if (!trimmedLine || trimmedLine.startsWith('--')) {
+      if (currentStatement) currentStatement += '\n';
+      continue;
+    }
+    
+    currentStatement += (currentStatement ? '\n' : '') + line;
+    
+    if (trimmedLine.endsWith(';')) {
+      const statement = currentStatement.trim();
+      if (statement && !statement.startsWith('--')) {
+        statements.push(statement);
+      }
+      currentStatement = '';
+    }
+  }
+  
+  const remaining = currentStatement.trim();
+  if (remaining && !remaining.startsWith('--')) {
+    statements.push(remaining);
+  }
+  
+  return statements.filter(s => s.length > 0);
+}
+
+/**
+ * Read current database schema into a Model
+ */
+async function readCurrentModelFromDB(sql: any): Promise<Model> {
+  // Use unsafe() method for compatibility with both postgres and pglite
+  const tablesResult = await sql.unsafe(`
+    SELECT table_name 
+    FROM information_schema.tables 
+    WHERE table_schema = 'public' 
+      AND table_type = 'BASE TABLE'
+      AND table_name NOT LIKE '_yama_%'
+      AND table_name NOT LIKE '%_before_%'
+      AND table_name NOT LIKE '%_snapshot_%'
+    ORDER BY table_name
+  `);
+
+  const tables = new Map<string, TableModel>();
+
+  for (const row of tablesResult as Array<{ table_name: string }>) {
+    const tableName = row.table_name;
+
+    const columnsResult = await sql.unsafe(`
+      SELECT column_name, data_type, character_maximum_length, is_nullable, column_default, is_identity
+      FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = '${tableName}'
+      ORDER BY ordinal_position
+    `);
+
+    const columns = new Map<string, ColumnModel>();
+    let primaryKeyColumn: string | null = null;
+
+    const pkResult = await sql.unsafe(`
+      SELECT column_name
+      FROM information_schema.table_constraints tc
+      JOIN information_schema.constraint_column_usage ccu ON tc.constraint_name = ccu.constraint_name
+      WHERE tc.table_schema = 'public' AND tc.table_name = '${tableName}' AND tc.constraint_type = 'PRIMARY KEY'
+    `);
+
+    if (pkResult && pkResult.length > 0) {
+      primaryKeyColumn = (pkResult[0] as { column_name: string }).column_name;
+    }
+
+    for (const col of columnsResult as Array<{
+      column_name: string;
+      data_type: string;
+      character_maximum_length: number | null;
+      is_nullable: string;
+      column_default: string | null;
+      is_identity: string;
+    }>) {
+      let sqlType: string;
+      if (col.data_type === "character varying" || col.data_type === "varchar") {
+        sqlType = col.character_maximum_length ? `VARCHAR(${col.character_maximum_length})` : "VARCHAR(255)";
+      } else if (col.data_type === "character" || col.data_type === "char") {
+        sqlType = col.character_maximum_length ? `CHAR(${col.character_maximum_length})` : "CHAR(1)";
+      } else {
+        sqlType = col.data_type.toUpperCase();
+      }
+
+      const isPrimary = col.column_name === primaryKeyColumn;
+      const isGenerated = col.is_identity === "YES";
+      const nullable = isPrimary ? false : col.is_nullable === "YES";
+
+      columns.set(col.column_name, {
+        name: col.column_name,
+        type: sqlType,
+        nullable,
+        primary: isPrimary,
+        default: col.column_default ? col.column_default : undefined,
+        generated: isGenerated,
+      });
+    }
+
+    const indexesResult = await sql.unsafe(`
+      SELECT i.indexname, i.indexdef, ix.indisunique
+      FROM pg_indexes i
+      JOIN pg_index ix ON i.indexname = (SELECT relname FROM pg_class WHERE oid = ix.indexrelid)
+      WHERE i.schemaname = 'public' AND i.tablename = '${tableName}' AND i.indexname NOT LIKE '%_pkey'
+    `);
+
+    const indexes: { name: string; columns: string[]; unique: boolean }[] = [];
+    for (const idx of indexesResult as Array<{ indexname: string; indexdef: string; indisunique: boolean }>) {
+      const match = idx.indexdef.match(/\(([^)]+)\)/);
+      indexes.push({
+        name: idx.indexname,
+        columns: match ? match[1].split(",").map((c) => c.trim().replace(/"/g, "")) : [],
+        unique: idx.indisunique,
+      });
+    }
+
+    tables.set(tableName, { name: tableName, columns, indexes, foreignKeys: [] });
+  }
+
+  const { createHash } = await import("crypto");
+  const normalized = JSON.stringify(
+    Array.from(tables.entries()).map(([name, table]) => ({
+      name,
+      columns: Array.from(table.columns.entries()).map(([colName, col]) => ({
+        name: colName, type: col.type, nullable: col.nullable, primary: col.primary,
+      })),
+      indexes: table.indexes.map((idx) => ({ name: idx.name, columns: idx.columns, unique: idx.unique })),
+    })),
+    null, 0
+  );
+
+  return { hash: createHash("sha256").update(normalized).digest("hex"), entities: {}, tables };
+}
 
 interface SchemaApplyOptions {
   config?: string;
@@ -38,318 +188,231 @@ export async function schemaApplyCommand(options: SchemaApplyOptions): Promise<v
   const configPath = options.config || findYamaConfig() || "yama.yaml";
 
   if (!existsSync(configPath)) {
-    error(`Config file not found: ${configPath}`);
+    error(`Config not found: ${configPath}`);
     process.exit(1);
   }
 
   try {
     const environment = options.env || process.env.NODE_ENV || "development";
     loadEnvFile(configPath, environment);
-    let config = readYamaConfig(configPath) as { database?: DatabaseConfig };
-    config = resolveEnvVars(config) as { database?: DatabaseConfig };
+    let config = readYamaConfig(configPath) as {
+      schemas?: any;
+      plugins?: Record<string, Record<string, unknown>> | string[];
+      database?: DatabaseConfig;
+    };
+    config = resolveEnvVars(config) as typeof config;
     const configDir = getConfigDir(configPath);
 
-    if (!config.database) {
-      error("No database configuration found in yama.yaml");
-      process.exit(1);
-    }
-
-    const migrationsDir = join(configDir, "migrations");
-
-    if (!existsSync(migrationsDir)) {
-      info("No migrations directory found. Run 'yama schema:generate' first.");
-      return;
-    }
-
-    // Get all migration YAML files and sort by timestamp
-    const migrationFiles = readdirSync(migrationsDir)
-      .filter((f) => f.endsWith(".yaml"))
-      .sort((a, b) => {
-        // Extract timestamp from filename (first 14 digits)
-        const timestampA = a.match(/^(\d{14})_/)?.[1] || '';
-        const timestampB = b.match(/^(\d{14})_/)?.[1] || '';
-        return timestampA.localeCompare(timestampB);
-      });
-
-    if (migrationFiles.length === 0) {
-      info("No migration files found.");
-      return;
-    }
-
-    // Initialize database
-    const dbPlugin = await getDatabasePlugin();
-    await dbPlugin.client.initDatabase(config.database);
+    // Get database plugin
+    const { plugin: dbPlugin, dbConfig } = await getDatabasePluginAndConfig(config, configPath);
+    await dbPlugin.client.initDatabase(dbConfig);
     const sql = dbPlugin.client.getSQL();
 
-    // Create migration tables
-    await sql.unsafe(dbPlugin.migrations.getMigrationTableSQL());
-    await sql.unsafe(dbPlugin.migrations.getMigrationRunsTableSQL());
-
-    // Get applied migrations
-    const appliedMigrations = await sql.unsafe(`
-      SELECT name, to_model_hash FROM _yama_migrations ORDER BY applied_at
+    // Ensure migration tracking table exists
+    await sql.unsafe(`
+      CREATE TABLE IF NOT EXISTS _yama_migrations (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL UNIQUE,
+        type VARCHAR(50) DEFAULT 'schema',
+        from_model_hash VARCHAR(64),
+        to_model_hash VARCHAR(64),
+        checksum VARCHAR(64),
+        description TEXT,
+        applied_at TIMESTAMP DEFAULT NOW()
+      )
     `);
-    const appliedNames = new Set(
-      (appliedMigrations as unknown as Array<{ name: string }>).map((m) => m.name)
-    );
 
-    // Get current model hash
-    const currentHash = await getCurrentModelHashFromDB(async (query) => {
-      return (await sql.unsafe(query)) as Array<{ to_model_hash: string }>;
-    });
+    // Get current state
+    const currentSnapshotHash = getCurrentSnapshot(configDir, environment);
 
-    // Load target model for validation
-    const configWithEntities = readYamaConfig(configPath) as { entities?: any };
-    const targetModel = configWithEntities.entities
-      ? entitiesToModel(configWithEntities.entities)
-      : null;
+    // Read current DB model
+    const currentDBModel = await readCurrentModelFromDB(sql);
+    
+    // Get target model from entities in config
+    const entities = extractEntitiesFromSchemas(config.schemas);
+    if (!entities || Object.keys(entities).length === 0) {
+      info("No entities defined in config.");
+      await dbPlugin.client.closeDatabase();
+      return;
+    }
 
-    // Process pending migrations
-    let appliedCount = 0;
-    const startTime = Date.now();
-    let lastAppliedHash: string | null = currentHash;
+    const normalizedEntities = normalizeEntities(entities);
+    const targetModel = entitiesToModel(normalizedEntities);
 
-    for (const file of migrationFiles) {
-      if (appliedNames.has(file)) {
-        info(`Skipping ${file} (already applied)`);
-        // Update lastAppliedHash from database for already applied migrations
-        const appliedMigration = (appliedMigrations as unknown as Array<{ name: string; to_model_hash: string }>).find(
-          (m) => m.name === file
-        );
-        if (appliedMigration?.to_model_hash) {
-          lastAppliedHash = appliedMigration.to_model_hash;
-        }
-        continue;
-      }
+    // Check if already in sync
+    if (currentDBModel.hash === targetModel.hash) {
+      info("Database is in sync with schema.");
+      await dbPlugin.client.closeDatabase();
+      return;
+    }
 
-      const filePath = join(migrationsDir, file);
-      const yamlContent = readFileSync(filePath, "utf-8");
-      const migration = deserializeMigration(yamlContent);
-
-      // Auto-fix empty from_model.hash by inferring from previous migration
-      if (!migration.from_model.hash || migration.from_model.hash === "") {
-        // First, try to use lastAppliedHash (database state) - most reliable
-        if (lastAppliedHash) {
-          migration.from_model.hash = lastAppliedHash;
-          warning(
-            `Migration ${file} has empty from_model.hash. Auto-fixing from database state (${lastAppliedHash.substring(0, 8)}...)`
-          );
-        } else {
-          // If no database state, try to get from previous migration file
-          const currentIndex = migrationFiles.indexOf(file);
-          if (currentIndex > 0) {
-            const prevFile = migrationFiles[currentIndex - 1];
-            const prevFilePath = join(migrationsDir, prevFile);
-            if (existsSync(prevFilePath)) {
-              try {
-                const prevYamlContent = readFileSync(prevFilePath, "utf-8");
-                const prevMigration = deserializeMigration(prevYamlContent);
-                if (prevMigration.to_model.hash) {
-                  migration.from_model.hash = prevMigration.to_model.hash;
-                  warning(
-                    `Migration ${file} has empty from_model.hash. Auto-fixing from previous migration ${prevFile} (${prevMigration.to_model.hash.substring(0, 8)}...)`
-                  );
-                }
-              } catch (err) {
-                // Failed to read previous migration, continue with other checks
-              }
-            }
-          }
-        }
-      }
-
-      // Validate migration hash
-      // Empty hash means first migration (empty database)
-      if (migration.from_model.hash && lastAppliedHash && migration.from_model.hash !== lastAppliedHash) {
-        error(
-          `Migration ${file} from_model.hash (${migration.from_model.hash.substring(0, 8)}...) does not match current database state (${lastAppliedHash.substring(0, 8)}...)`
-        );
-        printError(
-          new Error("Migration hash mismatch"),
-          { migration: file }
-        );
+    // Find or create transition
+    let transition;
+    const existingPath = currentSnapshotHash ? findPath(configDir, currentSnapshotHash, targetModel.hash) : null;
+    
+    if (existingPath && existingPath.transitions.length > 0) {
+      transition = existingPath.transitions[0];
+      info(`Using existing transition: ${transition.hash.substring(0, 8)}`);
+    } else {
+      // Create on-the-fly transition
+      const diff = computeDiff(currentDBModel, targetModel);
+      const steps = diffToSteps(diff, currentDBModel, targetModel);
+      
+      if (steps.length === 0) {
+        info("No changes to apply.");
         await dbPlugin.client.closeDatabase();
-        process.exit(1);
-      }
-      
-      // If migration has empty from_model.hash, it's the first migration
-      // Allow it if lastAppliedHash is also empty/null
-      if (!migration.from_model.hash && lastAppliedHash) {
-        error(
-          `Migration ${file} is marked as first migration (empty from_model.hash) but database already has migrations applied`
-        );
-        await dbPlugin.client.closeDatabase();
-        process.exit(1);
+        return;
       }
 
-      // Check for destructive operations
-      const hasDestructive = migration.steps.some(hasDestructiveOperation);
-      
-      // Create data snapshots before destructive operations
-      if (hasDestructive) {
-        const destructiveSteps = migration.steps.filter(hasDestructiveOperation);
-        for (const step of destructiveSteps) {
-          if (step.type === "drop_table" || step.type === "drop_column" || step.type === "modify_column") {
-            try {
-              info(`Creating snapshot for ${step.table}...`);
-              const snapshot = await dbPlugin.snapshots.create(
-                step.table,
-                config.database!,
-                `${step.table}_before_${file.replace(".yaml", "")}`,
-                true // Use existing connection, don't close it
-              );
-              info(`Snapshot created: ${snapshot.snapshotTable} (${snapshot.rowCount} rows)`);
-            } catch (err) {
-              warning(`Failed to create snapshot for ${step.table}: ${err instanceof Error ? err.message : String(err)}`);
-            }
-          }
-        }
+      // Create snapshot if needed
+      if (!snapshotExists(configDir, targetModel.hash)) {
+        const snapshot = createSnapshot(normalizedEntities, {
+          createdAt: new Date().toISOString(),
+          createdBy: process.env.USER || "yama",
+          description: "Auto-generated on apply",
+        }, currentSnapshotHash || undefined);
+        saveSnapshot(configDir, snapshot);
       }
-      
-      if (hasDestructive && !options.allowDestructive) {
-        if (options.interactive) {
-          const confirmed = await confirmMigration(
-            file,
-            migration.steps,
-            hasDestructive
-          );
-          if (!confirmed) {
-            info(`Skipping ${file} (user cancelled)`);
-            continue;
-          }
-        } else {
-          error(
-            `Migration ${file} contains destructive operations. Use --allow-destructive to apply.`
-          );
+
+      transition = createTransition(
+        currentDBModel.hash || "",
+        targetModel.hash,
+        steps,
+        { description: "Auto-generated on apply", createdAt: new Date().toISOString() }
+      );
+      saveTransition(configDir, transition);
+    }
+
+    const steps = transition.steps;
+
+    // Show what will be applied
+    console.log("");
+    console.log(fmt.bold("Changes to Apply"));
+    console.log(dim("─".repeat(40)));
+    
+    let hasDestructive = false;
+    for (const step of steps) {
+      if (step.type === "add_table") {
+        console.log(fmt.green(`+ CREATE TABLE ${step.table}`));
+      } else if (step.type === "drop_table") {
+        console.log(fmt.red(`- DROP TABLE ${step.table}`));
+        hasDestructive = true;
+      } else if (step.type === "add_column") {
+        console.log(fmt.green(`+ ADD COLUMN ${step.table}.${step.column.name}`));
+      } else if (step.type === "drop_column") {
+        console.log(fmt.red(`- DROP COLUMN ${step.table}.${step.column}`));
+        hasDestructive = true;
+      } else if (step.type === "rename_column") {
+        console.log(fmt.yellow(`~ RENAME COLUMN ${step.table}.${step.column} -> ${step.newName}`));
+      } else if (step.type === "modify_column") {
+        console.log(fmt.yellow(`~ ALTER COLUMN ${step.table}.${step.column}`));
+      } else if (step.type === "add_index") {
+        console.log(fmt.cyan(`+ CREATE INDEX ${step.index.name}`));
+      } else if (step.type === "drop_index") {
+        console.log(fmt.red(`- DROP INDEX ${step.index}`));
+      }
+    }
+    console.log("");
+    console.log(dim(`From: ${currentDBModel.hash ? currentDBModel.hash.substring(0, 8) : "empty"}`));
+    console.log(dim(`To:   ${targetModel.hash.substring(0, 8)}`));
+    console.log("");
+
+    if (options.noApply) {
+      info("Dry run - no changes applied.");
+      await dbPlugin.client.closeDatabase();
+      return;
+    }
+
+    // Check destructive operations
+    if (hasDestructive && !options.allowDestructive) {
+      if (options.interactive) {
+        warning("This includes destructive operations.");
+        const confirmed = await confirm("Apply changes?", false);
+        if (!confirmed) {
+          info("Cancelled.");
           await dbPlugin.client.closeDatabase();
-          process.exit(1);
+          return;
         }
-      }
-
-      if (options.noApply) {
-        info(`Would apply: ${file}`);
-        continue;
-      }
-
-      // Load SQL file
-      const sqlFile = file.replace(".yaml", ".sql");
-      const sqlPath = join(migrationsDir, sqlFile);
-      let sqlContent: string;
-
-      if (existsSync(sqlPath)) {
-        sqlContent = readFileSync(sqlPath, "utf-8");
       } else {
-        // Generate SQL from steps if file doesn't exist
-        sqlContent = dbPlugin.migrations.generateFromSteps(migration.steps);
+        error("Destructive operations detected. Use --allow-destructive to proceed.");
+        await dbPlugin.client.closeDatabase();
+        process.exit(1);
       }
+    }
 
-      // Compute checksum
-      const checksum = dbPlugin.migrations.computeChecksum(yamlContent, sqlContent);
+    // Apply migration
+    const spinner = createSpinner("Applying schema changes...");
+    const startTime = Date.now();
 
-      const spinner = createSpinner(`Applying ${file}...`);
-
-      try {
-        const runStart = Date.now();
-
-        // Start migration run
-        const runResult = await sql.unsafe(`
-          INSERT INTO _yama_migration_runs (migration_id, status, started_at)
-          VALUES (NULL, 'running', NOW())
-          RETURNING id
-        `);
-        const runId = runResult[0]?.id;
-
-        // Execute migration in transaction
+    try {
+      const sqlContent = dbPlugin.migrations.generateFromSteps(steps);
+      
+      if (sqlContent.trim()) {
         await sql.begin(async (tx: any) => {
-          // Execute the migration SQL first
-          if (sqlContent.trim()) {
-            await tx.unsafe(sqlContent);
+          const statements = splitSQLStatements(sqlContent);
+          for (const statement of statements) {
+            if (statement.trim()) {
+              await tx.unsafe(statement);
+            }
           }
 
           // Record migration
-          const insertResult = await tx.unsafe(`
-            INSERT INTO _yama_migrations (
-              name, type, from_model_hash, to_model_hash, checksum, description
-            ) VALUES (
-              '${file.replace(/'/g, "''")}',
-              '${migration.type || 'schema'}',
-              ${migration.from_model.hash ? `'${migration.from_model.hash.replace(/'/g, "''")}'` : 'NULL'},
-              ${migration.to_model.hash ? `'${migration.to_model.hash.replace(/'/g, "''")}'` : 'NULL'},
-              '${checksum.replace(/'/g, "''")}',
-              ${migration.metadata?.description ? `'${migration.metadata.description.replace(/'/g, "''")}'` : 'NULL'}
+          await tx.unsafe(`
+            INSERT INTO _yama_migrations (name, type, from_model_hash, to_model_hash, description)
+            VALUES (
+              'transition_${transition.hash}',
+              'schema',
+              ${currentDBModel.hash ? `'${currentDBModel.hash}'` : 'NULL'},
+              '${targetModel.hash}',
+              ${transition.metadata.description ? `'${transition.metadata.description.replace(/'/g, "''")}'` : 'NULL'}
             )
-            RETURNING name
+            ON CONFLICT (name) DO NOTHING
           `);
-
-          // Verify migration was recorded
-          if (!insertResult || insertResult.length === 0) {
-            throw new Error("Failed to record migration in database");
-          }
-
-          // Update run status
-          if (runId) {
-            await tx.unsafe(`
-              UPDATE _yama_migration_runs
-              SET status = 'completed', finished_at = NOW()
-              WHERE id = ${runId}
-            `);
-          }
         });
-
-        // Verify migration was actually applied by checking the database
-        const verifyResult = await sql.unsafe(`
-          SELECT name FROM _yama_migrations WHERE name = '${file.replace(/'/g, "''")}'
-        `);
-        if (!verifyResult || verifyResult.length === 0) {
-          throw new Error(`Migration ${file} was not recorded in database after transaction`);
-        }
-
-        const duration = Date.now() - runStart;
-        spinner.succeed(`Applied ${file} (${formatDuration(duration)})`);
-        appliedCount++;
-        // Update lastAppliedHash for next migration
-        lastAppliedHash = migration.to_model.hash;
-      } catch (err) {
-        spinner.fail(`Failed to apply ${file}`);
-
-        // Update run status
-        try {
-          await sql`
-            UPDATE _yama_migration_runs
-            SET status = 'failed', finished_at = NOW(), error_message = ${err instanceof Error ? err.message : String(err)}
-            WHERE id = (SELECT id FROM _yama_migration_runs ORDER BY started_at DESC LIMIT 1)
-          `;
-        } catch {
-          // Ignore update errors
-        }
-
-        printError(err, { migration: file });
-        await dbPlugin.client.closeDatabase();
-        process.exit(1);
       }
-    }
 
-    if (appliedCount === 0) {
-      info("All migrations are already applied.");
-    } else {
-      const totalDuration = Date.now() - startTime;
-      printBox(
-        `Applied ${appliedCount} migration(s)\nDuration: ${formatDuration(totalDuration)}`,
-        { borderColor: "green" }
-      );
+      // Update state
+      updateState(configDir, environment, targetModel.hash);
+
+      const duration = Date.now() - startTime;
+      spinner.succeed(`Applied ${steps.length} change(s) in ${formatDuration(duration)}`);
+      console.log("");
+      success(`Database updated to ${targetModel.hash.substring(0, 8)}`);
+
+    } catch (err) {
+      spinner.fail("Failed to apply changes");
+      error(`${err instanceof Error ? err.message : String(err)}`);
+      await dbPlugin.client.closeDatabase();
+      process.exit(1);
     }
 
     await dbPlugin.client.closeDatabase();
 
-    if (appliedCount > 0) {
-      printHints([
-        "Run 'yama schema:check' to verify schema is in sync",
-        "Run 'yama schema:status' to see migration status",
-      ]);
-    }
   } catch (err) {
-    error(`Failed to apply migrations: ${err instanceof Error ? err.message : String(err)}`);
+    error(`Failed: ${err instanceof Error ? err.message : String(err)}`);
     process.exit(1);
   }
 }
 
+// Helper functions
+function extractEntitiesFromSchemas(schemas?: any): YamaEntities {
+  const entities: YamaEntities = {};
+  if (!schemas) return entities;
+  
+  for (const [name, def] of Object.entries(schemas)) {
+    if (def && typeof def === 'object' && 'database' in (def as any)) {
+      entities[name] = def as any;
+    }
+  }
+  return entities;
+}
+
+function normalizeEntities(entities: YamaEntities): YamaEntities {
+  const normalized: YamaEntities = {};
+  for (const [name, def] of Object.entries(entities)) {
+    const dbConfig = typeof def.database === "string" ? { table: def.database } : def.database;
+    const tableName = dbConfig?.table || def.table || name.toLowerCase().replace(/([A-Z])/g, '_$1').replace(/^_/, '');
+    normalized[name] = { ...def, table: tableName, database: dbConfig || { table: tableName } };
+  }
+  return normalized;
+}

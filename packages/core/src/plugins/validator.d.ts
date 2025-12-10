@@ -1,4 +1,4 @@
-import type { YamaPlugin, PluginManifest, ServicePlugin } from "./base";
+import type { YamaPlugin, PluginManifest } from "./base.js";
 /**
  * Validation result
  */
@@ -15,11 +15,14 @@ export declare function validateManifest(manifest: PluginManifest): ValidationRe
  */
 export declare function validateYamaPlugin(plugin: unknown): ValidationResult;
 /**
- * @deprecated Use validateYamaPlugin instead
- * Validate service plugin interface (kept for backward compatibility)
- */
-export declare function validateServicePlugin(plugin: unknown): ValidationResult;
-/**
  * Validate plugin version compatibility
  */
-export declare function validatePluginVersion(plugin: YamaPlugin | ServicePlugin, coreVersion: string): ValidationResult;
+export declare function validatePluginVersion(plugin: YamaPlugin, coreVersion: string): ValidationResult;
+/**
+ * Validate plugin configuration against config schema
+ */
+export declare function validatePluginConfig(config: Record<string, unknown>, manifest: PluginManifest): ValidationResult;
+/**
+ * Validate migration definitions in manifest
+ */
+export declare function validateMigrations(manifest: PluginManifest, pluginDir?: string): ValidationResult;

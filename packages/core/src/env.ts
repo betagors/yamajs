@@ -1,26 +1,33 @@
-import { existsSync, readFileSync } from "fs";
-import { join, dirname, resolve } from "path";
+import { tryGetFileSystem, tryGetPathModule } from "./platform/fs.js";
+import { getEnvProvider } from "./platform/env.js";
 
 /**
  * Determines the current environment from explicit parameter, NODE_ENV, or default
  */
 function getEnvironment(explicitEnv?: string): string {
-  return explicitEnv || process.env.NODE_ENV || "development";
+  const env = getEnvProvider();
+  return explicitEnv || env.getEnv("NODE_ENV") || "development";
 }
 
 /**
  * Finds the directory containing .env files by searching up from the config path
  */
 function findEnvDirectory(configPath?: string): string | null {
-  let searchDir = configPath ? dirname(resolve(configPath)) : process.cwd();
-  const rootDir = resolve(process.cwd(), "../../");
+  const pathModule = tryGetPathModule();
+  const fs = tryGetFileSystem();
+  if (!pathModule || !fs) {
+    return null;
+  }
 
-  while (searchDir !== rootDir && searchDir !== dirname(searchDir)) {
-    const envPath = join(searchDir, ".env");
-    if (existsSync(envPath)) {
+  let searchDir = configPath ? pathModule.dirname(pathModule.resolve(configPath)) : getEnvProvider().cwd();
+  const rootDir = pathModule.resolve(getEnvProvider().cwd(), "../../");
+
+  while (searchDir !== rootDir && searchDir !== pathModule.dirname(searchDir)) {
+    const envPath = pathModule.join(searchDir, ".env");
+    if (fs.existsSync(envPath)) {
       return searchDir;
     }
-    searchDir = dirname(searchDir);
+    searchDir = pathModule.dirname(searchDir);
   }
 
   return null;
@@ -39,6 +46,12 @@ function findEnvDirectory(configPath?: string): string | null {
  *                      If not provided, uses NODE_ENV or defaults to 'development'
  */
 export function loadEnvFile(configPath?: string, environment?: string): void {
+  const fs = tryGetFileSystem();
+  const pathModule = tryGetPathModule();
+  if (!fs || !pathModule) {
+    return;
+  }
+
   const env = getEnvironment(environment);
   const envDir = findEnvDirectory(configPath);
 
@@ -48,13 +61,13 @@ export function loadEnvFile(configPath?: string, environment?: string): void {
 
   // Load in priority order (later files override earlier ones)
   const envFiles = [
-    join(envDir, ".env"),              // Base configuration
-    join(envDir, `.env.${env}`),       // Environment-specific
-    join(envDir, ".env.local"),        // Local overrides (highest priority)
+    pathModule.join(envDir, ".env"),              // Base configuration
+    pathModule.join(envDir, `.env.${env}`),       // Environment-specific
+    pathModule.join(envDir, ".env.local"),        // Local overrides (highest priority)
   ];
 
   for (const envFile of envFiles) {
-    if (existsSync(envFile)) {
+    if (fs.existsSync(envFile)) {
       loadEnvFromFile(envFile);
     }
   }
@@ -98,8 +111,12 @@ function parseEnvLine(line: string): [string, string] | null {
  * Note: process.env variables set before loadEnvFile() still take precedence
  */
 function loadEnvFromFile(filePath: string): void {
+  const fs = tryGetFileSystem();
+  if (!fs) {
+    return;
+  }
   try {
-    const content = readFileSync(filePath, "utf-8");
+    const content = fs.readFileSync(filePath, "utf-8");
     const lines = content.split("\n");
 
     for (const line of lines) {
@@ -107,7 +124,8 @@ function loadEnvFromFile(filePath: string): void {
       if (parsed) {
         const [key, value] = parsed;
         // Set the value (allowing .env files to override each other in priority order)
-        process.env[key] = value;
+        const env = getEnvProvider();
+        env.setEnv?.(key, value);
       }
     }
   } catch {
@@ -122,7 +140,7 @@ function loadEnvFromFile(filePath: string): void {
  */
 export function resolveEnvVar(value: string): string {
   return value.replace(/\$\{(\w+)\}/g, (_, varName) => {
-    const envValue = process.env[varName];
+    const envValue = getEnvProvider().getEnv(varName);
     if (envValue === undefined) {
       throw new Error(`Environment variable ${varName} is not set`);
     }

@@ -19,7 +19,7 @@ export async function schemaFixCommand(options: SchemaFixOptions): Promise<void>
     info("Checking for schema drift...");
     
     try {
-      // Run schema:check to detect drift
+      // Run migration:check to detect drift
       await schemaCheckCommand({ config: options.config, diff: true });
       
       // If we get here, there's drift
@@ -31,7 +31,7 @@ export async function schemaFixCommand(options: SchemaFixOptions): Promise<void>
         });
       }
     } catch (err) {
-      // schema:check exits with code 1 if drift detected, which is expected
+      // migration:check exits with code 1 if drift detected, which is expected
       const shouldFix = await confirm("Generate migration to fix drift?", false);
       if (shouldFix) {
         await schemaGenerateCommand({

@@ -1,7 +1,6 @@
 import { existsSync, writeFileSync, readFileSync } from "fs";
 import { join, dirname, relative } from "path";
-import { generateTypes, generateHandlerContexts, type YamaEntities, type HandlerContextConfig, type AvailableServices } from "@betagors/yama-core";
-import { generateSDK } from "@betagors/yama-sdk";
+import { generateTypes, generateHandlerContexts, generateIR, type YamaEntities, type HandlerContextConfig, type AvailableServices, type YamaSchemas, type SchemaDefinition } from "@betagors/yama-core";
 import { getDatabasePlugin } from "../utils/db-plugin.ts";
 import { readYamaConfig, ensureDir, getConfigDir } from "../utils/file-utils.ts";
 import { findYamaConfig, detectProjectType, inferOutputPath } from "../utils/project-detection.ts";
@@ -19,6 +18,7 @@ interface GenerateOptions {
   sdkOnly?: boolean;
   framework?: string;
   noCache?: boolean;
+  ir?: string;
 }
 
 export async function generateCommand(options: GenerateOptions): Promise<void> {
@@ -33,6 +33,7 @@ export async function generateCommand(options: GenerateOptions): Promise<void> {
   const watch = options.watch || false;
   const typesOnly = options.typesOnly || false;
   const sdkOnly = options.sdkOnly || false;
+  const irPath = options.ir;
 
   if (watch) {
     await generateWithWatch(configPath, options);
@@ -43,32 +44,60 @@ export async function generateCommand(options: GenerateOptions): Promise<void> {
 
 export async function generateOnce(configPath: string, options: GenerateOptions): Promise<void> {
   try {
-    const config = readYamaConfig(configPath) as { 
+    const rawConfig = readYamaConfig(configPath) as { 
       schemas?: unknown; 
       entities?: YamaEntities;
+      apis?: unknown;
       endpoints?: unknown;
+      operations?: unknown;
+      policies?: unknown;
       plugins?: Record<string, Record<string, unknown>> | string[];
       realtime?: {
         entities?: Record<string, any>;
         channels?: Array<any>;
       };
     };
+    
+    // Normalize config: convert null to undefined, ensure objects are actually objects
+    // Note: entities are now extracted from schemas with database properties (legacy entities support removed)
+    const config = {
+      ...rawConfig,
+      schemas: rawConfig.schemas && typeof rawConfig.schemas === 'object' && rawConfig.schemas !== null ? rawConfig.schemas : undefined,
+      apis: rawConfig.apis && typeof rawConfig.apis === 'object' && rawConfig.apis !== null ? rawConfig.apis as { rest?: any } : undefined,
+      operations: rawConfig.operations && typeof rawConfig.operations === 'object' && rawConfig.operations !== null ? rawConfig.operations : undefined,
+      policies: rawConfig.policies && typeof rawConfig.policies === 'object' && rawConfig.policies !== null ? rawConfig.policies : undefined,
+      plugins: rawConfig.plugins || undefined,
+    };
+    
     const configDir = getConfigDir(configPath);
     const projectType = detectProjectType(configDir);
     const cacheDir = getCacheDir(configDir);
     const useCache = !options.noCache;
+    const irOutputPath = options.ir;
 
     // Generate cache key for this config
     const cacheKey = useCache ? getConfigCacheKey(configPath, config) : null;
 
     let typesOutput: string | undefined;
 
-    // Generate types (from both schemas and entities)
-    if (!options.sdkOnly && (config.schemas || config.entities)) {
+    // Extract entities from schemas that have database properties
+    // Schemas with database.table are treated as entities (legacy entities support removed)
+    const allEntities: YamaEntities = extractEntitiesFromSchemas(config.schemas as YamaSchemas | undefined);
+
+    // Emit IR if requested
+    if (irOutputPath) {
+      const ir = generateIR(config as any);
+      await ensureDir(dirname(irOutputPath));
+      writeFileSync(irOutputPath, JSON.stringify(ir, null, 2));
+      console.log(`✅ IR written to ${irOutputPath}`);
+    }
+
+    // Generate types (from schemas - entities are extracted from schemas with database properties)
+    if (!options.sdkOnly && config.schemas) {
       typesOutput = getTypesOutputPath(configPath, options);
       await generateTypesFile(
         config.schemas as Parameters<typeof generateTypes>[0],
-        config.entities,
+        undefined, // No explicit entities - they come from schemas
         typesOutput,
         configDir,
         useCache ? cacheDir : undefined,
@@ -76,12 +105,20 @@ export async function generateOnce(configPath: string, options: GenerateOptions)
       );
     }
 
-    // Generate handler context types
-    if (!options.sdkOnly && config.endpoints) {
+    // Generate handler context types (includes operations converted to endpoints)
+    if (!options.sdkOnly && ((config.apis as { rest?: any })?.rest || config.operations)) {
       // Detect available services from configured plugins
       const availableServices = detectAvailableServices(config.plugins);
+      // Use merged entities (from both explicit entities and schemas with database properties)
+      // Include operations and policies for endpoint generation
+      const configWithEntities = {
+        ...config,
+        entities: allEntities,
+        operations: config.operations,
+        policies: config.policies,
+      } as HandlerContextConfig;
       await generateHandlerContextsFile(
-        config as HandlerContextConfig,
+        configWithEntities,
         typesOutput,
         configDir,
         useCache ? cacheDir : undefined,
@@ -113,15 +150,28 @@ export async function generateOnce(configPath: string, options: GenerateOptions)
 
     // Generate database code (Drizzle schemas and mappers)
     let databaseCodeGenerated = false;
-    if (!options.sdkOnly && !options.typesOnly && config.entities) {
+    if (!options.sdkOnly && !options.typesOnly && Object.keys(allEntities).length > 0) {
       try {
-        await generateDatabaseCode(config.entities, configDir, typesOutput, config.plugins, configPath);
+        await generateDatabaseCode(allEntities, configDir, typesOutput, config.plugins, configPath);
         databaseCodeGenerated = true;
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
         if (errorMsg.includes("No database plugin") || errorMsg.includes("database plugin")) {
           console.log("ℹ️  Database code generation skipped (database plugin not installed)");
           console.log("   Install a database plugin (e.g., @betagors/yama-postgres) to generate database code");
+          // Show detailed error if available
+          if (errorMsg.includes("Errors encountered:")) {
+            console.log("\n   Details:");
+            const detailsMatch = errorMsg.match(/Errors encountered:([\s\S]*?)(?:\n\n|$)/);
+            if (detailsMatch) {
+              const details = detailsMatch[1].trim();
+              details.split('\n').forEach(line => {
+                if (line.trim()) {
+                  console.log(`   ${line.trim()}`);
+                }
+              });
+            }
+          }
         } else {
           console.warn("⚠️  Failed to generate database code:", errorMsg);
           console.log("   This is optional - you can install a database plugin later if needed");
@@ -130,12 +180,17 @@ export async function generateOnce(configPath: string, options: GenerateOptions)
     }
 
     // Regenerate handler contexts after database code to include typed entities
-    if (databaseCodeGenerated && !options.sdkOnly && config.endpoints) {
+    if (databaseCodeGenerated && !options.sdkOnly && (config.apis as { rest?: any })?.rest) {
       try {
         // Detect available services from configured plugins
         const availableServices = detectAvailableServices(config.plugins);
+        // Use merged entities (from both explicit entities and schemas with database properties)
+        const configWithEntities = {
+          ...config,
+          entities: allEntities,
+        } as HandlerContextConfig;
         await generateHandlerContextsFile(
-          config as HandlerContextConfig,
+          configWithEntities,
           typesOutput,
           configDir,
           undefined, // Don't use cache for regeneration
@@ -144,16 +199,6 @@ export async function generateOnce(configPath: string, options: GenerateOptions)
         );
       } catch (error) {
         // Silently fail - handler contexts were already generated earlier
-      }
-    }
-
-    // Generate SDK
-    if (!options.typesOnly && config.endpoints) {
-      try {
-        const sdkOutput = getSdkOutputPath(configPath, options);
-        await generateSdkFile(config, sdkOutput, configDir, typesOutput, options.framework);
-      } catch (error) {
-        console.warn("⚠️  Failed to generate SDK:", error instanceof Error ? error.message : String(error));
       }
     }
 
@@ -168,8 +213,8 @@ export async function generateOnce(configPath: string, options: GenerateOptions)
       try {
         await generateMainIndex(
           configDir, 
-          config.entities, 
-          Array.isArray(config.endpoints) ? config.endpoints : undefined
+          allEntities, // Use extracted entities from schemas
+          config.apis
         );
       } catch (error) {
         console.warn("⚠️  Failed to generate main index:", error instanceof Error ? error.message : String(error));
@@ -277,6 +322,33 @@ async function generateTypesFile(
 }
 
 /**
+ * Extract entities from schemas that have database properties
+ * Schemas with database.table are treated as entities for database code generation
+ */
+function extractEntitiesFromSchemas(schemas?: YamaSchemas): YamaEntities {
+  const entities: YamaEntities = {};
+  
+  if (!schemas || typeof schemas !== 'object') {
+    return entities;
+  }
+  
+  for (const [schemaName, schemaDef] of Object.entries(schemas)) {
+    // Check if schema has database property (indicating it's an entity)
+    if (schemaDef && typeof schemaDef === 'object' && 'database' in schemaDef) {
+      const dbConfig = (schemaDef as any).database;
+      // If database is an object with table property, or if database.table exists
+      if (dbConfig && (typeof dbConfig === 'object' && 'table' in dbConfig || typeof dbConfig === 'string')) {
+        // Convert schema definition to entity definition
+        // The schema fields should already be in entity format
+        entities[schemaName] = schemaDef as any;
+      }
+    }
+  }
+  
+  return entities;
+}
+
+/**
  * Detect which services are available based on configured plugins
  */
 function detectAvailableServices(
@@ -288,7 +360,7 @@ function detectAvailableServices(
     return services;
   }
 
-  const pluginList = Array.isArray(plugins) ? plugins : Object.keys(plugins);
+  const pluginList = Array.isArray(plugins) ? plugins : (plugins ? Object.keys(plugins) : []);
   
   for (const pluginName of pluginList) {
     // Database plugins provide db and entities
@@ -390,7 +462,16 @@ async function generateHandlerContextsFile(
 function normalizeEntities(entities: YamaEntities): YamaEntities {
   const normalized: YamaEntities = {};
   
+  if (!entities || typeof entities !== 'object' || entities === null) {
+    return normalized;
+  }
+  
   for (const [entityName, entityDef] of Object.entries(entities)) {
+    // Handle database shorthand (string) or object
+    const dbConfig = typeof entityDef.database === "string"
+      ? { table: entityDef.database }
+      : entityDef.database;
+    
     // Convert entity name to snake_case for table name if not specified
     const defaultTableName = entityName
       .replace(/([A-Z])/g, '_$1')
@@ -399,7 +480,7 @@ function normalizeEntities(entities: YamaEntities): YamaEntities {
     
     normalized[entityName] = {
       ...entityDef,
-      table: entityDef.table || defaultTableName
+      table: dbConfig?.table || entityDef.table || defaultTableName
     };
   }
   
@@ -476,7 +557,7 @@ ${entityNames.map(name => {
 async function generateMainIndex(
   configDir: string,
   entities?: YamaEntities,
-  endpoints?: unknown[]
+  apis?: { rest?: any }
 ): Promise<void> {
   try {
     const genDir = join(configDir, ".yama", "gen");
@@ -488,6 +569,14 @@ async function generateMainIndex(
     const dbIndexPath = join(genDir, "db", "index.ts");
     const sdkIndexPath = join(genDir, "sdk", "index.ts");
     
+    // Check if we have REST endpoints
+    const hasRestEndpoints = apis?.rest && (
+      (Array.isArray(apis.rest.endpoints) && apis.rest.endpoints.length > 0) ||
+      (typeof apis.rest === 'object' && Object.values(apis.rest).some((config: any) => 
+        Array.isArray(config?.endpoints) && config.endpoints.length > 0
+      ))
+    );
+    
     const exports: string[] = [];
     
     // Export types if they exist
@@ -496,7 +585,7 @@ async function generateMainIndex(
     }
     
     // Export handler contexts if they exist
-    if (existsSync(handlerContextsPath) && endpoints && endpoints.length > 0) {
+    if (existsSync(handlerContextsPath) && hasRestEndpoints) {
       exports.push('export * from "./handler-contexts.js";');
     }
     
@@ -506,7 +595,7 @@ async function generateMainIndex(
     }
     
     // Export SDK if it exists
-    if (existsSync(sdkIndexPath) && endpoints && endpoints.length > 0) {
+    if (existsSync(sdkIndexPath) && hasRestEndpoints) {
       exports.push('export * from "./sdk/index.js";');
     }
     
@@ -524,48 +613,6 @@ ${exports.length > 0 ? exports.join("\n") : "// No generated files to export"}
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
     throw new Error(`Failed to generate main index: ${errorMsg}`);
-  }
-}
-
-async function generateSdkFile(
-  config: { schemas?: unknown; endpoints?: unknown },
-  outputPath: string,
-  configDir: string,
-  typesOutputPath?: string,
-  framework?: string
-): Promise<void> {
-  try {
-    const absoluteOutputPath = outputPath.startsWith(configDir) ? outputPath : join(configDir, outputPath);
-    const outputDir = dirname(absoluteOutputPath);
-    
-    // Calculate relative path from SDK to types file for import
-    // From .yama/gen/sdk/ to .yama/gen/types.ts
-    const typesImportPath = "../types.ts";
-
-    const sdkContent = generateSDK(
-      config as Parameters<typeof generateSDK>[0],
-      {
-        baseUrl: process.env.YAMA_API_URL || "http://localhost:3000",
-        typesImportPath,
-        framework
-      }
-    );
-
-    ensureDir(outputDir);
-    writeFileSync(absoluteOutputPath, sdkContent, "utf-8");
-    console.log(`✅ Generated SDK: ${outputPath.replace(configDir + "/", "")}`);
-
-    // Generate index.ts for SDK
-    const sdkDir = getSdkDir(configDir);
-    const indexContent = `// Auto-generated - do not edit
-export * from "./client.ts";
-`;
-    const indexPath = join(sdkDir, "index.ts");
-    writeFileSync(indexPath, indexContent, "utf-8");
-    console.log(`✅ Generated index: .yama/gen/sdk/index.ts`);
-  } catch (error) {
-    console.error("❌ Failed to generate SDK:", error instanceof Error ? error.message : String(error));
-    throw error;
   }
 }
 

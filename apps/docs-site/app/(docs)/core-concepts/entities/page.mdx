@@ -1,0 +1,388 @@
+# Entities
+
+Entities represent database tables and provide automatic CRUD operations. They're built on top of schemas and add database-specific configuration.
+
+## Basic Entity Definition
+
+YAMA supports both shorthand and full object syntax for defining entities. The shorthand syntax is cleaner and more concise:
+
+```yaml
+entities:
+  Todo:
+    table: todos                    # Database table name
+    crud:
+      enabled: true                 # Enable automatic CRUD endpoints
+    fields:
+      id: uuid!                     # Shorthand: uuid! = required uuid
+      title: string!                # Shorthand: string! = required string
+      completed: boolean = false    # Shorthand: boolean with default value
+      createdAt: timestamp          # Shorthand: timestamp (auto-populated)
+```
+
+You can also use the full object syntax for more control:
+
+```yaml
+entities:
+  Todo:
+    table: todos
+    crud:
+      enabled: true
+    fields:
+      id:
+        type: uuid
+        primary: true
+        generated: true
+      title:
+        type: string
+        required: true
+      completed:
+        type: boolean
+        default: false
+      createdAt:
+        type: timestamp
+        default: now
+```
+
+## Entity Fields
+
+Entity fields map to database columns. YAMA supports shorthand syntax for cleaner definitions:
+
+### Shorthand Syntax
+
+```yaml
+entities:
+  User:
+    table: users
+    fields:
+      id: uuid!                      # ! = required
+      email: string!                 # Required string
+      name: string?                  # ? = nullable
+      avatarUrl: string?             # Nullable string
+      role: enum[user, admin]        # Enum shorthand
+      age: integer = 0               # Default value
+      createdAt: timestamp           # Auto-populated
+      published: boolean = false     # Boolean with default
+```
+
+### Field Modifiers
+
+- `type!` - Required field (e.g., `string!`, `uuid!`)
+- `type?` - Nullable field (e.g., `string?`, `integer?`)
+- `enum[val1, val2]` - Enum type with values
+- `type = value` - Default value (e.g., `boolean = false`, `integer = 0`)
+
+### Inline Constraints
+
+You can add constraints directly in field definitions:
+
+```yaml
+entities:
+  User:
+    table: users
+    fields:
+      email: string! unique          # Unique constraint
+      slug: string! unique indexed   # Multiple constraints
+      name: string! indexed          # Index for faster queries
+```
+
+Supported inline constraints:
+- `unique` - Unique constraint (database-level)
+- `indexed` or `index` - Create index on this field
+
+### Full Object Syntax
+
+For advanced configuration, use the full object syntax:
+
+```yaml
+entities:
+  User:
+    table: users
+    fields:
+      id:
+        type: uuid
+        primary: true
+        generated: true              # Auto-generate UUID
+      email:
+        type: string
+        required: true
+        unique: true                 # Unique constraint
+      name:
+        type: string
+        nullable: true               # Allow NULL
+      age:
+        type: integer
+        default: 0
+      createdAt:
+        type: timestamp
+        default: now                 # Current timestamp
+      updatedAt:
+        type: timestamp
+        default: now
+        onUpdate: now                # Update on change
+```
+
+## CRUD Operations
+
+When `crud.enabled: true`, Yama automatically creates:
+
+- `GET /todos` - List all todos (with pagination, filtering, search)
+- `GET /todos/:id` - Get a single todo
+- `POST /todos` - Create a new todo
+- `PUT /todos/:id` - Update a todo
+- `PATCH /todos/:id` - Partially update a todo
+- `DELETE /todos/:id` - Delete a todo
+
+## Search Configuration
+
+Enable search across entity fields:
+
+```yaml
+entities:
+  Product:
+    table: products
+    crud:
+      enabled: true
+      search:
+        fields: ["name", "description"]
+        mode: contains              # contains, starts, ends, exact
+        fullText: true              # Enable ?search=query parameter
+    fields:
+      name:
+        type: string
+      description:
+        type: text
+```
+
+## Response Types
+
+Customize response types for different CRUD operations:
+
+```yaml
+entities:
+  Todo:
+    table: todos
+    crud:
+      enabled: true
+      responseTypes:
+        GET_LIST: TodoSummary       # Different type for list
+        GET_ONE: TodoDetail          # Different type for single item
+        POST: TodoResponse
+```
+
+## Relations
+
+YAMA supports two ways to define relationships: **inline relations** (recommended for simplicity) and **explicit relations** (for advanced control).
+
+### Inline Relations (Recommended)
+
+Define relations directly in the `fields:` section using entity references. Foreign keys are automatically generated:
+
+```yaml
+entities:
+  Post:
+    table: posts
+    fields:
+      id: uuid!
+      title: string!
+      # Inline relation - auto-generates authorId: uuid!
+      author: User! cascade         # belongsTo with cascade delete
+      comments: Comment[]           # hasMany
+      tags: Tag[] through:post_tags # manyToMany with junction table
+
+  Comment:
+    table: comments
+    fields:
+      id: uuid!
+      content: text!
+      # Inline relations - auto-generate foreign keys
+      post: Post! cascade          # belongsTo - auto-generates postId
+      user: User!                  # belongsTo - auto-generates userId
+```
+
+**Inline Relation Syntax:**
+- `Entity!` - belongsTo relationship (required, auto-generates `entityId` foreign key)
+- `Entity?` - hasOne relationship (nullable)
+- `Entity[]` - hasMany or manyToMany relationship
+  - If `through:table` is specified → manyToMany
+  - Otherwise → hasMany
+
+**Inline Relation Modifiers:**
+- `cascade` - Cascade delete (for belongsTo: `onDelete: cascade`)
+- `through:table_name` - Junction table for manyToMany (e.g., `tags: Tag[] through:post_tags`)
+- `timestamps:true` - Add timestamps to junction table (for manyToMany)
+
+### Explicit Relations (Advanced)
+
+For more control, use the dedicated `relations:` section:
+
+```yaml
+entities:
+  User:
+    table: users
+    fields:
+      id: uuid!
+      email: string!
+      name: string!
+    relations:
+      posts: hasMany(Post)           # One-to-many
+      profile: hasOne(Profile)        # One-to-one
+
+  Post:
+    table: posts
+    fields:
+      id: uuid!
+      title: string!
+      content: text!
+      authorId: uuid!                 # Foreign key (manual)
+    relations:
+      author: belongsTo(User)         # Many-to-one
+      comments: hasMany(Comment)       # One-to-many
+      tags: manyToMany(Tag)           # Many-to-many
+```
+
+### Relation Types
+
+- `hasMany(Entity)` - One-to-many relationship
+- `belongsTo(Entity)` - Many-to-one relationship  
+- `hasOne(Entity)` - One-to-one relationship
+- `manyToMany(Entity)` - Many-to-many relationship
+
+### Progressive Enhancement
+
+You can mix inline and explicit relations. Explicit relations take precedence:
+
+```yaml
+entities:
+  Post:
+    table: posts
+    fields:
+      # Simple inline relations
+      author: User!                  # Auto-generates authorId
+      tags: Tag[] through:post_tags  # Auto-generates junction table
+      
+    # Drop down to explicit for advanced control
+    relations:
+      author:
+        type: belongsTo
+        entity: User
+        foreignKey: customAuthorId   # Custom foreign key name
+        onDelete: setNull             # Custom delete behavior
+```
+
+### Advanced Relation Configuration
+
+For full control, use the object syntax:
+
+```yaml
+entities:
+  Post:
+    relations:
+      author:
+        type: belongsTo
+        entity: User
+        foreignKey: authorId
+        onDelete: cascade
+      tags:
+        type: manyToMany
+        entity: Tag
+        through: post_tags
+        localKey: postId
+        foreignKeyTarget: tagId
+```
+
+## Validations
+
+Define field validations declaratively. You can use inline constraints for simple cases or the `validations:` section for complex rules:
+
+```yaml
+entities:
+  User:
+    table: users
+    fields:
+      email: string! unique          # Inline: unique constraint
+      name: string!                   # Use validations section for complex rules
+      avatarUrl: string?
+    validations:
+      email: [email]                  # Email format (unique already in field)
+      name: [minLength(2), maxLength(100)]  # Length validation
+      avatarUrl: [url]                # URL format validation
+```
+
+**Note:** The `unique` constraint can be specified inline (`string! unique`) or in validations (`validations: { email: [unique] }`). Both work the same way.
+
+### Validation Rules
+
+Common validation rules:
+- `email` - Email format validation
+- `unique` - Unique constraint
+- `minLength(n)` - Minimum length
+- `maxLength(n)` - Maximum length
+- `min(n)` - Minimum numeric value
+- `max(n)` - Maximum numeric value
+- `url` - URL format validation
+- `slug` - Slug format validation
+
+## Computed Fields
+
+Define virtual fields calculated from other fields:
+
+```yaml
+entities:
+  User:
+    table: users
+    fields:
+      firstName: string!
+      lastName: string!
+    computed:
+      fullName: "{firstName} {lastName}"        # String concatenation
+      postCount: "count(posts)"                  # Count related records
+```
+
+## Hooks
+
+Define lifecycle hooks for custom logic:
+
+```yaml
+entities:
+  User:
+    table: users
+    fields:
+      email: string!
+      name: string!
+    hooks:
+      beforeCreate: ./hooks/user.beforeCreate.ts
+      afterCreate: ./hooks/user.afterCreate.ts
+      beforeUpdate: ./hooks/user.beforeUpdate.ts
+      afterDelete: ./hooks/user.afterDelete.ts
+```
+
+Available hooks:
+- `beforeCreate` - Before creating a new record
+- `afterCreate` - After creating a new record
+- `beforeUpdate` - Before updating a record
+- `afterUpdate` - After updating a record
+- `beforeDelete` - Before deleting a record
+- `afterDelete` - After deleting a record
+- `beforeSave` - Before saving (create or update)
+- `afterSave` - After saving (create or update)
+
+## Soft Deletes
+
+Enable soft deletes to mark records as deleted instead of removing them:
+
+```yaml
+entities:
+  Post:
+    table: posts
+    softDelete: true                 # Adds deletedAt timestamp
+    fields:
+      id: uuid!
+      title: string!
+```
+
+## Next Steps
+
+- Learn about [Endpoints](/core-concepts/endpoints) - Custom API routes
+- See [Guides: Database Migrations](/guides/migrations) - Managing schema changes
+- Check [API Reference: Configuration](/api-reference/configuration) - Complete entity options
+

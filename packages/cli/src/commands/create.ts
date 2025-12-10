@@ -274,6 +274,9 @@ export async function createCommand(projectName?: string, options: CreateOptions
   // Handle `.` for current directory (like Next.js)
   const useCurrentDir = projectName === "." || projectName === "./";
   
+  // Check if we need prompts (only for interactive mode, not for current dir)
+  const needsPrompts = !useCurrentDir && !projectName && !isNonInteractive && !options.database;
+  
   let finalProjectName: string;
   let projectPath: string;
   
@@ -435,11 +438,11 @@ export async function createCommand(projectName?: string, options: CreateOptions
     if (isInWorkspace && workspaceRootForProject) {
       // Use file: protocol for workspace packages
       dependencies["@betagors/yama-core"] = `file:${relative(projectPath, join(workspaceRootForProject, "packages", "core")).replace(/\\/g, "/")}`;
-      dependencies["@betagors/yama-runtime-node"] = `file:${relative(projectPath, join(workspaceRootForProject, "packages", "runtime-node")).replace(/\\/g, "/")}`;
+      dependencies["@betagors/yama-node"] = `file:${relative(projectPath, join(workspaceRootForProject, "packages", "node")).replace(/\\/g, "/")}`;
       devDependencies["@betagors/yama-cli"] = `file:${relative(projectPath, join(workspaceRootForProject, "packages", "cli")).replace(/\\/g, "/")}`;
     } else {
       dependencies["@betagors/yama-core"] = "latest";
-      dependencies["@betagors/yama-runtime-node"] = "latest";
+      dependencies["@betagors/yama-node"] = "latest";
       // Note: @betagors/yama-cli should be installed globally, not as a project dependency
       // Users should run: npm install -g @betagors/yama-cli (once published)
       // Or use: npx @betagors/yama-cli <command>
@@ -573,20 +576,18 @@ export async function createCommand(projectName?: string, options: CreateOptions
       : "";
     const yamlContent = `name: ${finalProjectName}
 version: 0.1.0${pluginsSection}
-schemas:
+entities:
   Example:
     fields:
-      id:
-        type: string
-        required: true
-      name:
-        type: string
-        required: true
+      id: uuid!
+      name: string!
+      createdAt: timestamp
+      updatedAt: timestamp
 
 endpoints:
   - path: /examples
     method: GET
-    handler: getExamples
+    handler: src/handlers/getExamples.ts
     response:
       type: Example
 `;
@@ -615,12 +616,10 @@ ${yamlContent}`;
   // Create example handler
   const handlerSpinner = createSpinner("Creating example handler...");
   try {
-    const handlerContent = `import type { HttpRequest, HttpResponse } from "@betagors/yama-core";
-import type { Example } from "@gen/types";
+    const handlerContent = `import type { GetExamplesHandlerContext, Example } from "@yama/gen";
 
 export async function getExamples(
-  request: HttpRequest,
-  reply: HttpResponse
+  context: GetExamplesHandlerContext
 ): Promise<Example> {
   return {
     id: "1",

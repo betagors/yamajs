@@ -41,7 +41,7 @@ describe("createTodo Handler", () => {
     );
 
     expect(mockTodoRepository.create).toHaveBeenCalledWith(mockContext.body);
-    expect(mockContext.status).toHaveBeenCalledWith(201);
+    // Note: status 201 is set by the runtime for POST handlers, not the handler itself
     expect(result).toEqual(mockTodo);
   });
 

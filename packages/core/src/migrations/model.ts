@@ -1,5 +1,7 @@
 import type { YamaEntities, EntityDefinition } from "../entities.js";
-import { createHash } from "crypto";
+import { normalizeEntityDefinition } from "../entities.js";
+import { DatabaseTypeMapper } from "../types/index.js";
+import { sha256Hex } from "../platform/hash.js";
 
 /**
  * Represents the schema state of the database
@@ -65,16 +67,27 @@ function normalizeEntities(entities: YamaEntities): string {
   
   for (const entityName of sortedEntityNames) {
     const entity = entities[entityName];
+    // Use same fallback logic as normalizeEntityDefinition
+    const dbConfig = typeof entity.database === "string" 
+      ? { table: entity.database }
+      : entity.database;
+    const tableName = dbConfig?.table || entity.table || entityName.toLowerCase() + 's';
     const normalizedEntity: {
       table: string;
       fields: Record<string, Record<string, unknown>>;
       indexes?: Array<{ name?: string; fields: string[]; unique: boolean }>;
     } = {
-      table: entity.table,
+      table: tableName,
       fields: {},
     };
     
     // Sort field names for consistency
+    if (!entity.fields) {
+      // Entity has no fields - add it with empty fields and continue
+      normalized[entityName] = normalizedEntity;
+      continue;
+    }
+    
     const sortedFieldNames = Object.keys(entity.fields).sort();
     
     for (const fieldName of sortedFieldNames) {
@@ -115,7 +128,7 @@ function normalizeEntities(entities: YamaEntities): string {
  */
 export function computeModelHash(entities: YamaEntities): string {
   const normalized = normalizeEntities(entities);
-  return createHash("sha256").update(normalized).digest("hex");
+  return sha256Hex(normalized);
 }
 
 /**
@@ -125,41 +138,43 @@ export function entitiesToModel(entities: YamaEntities): Model {
   const hash = computeModelHash(entities);
   const tables = new Map<string, TableModel>();
   
-  for (const [entityName, entityDef] of Object.entries(entities)) {
+  // Process entities efficiently
+  const entityEntries = Object.entries(entities);
+  for (let i = 0; i < entityEntries.length; i++) {
+    const [entityName, entityDef] = entityEntries[i];
     const columns = new Map<string, ColumnModel>();
     
-    for (const [fieldName, field] of Object.entries(entityDef.fields)) {
+    // Normalize once per entity
+    const normalized = normalizeEntityDefinition(entityName, entityDef, entities);
+    // normalized.table is always defined (has fallback in normalizeEntityDefinition)
+    const tableName: string = normalized.table || entityName.toLowerCase() + 's';
+    const fieldEntries = Object.entries(normalized.fields);
+    
+    // Process fields efficiently
+    for (let j = 0; j < fieldEntries.length; j++) {
+      const [fieldName, field] = fieldEntries[j];
       const dbColumnName = field.dbColumn || fieldName;
       
-      // Convert entity type to SQL type if dbType not provided
+      // Convert entity type to SQL type using new type system
       let sqlType: string = field.dbType || "";
       if (!sqlType) {
-        switch (field.type) {
-          case "uuid":
-            sqlType = "UUID";
-            break;
-          case "string":
-            sqlType = field.maxLength ? `VARCHAR(${field.maxLength})` : "VARCHAR(255)";
-            break;
-          case "text":
-            sqlType = "TEXT";
-            break;
-          case "number":
-          case "integer":
-            sqlType = "INTEGER";
-            break;
-          case "boolean":
-            sqlType = "BOOLEAN";
-            break;
-          case "timestamp":
-            sqlType = "TIMESTAMP";
-            break;
-          case "jsonb":
-            sqlType = "JSONB";
-            break;
-          default:
-            sqlType = String(field.type).toUpperCase();
-        }
+        // Convert EntityField to FieldType for DatabaseTypeMapper
+        const fieldType = {
+          type: field.type as any,
+          nullable: field.nullable !== false && !field.required,
+          array: false,
+          length: (field as any).length,
+          maxLength: field.maxLength,
+          minLength: field.minLength,
+          precision: (field as any).precision,
+          scale: (field as any).scale,
+          currency: (field as any).currency,
+          enumValues: field.enum as string[],
+          pattern: field.pattern,
+        };
+        
+        // Use DatabaseTypeMapper for PostgreSQL (default)
+        sqlType = DatabaseTypeMapper.toPostgreSQL(fieldType);
       }
       
       // Primary keys are always NOT NULL
@@ -178,34 +193,39 @@ export function entitiesToModel(entities: YamaEntities): Model {
     
     const indexes: IndexModel[] = [];
     
-    // Add indexes from entity definition
-    if (entityDef.indexes) {
-      for (const index of entityDef.indexes) {
+    // Add indexes from entity definition - optimized
+    if (normalized.indexes) {
+      for (let k = 0; k < normalized.indexes.length; k++) {
+        const index = normalized.indexes[k];
+        const indexColumns: string[] = [];
+        for (let m = 0; m < index.fields.length; m++) {
+          const f = index.fields[m];
+          const field = normalized.fields[f];
+          indexColumns.push(field?.dbColumn || f);
+        }
         indexes.push({
-          name: index.name || `${entityDef.table}_${index.fields.join("_")}_idx`,
-          columns: index.fields.map((f) => {
-            const field = entityDef.fields[f];
-            return field?.dbColumn || f;
-          }),
+          name: index.name || `${tableName}_${index.fields.join("_")}_idx`,
+          columns: indexColumns,
           unique: index.unique || false,
         });
       }
     }
     
-    // Add indexes from field index: true
-    for (const [fieldName, field] of Object.entries(entityDef.fields)) {
+    // Add indexes from field index: true - optimized loop
+    for (let k = 0; k < fieldEntries.length; k++) {
+      const [fieldName, field] = fieldEntries[k];
       if (field.index) {
         const dbColumnName = field.dbColumn || fieldName;
         indexes.push({
-          name: `${entityDef.table}_${dbColumnName}_idx`,
+          name: `${tableName}_${dbColumnName}_idx`,
           columns: [dbColumnName],
           unique: false,
         });
       }
     }
     
-    tables.set(entityDef.table, {
-      name: entityDef.table,
+    tables.set(tableName, {
+      name: tableName,
       columns,
       indexes,
       foreignKeys: [], // Foreign keys not yet supported in entity definitions

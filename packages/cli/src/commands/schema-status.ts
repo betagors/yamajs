@@ -1,11 +1,18 @@
-import { existsSync, readdirSync } from "fs";
-import { join } from "path";
+import { existsSync } from "fs";
 import { findYamaConfig } from "../utils/project-detection.ts";
 import { readYamaConfig, getConfigDir } from "../utils/file-utils.ts";
 import { loadEnvFile, resolveEnvVars } from "@betagors/yama-core";
 import type { DatabaseConfig } from "@betagors/yama-core";
-import { getDatabasePlugin } from "../utils/db-plugin.ts";
-import { success, error, info, printTable, colors } from "../utils/cli-utils.ts";
+import {
+  getCurrentSnapshot,
+  getAllStates,
+  getAllSnapshots,
+  getAllTransitions,
+  entitiesToModel,
+  snapshotExists,
+} from "@betagors/yama-core";
+import { getDatabasePluginAndConfig } from "../utils/db-plugin.ts";
+import { success, error, info, dim, fmt, printTable, colors } from "../utils/cli-utils.ts";
 
 interface SchemaStatusOptions {
   config?: string;
@@ -17,144 +24,158 @@ export async function schemaStatusCommand(options: SchemaStatusOptions): Promise
   const configPath = options.config || findYamaConfig() || "yama.yaml";
 
   if (!existsSync(configPath)) {
-    error(`Config file not found: ${configPath}`);
+    error(`Config not found: ${configPath}`);
     process.exit(1);
   }
 
   try {
     const environment = options.env || process.env.NODE_ENV || "development";
     loadEnvFile(configPath, environment);
-    let config = readYamaConfig(configPath) as { database?: DatabaseConfig };
-    config = resolveEnvVars(config) as { database?: DatabaseConfig };
+    let config = readYamaConfig(configPath) as {
+      schemas?: any;
+      plugins?: Record<string, Record<string, unknown>> | string[];
+      database?: DatabaseConfig;
+    };
+    config = resolveEnvVars(config) as typeof config;
     const configDir = getConfigDir(configPath);
 
-    if (!config.database) {
-      error("No database configuration found in yama.yaml");
-      process.exit(1);
-    }
+    // Get current snapshot for the environment
+    const currentSnapshot = getCurrentSnapshot(configDir, environment);
+    
+    // Get target model from config
+    const entities = extractEntitiesFromSchemas(config.schemas);
+    const normalizedEntities = normalizeEntities(entities);
+    const targetModel = Object.keys(normalizedEntities).length > 0 
+      ? entitiesToModel(normalizedEntities)
+      : null;
 
-    const migrationsDir = join(configDir, "migrations");
-
-    if (!existsSync(migrationsDir)) {
-      info("No migrations directory found.");
-      return;
-    }
-
-    // Get all migration files
-    const migrationFiles = readdirSync(migrationsDir)
-      .filter((f) => f.endsWith(".yaml") || f.endsWith(".sql"))
-      .map((f) => {
-        // Extract timestamp and name (format: YYYYMMDDHHmmss_name.yaml)
-        const match = f.match(/^(\d{14})_(.+)\.(yaml|sql)$/);
-        if (match) {
-          return { timestamp: match[1], name: match[2], file: f };
-        }
-        return null;
-      })
-      .filter((f): f is { timestamp: string; name: string; file: string } => f !== null)
-      .sort((a, b) => a.timestamp.localeCompare(b.timestamp));
-
-    // Remove duplicates (keep YAML files, ignore SQL files if YAML exists)
-    const uniqueMigrations = new Map<string, { timestamp: string; name: string; file: string }>();
-    for (const migration of migrationFiles) {
-      if (!uniqueMigrations.has(migration.timestamp) || migration.file.endsWith(".yaml")) {
-        uniqueMigrations.set(migration.timestamp, migration);
-      }
-    }
-    const sortedMigrations = Array.from(uniqueMigrations.values()).sort(
-      (a, b) => a.timestamp.localeCompare(b.timestamp)
-    );
-
-    if (sortedMigrations.length === 0) {
-      info("No migration files found.");
-      return;
-    }
-
-    // Initialize database
-    const dbPlugin = await getDatabasePlugin();
-    await dbPlugin.client.initDatabase(config.database);
-    const sql = dbPlugin.client.getSQL();
-
-    // Create migration tables if they don't exist
-    await sql.unsafe(dbPlugin.migrations.getMigrationTableSQL());
-    await sql.unsafe(dbPlugin.migrations.getMigrationRunsTableSQL());
-
-    // Get applied migrations
-    let appliedMigrations: Array<{
-      name: string;
-      applied_at: Date;
-      to_model_hash?: string;
-    }> = [];
-    try {
-      const result = await sql.unsafe(`
-        SELECT name, applied_at, to_model_hash
-        FROM _yama_migrations
-        ORDER BY applied_at
-      `);
-      appliedMigrations = result as unknown as typeof appliedMigrations;
-    } catch {
-      // Table doesn't exist yet (shouldn't happen after creating it, but handle gracefully)
-    }
-
-    const appliedNames = new Set(appliedMigrations.map((m) => m.name));
-    const appliedMap = new Map(
-      appliedMigrations.map((m) => [m.name, m])
-    );
+    // Get all snapshots and transitions
+    const snapshots = getAllSnapshots(configDir);
+    const transitions = getAllTransitions(configDir);
+    const states = getAllStates(configDir);
 
     if (options.short) {
-      const pendingCount = sortedMigrations.filter(
-        (m) => !appliedNames.has(m.file)
-      ).length;
-      const appliedCount = sortedMigrations.filter((m) => appliedNames.has(m.file)).length;
-
-      console.log(`${pendingCount} pending, ${appliedCount} applied`);
-      await dbPlugin.client.closeDatabase();
+      const inSync = targetModel && currentSnapshot === targetModel.hash;
+      if (inSync) {
+        console.log(`${environment}: ${colors.success("in sync")} (${currentSnapshot?.substring(0, 8) || "none"})`);
+      } else {
+        console.log(`${environment}: ${colors.warning("out of sync")}`);
+      }
       return;
     }
 
-    // Build status table
-    const tableData: unknown[][] = [["Status", "Migration", "Applied At", "Hash"]];
+    // Full status display
+    console.log("");
+    console.log(fmt.bold("Schema Status"));
+    console.log(dim("─".repeat(40)));
+    console.log("");
 
-    let pendingCount = 0;
-    for (const migration of sortedMigrations) {
-      const isApplied = appliedNames.has(migration.file);
-      const applied = appliedMap.get(migration.file);
+    // Environment state
+    const inSync = targetModel && currentSnapshot === targetModel.hash;
+    console.log(fmt.bold("Environment:"), environment);
+    console.log(fmt.bold("Current:"), currentSnapshot ? fmt.cyan(currentSnapshot.substring(0, 8)) : dim("none"));
+    console.log(fmt.bold("Target:"), targetModel ? fmt.cyan(targetModel.hash.substring(0, 8)) : dim("none"));
+    console.log(fmt.bold("Status:"), inSync ? fmt.green("✓ In sync") : fmt.yellow("○ Changes pending"));
+    console.log("");
 
-      const status = isApplied
-        ? colors.success("✅ Applied")
-        : colors.warning("⏳ Pending");
-      const appliedAt = applied
-        ? new Date(applied.applied_at).toISOString().split("T")[0]
-        : "-";
-      const hash = applied?.to_model_hash
-        ? applied.to_model_hash.substring(0, 8) + "..."
-        : "-";
-
-      tableData.push([
-        status,
-        migration.file,
-        appliedAt,
-        hash,
-      ]);
-
-      if (!isApplied) {
-        pendingCount++;
+    // All environments
+    if (states.length > 0) {
+      console.log(fmt.bold("All Environments"));
+      console.log(dim("─".repeat(40)));
+      
+      const tableData: unknown[][] = [["Env", "Snapshot", "Updated"]];
+      for (const state of states) {
+        const isTarget = targetModel && state.currentSnapshot === targetModel.hash;
+        const snapshotDisplay = state.currentSnapshot 
+          ? `${state.currentSnapshot.substring(0, 8)}${isTarget ? " ✓" : ""}`
+          : "-";
+        tableData.push([
+          state.environment,
+          snapshotDisplay,
+          new Date(state.updatedAt).toLocaleDateString(),
+        ]);
       }
+      printTable(tableData);
+      console.log("");
     }
 
-    console.log("\n📊 Migration Status:\n");
-    printTable(tableData);
-
-    if (pendingCount === 0) {
-      success("\nAll migrations are applied.");
-    } else {
-      info(`\n${pendingCount} migration(s) pending. Apply with: yama schema:apply`);
+    // Snapshots
+    if (snapshots.length > 0) {
+      console.log(fmt.bold(`Snapshots (${snapshots.length})`));
+      console.log(dim("─".repeat(40)));
+      
+      const tableData: unknown[][] = [["Hash", "Description", "Created"]];
+      for (const snapshot of snapshots.slice(-5)) { // Show last 5
+        const isCurrent = snapshot.hash === currentSnapshot;
+        const isTarget = targetModel && snapshot.hash === targetModel.hash;
+        const markers = [isCurrent ? "current" : "", isTarget ? "target" : ""].filter(Boolean).join(", ");
+        tableData.push([
+          `${snapshot.hash.substring(0, 8)}${markers ? ` (${markers})` : ""}`,
+          snapshot.metadata.description || "-",
+          new Date(snapshot.metadata.createdAt).toLocaleDateString(),
+        ]);
+      }
+      printTable(tableData);
+      
+      if (snapshots.length > 5) {
+        console.log(dim(`  ... and ${snapshots.length - 5} more`));
+      }
+      console.log("");
     }
 
-    await dbPlugin.client.closeDatabase();
+    // Transitions
+    if (transitions.length > 0) {
+      console.log(fmt.bold(`Transitions (${transitions.length})`));
+      console.log(dim("─".repeat(40)));
+      
+      const tableData: unknown[][] = [["From", "To", "Steps"]];
+      for (const transition of transitions.slice(-5)) { // Show last 5
+        tableData.push([
+          transition.fromHash ? transition.fromHash.substring(0, 8) : "empty",
+          transition.toHash.substring(0, 8),
+          transition.steps.length.toString(),
+        ]);
+      }
+      printTable(tableData);
+      
+      if (transitions.length > 5) {
+        console.log(dim(`  ... and ${transitions.length - 5} more`));
+      }
+      console.log("");
+    }
+
+    // Next steps
+    if (!inSync && targetModel) {
+      info(`Run 'yama deploy --env ${environment}' to apply changes.`);
+    } else if (inSync) {
+      success("Schema is up to date.");
+    }
+
   } catch (err) {
-    error(`Failed to check migration status: ${err instanceof Error ? err.message : String(err)}`);
+    error(`Failed: ${err instanceof Error ? err.message : String(err)}`);
     process.exit(1);
   }
 }
 
+// Helper functions
+function extractEntitiesFromSchemas(schemas: any): any {
+  const entities: any = {};
+  if (!schemas) return entities;
+  for (const [name, def] of Object.entries(schemas)) {
+    if (def && typeof def === 'object' && 'database' in (def as any)) {
+      entities[name] = def;
+    }
+  }
+  return entities;
+}
+
+function normalizeEntities(entities: any): any {
+  const normalized: any = {};
+  for (const [name, def] of Object.entries(entities)) {
+    const d = def as any;
+    const dbConfig = typeof d.database === "string" ? { table: d.database } : d.database;
+    const tableName = dbConfig?.table || d.table || name.toLowerCase();
+    normalized[name] = { ...d, table: tableName, database: dbConfig || { table: tableName } };
+  }
+  return normalized;
+}

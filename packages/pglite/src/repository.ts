@@ -1,4 +1,5 @@
 import type { YamaEntities, EntityDefinition, EntityField } from "@betagors/yama-core";
+import { parseFieldDefinition } from "@betagors/yama-core";
 
 /**
  * Convert snake_case to camelCase
@@ -33,10 +34,19 @@ function getDbColumnName(fieldName: string, field: EntityField): string {
 /**
  * Get all queryable fields from entity (exclude generated/primary fields for queries)
  */
-function getQueryableFields(entityDef: EntityDefinition): Array<{ fieldName: string; apiFieldName: string; dbColumnName: string; field: EntityField }> {
+function getQueryableFields(entityDef: EntityDefinition, availableEntities: Set<string>): Array<{ fieldName: string; apiFieldName: string; dbColumnName: string; field: EntityField }> {
   const fields: Array<{ fieldName: string; apiFieldName: string; dbColumnName: string; field: EntityField }> = [];
   
-  for (const [fieldName, field] of Object.entries(entityDef.fields)) {
+  if (!entityDef.fields) {
+    return fields;
+  }
+  
+  for (const [fieldName, fieldDef] of Object.entries(entityDef.fields)) {
+    const field = parseFieldDefinition(fieldName, fieldDef, availableEntities);
+    // Skip inline relations
+    if (field._isInlineRelation) {
+      continue;
+    }
     const apiFieldName = getApiFieldName(fieldName, field);
     if (apiFieldName && !field.generated) {
       fields.push({
@@ -75,10 +85,19 @@ function generateExplicitMethods(
   
   // Single field queries
   for (const field of queryableFields) {
+    // Skip primary field - it already has findById method
+    if (field.fieldName === primaryFieldName) {
+      continue;
+    }
+    
     const fieldType = field.field.type === 'boolean' ? 'boolean' : 
-                     field.field.type === 'number' || field.field.type === 'integer' ? 'number' : 'string';
+                     field.field.type === 'number' || field.field.type === 'integer' ? 'number' :
+                     field.field.type === 'timestamp' || field.field.type === 'date' ? 'Date | string' : 'string';
     const fieldCapitalized = capitalize(field.apiFieldName);
     const dbColumn = field.dbColumnName;
+    const isTimestamp = field.field.type === 'timestamp' || field.field.type === 'date';
+    const dateConversion = isTimestamp ? `    const dateValue = typeof value === 'string' ? new Date(value) : value;` : '';
+    const valueVar = isTimestamp ? 'dateValue' : 'value';
     
     // findBy{Field}
     methods.push(`  /**
@@ -86,9 +105,10 @@ function generateExplicitMethods(
    */
   async findBy${fieldCapitalized}(value: ${fieldType}): Promise<${apiSchemaName}[]> {
     const db = getDb();
+${dateConversion}
     const entities = await db.select()
       .from(${tableName})
-      .where(eq(${tableName}.${dbColumn}, value));
+      .where(eq(${tableName}.${dbColumn}, ${valueVar}));
     return entities.map(${mapperFromEntity});
   }`);
     
@@ -98,9 +118,10 @@ function generateExplicitMethods(
    */
   async findBy${fieldCapitalized}Equals(value: ${fieldType}): Promise<${apiSchemaName}[]> {
     const db = getDb();
+${dateConversion}
     const entities = await db.select()
       .from(${tableName})
-      .where(eq(${tableName}.${dbColumn}, value));
+      .where(eq(${tableName}.${dbColumn}, ${valueVar}));
     return entities.map(${mapperFromEntity});
   }`);
     
@@ -167,8 +188,33 @@ function generateExplicitMethods(
     
     // Date/number comparisons
     if (field.field.type === 'timestamp' || field.field.type === 'number' || field.field.type === 'integer') {
-      const dateType = field.field.type === 'timestamp' ? 'string' : 'number';
-      methods.push(`  /**
+      const dateType = field.field.type === 'timestamp' ? 'Date | string' : 'number';
+      if (field.field.type === 'timestamp') {
+        methods.push(`  /**
+   * Find ${apiSchemaName} where ${field.apiFieldName} is after value
+   */
+  async findBy${fieldCapitalized}After(value: ${dateType}): Promise<${apiSchemaName}[]> {
+    const db = getDb();
+    const dateValue = typeof value === 'string' ? new Date(value) : value;
+    const entities = await db.select()
+      .from(${tableName})
+      .where(gt(${tableName}.${dbColumn}, dateValue));
+    return entities.map(${mapperFromEntity});
+  }`);
+        
+        methods.push(`  /**
+   * Find ${apiSchemaName} where ${field.apiFieldName} is before value
+   */
+  async findBy${fieldCapitalized}Before(value: ${dateType}): Promise<${apiSchemaName}[]> {
+    const db = getDb();
+    const dateValue = typeof value === 'string' ? new Date(value) : value;
+    const entities = await db.select()
+      .from(${tableName})
+      .where(lt(${tableName}.${dbColumn}, dateValue));
+    return entities.map(${mapperFromEntity});
+  }`);
+      } else {
+        methods.push(`  /**
    * Find ${apiSchemaName} where ${field.apiFieldName} is after value
    */
   async findBy${fieldCapitalized}After(value: ${dateType}): Promise<${apiSchemaName}[]> {
@@ -178,8 +224,8 @@ function generateExplicitMethods(
       .where(gt(${tableName}.${dbColumn}, value));
     return entities.map(${mapperFromEntity});
   }`);
-      
-      methods.push(`  /**
+        
+        methods.push(`  /**
    * Find ${apiSchemaName} where ${field.apiFieldName} is before value
    */
   async findBy${fieldCapitalized}Before(value: ${dateType}): Promise<${apiSchemaName}[]> {
@@ -189,11 +235,28 @@ function generateExplicitMethods(
       .where(lt(${tableName}.${dbColumn}, value));
     return entities.map(${mapperFromEntity});
   }`);
+      }
     }
     
     // findByIdAnd{Field}
-    if (field.apiFieldName.toLowerCase() !== primaryFieldName.toLowerCase()) {
-      methods.push(`  /**
+    if (field.fieldName !== primaryFieldName && field.apiFieldName.toLowerCase() !== primaryFieldName.toLowerCase()) {
+      // Handle timestamp fields specially
+      if (field.field.type === 'timestamp' || field.field.type === 'date') {
+        methods.push(`  /**
+   * Find ${apiSchemaName} by ID and ${field.apiFieldName}
+   */
+  async findByIdAnd${fieldCapitalized}(id: string, value: Date | string): Promise<${apiSchemaName} | null> {
+    const db = getDb();
+    const dateValue = typeof value === 'string' ? new Date(value) : value;
+    const [entity] = await db.select()
+      .from(${tableName})
+      .where(and(eq(${tableName}.${primaryDbColumn}, id), eq(${tableName}.${dbColumn}, dateValue)))
+      .limit(1);
+    if (!entity) return null;
+    return ${mapperFromEntity}(entity);
+  }`);
+      } else {
+        methods.push(`  /**
    * Find ${apiSchemaName} by ID and ${field.apiFieldName}
    */
   async findByIdAnd${fieldCapitalized}(id: string, value: ${fieldType}): Promise<${apiSchemaName} | null> {
@@ -205,6 +268,7 @@ function generateExplicitMethods(
     if (!entity) return null;
     return ${mapperFromEntity}(entity);
   }`);
+      }
       
       if (field.field.type === 'boolean') {
         methods.push(`  /**
@@ -241,33 +305,54 @@ function generateExplicitMethods(
     for (let j = i + 1; j < queryableFields.length && j < 5; j++) {
       const field1 = queryableFields[i];
       const field2 = queryableFields[j];
+      
+      // Skip if field1 is the primary key to avoid duplicate with findByIdAnd{Field}
+      if (field1.fieldName === primaryFieldName) {
+        continue;
+      }
+      
       const type1 = field1.field.type === 'boolean' ? 'boolean' : 
-                   field1.field.type === 'number' || field1.field.type === 'integer' ? 'number' : 'string';
+                   field1.field.type === 'number' || field1.field.type === 'integer' ? 'number' : 
+                   field1.field.type === 'timestamp' || field1.field.type === 'date' ? 'Date | string' : 'string';
       const type2 = field2.field.type === 'boolean' ? 'boolean' : 
-                   field2.field.type === 'number' || field2.field.type === 'integer' ? 'number' : 'string';
+                   field2.field.type === 'number' || field2.field.type === 'integer' ? 'number' : 
+                   field2.field.type === 'timestamp' || field2.field.type === 'date' ? 'Date | string' : 'string';
       const field1Capitalized = capitalize(field1.apiFieldName);
       const field2Capitalized = capitalize(field2.apiFieldName);
+      
+      // Handle timestamp conversions
+      const needsTimestampConversion1 = field1.field.type === 'timestamp' || field1.field.type === 'date';
+      const needsTimestampConversion2 = field2.field.type === 'timestamp' || field2.field.type === 'date';
+      const conversionCode1 = needsTimestampConversion1 ? `    const value1Converted = typeof value1 === 'string' ? new Date(value1) : value1;` : '';
+      const conversionCode2 = needsTimestampConversion2 ? `    const value2Converted = typeof value2 === 'string' ? new Date(value2) : value2;` : '';
+      const value1Var = needsTimestampConversion1 ? 'value1Converted' : 'value1';
+      const value2Var = needsTimestampConversion2 ? 'value2Converted' : 'value2';
       
       methods.push(`  /**
    * Find ${apiSchemaName} by ${field1.apiFieldName} and ${field2.apiFieldName}
    */
   async findBy${field1Capitalized}And${field2Capitalized}(value1: ${type1}, value2: ${type2}): Promise<${apiSchemaName}[]> {
     const db = getDb();
+${conversionCode1}${conversionCode2}
     const entities = await db.select()
       .from(${tableName})
-      .where(and(eq(${tableName}.${field1.dbColumnName}, value1), eq(${tableName}.${field2.dbColumnName}, value2)));
+      .where(and(eq(${tableName}.${field1.dbColumnName}, ${value1Var}), eq(${tableName}.${field2.dbColumnName}, ${value2Var})));
     return entities.map(${mapperFromEntity});
   }`);
       
       if (field2.field.type === 'boolean') {
+        const conversionCode1 = needsTimestampConversion1 ? `    const value1Converted = typeof value1 === 'string' ? new Date(value1) : value1;` : '';
+        const value1Var = needsTimestampConversion1 ? 'value1Converted' : 'value1';
+        
         methods.push(`  /**
    * Find ${apiSchemaName} by ${field1.apiFieldName} where ${field2.apiFieldName} is true
    */
   async findBy${field1Capitalized}And${field2Capitalized}IsTrue(value1: ${type1}): Promise<${apiSchemaName}[]> {
     const db = getDb();
+${conversionCode1}
     const entities = await db.select()
       .from(${tableName})
-      .where(and(eq(${tableName}.${field1.dbColumnName}, value1), eq(${tableName}.${field2.dbColumnName}, true)));
+      .where(and(eq(${tableName}.${field1.dbColumnName}, ${value1Var}), eq(${tableName}.${field2.dbColumnName}, true)));
     return entities.map(${mapperFromEntity});
   }`);
         
@@ -276,9 +361,10 @@ function generateExplicitMethods(
    */
   async findBy${field1Capitalized}And${field2Capitalized}IsFalse(value1: ${type1}): Promise<${apiSchemaName}[]> {
     const db = getDb();
+${conversionCode1}
     const entities = await db.select()
       .from(${tableName})
-      .where(and(eq(${tableName}.${field1.dbColumnName}, value1), eq(${tableName}.${field2.dbColumnName}, false)));
+      .where(and(eq(${tableName}.${field1.dbColumnName}, ${value1Var}), eq(${tableName}.${field2.dbColumnName}, false)));
     return entities.map(${mapperFromEntity});
   }`);
       }
@@ -315,29 +401,43 @@ function generateExplicitMethods(
 }
 
 /**
- * Generate repository class for a single entity
+ * Generate repository class for a single entity (class body only, no imports)
  */
 function generateRepositoryClass(
   entityName: string,
   entityDef: EntityDefinition,
-  typesImportPath: string
-): string {
+  typesImportPath: string,
+  availableEntities: Set<string>
+): { classCode: string; schemaImport: string; mapperImports: string; typeImports: string; repositoryTypeImport: string } {
   const tableName = entityName.toLowerCase();
   const apiSchemaName = entityDef.apiSchema || entityName;
-  const createInputName = `Create${apiSchemaName}Input`;
-  const updateInputName = `Update${apiSchemaName}Input`;
+  // Use base type for inputs (Create/Update types may not be generated)
+  const createInputName = apiSchemaName;
+  const updateInputName = `Partial<${apiSchemaName}>`;
   
   const mapperToEntity = `map${apiSchemaName}To${entityName}Entity`;
   const mapperFromEntity = `map${entityName}EntityTo${apiSchemaName}`;
   
-  const queryableFields = getQueryableFields(entityDef);
-  const primaryField = Object.entries(entityDef.fields).find(([, f]) => f.primary);
+  const queryableFields = getQueryableFields(entityDef, availableEntities);
+  
+  // Find primary field
+  let primaryField: [string, EntityField] | undefined;
+  if (entityDef.fields) {
+    for (const [fieldName, fieldDef] of Object.entries(entityDef.fields)) {
+      const field = parseFieldDefinition(fieldName, fieldDef, availableEntities);
+      if (field.primary) {
+        primaryField = [fieldName, field];
+        break;
+      }
+    }
+  }
   const primaryFieldName = primaryField ? primaryField[0] : 'id';
   const primaryDbColumn = primaryField ? getDbColumnName(primaryField[0], primaryField[1]) : 'id';
   
   // Check if we should generate ID: field exists and is string/uuid type
-  const idField = primaryField ? primaryField[1] : entityDef.fields['id'];
-  const shouldGenerateId = idField && typeof idField === 'object' && !Array.isArray(idField) && (idField.type === 'string' || idField.type === 'uuid') && !idField.generated;
+  const idFieldDef = entityDef.fields?.['id'];
+  const idField = idFieldDef ? parseFieldDefinition('id', idFieldDef, availableEntities) : (primaryField ? primaryField[1] : undefined);
+  const shouldGenerateId = idField && (idField.type === 'string' || idField.type === 'uuid') && !idField.generated;
   
   const explicitMethods = generateExplicitMethods(
     entityName,
@@ -357,34 +457,13 @@ function generateRepositoryClass(
     }`
     : '';
   
-  return `import { pgliteAdapter } from "@betagors/yama-pglite";
-import { ${tableName} } from "./schema.ts";
-import { ${mapperToEntity}, ${mapperFromEntity} } from "./mapper.ts";
-import { eq, and, or, ilike, gt, lt, desc, asc } from "drizzle-orm";
-import type { SQL } from "drizzle-orm";
-import type { ${apiSchemaName}, ${createInputName}, ${updateInputName} } from "${typesImportPath}";
-import type { ${entityName}RepositoryMethods } from "./repository-types.ts";
-import type { ReturnType } from "drizzle-orm";
-import type { drizzle } from "drizzle-orm/pglite";
-import { randomUUID } from "crypto";
-
-type Database = ReturnType<typeof drizzle>;
-
-function getDb(): Database {
-  try {
-    return pgliteAdapter.getClient() as Database;
-  } catch (error) {
-    throw new Error("Database not initialized - ensure database is configured in yama.yaml");
-  }
-}
-
-export class ${entityName}Repository {
+  const classCode = `export class ${entityName}Repository {
   /**
    * Create a new ${apiSchemaName}
    */
   async create(input: ${createInputName}): Promise<${apiSchemaName}> {
     const db = getDb();
-    const entityData = ${mapperToEntity}(input);
+    const entityData = ${mapperToEntity}(input) as any;
 ${idGenerationCode}
     const [entity] = await db.insert(${tableName}).values(entityData).returning();
     return ${mapperFromEntity}(entity);
@@ -405,8 +484,16 @@ ${idGenerationCode}
    */
   async findAll(options?: {
 ${queryableFields.map(f => {
-  const tsType = f.field.type === 'boolean' ? 'boolean' : 
-                f.field.type === 'number' || f.field.type === 'integer' ? 'number' : 'string';
+  let tsType: string;
+  if (f.field.type === 'boolean') {
+    tsType = 'boolean';
+  } else if (f.field.type === 'number' || f.field.type === 'integer') {
+    tsType = 'number';
+  } else if (f.field.type === 'timestamp' || f.field.type === 'date') {
+    tsType = 'Date | string';
+  } else {
+    tsType = 'string';
+  }
   return `    ${f.apiFieldName}?: ${tsType};`;
 }).join('\n')}
     limit?: number;
@@ -421,58 +508,84 @@ ${queryableFields.map(f => {
     
     const conditions: SQL[] = [];
 ${queryableFields.map(f => {
-  const dbCol = f.dbColumnName;
-  return `    if (options?.${f.apiFieldName} !== undefined) {
-      conditions.push(eq(${tableName}.${dbCol}, options.${f.apiFieldName}));
+  if (f.field.type === 'timestamp' || f.field.type === 'date') {
+    return `    if (options?.${f.apiFieldName} !== undefined) {
+      const ${f.apiFieldName}Value = typeof options.${f.apiFieldName} === 'string' ? new Date(options.${f.apiFieldName}) : options.${f.apiFieldName};
+      conditions.push(eq(${tableName}.${f.dbColumnName}, ${f.apiFieldName}Value));
     }`;
+  } else {
+    return `    if (options?.${f.apiFieldName} !== undefined) {
+      conditions.push(eq(${tableName}.${f.dbColumnName}, options.${f.apiFieldName}));
+    }`;
+  }
 }).join('\n')}
     
     // Handle search
     if (options?.search) {
       const searchTerm = String(options.search);
-      const searchFields = options.searchFields || [${queryableFields.filter(f => f.field.type === 'string' || f.field.type === 'text').map(f => `'${f.apiFieldName}'`).join(', ')}];
+      const defaultSearchFields = [${queryableFields.filter(f => f.field.type === 'string' || f.field.type === 'text').map(f => `'${f.apiFieldName}'`).join(', ')}];
+      const searchFields = options.searchFields || defaultSearchFields;
       const searchMode = options.searchMode || 'contains';
+      
+      // Map of searchable fields to their db columns
+      const fieldToDbColumn: Record<string, any> = {
+${queryableFields.filter(f => f.field.type === 'string' || f.field.type === 'text').map(f => `        '${f.apiFieldName}': ${tableName}.${f.dbColumnName}`).join(',\n')}
+      };
       
       const searchConditions: SQL[] = [];
       for (const fieldName of searchFields) {
-        const searchableField = queryableFields.find(f => f.apiFieldName === fieldName);
-        if (searchableField && (searchableField.field.type === 'string' || searchableField.field.type === 'text')) {
-          const dbCol = searchableField.dbColumnName;
+        const dbColumn = fieldToDbColumn[fieldName];
+        if (dbColumn) {
           if (searchMode === 'contains') {
-            searchConditions.push(ilike(${tableName}.${dbCol}, \`%\${searchTerm}%\`));
+            searchConditions.push(ilike(dbColumn, \`%\${searchTerm}%\`));
           } else if (searchMode === 'starts') {
-            searchConditions.push(ilike(${tableName}.${dbCol}, \`\${searchTerm}%\`));
+            searchConditions.push(ilike(dbColumn, \`\${searchTerm}%\`));
           } else if (searchMode === 'ends') {
-            searchConditions.push(ilike(${tableName}.${dbCol}, \`%\${searchTerm}\`));
+            searchConditions.push(ilike(dbColumn, \`%\${searchTerm}\`));
           } else if (searchMode === 'exact') {
-            searchConditions.push(eq(${tableName}.${dbCol}, searchTerm));
+            searchConditions.push(eq(dbColumn, searchTerm));
           }
         }
       }
       
       if (searchConditions.length > 0) {
         // Use OR for full-text search across multiple fields
-        conditions.push(or(...searchConditions));
+        const searchClause = searchConditions.length === 1 ? searchConditions[0] : or(...searchConditions);
+        if (searchClause) {
+          conditions.push(searchClause);
+        }
       }
     }
     
     if (conditions.length > 0) {
-      query = query.where(and(...conditions));
-    }
-    
-    if (options?.orderBy) {
-      const orderField = ${tableName}[options.orderBy.field] || ${tableName}.${primaryDbColumn};
-      if (orderField) {
-        query = query.orderBy(options.orderBy.direction === 'desc' ? desc(orderField) : asc(orderField));
+      const whereClause = conditions.length === 1 ? conditions[0] : and(...conditions);
+      if (whereClause) {
+        query = query.where(whereClause) as any;
       }
     }
     
+    if (options?.orderBy) {
+      const orderFieldName = options.orderBy.field;
+      const orderColumnMap: Record<string, any> = {
+${queryableFields.map(f => {
+  const entries: string[] = [];
+  if (f.apiFieldName !== f.dbColumnName) {
+    entries.push(`        '${f.apiFieldName}': ${tableName}.${f.dbColumnName}`);
+  }
+  entries.push(`        '${f.dbColumnName}': ${tableName}.${f.dbColumnName}`);
+  return entries.join(',\n');
+}).join(',\n')}
+      };
+      const orderColumn = orderColumnMap[orderFieldName] || ${tableName}.${primaryDbColumn};
+      query = query.orderBy(options.orderBy.direction === 'desc' ? desc(orderColumn) : asc(orderColumn)) as any;
+    }
+    
     if (options?.limit !== undefined) {
-      query = query.limit(options.limit);
+      query = query.limit(options.limit) as any;
     }
     
     if (options?.offset !== undefined) {
-      query = query.offset(options.offset);
+      query = query.offset(options.offset) as any;
     }
     
     const entities = await query;
@@ -484,7 +597,7 @@ ${queryableFields.map(f => {
    */
   async update(id: string, input: ${updateInputName}): Promise<${apiSchemaName} | null> {
     const db = getDb();
-    const entityData = ${mapperToEntity}(input);
+    const entityData = ${mapperToEntity}(input) as any;
     const [entity] = await db.update(${tableName})
       .set(entityData)
       .where(eq(${tableName}.${primaryDbColumn}, id))
@@ -508,6 +621,14 @@ ${explicitMethods}
 
 export const ${entityName.toLowerCase()}Repository: ${entityName}RepositoryMethods = new ${entityName}Repository();
 `;
+
+  return {
+    classCode,
+    schemaImport: tableName,
+    mapperImports: `${mapperToEntity}, ${mapperFromEntity}`,
+    typeImports: `${apiSchemaName}`,
+    repositoryTypeImport: `${entityName}RepositoryMethods`
+  };
 }
 
 /**
@@ -516,15 +637,29 @@ export const ${entityName.toLowerCase()}Repository: ${entityName}RepositoryMetho
 function generateRepositoryTypes(
   entityName: string,
   entityDef: EntityDefinition,
-  typesImportPath: string
+  typesImportPath: string,
+  availableEntities: Set<string>
 ): string {
   const apiSchemaName = entityDef.apiSchema || entityName;
-  const createInputName = `Create${apiSchemaName}Input`;
-  const updateInputName = `Update${apiSchemaName}Input`;
+  // Use base type for inputs (Create/Update types may not be generated)
+  const createInputName = apiSchemaName;
+  const updateInputName = `Partial<${apiSchemaName}>`;
   
-  const queryableFields = getQueryableFields(entityDef);
-  const primaryField = Object.entries(entityDef.fields).find(([, f]) => f.primary);
+  const queryableFields = getQueryableFields(entityDef, availableEntities);
+  
+  // Find primary field
+  let primaryField: [string, EntityField] | undefined;
+  if (entityDef.fields) {
+    for (const [fieldName, fieldDef] of Object.entries(entityDef.fields)) {
+      const field = parseFieldDefinition(fieldName, fieldDef, availableEntities);
+      if (field.primary) {
+        primaryField = [fieldName, field];
+        break;
+      }
+    }
+  }
   const primaryFieldName = primaryField ? getApiFieldName(primaryField[0], primaryField[1]) || primaryField[0] : 'id';
+  const primaryFieldNameRaw = primaryField ? primaryField[0] : 'id';
   
   // Generate method signatures for common patterns
   const methodSignatures: string[] = [];
@@ -540,6 +675,11 @@ function generateRepositoryTypes(
   // Generate dynamic method signatures
   // Single field queries
   for (const field of queryableFields) {
+    // Skip primary field - it already has findById method
+    if (field.fieldName === primaryFieldNameRaw) {
+      continue;
+    }
+    
     const fieldType = field.field.type === 'boolean' ? 'boolean' : 
                      field.field.type === 'number' || field.field.type === 'integer' ? 'number' : 'string';
     
@@ -569,8 +709,8 @@ function generateRepositoryTypes(
       methodSignatures.push(`  findBy${capitalize(field.apiFieldName)}Before(value: ${dateType}): Promise<${apiSchemaName}[]>;`);
     }
     
-    // findByIdAnd{Field}
-    if (field.apiFieldName.toLowerCase() !== primaryFieldName.toLowerCase()) {
+    // findByIdAnd{Field} - skip if this is the primary field itself
+    if (field.fieldName !== primaryFieldNameRaw && field.apiFieldName.toLowerCase() !== primaryFieldName.toLowerCase()) {
       methodSignatures.push(`  findByIdAnd${capitalize(field.apiFieldName)}(id: string, value: ${fieldType}): Promise<${apiSchemaName} | null>;`);
       
       if (field.field.type === 'boolean') {
@@ -585,6 +725,12 @@ function generateRepositoryTypes(
     for (let j = i + 1; j < queryableFields.length && j < 5; j++) {
       const field1 = queryableFields[i];
       const field2 = queryableFields[j];
+      
+      // Skip if field1 is the primary key to avoid duplicate with findByIdAnd{Field}
+      if (field1.fieldName === primaryFieldNameRaw) {
+        continue;
+      }
+      
       const type1 = field1.field.type === 'boolean' ? 'boolean' : 
                    field1.field.type === 'number' || field1.field.type === 'integer' ? 'number' : 'string';
       const type2 = field2.field.type === 'boolean' ? 'boolean' : 
@@ -608,7 +754,7 @@ function generateRepositoryTypes(
   return `// This file is auto-generated from yama.yaml
 // Do not edit manually - your changes will be overwritten
 
-import type { ${apiSchemaName}, ${createInputName}, ${updateInputName} } from "${typesImportPath}";
+import type { ${apiSchemaName} } from "${typesImportPath}";
 
 export interface FindAllOptions {
 ${queryableFields.map(f => {
@@ -639,20 +785,53 @@ export function generateRepository(
   entities: YamaEntities,
   typesImportPath: string = "../types"
 ): { repository: string; types: string } {
-  const repositoryClasses: string[] = [];
+  const classCodes: string[] = [];
+  const schemaImports: string[] = [];
+  const mapperImports: string[] = [];
+  const typeImports: string[] = [];
+  const repositoryTypeImports: string[] = [];
   const typeDefinitions: string[] = [];
+  const availableEntities = new Set(Object.keys(entities));
   
   for (const [entityName, entityDef] of Object.entries(entities)) {
-    repositoryClasses.push(generateRepositoryClass(entityName, entityDef, typesImportPath));
-    typeDefinitions.push(generateRepositoryTypes(entityName, entityDef, typesImportPath));
+    const result = generateRepositoryClass(entityName, entityDef, typesImportPath, availableEntities);
+    classCodes.push(result.classCode);
+    schemaImports.push(result.schemaImport);
+    mapperImports.push(result.mapperImports);
+    typeImports.push(result.typeImports);
+    repositoryTypeImports.push(result.repositoryTypeImport);
+    typeDefinitions.push(generateRepositoryTypes(entityName, entityDef, typesImportPath, availableEntities));
   }
   
-  return {
-    repository: `// This file is auto-generated from yama.yaml
+  // Build the repository file with imports at the top (only once)
+  const repository = `// This file is auto-generated from yama.yaml
 // Do not edit manually - your changes will be overwritten
 
-${repositoryClasses.join('\n\n')}
-`,
+import { pgliteAdapter } from "@betagors/yama-pglite";
+import { ${schemaImports.join(', ')} } from "./schema.ts";
+import { ${mapperImports.join(', ')} } from "./mapper.ts";
+import { eq, and, or, ilike, gt, lt, desc, asc } from "drizzle-orm";
+import type { SQL } from "drizzle-orm";
+import type { ${typeImports.join(', ')} } from "${typesImportPath.replace(/\.ts$/, '')}";
+import type { ${repositoryTypeImports.join(', ')} } from "./repository-types.ts";
+import type { drizzle } from "drizzle-orm/pglite";
+import { randomUUID } from "crypto";
+
+type Database = ReturnType<typeof drizzle>;
+
+function getDb(): Database {
+  try {
+    return pgliteAdapter.getClient() as Database;
+  } catch (error) {
+    throw new Error("Database not initialized - ensure database is configured in yama.yaml");
+  }
+}
+
+${classCodes.join('\n\n')}
+`;
+  
+  return {
+    repository,
     types: typeDefinitions.join('\n\n')
   };
 }

@@ -1,0 +1,58 @@
+{
+  "name": "@betagors/yama-node",
+  "version": "0.1.0-alpha.0",
+  "type": "module",
+  "description": "Yama Node.js runtime adapter",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/betagors/yama.git",
+    "directory": "packages/node"
+  },
+  "keywords": [
+    "yama",
+    "runtime",
+    "node",
+    "adapter",
+    "backend"
+  ],
+  "license": "MPL-2.0",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsc -w -p tsconfig.build.json",
+    "lint": "eslint . --ext .ts,.tsx",
+    "lint:fix": "eslint . --ext .ts,.tsx --fix",
+    "test": "vitest",
+    "test:watch": "vitest --watch",
+    "test:coverage": "vitest --coverage",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "@betagors/yama-core": "workspace:*",
+    "@betagors/yama-errors": "workspace:*",
+    "@betagors/yama-openapi": "workspace:*",
+    "@betagors/yama-postgres": "workspace:*",
+    "@betagors/yama-fastify": "workspace:*",
+    "bcryptjs": "^2.4.3",
+    "js-yaml": "^4.1.1",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "rimraf": "^5.0.0",
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^20.0.0",
+    "@vitest/coverage-v8": "^1.0.0",
+    "vitest": "^1.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
+

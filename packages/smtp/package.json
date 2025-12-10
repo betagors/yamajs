@@ -1,0 +1,77 @@
+{
+  "name": "@betagors/yama-smtp",
+  "version": "0.1.0-alpha.0",
+  "type": "module",
+  "description": "Yama SMTP email plugin with Mailpit support",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/betagors/yama.git",
+    "directory": "packages/smtp"
+  },
+  "keywords": [
+    "yama",
+    "smtp",
+    "email",
+    "mailpit",
+    "adapter",
+    "plugin"
+  ],
+  "license": "MPL-2.0",
+  "yama": {
+    "pluginApi": "1.0",
+    "yamaCore": "^0.1.0",
+    "category": "email",
+    "type": "email",
+    "service": "smtp",
+    "entryPoint": "./dist/plugin.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsc -w -p tsconfig.build.json",
+    "lint": "eslint . --ext .ts,.tsx",
+    "lint:fix": "eslint . --ext .ts,.tsx --fix",
+    "test": "vitest",
+    "test:watch": "vitest --watch",
+    "test:coverage": "vitest --coverage",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "@betagors/yama-core": "workspace:*"
+  },
+  "peerDependencies": {
+    "nodemailer": "^6.9.0"
+  },
+  "peerDependenciesMeta": {
+    "nodemailer": {
+      "optional": false
+    }
+  },
+  "devDependencies": {
+    "rimraf": "^5.0.0",
+    "@types/node": "^20.0.0",
+    "@types/nodemailer": "^6.4.14",
+    "@vitest/coverage-v8": "^1.0.0",
+    "vitest": "^1.0.0",
+    "nodemailer": "^6.9.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
+
+
+
+
+
+
+
+
+

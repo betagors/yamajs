@@ -37,17 +37,28 @@ export const pgliteAdapter: DatabaseAdapter = {
 
     try {
       // Dynamically import PGlite
-      const { PGlite } = await import("@electric-sql/pglite");
+      let PGlite: typeof import("@electric-sql/pglite").PGlite;
+      try {
+        const pgliteModule = await import("@electric-sql/pglite");
+        PGlite = pgliteModule.PGlite;
+      } catch (importError) {
+        throw new Error(
+          `Failed to import @electric-sql/pglite. Make sure it's installed: ${importError instanceof Error ? importError.message : String(importError)}`
+        );
+      }
 
       // Create PGlite client
       const options: { dataDir?: string } = {};
+      let dbMode = "persistent";
       
       if (config.url === ":memory:") {
         // Explicitly in-memory - don't set dataDir
         // options.dataDir is undefined, which means in-memory
-      } else if (config.url && config.url !== "pglite") {
+        dbMode = "in-memory";
+      } else if (config.url && config.url !== "pglite" && config.url.trim() !== "") {
         // Custom path provided
         options.dataDir = config.url;
+        dbMode = `custom path: ${config.url}`;
       } else {
         // Default: use persistent storage at .yama/data/db/pglite
         const defaultPath = getDefaultDbPath();
@@ -74,10 +85,47 @@ export const pgliteAdapter: DatabaseAdapter = {
           );
         }
         options.dataDir = defaultPath;
+        dbMode = `persistent: ${defaultPath}`;
       }
 
-      const pgliteClient = new PGlite(options);
-      await pgliteClient.waitReady;
+      // Try to create PGlite instance
+      let pgliteClient: InstanceType<typeof PGlite>;
+      try {
+        pgliteClient = new PGlite(options);
+      } catch (constructorError) {
+        const errorMsg = constructorError instanceof Error ? constructorError.message : String(constructorError);
+        // Check for common WASM initialization errors
+        if (errorMsg.includes("Aborted") || errorMsg.includes("abort")) {
+          throw new Error(
+            `PGlite WASM initialization failed. This usually indicates:\n` +
+            `  1. Node.js version incompatibility (try Node.js 18+)\n` +
+            `  2. Missing WASM support in your environment\n` +
+            `  3. Memory/resource constraints\n\n` +
+            `Original error: ${errorMsg}\n` +
+            `Database mode: ${dbMode}\n` +
+            `Node.js version: ${process.version}\n` +
+            `Platform: ${process.platform} ${process.arch}`
+          );
+        }
+        throw constructorError;
+      }
+
+      // Wait for PGlite to be ready
+      try {
+        await pgliteClient.waitReady;
+      } catch (readyError) {
+        const errorMsg = readyError instanceof Error ? readyError.message : String(readyError);
+        if (errorMsg.includes("Aborted") || errorMsg.includes("abort")) {
+          throw new Error(
+            `PGlite failed to become ready. WASM initialization error.\n` +
+            `This usually indicates Node.js version incompatibility or missing WASM support.\n` +
+            `Try: Node.js 18+ or check your environment supports WebAssembly.\n\n` +
+            `Original error: ${errorMsg}\n` +
+            `Database mode: ${dbMode}`
+          );
+        }
+        throw readyError;
+      }
 
       sqlClient = pgliteClient;
       
@@ -86,8 +134,20 @@ export const pgliteAdapter: DatabaseAdapter = {
 
       return { db: dbClient, sql: sqlClient };
     } catch (error) {
+      // Re-throw if it's already a detailed error
+      if (error instanceof Error && error.message.includes("PGlite")) {
+        throw error;
+      }
+      // Otherwise wrap with helpful context
       throw new Error(
-        `Failed to initialize PGlite. Make sure @electric-sql/pglite is installed: ${error instanceof Error ? error.message : String(error)}`
+        `Failed to initialize PGlite database.\n` +
+        `Error: ${error instanceof Error ? error.message : String(error)}\n` +
+        `\nTroubleshooting:\n` +
+        `  - PGlite doesn't require a DATABASE_URL (it's optional)\n` +
+        `  - Use ":memory:" for in-memory database\n` +
+        `  - Omit URL to use default persistent storage\n` +
+        `  - Ensure Node.js 18+ is installed\n` +
+        `  - Check that @electric-sql/pglite is installed: npm install @electric-sql/pglite`
       );
     }
   },

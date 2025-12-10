@@ -1,0 +1,11 @@
+{
+    "mcpServers": {
+      "yama": {
+        "command": "yama",
+        "args": ["mcp"],
+        "env": {
+          "YAMA_MCP_WORKDIR": "C:\\Users\\USER\\Code\\yama\\examples\\todo-api"
+        }
+      }
+    }
+  }

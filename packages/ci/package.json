@@ -1,0 +1,60 @@
+{
+  "name": "@betagors/yama-ci",
+  "version": "0.1.0-alpha.0",
+  "type": "module",
+  "description": "Yama CI/CD plugin for GitHub Actions workflow generation",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/betagors/yama.git",
+    "directory": "packages/ci"
+  },
+  "keywords": [
+    "yama",
+    "ci",
+    "cd",
+    "github-actions",
+    "workflows",
+    "deployment",
+    "plugin"
+  ],
+  "license": "MPL-2.0",
+  "yama": {
+    "pluginApi": "1.0",
+    "yamaCore": "^0.1.0",
+    "category": "deployment",
+    "entryPoint": "./dist/plugin.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsc -w -p tsconfig.build.json",
+    "lint": "eslint . --ext .ts,.tsx",
+    "lint:fix": "eslint . --ext .ts,.tsx --fix",
+    "test": "vitest",
+    "test:watch": "vitest --watch",
+    "test:coverage": "vitest --coverage",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "@betagors/yama-core": "workspace:*",
+    "js-yaml": "^4.1.0",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^20.0.0",
+    "@vitest/coverage-v8": "^1.0.0",
+    "rimraf": "^5.0.0",
+    "vitest": "^1.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

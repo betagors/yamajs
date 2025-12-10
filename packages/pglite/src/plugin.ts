@@ -1,4 +1,4 @@
-import type { YamaPlugin } from "@betagors/yama-core";
+import type { YamaPlugin, PluginContext } from "@betagors/yama-core";
 import { registerDatabaseAdapter } from "@betagors/yama-core";
 import { pgliteAdapter } from "./adapter.ts";
 import {
@@ -34,7 +34,7 @@ const plugin: YamaPlugin = {
   pluginApi: "1.0",
   yamaCore: "^0.1.0",
 
-  async init(opts?: Record<string, unknown>) {
+  async init(opts: Record<string, unknown>, context: PluginContext) {
     // Register the database adapter
     registerDatabaseAdapter("pglite", () => pgliteAdapter);
 

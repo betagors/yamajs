@@ -18,8 +18,18 @@ pnpm test:watch
 
 ### Run tests with coverage
 ```bash
+# Run coverage for all packages
+pnpm test:coverage
+
+# Run coverage for a specific package
+cd packages/core
 pnpm test:coverage
 ```
+
+Coverage reports are generated in each package's `coverage/` directory with:
+- Text summary in the terminal
+- JSON report (`coverage/coverage-final.json`)
+- HTML report (`coverage/index.html`) - open in browser for detailed view
 
 ### Run tests for a specific package
 ```bash
@@ -40,7 +50,7 @@ packages/
         server.test.ts
       plugins/
         validator.test.ts
-  runtime-node/
+  node/
     src/
       server/
         fastify-adapter.test.ts
@@ -136,14 +146,24 @@ describe("MyAdapter", () => {
 
 ## Running Tests in CI
 
-The test command is already configured in `package.json`:
+The test commands are configured in `package.json`:
 ```json
 {
   "scripts": {
-    "test": "turbo run test"
+    "test": "turbo run test",
+    "test:coverage": "turbo run test:coverage"
   }
 }
 ```
 
-This will run tests across all packages in the monorepo.
+These commands will run tests across all packages in the monorepo using Turbo for parallel execution.
+
+## Coverage Configuration
+
+All packages using Vitest have coverage configured with:
+- **Provider**: v8 (fast, native coverage)
+- **Reporters**: text (terminal), json (for CI), html (for detailed viewing)
+- **Exclusions**: `node_modules/`, `dist/`, and test files are excluded from coverage
+
+Each package has a `vitest.config.ts` file that configures coverage settings. Coverage reports are generated in each package's `coverage/` directory.
 

@@ -1,0 +1,36 @@
+name: runtime-smokes
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  node-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - run: pnpm exec ts-node --transpile-only packages/core/test-smokes/node.smoke.ts
+
+  bun-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --ignore-scripts
+      - run: bun run packages/core/test-smokes/bun.smoke.ts
+
+  deno-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.x
+      - run: deno run --allow-read --allow-env packages/core/test-smokes/deno.smoke.ts
+

@@ -3,14 +3,45 @@ import { dirname } from "path";
 import yaml from "js-yaml";
 
 /**
+ * YAML parsing error with line number information
+ */
+export interface YAMLError extends Error {
+  mark?: {
+    line: number;
+    column: number;
+    buffer?: string;
+    pointer?: number;
+  };
+  line?: number;
+  column?: number;
+}
+
+/**
  * Read and parse yama.yaml
+ * @throws {Error} with line number information if parsing fails
  */
 export function readYamaConfig(configPath: string): unknown {
   try {
     const content = readFileSync(configPath, "utf-8");
     return yaml.load(content);
   } catch (error) {
-    throw new Error(`Failed to read yama.yaml: ${error instanceof Error ? error.message : String(error)}`);
+    const yamlError = error as YAMLError;
+    let errorMessage = `Failed to read yama.yaml: ${yamlError.message || String(error)}`;
+    
+    // Extract line number from js-yaml error
+    if (yamlError.mark) {
+      const line = yamlError.mark.line + 1; // js-yaml uses 0-based, we want 1-based
+      const column = yamlError.mark.column + 1;
+      errorMessage += `\n  at line ${line}, column ${column}`;
+    } else if (yamlError.line !== undefined) {
+      errorMessage += `\n  at line ${yamlError.line + 1}`;
+    }
+    
+    const enhancedError = new Error(errorMessage) as YAMLError;
+    enhancedError.mark = yamlError.mark;
+    enhancedError.line = yamlError.line;
+    enhancedError.column = yamlError.column;
+    throw enhancedError;
   }
 }
 

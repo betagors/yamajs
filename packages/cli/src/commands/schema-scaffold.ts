@@ -37,21 +37,15 @@ export async function schemaScaffoldCommand(
         process.exit(1);
       }
 
-      // Add basic entity structure
+      // Add basic entity structure with new shorthand syntax
+      // Note: This will be written as YAML, so we use string shorthand
+      // The actual YAML writing should use shorthand syntax
       entities[entityName] = {
         table: tableName,
         fields: {
-          id: {
-            type: "uuid",
-            primary: true,
-            generated: true,
-          },
-          createdAt: {
-            type: "timestamp",
-            dbColumn: "created_at",
-            default: "now()",
-            apiFormat: "date-time",
-          },
+          id: "uuid!",
+          createdAt: "timestamp",
+          updatedAt: "timestamp",
         },
       };
 
@@ -62,7 +56,7 @@ export async function schemaScaffoldCommand(
       writeFileSync(configPath, yamlContent, "utf-8");
 
       success(`Scaffolded table: ${tableName}`);
-      info(`Run 'yama schema:generate' to create migration`);
+      info(`Run 'yama migration:generate' to create migration`);
     } else if (action === "add-column" && args.length >= 3) {
       const [tableName, columnName, columnType] = args;
       const entityName = Object.keys(entities).find(
@@ -80,7 +74,7 @@ export async function schemaScaffoldCommand(
       };
 
       success(`Scaffolded column: ${tableName}.${columnName}`);
-      info(`Run 'yama schema:generate' to create migration`);
+      info(`Run 'yama migration:generate' to create migration`);
     } else {
       error("Invalid scaffold command");
       error("Usage: yama schema:scaffold add-table <name>");

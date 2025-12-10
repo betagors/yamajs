@@ -234,13 +234,13 @@ export async function setupCommand(options: SetupOptions): Promise<void> {
     const deps = (pkg.dependencies || {}) as Record<string, string>;
     const devDeps = (pkg.devDependencies || {}) as Record<string, string>;
     
-    const hasRuntime = "@betagors/yama-runtime-node" in deps || "@betagors/yama-runtime-node" in devDeps;
+    const hasRuntime = "@betagors/yama-node" in deps || "@betagors/yama-node" in devDeps;
     
     if (!hasRuntime) {
-      console.log("\n⚠️  @betagors/yama-runtime-node not found in dependencies.");
-      console.log("   Install it with: npm install @betagors/yama-runtime-node");
+      console.log("\n⚠️  @betagors/yama-node not found in dependencies.");
+      console.log("   Install it with: npm install @betagors/yama-node");
     } else {
-      console.log("✅ Found @betagors/yama-runtime-node");
+      console.log("✅ Found @betagors/yama-node");
     }
 
     // Setup editor configuration (only for supported IDEs)

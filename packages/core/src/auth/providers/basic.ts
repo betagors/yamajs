@@ -1,6 +1,7 @@
 import type { AuthProviderHandler, AuthResult } from "../types.js";
 import type { BasicAuthProvider, AuthContext } from "../../schemas.js";
 import { getGlobalDatabaseAdapter } from "../../infrastructure/database-registry.js";
+import { ErrorCodes } from "@betagors/yama-errors";
 
 /**
  * Resolve environment variable references in strings
@@ -138,6 +139,7 @@ const basicHandler: AuthProviderHandler = {
         valid: false,
         context: { authenticated: false },
         error: "No Basic Auth credentials provided",
+        errorCode: ErrorCodes.AUTH_REQUIRED,
       };
     }
 
@@ -165,6 +167,7 @@ const basicHandler: AuthProviderHandler = {
         valid: false,
         context: { authenticated: false },
         error: "Invalid credentials",
+        errorCode: ErrorCodes.AUTH_INVALID_CREDENTIALS,
       };
     }
 
@@ -178,6 +181,7 @@ const basicHandler: AuthProviderHandler = {
             valid: false,
             context: { authenticated: false },
             error: "User not found",
+            errorCode: ErrorCodes.AUTH_INVALID_CREDENTIALS,
           };
         }
 
@@ -187,6 +191,7 @@ const basicHandler: AuthProviderHandler = {
             valid: false,
             context: { authenticated: false },
             error: "User has no password set",
+            errorCode: ErrorCodes.AUTH_INVALID_CREDENTIALS,
           };
         }
 
@@ -196,6 +201,7 @@ const basicHandler: AuthProviderHandler = {
             valid: false,
             context: { authenticated: false },
             error: "Invalid password",
+            errorCode: ErrorCodes.AUTH_INVALID_CREDENTIALS,
           };
         }
 
@@ -217,6 +223,7 @@ const basicHandler: AuthProviderHandler = {
           valid: false,
           context: { authenticated: false },
           error: error instanceof Error ? error.message : String(error),
+          errorCode: ErrorCodes.INTERNAL_ERROR,
         };
       }
     }
@@ -225,6 +232,7 @@ const basicHandler: AuthProviderHandler = {
       valid: false,
       context: { authenticated: false },
       error: "Invalid Basic Auth configuration",
+      errorCode: ErrorCodes.CONFIG_INVALID,
     };
   },
 };

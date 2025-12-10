@@ -5,9 +5,38 @@ import {
   type AuthContext,
 } from "./schemas.js";
 import { getAuthProvider } from "./auth/registry.js";
+import { ErrorCodes } from "@betagors/yama-errors";
 
 // Import built-in providers to trigger registration
 import "./auth/providers/index.js";
+
+/**
+ * Auth result with error code for typed error handling
+ */
+export interface AuthResultWithCode {
+  context: AuthContext;
+  error?: string;
+  errorCode?: string;
+}
+
+/**
+ * Authorization result with error code
+ */
+export interface AuthzResultWithCode {
+  authorized: boolean;
+  error?: string;
+  errorCode?: string;
+}
+
+/**
+ * Combined auth result
+ */
+export interface CombinedAuthResult {
+  context: AuthContext;
+  authorized: boolean;
+  error?: string;
+  errorCode?: string;
+}
 
 /**
  * Authenticate request using configured providers
@@ -15,7 +44,7 @@ import "./auth/providers/index.js";
 export async function authenticateRequest(
   headers: Record<string, string | undefined>,
   authConfig: AuthConfig
-): Promise<{ context: AuthContext; error?: string }> {
+): Promise<AuthResultWithCode> {
   // Try each provider in order
   for (const provider of authConfig.providers) {
     const handler = getAuthProvider(provider.type);
@@ -41,6 +70,7 @@ export async function authenticateRequest(
   return {
     context: { authenticated: false },
     error: "Authentication failed: no valid credentials provided",
+    errorCode: ErrorCodes.AUTH_REQUIRED,
   };
 }
 
@@ -97,7 +127,7 @@ export async function authorizeRequest(
   endpointAuth: EndpointAuth,
   rolePermissions?: Record<string, string[]>,
   authHandler?: (authContext: AuthContext, ...args: unknown[]) => Promise<boolean> | boolean
-): { authorized: boolean; error?: string } {
+): Promise<AuthzResultWithCode> {
   // If auth is not required, allow
   if (endpointAuth.required === false) {
     return { authorized: true };
@@ -114,6 +144,7 @@ export async function authorizeRequest(
           return {
             authorized: false,
             error: "Custom authorization handler denied access",
+            errorCode: ErrorCodes.AUTHZ_HANDLER_DENIED,
           };
         }
         return { authorized: true };
@@ -122,6 +153,7 @@ export async function authorizeRequest(
         return {
           authorized: false,
           error: "Custom authorization handler denied access",
+          errorCode: ErrorCodes.AUTHZ_HANDLER_DENIED,
         };
       }
       return { authorized: true };
@@ -129,6 +161,7 @@ export async function authorizeRequest(
       return {
         authorized: false,
         error: error instanceof Error ? error.message : "Custom authorization handler failed",
+        errorCode: ErrorCodes.AUTHZ_HANDLER_DENIED,
       };
     }
   }
@@ -139,6 +172,7 @@ export async function authorizeRequest(
       return {
         authorized: false,
         error: "Authentication required",
+        errorCode: ErrorCodes.AUTH_REQUIRED,
       };
     }
 
@@ -153,6 +187,7 @@ export async function authorizeRequest(
       return {
         authorized: false,
         error: `Insufficient permissions. Required: ${endpointAuth.permissions.join(", ")}`,
+        errorCode: ErrorCodes.AUTHZ_INSUFFICIENT_PERMISSION,
       };
     }
     
@@ -165,6 +200,7 @@ export async function authorizeRequest(
       return {
         authorized: false,
         error: "Authentication required",
+        errorCode: ErrorCodes.AUTH_REQUIRED,
       };
     }
 
@@ -177,6 +213,7 @@ export async function authorizeRequest(
       return {
         authorized: false,
         error: `Insufficient permissions. Required roles: ${endpointAuth.roles.join(", ")}`,
+        errorCode: ErrorCodes.AUTHZ_INSUFFICIENT_ROLE,
       };
     }
     
@@ -189,6 +226,7 @@ export async function authorizeRequest(
       return {
         authorized: false,
         error: "Authentication required",
+        errorCode: ErrorCodes.AUTH_REQUIRED,
       };
     }
     return { authorized: true };
@@ -205,7 +243,7 @@ export async function authenticateAndAuthorize(
   authConfig: AuthConfig | undefined,
   endpointAuth: EndpointAuth | undefined,
   authHandler?: (authContext: AuthContext, ...args: unknown[]) => Promise<boolean> | boolean
-): Promise<{ context: AuthContext; authorized: boolean; error?: string }> {
+): Promise<CombinedAuthResult> {
   // If no auth config and no endpoint auth, allow
   if (!authConfig && !endpointAuth) {
     return {
@@ -242,6 +280,7 @@ export async function authenticateAndAuthorize(
       context: { authenticated: false },
       authorized: false,
       error: "Authentication required but no auth configuration provided",
+      errorCode: ErrorCodes.CONFIG_MISSING,
     };
   }
 
@@ -262,6 +301,7 @@ export async function authenticateAndAuthorize(
       context: authContext,
       authorized: false,
       error: authResult.error || "Authentication failed",
+      errorCode: authResult.errorCode || ErrorCodes.AUTH_REQUIRED,
     };
   }
 
@@ -277,6 +317,7 @@ export async function authenticateAndAuthorize(
       context: authContext,
       authorized: authzResult.authorized,
       error: authzResult.error,
+      errorCode: authzResult.errorCode,
     };
   }
 

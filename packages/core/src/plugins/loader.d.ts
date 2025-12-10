@@ -1,4 +1,4 @@
-import type { PluginManifest, YamaPlugin } from "./base";
+import type { PluginManifest, YamaPlugin } from "./base.js";
 /**
  * Load plugin manifest from package.json
  * @param packageName - Name of the package to load

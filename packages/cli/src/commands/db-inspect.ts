@@ -3,7 +3,7 @@ import { findYamaConfig } from "../utils/project-detection.ts";
 import { readYamaConfig } from "../utils/file-utils.ts";
 import { loadEnvFile, resolveEnvVars } from "@betagors/yama-core";
 import type { DatabaseConfig } from "@betagors/yama-core";
-import { getDatabasePlugin } from "../utils/db-plugin.ts";
+import { getDatabasePluginAndConfig } from "../utils/db-plugin.ts";
 import { success, error, info, printTable, colors } from "../utils/cli-utils.ts";
 
 interface DbInspectOptions {
@@ -30,17 +30,15 @@ export async function dbInspectCommand(
   try {
     const environment = options.env || process.env.NODE_ENV || "development";
     loadEnvFile(configPath, environment);
-    let config = readYamaConfig(configPath) as { database?: DatabaseConfig };
-    config = resolveEnvVars(config) as { database?: DatabaseConfig };
+    let config = readYamaConfig(configPath) as {
+      plugins?: Record<string, Record<string, unknown>> | string[];
+      database?: DatabaseConfig;
+    };
+    config = resolveEnvVars(config) as typeof config;
 
-    if (!config.database) {
-      error("No database configuration found in yama.yaml");
-      process.exit(1);
-    }
-
-    // Initialize database
-    const dbPlugin = await getDatabasePlugin();
-    await dbPlugin.client.initDatabase(config.database);
+    // Get database plugin and config (builds from plugin config if needed)
+    const { plugin: dbPlugin, dbConfig } = await getDatabasePluginAndConfig(config, configPath);
+    await dbPlugin.client.initDatabase(dbConfig);
     const sql = dbPlugin.client.getSQL();
 
     try {
@@ -141,42 +139,39 @@ export async function dbInspectCommand(
         ]);
       }
 
+
+      // Fallback to text output
       console.log("📐 Schema:\n");
       printTable(schemaData);
       console.log(`\n📊 Total rows: ${colors.bold(rowCount.toLocaleString())}\n`);
 
-      // Get sample data (first 10 rows)
-      if (rowCount > 0) {
-        const sampleResult = await sql.unsafe(`SELECT * FROM ${quotedTableName} LIMIT 10`);
+      if (sampleData) {
+        // Get column names from first row
+        const columnNames = Object.keys(sampleData[0]);
         
-        if (sampleResult.length > 0) {
-          // Get column names from first row
-          const columnNames = Object.keys(sampleResult[0] as Record<string, unknown>);
-          
-          // Build sample data table
-          const sampleData: unknown[][] = [columnNames];
-          
-          for (const row of sampleResult as Array<Record<string, unknown>>) {
-            const rowData: unknown[] = [];
-            for (const colName of columnNames) {
-              const value = row[colName];
-              if (value === null) {
-                rowData.push(colors.dim("NULL"));
-              } else if (typeof value === "string" && value.length > 30) {
-                rowData.push(value.substring(0, 27) + "...");
-              } else {
-                rowData.push(String(value));
-              }
+        // Build sample data table
+        const sampleTableData: unknown[][] = [columnNames];
+        
+        for (const row of sampleData) {
+          const rowData: unknown[] = [];
+          for (const colName of columnNames) {
+            const value = row[colName];
+            if (value === null) {
+              rowData.push(colors.dim("NULL"));
+            } else if (typeof value === "string" && value.length > 30) {
+              rowData.push(value.substring(0, 27) + "...");
+            } else {
+              rowData.push(String(value));
             }
-            sampleData.push(rowData);
           }
+          sampleTableData.push(rowData);
+        }
 
-          console.log("📄 Sample Data (first 10 rows):\n");
-          printTable(sampleData);
-          
-          if (rowCount > 10) {
-            info(`\nShowing 10 of ${rowCount.toLocaleString()} rows.`);
-          }
+        console.log("📄 Sample Data (first 10 rows):\n");
+        printTable(sampleTableData);
+        
+        if (rowCount > 10) {
+          info(`\nShowing 10 of ${rowCount.toLocaleString()} rows.`);
         }
       } else {
         info("Table is empty (no rows).");

@@ -1,156 +1,148 @@
-# yaml-language-server: $schema=../../packages/cli/src/yama.schema.json
-name: todo-api
-version: 1.0.0
+# Example YAMA configuration showcasing the new clean syntax
+# This demonstrates the improved entity and relation syntax inspired by modern frameworks
 
-plugins:
-  "@betagors/yama-pglite":
+project:
+  name: blog-api
+  version: 1.0.0
 
+# Entities with optimized inline syntax
 entities:
-  Todo:
-    table: todos
-    # Example: Using CRUD with custom input and response types
-    # crud:
-    #   enabled: true
-    #   inputTypes:
-    #     PATCH: UpdateStatusInput
-    #   responseTypes:
-    #     GET_LIST: TodoSummary
-    #     GET_ONE: TodoDetail
-    #     POST: Todo
+  User:
+    table: users
     fields:
-      id:
-        type: uuid
-        primary: true
-        generated: true
-      title:
-        type: string
-        required: true
-        maxLength: 500
-      completed:
-        type: boolean
-        default: false
+      id: uuid!
+      email: string! unique          # Inline constraint: unique
+      name: string! indexed          # Inline constraint: indexed
+      avatarUrl: string?             # ? = nullable
+      role: enum[user, admin]
+      createdAt: timestamp
+      # Inline relations - auto-generates foreign keys
+      posts: Post[]                  # hasMany - auto-generates nothing
+      profile: Profile?              # hasOne - nullable
+      comments: Comment[]            # hasMany
+    
+    # Validations (declarative)
+    validation:
+      emailFormat:
+        field: email
+        rule: email
+      nameMinLength:
+        field: name
+        rule: minLength
+        params: [2]
+      nameMaxLength:
+        field: name
+        rule: maxLength
+        params: [100]
+    
+    # Computed fields
+    computed:
+      fullName: "{firstName} {lastName}"
+      postCount: "count(posts)"
+    
+    # Hooks (optional, for complex logic)
+    hooks:
+      beforeCreate: ./hooks/user.beforeCreate.ts
+      afterCreate: ./hooks/user.afterCreate.ts
+    
+    # CRUD configuration
+    crud:
+      enabled: true
 
-schemas:
-  CreateTodoInput:
+  Post:
+    table: posts
     fields:
-      title:
-        type: string
-        required: true
-      completed:
-        type: boolean
-        default: false
+      id: uuid!
+      title: string! indexed         # Inline constraint: indexed
+      content: text!
+      published: boolean = false
+      publishedAt: timestamp?
+      # Inline relation - auto-generates authorId: uuid!
+      author: User! cascade         # belongsTo with cascade delete
+      comments: Comment[]           # hasMany
+      tags: Tag[] through:post_tags # manyToMany with junction table
+    
+    validation:
+      titleMinLength:
+        field: title
+        rule: minLength
+        params: [5]
+      titleMaxLength:
+        field: title
+        rule: maxLength
+        params: [200]
+      contentMinLength:
+        field: content
+        rule: minLength
+        params: [10]
+    
+    # Indexes (auto-generated, but customizable)
+    indexes:
+      - [authorId, publishedAt]      # Composite index (authorId auto-generated)
+      - published                    # Single field index
+    
+    # Soft deletes
+    softDelete: true
+    
+    crud:
+      enabled: true
 
-  UpdateTodoInput:
+  Comment:
+    table: comments
     fields:
-      title:
-        type: string
-        required: false
-      completed:
-        type: boolean
-        required: false
+      id: uuid!
+      content: text!
+      # Inline relations - auto-generate foreign keys
+      post: Post! cascade            # belongsTo - auto-generates postId
+      user: User!                    # belongsTo - auto-generates userId
+    
+    crud:
+      enabled: true
 
-  TodoList:
+  Tag:
+    table: tags
     fields:
-      todos:
-        type: list
-        items:
-          $ref: Todo
+      id: uuid!
+      name: string! unique          # Inline constraint: unique
+      slug: string! unique indexed   # Multiple inline constraints
+      posts: Post[]                  # manyToMany (no through specified = hasMany relation)
+    
+    crud:
+      enabled: true
 
-  # Example custom schemas for CRUD operations
-  # UpdateStatusInput:
-  #   fields:
-  #     completed:
-  #       type: boolean
-  #       required: true
-  #
-  # TodoSummary:
-  #   fields:
-  #     id:
-  #       type: string
-  #     title:
-  #       type: string
-  #     completed:
-  #       type: boolean
-  #
-  # TodoDetail:
-  #   fields:
-  #     id:
-  #       type: string
-  #     title:
-  #       type: string
-  #     description:
-  #       type: string
-  #     completed:
-  #       type: boolean
-  #     createdAt:
-  #       type: string
-  #       format: date-time
-  #     updatedAt:
-  #       type: string
-  #       format: date-time
+  Profile:
+    table: profiles
+    fields:
+      id: uuid!
+      # Inline relation - auto-generates userId
+      user: User!                    # belongsTo - auto-generates userId
+      bio: text?
+      website: string?
 
+# Endpoints (custom API routes)
 endpoints:
-  - path: /todos
+  - path: /users/me
     method: GET
-    handler: getTodos
-    description: Get all todos
+    handler: src/handlers/getCurrentUser.ts
     auth:
       required: true
-      roles: [user, admin]
-    query:
-      completed:
-        type: boolean
-        required: false
-      limit:
-        type: integer
-        required: false
-        min: 1
-        max: 100
-      offset:
-        type: integer
-        required: false
-        min: 0
     response:
-      type: TodoList
-  
-  - path: /todos
-    method: POST
-    handler: createTodo
-    description: Create a new todo
-    body:
-      type: CreateTodoInput
-    response:
-      type: Todo
-  
-  - path: /todos/:id
-    method: GET
-    handler: getTodoById
-    description: Get a single todo by ID
-    params:
-      id:
-        type: string
-        required: true
-    response:
-      type: Todo
-  
-  - path: /todos/:id
-    method: PUT
-    handler: updateTodo
-    description: Update a todo
-    params:
-      id:
-        type: string
-        required: true
-    body:
-      type: UpdateTodoInput
-    response:
-      type: Todo
-  
-  - path: /todos/:id
-    method: DELETE
-    handler: deleteTodo
-    description: Delete a todo
-    params:
-      id:
-        type: string
-        required: true
+      type: User
+
+# Monitoring configuration
+monitoring:
+  level: info
+  sampling:
+    rate: 0.1  # Sample 10% of requests
+    errors: 1.0  # Always track errors
+  custom:
+    - name: user_signups
+      type: counter
+      description: "Number of user signups"
+    - name: post_publish_duration
+      type: histogram
+      description: "Time to publish a post"
+
+# Plugins
+plugins:
+  "@betagors/yama-pglite":
