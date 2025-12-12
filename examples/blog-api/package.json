@@ -22,7 +22,7 @@
     "@betagors/yama-pglite": "file:../../packages/pglite",
     "@betagors/yama-postgres": "file:../../packages/postgres",
     "@betagors/yama-node": "file:../../packages/node",
-    "drizzle-orm": "^0.30.0",
+    "drizzle-orm": "^0.44.7",
     "postgres": "^3.4.3"
   },
   "devDependencies": {
