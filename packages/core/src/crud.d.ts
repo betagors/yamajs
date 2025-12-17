@@ -40,3 +40,4 @@ export declare function generateCrudInputSchemas(entityName: string, entityDef: 
 export declare function generateArraySchema(entityName: string, entityDef: EntityDefinition): Record<string, {
     fields: Record<string, SchemaField>;
 }>;
+//# sourceMappingURL=crud.d.ts.map

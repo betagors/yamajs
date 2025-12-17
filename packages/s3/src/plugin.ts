@@ -1,5 +1,5 @@
-import type { YamaPlugin } from "@betagors/yama-core";
-import { registerStorageAdapter } from "@betagors/yama-core";
+﻿import type { YamaPlugin } from "@yamajs/core";
+import { registerStorageAdapter } from "@yamajs/core";
 import { createS3Bucket, type S3AdapterConfig } from "./adapter";
 import { initS3Client, getS3Client, closeS3Client } from "./client";
 
@@ -7,7 +7,7 @@ import { initS3Client, getS3Client, closeS3Client } from "./client";
  * S3 storage plugin
  */
 const plugin: YamaPlugin = {
-  name: "@betagors/yama-s3",
+  name: "@yamajs/s3",
   category: "storage",
   pluginApi: "1.0",
   yamaCore: "^0.1.0",

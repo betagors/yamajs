@@ -30,7 +30,3 @@ export {
   listSnapshots,
 } from "./snapshots.ts";
 
-// Export plugin (default export)
-export { default as plugin } from "./plugin.ts";
-export { default } from "./plugin.ts";
-

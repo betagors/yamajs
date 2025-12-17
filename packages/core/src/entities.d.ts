@@ -1,8 +1,9 @@
 import type { SchemaDefinition, YamaSchemas } from "./schemas.js";
 /**
  * Entity field types supported by Yama
+ * Supports all new type system types
  */
-export type EntityFieldType = "uuid" | "string" | "number" | "boolean" | "timestamp" | "text" | "jsonb" | "integer";
+export type EntityFieldType = "uuid" | "string" | "text" | "email" | "url" | "phone" | "slug" | "number" | "integer" | "int" | "int8" | "int16" | "int32" | "int64" | "bigint" | "uint" | "decimal" | "money" | "float" | "double" | "boolean" | "date" | "time" | "timestamp" | "timestamptz" | "timestamplocal" | "datetime" | "datetimetz" | "datetimelocal" | "interval" | "duration" | "json" | "jsonb" | "binary" | "base64" | "enum";
 /**
  * Entity field definition - shorthand syntax is the default
  * Use object syntax only for advanced configuration (dbColumn, dbType, etc.)
@@ -31,6 +32,14 @@ export interface EntityField {
     max?: number;
     pattern?: string;
     enum?: unknown[];
+    precision?: number;
+    scale?: number;
+    currency?: string;
+    length?: number;
+    readonly?: boolean;
+    writeOnly?: boolean;
+    sensitive?: boolean;
+    autoUpdate?: boolean;
     _isInlineRelation?: boolean;
     _inlineRelation?: {
         entity: string;
@@ -39,6 +48,8 @@ export interface EntityField {
         through?: string;
         timestamps?: boolean;
     };
+    _isInlineNestedType?: boolean;
+    _inlineNestedFields?: Record<string, EntityFieldDefinition>;
 }
 /**
  * Relation type definitions
@@ -193,27 +204,41 @@ export interface CrudConfig {
     pagination?: import("./pagination/types.js").PaginationConfig;
 }
 /**
- * Entity definition
- * Supports both new syntax (with relations, validations, computed, hooks) and legacy syntax
+ * Entity definition (unified with schemas)
+ * Supports new schema-first syntax with variants, computed fields, etc.
+ * EntityDefinition and SchemaDefinition are compatible - both represent the same concept
  */
 export interface EntityDefinition {
-    table: string;
-    fields: Record<string, EntityFieldDefinition>;
+    source?: string;
+    include?: string[];
+    table?: string;
+    fields?: Record<string, EntityFieldDefinition>;
     relations?: Record<string, RelationDefinition>;
     validations?: Record<string, ValidationRule[]>;
     computed?: Record<string, ComputedFieldDefinition>;
+    variants?: Record<string, import("./variants/types.js").VariantConfig>;
     hooks?: EntityHooks;
     indexes?: EntityIndex[];
     softDelete?: boolean;
     apiSchema?: string;
     crud?: boolean | CrudConfig;
+    database?: {
+        table?: string;
+        indexes?: EntityIndex[];
+    } | string;
 }
 /**
  * Collection of entity definitions
+ *
+ * In the schema-first approach, entities and schemas are unified.
+ * Use normalizeSchemas() to handle both schemas: and entities: keys in config.
+ * Prefer using 'schemas:' in your yama.yaml - 'entities:' is supported for backward compatibility.
  */
 export interface YamaEntities {
     [entityName: string]: EntityDefinition;
 }
+export type { YamaOperations } from "./operations/types.js";
+export type { YamaPolicies } from "./policies/types.js";
 /**
  * Database connection configuration
  */
@@ -240,10 +265,9 @@ export interface ServerConfig {
     options?: Record<string, unknown>;
 }
 /**
- * Parse shorthand field syntax (e.g., "string!", "string?", "enum[user, admin]")
- * Also supports inline relations (e.g., "User!", "Post[]", "Tag[] through:post_tags")
- * and inline constraints (e.g., "string! unique", "string! indexed")
- * Optimized parser - assumes shorthand syntax by default
+ * Parse field definition using new type system
+ * Supports inline relations (e.g., "User!", "Post[]", "Tag[] through:post_tags")
+ * Uses TypeParser for all type parsing
  */
 export declare function parseFieldDefinition(fieldName: string, fieldDef: EntityFieldDefinition, availableEntities?: Set<string>): EntityField;
 /**
@@ -262,6 +286,7 @@ export declare function parseRelationDefinition(relationDef: RelationDefinition)
  * Normalize entity definition - optimized parser for shorthand-first syntax
  * Parses fields and relations on-demand, caching results
  * Extracts inline relations from fields and auto-generates foreign keys
+ * Handles source inheritance and include filtering
  */
 export declare function normalizeEntityDefinition(entityName: string, entityDef: EntityDefinition, allEntities?: YamaEntities): Omit<EntityDefinition, "fields" | "relations"> & {
     fields: Record<string, EntityField>;
@@ -273,11 +298,21 @@ export declare function normalizeEntityDefinition(entityName: string, entityDef:
  */
 export declare function entityToSchema(entityName: string, entityDef: EntityDefinition, entities?: YamaEntities): SchemaDefinition;
 /**
- * Convert all entities to schemas - optimized batch processing
+ * Normalize config to use schemas (unified entities/schemas)
+ * Uses config-normalizer for unified handling
  */
-export declare function entitiesToSchemas(entities: YamaEntities): YamaSchemas;
+export declare function normalizeSchemas(config: {
+    schemas?: YamaEntities | YamaSchemas;
+    entities?: YamaEntities | YamaSchemas;
+}): YamaEntities | undefined;
+/**
+ * Convert entities to API schemas (SchemaDefinition format for validation)
+ * This converts EntityDefinition to SchemaDefinition format
+ */
+export declare function entitiesToSchemas(entities: YamaEntities): import("./schemas.js").YamaSchemas;
 /**
  * Merge entity-generated schemas with explicit schemas
  * Explicit schemas take precedence
  */
 export declare function mergeSchemas(explicitSchemas: YamaSchemas | undefined | null, entitySchemas: YamaSchemas): YamaSchemas;
+//# sourceMappingURL=entities.d.ts.map

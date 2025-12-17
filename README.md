@@ -1,4 +1,4 @@
-<div align="center">
+﻿<div align="center">
   <img src="logo.svg" alt="Yama JS" width="120" />
   
   # Yama JS
@@ -9,14 +9,14 @@
   
   [![License: MPL-2.0](https://img.shields.io/badge/License-MPL_2.0-brightgreen.svg)](https://opensource.org/licenses/MPL-2.0)
   [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](https://nodejs.org/)
-  [![npm version](https://img.shields.io/npm/v/@betagors/yama-cli)](https://www.npmjs.com/package/@betagors/yama-cli)
+  [![npm version](https://img.shields.io/npm/v/@yamajs/cli)](https://www.npmjs.com/package/@yamajs/cli)
   
-  [Documentation](https://yamajs.org) • [Examples](./examples) • [GitHub](https://github.com/betagors/yamajs) • [Discussions](https://github.com/betagors/yamajs/discussions)
+  [Documentation](https://yamajs.org) â€¢ [Examples](./examples) â€¢ [GitHub](https://github.com/betagors/yamajs) â€¢ [Discussions](https://github.com/betagors/yamajs/discussions)
 </div>
 
 ---
 
-## 🎯 What is Yama?
+## ðŸŽ¯ What is Yama?
 
 Yama is a **configuration-first backend platform** that dramatically reduces boilerplate by separating structure from logic:
 
@@ -26,29 +26,29 @@ Yama is a **configuration-first backend platform** that dramatically reduces boi
 
 This approach enables teams to build APIs faster, safer, and with less code.
 
-## ✨ Features
+## âœ¨ Features
 
 <div align="center">
 
 | Feature | Description |
 |---------|-------------|
-| 🎯 **YAML-First** | Define your entire API structure in `yama.yaml` |
-| 🚀 **Type-Safe** | Auto-generated TypeScript types and SDKs |
-| 🔌 **Plugin System** | Extensible architecture with database and HTTP adapters |
-| 📚 **Auto-Generated Docs** | OpenAPI documentation from your config |
-| 🛠️ **Powerful CLI** | Development server, code generation, and migrations |
-| 🔒 **Built-in Auth** | JWT authentication and authorization rules |
-| 🗄️ **Database Support** | PostgreSQL and PGLite adapters with migrations |
-| ⚡ **Fast Development** | Hot reload, watch mode, and instant feedback |
+| ðŸŽ¯ **YAML-First** | Define your entire API structure in `yama.yaml` |
+| ðŸš€ **Type-Safe** | Auto-generated TypeScript types and SDKs |
+| ðŸ”Œ **Plugin System** | Extensible architecture with database and HTTP adapters |
+| ðŸ“š **Auto-Generated Docs** | OpenAPI documentation from your config |
+| ðŸ› ï¸ **Powerful CLI** | Development server, code generation, and migrations |
+| ðŸ”’ **Built-in Auth** | JWT authentication and authorization rules |
+| ðŸ—„ï¸ **Database Support** | PostgreSQL and PGLite adapters with migrations |
+| âš¡ **Fast Development** | Hot reload, watch mode, and instant feedback |
 
 </div>
 
-## 🚀 Quick Start
+## ðŸš€ Quick Start
 
 ### Installation
 
 ```bash
-npm install -g @betagors/yama-cli
+npm install -g @yamajs/cli
 ```
 
 ### Create Your First API
@@ -60,9 +60,9 @@ npm install
 yama dev
 ```
 
-Your API will be running at `http://localhost:4000` 🎉
+Your API will be running at `http://localhost:4000` ðŸŽ‰
 
-## 📖 Example
+## ðŸ“– Example
 
 ### 1. Define Your API Structure
 
@@ -109,7 +109,7 @@ For custom endpoints, create handlers:
 
 ```typescript
 // src/handlers/listTodos.ts
-import { HandlerContext } from '@betagors/yama-core';
+import { HandlerContext } from '@yamajs/core';
 
 export async function listTodos(context: HandlerContext) {
   const { search, limit = 10 } = context.query;
@@ -146,23 +146,23 @@ const newTodo = await api.todos.post({
 
 That's it! Yama handles routing, validation, type generation, and documentation automatically.
 
-## 📁 Project Structure
+## ðŸ“ Project Structure
 
 ```
 my-api/
-├── yama.yaml              # API configuration
-├── package.json
-├── src/
-│   ├── handlers/          # Your business logic
-│   │   └── listTodos.ts
-│   └── generated/         # Auto-generated (gitignored)
-│       ├── types.ts
-│       └── sdk.ts
-├── migrations/            # Database migrations
-└── .env                   # Environment variables
+â”œâ”€â”€ yama.yaml              # API configuration
+â”œâ”€â”€ package.json
+â”œâ”€â”€ src/
+â”‚   â”œâ”€â”€ handlers/          # Your business logic
+â”‚   â”‚   â””â”€â”€ listTodos.ts
+â”‚   â””â”€â”€ generated/         # Auto-generated (gitignored)
+â”‚       â”œâ”€â”€ types.ts
+â”‚       â””â”€â”€ sdk.ts
+â”œâ”€â”€ migrations/            # Database migrations
+â””â”€â”€ .env                   # Environment variables
 ```
 
-## 🛠️ CLI Commands
+## ðŸ› ï¸ CLI Commands
 
 ### Development
 
@@ -199,16 +199,16 @@ yama endpoints          # List all endpoints
 yama schemas            # List all schemas
 ```
 
-## 🧰 Dev Admin (AdminX)
+## ðŸ§° Dev Admin (AdminX)
 
-- Optional plugin `@betagors/yama-adminx` for a dev-only admin UI (CRUD, schema/endpoints view, migrations summary).
+- Optional plugin `@yamajs/adminx` for a dev-only admin UI (CRUD, schema/endpoints view, migrations summary).
 - Enabled by default in development, disabled in production unless explicitly allowed.
 - Requires a token: `Authorization: Bearer dev-adminx` by default. Set `ADMINX_PASSWORD` (or `YAMA_ADMINX_PASSWORD`) to override.
 - Default path: `/adminx`
 
 ```yaml
 plugins:
-  "@betagors/yama-adminx":
+  "@yamajs/adminx":
     enabled: true            # auto-true in dev, false in prod
     path: /adminx
     requireAuth: true
@@ -216,33 +216,33 @@ plugins:
     # devPassword: ${ADMINX_PASSWORD}
 ```
 
-## 🏗️ Architecture
+## ðŸ—ï¸ Architecture
 
 Yama is built as a **monorepo** using pnpm workspaces and Turborepo:
 
 ```
 yama/
-├── packages/
-│   ├── cli/              # CLI tool
-│   ├── core/             # Core runtime and types
-│   ├── postgres/         # PostgreSQL adapter
-│   ├── pglite/           # PGLite adapter
-│   ├── node/     # Node.js runtime
-│   └── ...
-├── apps/
-│   └── docs/             # Documentation site
-└── examples/             # Example projects
+â”œâ”€â”€ packages/
+â”‚   â”œâ”€â”€ cli/              # CLI tool
+â”‚   â”œâ”€â”€ core/             # Core runtime and types
+â”‚   â”œâ”€â”€ postgres/         # PostgreSQL adapter
+â”‚   â”œâ”€â”€ pglite/           # PGLite adapter
+â”‚   â”œâ”€â”€ node/     # Node.js runtime
+â”‚   â””â”€â”€ ...
+â”œâ”€â”€ apps/
+â”‚   â””â”€â”€ docs/             # Documentation site
+â””â”€â”€ examples/             # Example projects
 ```
 
-## 📚 Documentation
+## ðŸ“š Documentation
 
-- 📖 **[Full Documentation](https://yamajs.org)** - Complete guides and API reference
-- 🚀 **[Getting Started](https://yamajs.org/docs/getting-started)** - Installation and setup
-- 🎓 **[Core Concepts](https://yamajs.org/docs/core-concepts)** - Schemas, entities, endpoints, handlers
-- 📝 **[Examples](https://yamajs.org/docs/examples)** - Real-world examples and tutorials
-- 🔌 **[Plugins](https://yamajs.org/plugins)** - Extend Yama with plugins
+- ðŸ“– **[Full Documentation](https://yamajs.org)** - Complete guides and API reference
+- ðŸš€ **[Getting Started](https://yamajs.org/docs/getting-started)** - Installation and setup
+- ðŸŽ“ **[Core Concepts](https://yamajs.org/docs/core-concepts)** - Schemas, entities, endpoints, handlers
+- ðŸ“ **[Examples](https://yamajs.org/docs/examples)** - Real-world examples and tutorials
+- ðŸ”Œ **[Plugins](https://yamajs.org/plugins)** - Extend Yama with plugins
 
-## 💡 Why Yama?
+## ðŸ’¡ Why Yama?
 
 - **Less Boilerplate** - Define structure once, generate everything
 - **Type Safety** - End-to-end type safety from config to client
@@ -250,7 +250,7 @@ yama/
 - **Developer Experience** - Fast iteration, hot reload, instant feedback
 - **Open Source** - Transparent, extensible, community-driven
 
-## 🎯 Philosophy
+## ðŸŽ¯ Philosophy
 
 Yama's core philosophy:
 
@@ -258,7 +258,7 @@ Yama's core philosophy:
 - **Code defines custom behavior** - Business logic stays in TypeScript
 - **Yama guarantees correctness** - Type safety, validation, and consistency
 
-## 🤝 Contributing
+## ðŸ¤ Contributing
 
 We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
 
@@ -270,47 +270,47 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 
 Please read our [Code of Conduct](CODE_OF_CONDUCT.md) before contributing.
 
-## 🔒 Security
+## ðŸ”’ Security
 
 Found a security vulnerability? Please see our [Security Policy](SECURITY.md) for details on how to report it responsibly.
 
-## 📄 License
+## ðŸ“„ License
 
 This project is licensed under the **Mozilla Public License 2.0 (MPL-2.0)** - see the [LICENSE](LICENSE) file for details.
 
 The documentation site (`apps/docs-site`) is licensed under **MIT** - see [apps/docs-site/LICENSE](apps/docs-site/LICENSE) for details.
 
-## 🗺️ Roadmap
+## ðŸ—ºï¸ Roadmap
 
-### Phase 1: Core Platform ✅
-- ✅ YAML-based configuration
-- ✅ TypeScript handler system
-- ✅ Database adapters (PostgreSQL, PGLite)
-- ✅ HTTP server adapters (Fastify)
-- ✅ Schema validation and code generation
-- ✅ CLI tooling
+### Phase 1: Core Platform âœ…
+- âœ… YAML-based configuration
+- âœ… TypeScript handler system
+- âœ… Database adapters (PostgreSQL, PGLite)
+- âœ… HTTP server adapters (Fastify)
+- âœ… Schema validation and code generation
+- âœ… CLI tooling
 
-### Phase 2: Enhanced Features 🔄
-- 🔄 Serverless deployment support
-- 📊 Advanced analytics and monitoring
-- 🔐 Enhanced authentication providers
-- 🚀 Automated scaling and optimization
+### Phase 2: Enhanced Features ðŸ”„
+- ðŸ”„ Serverless deployment support
+- ðŸ“Š Advanced analytics and monitoring
+- ðŸ” Enhanced authentication providers
+- ðŸš€ Automated scaling and optimization
 
-### Phase 3: Full-Stack Expansion 📋
-- 🎨 Frontend-as-config ("vibe config")
-- 🤖 AI-assisted generation
-- ⚡ Real-time features and subscriptions
+### Phase 3: Full-Stack Expansion ðŸ“‹
+- ðŸŽ¨ Frontend-as-config ("vibe config")
+- ðŸ¤– AI-assisted generation
+- âš¡ Real-time features and subscriptions
 
 See the [full roadmap](./docs/ROADMAP.md) for detailed plans.
 
-## 📞 Support
+## ðŸ“ž Support
 
-- 📖 [Documentation](https://yamajs.org)
-- 💬 [GitHub Discussions](https://github.com/betagors/yamajs/discussions)
-- 🐛 [Issue Tracker](https://github.com/betagors/yamajs/issues)
+- ðŸ“– [Documentation](https://yamajs.org)
+- ðŸ’¬ [GitHub Discussions](https://github.com/betagors/yamajs/discussions)
+- ðŸ› [Issue Tracker](https://github.com/betagors/yamajs/issues)
 
 ---
 
 <div align="center">
-  Made with ❤️ by <a href="https://github.com/BetagorsLabs">Betagors Labs</a>
+  Made with â¤ï¸ by <a href="https://github.com/BetagorsLabs">Betagors Labs</a>
 </div>

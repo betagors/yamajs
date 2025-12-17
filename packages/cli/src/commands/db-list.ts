@@ -1,8 +1,8 @@
-import { existsSync } from "fs";
+﻿import { existsSync } from "fs";
 import { findYamaConfig } from "../utils/project-detection.ts";
 import { readYamaConfig } from "../utils/file-utils.ts";
-import { loadEnvFile, resolveEnvVars } from "@betagors/yama-core";
-import type { DatabaseConfig } from "@betagors/yama-core";
+import { loadEnvFile, resolveEnvVars } from "@yamajs/core";
+import type { DatabaseConfig } from "@yamajs/core";
 import { getDatabasePluginAndConfig } from "../utils/db-plugin.ts";
 import { success, error, info, printTable, colors } from "../utils/cli-utils.ts";
 
@@ -89,7 +89,7 @@ export async function dbListCommand(options: DbListOptions): Promise<void> {
             : dbConfig.url)
         : "default";
 
-      console.log(`\n📊 Database Tables (${dbType} - ${dbLocation}):\n`);
+      console.log(`\nðŸ“Š Database Tables (${dbType} - ${dbLocation}):\n`);
       printTable(tableData);
 
       success(`\nFound ${tablesResult.length} table(s).`);

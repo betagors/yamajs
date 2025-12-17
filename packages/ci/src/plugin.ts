@@ -1,6 +1,6 @@
-import { writeFileSync, existsSync } from "node:fs";
+﻿import { writeFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
-import type { YamaPlugin, PluginContext } from "@betagors/yama-core";
+import type { YamaPlugin, PluginContext } from "@yamajs/core";
 import type { CIPluginConfig } from "./types.js";
 import {
   getCIProjectInfo,
@@ -80,7 +80,7 @@ export interface CIPluginAPI {
  * CI plugin implementation
  */
 const plugin: YamaPlugin = {
-  name: "@betagors/yama-ci",
+  name: "@yamajs/ci",
   category: "deployment",
   pluginApi: "1.0",
   yamaCore: "^0.1.0",

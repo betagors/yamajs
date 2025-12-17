@@ -139,3 +139,4 @@ export declare function registerStorageAdapter(provider: string, factory: Storag
  * Create a storage adapter for the given provider
  */
 export declare function createStorageAdapter(provider: string, config: StorageConfig): StorageAdapter;
+//# sourceMappingURL=storage.d.ts.map

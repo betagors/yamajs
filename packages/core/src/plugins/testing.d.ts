@@ -40,3 +40,4 @@ export declare function createTestRegistry(): {
  * Wait for event
  */
 export declare function waitForEvent(context: PluginContext, event: string, timeout?: number): Promise<any>;
+//# sourceMappingURL=testing.d.ts.map

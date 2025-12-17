@@ -1,10 +1,10 @@
-import { existsSync } from "fs";
+﻿import { existsSync } from "fs";
 import { execSync } from "child_process";
 import { findYamaConfig } from "../utils/project-detection.ts";
 import { getConfigDir, readYamaConfig, readPackageJson, writePackageJson } from "../utils/file-utils.ts";
 import { success, error } from "../utils/cli-utils.ts";
 import { detectPackageManager } from "../utils/project-detection.ts";
-import { loadPlugin } from "@betagors/yama-core";
+import { loadPlugin } from "@yamajs/core";
 
 interface SyncPluginsOptions {
   config?: string;
@@ -49,11 +49,11 @@ export async function syncPluginsCommand(options: SyncPluginsOptions): Promise<v
     }
 
     if (yamaPlugins.length === 0) {
-      console.log("ℹ️  No plugins configured in yama.yaml");
+      console.log("â„¹ï¸  No plugins configured in yama.yaml");
       return;
     }
 
-    console.log(`📦 Syncing plugins from yama.yaml...\n`);
+    console.log(`ðŸ“¦ Syncing plugins from yama.yaml...\n`);
     console.log(`   Found ${yamaPlugins.length} plugin(s) in yama.yaml:\n`);
     yamaPlugins.forEach(plugin => {
       console.log(`   - ${plugin}`);
@@ -73,7 +73,7 @@ export async function syncPluginsCommand(options: SyncPluginsOptions): Promise<v
     }
 
     if (missingPlugins.length > 0) {
-      console.log(`📥 Installing ${missingPlugins.length} missing plugin(s)...\n`);
+      console.log(`ðŸ“¥ Installing ${missingPlugins.length} missing plugin(s)...\n`);
       for (const pluginName of missingPlugins) {
         try {
           console.log(`   Installing ${pluginName}...`);
@@ -85,19 +85,19 @@ export async function syncPluginsCommand(options: SyncPluginsOptions): Promise<v
           // Validate the plugin
           try {
             await loadPlugin(pluginName, configDir);
-            console.log(`   ✅ ${pluginName} installed and validated`);
+            console.log(`   âœ… ${pluginName} installed and validated`);
           } catch (err) {
-            console.warn(`   ⚠️  ${pluginName} installed but validation failed: ${err instanceof Error ? err.message : String(err)}`);
+            console.warn(`   âš ï¸  ${pluginName} installed but validation failed: ${err instanceof Error ? err.message : String(err)}`);
           }
 
           installedCount++;
         } catch (err) {
-          error(`   ❌ Failed to install ${pluginName}: ${err instanceof Error ? err.message : String(err)}`);
+          error(`   âŒ Failed to install ${pluginName}: ${err instanceof Error ? err.message : String(err)}`);
         }
       }
       console.log();
     } else {
-      console.log(`✅ All plugins from yama.yaml are already installed\n`);
+      console.log(`âœ… All plugins from yama.yaml are already installed\n`);
     }
 
     // Remove plugins not in yama.yaml (if --remove flag is set)
@@ -106,8 +106,8 @@ export async function syncPluginsCommand(options: SyncPluginsOptions): Promise<v
       const pluginsToRemove: string[] = [];
       
       for (const [packageName] of Object.entries(allDeps)) {
-        // Check if it's a Yama plugin (starts with @betagors/yama- or @yama/)
-        if (packageName.startsWith("@betagors/yama-") || packageName.startsWith("@yama/")) {
+        // Check if it's a Yama plugin (starts with @yamajs/ or @yamajs/)
+        if (packageName.startsWith("@yamajs/") || packageName.startsWith("@yamajs/")) {
           if (!yamaPlugins.includes(packageName)) {
             pluginsToRemove.push(packageName);
           }
@@ -115,7 +115,7 @@ export async function syncPluginsCommand(options: SyncPluginsOptions): Promise<v
       }
 
       if (pluginsToRemove.length > 0) {
-        console.log(`🗑️  Removing ${pluginsToRemove.length} plugin(s) not in yama.yaml...\n`);
+        console.log(`ðŸ—‘ï¸  Removing ${pluginsToRemove.length} plugin(s) not in yama.yaml...\n`);
         for (const pluginName of pluginsToRemove) {
           try {
             console.log(`   Removing ${pluginName}...`);
@@ -123,31 +123,31 @@ export async function syncPluginsCommand(options: SyncPluginsOptions): Promise<v
               cwd: configDir,
               stdio: "inherit"
             });
-            console.log(`   ✅ ${pluginName} removed`);
+            console.log(`   âœ… ${pluginName} removed`);
             removedCount++;
           } catch (err) {
-            console.warn(`   ⚠️  Failed to remove ${pluginName}: ${err instanceof Error ? err.message : String(err)}`);
+            console.warn(`   âš ï¸  Failed to remove ${pluginName}: ${err instanceof Error ? err.message : String(err)}`);
           }
         }
         console.log();
       } else {
-        console.log(`✅ No plugins to remove\n`);
+        console.log(`âœ… No plugins to remove\n`);
       }
     }
 
     // Summary
-    console.log("📊 Summary:");
+    console.log("ðŸ“Š Summary:");
     if (installedCount > 0) {
-      console.log(`   ✅ Installed: ${installedCount} plugin(s)`);
+      console.log(`   âœ… Installed: ${installedCount} plugin(s)`);
     }
     if (options.remove && removedCount > 0) {
-      console.log(`   🗑️  Removed: ${removedCount} plugin(s)`);
+      console.log(`   ðŸ—‘ï¸  Removed: ${removedCount} plugin(s)`);
     }
     if (installedCount === 0 && (!options.remove || removedCount === 0)) {
-      console.log(`   ✅ Everything is in sync!`);
+      console.log(`   âœ… Everything is in sync!`);
     }
 
-    console.log("\n💡 Next steps:");
+    console.log("\nðŸ’¡ Next steps:");
     console.log(`   Run 'yama generate' to update generated code`);
   } catch (err) {
     error(`Failed to sync plugins: ${err instanceof Error ? err.message : String(err)}`);

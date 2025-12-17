@@ -1,5 +1,5 @@
 {
-  "name": "@betagors/yama-redis",
+  "name": "@yamajs/redis",
   "version": "0.1.0-alpha.0",
   "type": "module",
   "description": "Yama Redis cache adapter plugin",
@@ -41,7 +41,8 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
-    "@betagors/yama-core": "workspace:*"
+    "@yamajs/cache": "workspace:0.1.0-alpha.0",
+    "@yamajs/core": "workspace:*"
   },
   "peerDependencies": {
     "ioredis": "^5.0.0 || ^4.0.0",
@@ -56,13 +57,12 @@
     }
   },
   "devDependencies": {
-    "rimraf": "^5.0.0",
     "@types/node": "^20.0.0",
     "@vitest/coverage-v8": "^1.0.0",
+    "rimraf": "^5.0.0",
     "vitest": "^1.0.0"
   },
   "engines": {
     "node": ">=18"
   }
 }
-

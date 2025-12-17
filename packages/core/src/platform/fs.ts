@@ -1,4 +1,4 @@
-export interface FileSystem {
+﻿export interface FileSystem {
   readFileSync(path: string, options?: BufferEncoding | { encoding?: BufferEncoding }): string;
   writeFileSync(path: string, data: string | Uint8Array, options?: BufferEncoding | { encoding?: BufferEncoding }): void;
   existsSync(path: string): boolean;
@@ -31,7 +31,7 @@ export function setPathModule(path: PathModule | null): void {
 export function getFileSystem(): FileSystem {
   if (!fileSystem) {
     throw new Error(
-      "File system provider not configured for @betagors/yama-core. Supply one via setFileSystem (e.g., from @betagors/yama-node)."
+      "File system provider not configured for @yamajs/core. Supply one via setFileSystem (e.g., from @yamajs/node)."
     );
   }
   return fileSystem;
@@ -40,7 +40,7 @@ export function getFileSystem(): FileSystem {
 export function getPathModule(): PathModule {
   if (!pathModule) {
     throw new Error(
-      "Path provider not configured for @betagors/yama-core. Supply one via setPathModule (e.g., from @betagors/yama-node)."
+      "Path provider not configured for @yamajs/core. Supply one via setPathModule (e.g., from @yamajs/node)."
     );
   }
   return pathModule;

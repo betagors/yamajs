@@ -1,5 +1,5 @@
-import type { YamaEntities, EntityDefinition, EntityField } from "@betagors/yama-core";
-import { parseFieldDefinition } from "@betagors/yama-core";
+﻿import type { YamaEntities, EntityDefinition, EntityField } from "@yamajs/core";
+import { parseFieldDefinition } from "@yamajs/core";
 
 /**
  * Convert snake_case to camelCase
@@ -807,7 +807,7 @@ export function generateRepository(
   const repository = `// This file is auto-generated from yama.yaml
 // Do not edit manually - your changes will be overwritten
 
-import { pgliteAdapter } from "@betagors/yama-pglite";
+import { pgliteAdapter } from "@yamajs/pglite";
 import { ${schemaImports.join(', ')} } from "./schema.ts";
 import { ${mapperImports.join(', ')} } from "./mapper.ts";
 import { eq, and, or, ilike, gt, lt, desc, asc } from "drizzle-orm";

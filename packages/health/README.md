@@ -1,4 +1,4 @@
-# @betagors/yama-health
+﻿# @yamajs/health
 
 Yama health check plugin with comprehensive health monitoring and aggregation.
 
@@ -13,11 +13,11 @@ Yama health check plugin with comprehensive health monitoring and aggregation.
 ## Installation
 
 ```bash
-npm install @betagors/yama-health
+npm install @yamajs/health
 # or
-pnpm add @betagors/yama-health
+pnpm add @yamajs/health
 # or
-yarn add @betagors/yama-health
+yarn add @yamajs/health
 ```
 
 ## Configuration
@@ -26,15 +26,15 @@ Add the health plugin to your `yama.yaml`:
 
 ```yaml
 plugins:
-  - name: "@betagors/yama-health"
+  - name: "@yamajs/health"
     config:
       path: "/health"  # Health endpoint path (default: "/health")
       includeSystemInfo: true  # Include system metrics (default: true)
       includeDetails: true  # Include detailed component info (default: true)
       criticalComponents:  # Components that must be healthy
-        - "@betagors/yama-postgres"
+        - "@yamajs/postgres"
       excludeComponents:  # Components to exclude from checks
-        - "@betagors/yama-logging"
+        - "@yamajs/logging"
       customChecks: []  # Custom health checks (see below)
 ```
 
@@ -45,10 +45,10 @@ plugins:
 The health plugin automatically registers a health service that can be accessed via the plugin API:
 
 ```typescript
-import { getPluginAPI } from "@betagors/yama-core";
+import { getPluginAPI } from "@yamajs/core";
 
 // Get health status
-const healthAPI = getPluginAPI("@betagors/yama-health");
+const healthAPI = getPluginAPI("@yamajs/health");
 const status = await healthAPI.getHealth();
 
 console.log(status.healthy); // true/false
@@ -59,7 +59,7 @@ console.log(status.summary); // Summary statistics
 ### Register Custom Health Checks
 
 ```typescript
-const healthAPI = getPluginAPI("@betagors/yama-health");
+const healthAPI = getPluginAPI("@yamajs/health");
 
 // Register a custom health check
 healthAPI.registerCheck("database", async () => {
@@ -87,8 +87,8 @@ healthAPI.unregisterCheck("database");
 ### Check Specific Component
 
 ```typescript
-const healthAPI = getPluginAPI("@betagors/yama-health");
-const componentHealth = await healthAPI.getComponentHealth("@betagors/yama-postgres");
+const healthAPI = getPluginAPI("@yamajs/health");
+const componentHealth = await healthAPI.getComponentHealth("@yamajs/postgres");
 
 if (componentHealth) {
   console.log(componentHealth.healthy);
@@ -99,7 +99,7 @@ if (componentHealth) {
 ### Quick Health Check
 
 ```typescript
-const healthAPI = getPluginAPI("@betagors/yama-health");
+const healthAPI = getPluginAPI("@yamajs/health");
 const isHealthy = await healthAPI.isHealthy(); // true/false
 ```
 
@@ -157,10 +157,10 @@ And create a handler:
 
 ```typescript
 // src/handlers/healthHandler.ts
-import { getPluginAPI } from "@betagors/yama-core";
+import { getPluginAPI } from "@yamajs/core";
 
 export default async function healthHandler(context) {
-  const healthAPI = getPluginAPI("@betagors/yama-health");
+  const healthAPI = getPluginAPI("@yamajs/health");
   const status = await healthAPI.getHealth();
   
   return context
@@ -175,7 +175,7 @@ Plugins can implement the `onHealthCheck` lifecycle hook to provide their own he
 
 ```typescript
 const plugin: YamaPlugin = {
-  name: "@betagors/my-plugin",
+  name: "@yamajs/my-plugin",
   // ... other plugin config
   
   async onHealthCheck() {

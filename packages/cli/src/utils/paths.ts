@@ -1,4 +1,4 @@
-import { join, dirname, relative, resolve } from "path";
+﻿import { join, dirname, relative, resolve } from "path";
 import { existsSync } from "fs";
 import { fileURLToPath } from "url";
 
@@ -93,6 +93,6 @@ export function getYamaSchemaPath(yamaYamlPath: string): string {
   }
   
   // Last resort: return a node_modules path (editor will try to resolve it)
-  return "node_modules/@betagors/yama-cli/dist/cli/src/yama.schema.json";
+  return "node_modules/@yamajs/cli/dist/cli/src/yama.schema.json";
 }
 

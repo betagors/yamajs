@@ -1,4 +1,4 @@
-import type { YamaPlugin, PluginContext } from "@betagors/yama-core";
+﻿import type { YamaPlugin, PluginContext } from "@yamajs/core";
 import type { LoggingPluginConfig } from "./types.js";
 import { Logger, createTransports } from "./logger.js";
 
@@ -6,7 +6,7 @@ import { Logger, createTransports } from "./logger.js";
  * Logging plugin for Yama
  */
 const plugin: YamaPlugin = {
-  name: "@betagors/yama-logging",
+  name: "@yamajs/logging",
   category: "logging",
   pluginApi: "1.0",
   yamaCore: "^0.1.0",

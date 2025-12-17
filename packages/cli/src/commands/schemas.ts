@@ -1,7 +1,7 @@
-import { existsSync } from "fs";
+﻿import { existsSync } from "fs";
 import { readYamaConfig } from "../utils/file-utils.ts";
 import { findYamaConfig } from "../utils/project-detection.ts";
-import type { YamaSchemas } from "@betagors/yama-core";
+import type { YamaSchemas } from "@yamajs/core";
 
 interface SchemasOptions {
   config?: string;
@@ -11,7 +11,7 @@ export async function schemasCommand(options: SchemasOptions): Promise<void> {
   const configPath = options.config || findYamaConfig() || "yama.yaml";
 
   if (!existsSync(configPath)) {
-    console.error(`❌ Config file not found: ${configPath}`);
+    console.error(`âŒ Config file not found: ${configPath}`);
     process.exit(1);
   }
 
@@ -25,7 +25,7 @@ export async function schemasCommand(options: SchemasOptions): Promise<void> {
       return;
     }
 
-    console.log(`📦 Schemas (${Object.keys(config.schemas).length}):\n`);
+    console.log(`ðŸ“¦ Schemas (${Object.keys(config.schemas).length}):\n`);
 
     for (const [schemaName, schemaDef] of Object.entries(config.schemas)) {
       console.log(`${schemaName}:`);
@@ -43,7 +43,7 @@ export async function schemasCommand(options: SchemasOptions): Promise<void> {
       console.log();
     }
   } catch (error) {
-    console.error("❌ Failed to read schemas:", error instanceof Error ? error.message : String(error));
+    console.error("âŒ Failed to read schemas:", error instanceof Error ? error.message : String(error));
     process.exit(1);
   }
 }

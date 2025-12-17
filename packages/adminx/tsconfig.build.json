@@ -1,9 +1,9 @@
-{
+﻿{
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "baseUrl": "../..",
     "paths": {
-      "@betagors/yama-core": ["packages/core/src"]
+      "@yamajs/core": ["packages/core/src"]
     },
     "rootDir": "src",
     "outDir": "dist",

@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import type { EntityDefinition, YamaEntities, EntityField } from "@betagors/yama-core";
+﻿import { describe, it, expect, vi, beforeEach } from "vitest";
+import type { EntityDefinition, YamaEntities, EntityField } from "@yamajs/core";
 
 // Test the fixes we made to the node index.ts file
 

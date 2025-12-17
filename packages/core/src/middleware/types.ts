@@ -1,4 +1,4 @@
-import type { HandlerContext } from "../infrastructure/server.js";
+﻿import type { HandlerContext } from "../infrastructure/server.js";
 
 /**
  * Middleware lifecycle phases
@@ -85,7 +85,7 @@ export interface MiddlewareState {
 export interface MiddlewareDefinition {
   /**
    * Unique name for the middleware
-   * For plugin-provided middleware, use plugin name (e.g., "@betagors/yama-metrics")
+   * For plugin-provided middleware, use plugin name (e.g., "@yamajs/metrics")
    */
   name: string;
 

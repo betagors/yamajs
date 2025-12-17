@@ -1,9 +1,9 @@
-import { existsSync } from "fs";
+﻿import { existsSync } from "fs";
 import { findYamaConfig } from "../utils/project-detection.ts";
 import { getConfigDir, readYamaConfig } from "../utils/file-utils.ts";
-import { resolveEnvVars, loadEnvFile } from "@betagors/yama-core";
+import { resolveEnvVars, loadEnvFile } from "@yamajs/core";
 import { success, error, info, warning } from "../utils/cli-utils.ts";
-import { loadPlugin } from "@betagors/yama-core";
+import { loadPlugin } from "@yamajs/core";
 import { table } from "table";
 
 interface PluginHealthOptions {
@@ -61,7 +61,7 @@ export async function pluginHealthCommand(
         if (!plugin.onHealthCheck) {
           healthRows.push([
             pluginName,
-            "⚠️  No health check",
+            "âš ï¸  No health check",
             "Health check not implemented",
             "",
           ]);
@@ -70,7 +70,7 @@ export async function pluginHealthCommand(
 
         try {
           const healthStatus = await plugin.onHealthCheck();
-          const status = healthStatus.healthy ? "✅ Healthy" : "❌ Unhealthy";
+          const status = healthStatus.healthy ? "âœ… Healthy" : "âŒ Unhealthy";
           const details = healthStatus.details
             ? JSON.stringify(healthStatus.details, null, 2).substring(0, 50)
             : "";
@@ -81,7 +81,7 @@ export async function pluginHealthCommand(
           const errorMsg = err instanceof Error ? err.message : String(err);
           healthRows.push([
             pluginName,
-            "❌ Error",
+            "âŒ Error",
             "",
             errorMsg.substring(0, 100),
           ]);
@@ -94,27 +94,27 @@ export async function pluginHealthCommand(
         ) {
           healthRows.push([
             pluginName,
-            "❌ Not installed",
+            "âŒ Not installed",
             "",
             "Plugin not found",
           ]);
         } else {
-          healthRows.push([pluginName, "❌ Error", "", errorMsg.substring(0, 100)]);
+          healthRows.push([pluginName, "âŒ Error", "", errorMsg.substring(0, 100)]);
         }
       }
     }
 
 
     // Fallback to text output
-    console.log("\n🏥 Plugin Health Status\n");
+    console.log("\nðŸ¥ Plugin Health Status\n");
     console.log(table(healthRows));
 
     // Summary
-    const healthyCount = healthRows.filter((r) => r[1].includes("✅")).length - 1;
-    const unhealthyCount = healthRows.filter((r) => r[1].includes("❌")).length - 1;
-    const noCheckCount = healthRows.filter((r) => r[1].includes("⚠️")).length - 1;
+    const healthyCount = healthRows.filter((r) => r[1].includes("âœ…")).length - 1;
+    const unhealthyCount = healthRows.filter((r) => r[1].includes("âŒ")).length - 1;
+    const noCheckCount = healthRows.filter((r) => r[1].includes("âš ï¸")).length - 1;
 
-    console.log("\n📊 Summary:");
+    console.log("\nðŸ“Š Summary:");
     if (healthyCount > 0) {
       success(`Healthy: ${healthyCount} plugin(s)`);
     }

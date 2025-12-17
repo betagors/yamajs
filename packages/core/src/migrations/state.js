@@ -1,24 +1,25 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
-import { join } from "path";
+import { getFileSystem, getPathModule } from "../platform/fs.js";
+const fs = () => getFileSystem();
+const path = () => getPathModule();
 /**
  * Get state directory path
  */
 export function getStateDir(configDir) {
-    return join(configDir, ".yama", "state");
+    return path().join(configDir, ".yama", "state");
 }
 /**
  * Get state file path for environment
  */
 export function getStatePath(configDir, environment) {
-    return join(getStateDir(configDir), `${environment}.json`);
+    return path().join(getStateDir(configDir), `${environment}.json`);
 }
 /**
  * Ensure state directory exists
  */
 export function ensureStateDir(configDir) {
     const stateDir = getStateDir(configDir);
-    if (!existsSync(stateDir)) {
-        mkdirSync(stateDir, { recursive: true });
+    if (!fs().existsSync(stateDir)) {
+        fs().mkdirSync(stateDir, { recursive: true });
     }
 }
 /**
@@ -26,11 +27,11 @@ export function ensureStateDir(configDir) {
  */
 export function loadState(configDir, environment) {
     const statePath = getStatePath(configDir, environment);
-    if (!existsSync(statePath)) {
+    if (!fs().existsSync(statePath)) {
         return null;
     }
     try {
-        const content = readFileSync(statePath, "utf-8");
+        const content = fs().readFileSync(statePath, "utf-8");
         return JSON.parse(content);
     }
     catch {
@@ -43,7 +44,7 @@ export function loadState(configDir, environment) {
 export function saveState(configDir, state) {
     ensureStateDir(configDir);
     const statePath = getStatePath(configDir, state.environment);
-    writeFileSync(statePath, JSON.stringify(state, null, 2), "utf-8");
+    fs().writeFileSync(statePath, JSON.stringify(state, null, 2), "utf-8");
 }
 /**
  * Get or create state for environment
@@ -82,16 +83,15 @@ export function getCurrentSnapshot(configDir, environment) {
  */
 export function stateExists(configDir, environment) {
     const statePath = getStatePath(configDir, environment);
-    return existsSync(statePath);
+    return fs().existsSync(statePath);
 }
 /**
  * Delete state for environment
  */
 export function deleteState(configDir, environment) {
     const statePath = getStatePath(configDir, environment);
-    if (existsSync(statePath)) {
-        const fs = require("fs");
-        fs.unlinkSync(statePath);
+    if (fs().existsSync(statePath) && fs().unlinkSync) {
+        fs().unlinkSync(statePath);
     }
 }
 /**

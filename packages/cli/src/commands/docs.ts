@@ -1,18 +1,18 @@
-import { existsSync, writeFileSync, mkdirSync } from "fs";
+﻿import { existsSync, writeFileSync, mkdirSync } from "fs";
 import { join, dirname, extname } from "path";
 import { readYamaConfig, ensureDir, getConfigDir } from "../utils/file-utils.ts";
 import { findYamaConfig } from "../utils/project-detection.ts";
 import yaml from "js-yaml";
 
 // Dynamic import for openapi package to handle workspace resolution
-async function getGenerateOpenAPI() {
+async function getOpenApiAdapter() {
   try {
     // @ts-ignore - dynamic import, package may not be available at compile time
-    const openapiModule = await import("@betagors/yama-openapi");
-    return openapiModule.generateOpenAPI;
+    const openapiModule = await import("@yamajs/openapi");
+    return openapiModule.openapiAdapter;
   } catch (error) {
     throw new Error(
-      `Failed to load @betagors/yama-openapi. Make sure it's built and available. ` +
+      `Failed to load @yamajs/openapi. Make sure it's built and available. ` +
       `Original error: ${error instanceof Error ? error.message : String(error)}`
     );
   }
@@ -31,24 +31,24 @@ export async function docsCommand(options: DocsOptions): Promise<void> {
   const configPath = options.config || findYamaConfig() || "yama.yaml";
 
   if (!existsSync(configPath)) {
-    console.error(`❌ Config file not found: ${configPath}`);
+    console.error(`âŒ Config file not found: ${configPath}`);
     console.error("   Run 'yama init' to create a yama.yaml file");
     process.exit(1);
   }
 
   try {
-    const generateOpenAPI = await getGenerateOpenAPI();
-    const config = readYamaConfig(configPath) as Parameters<typeof generateOpenAPI>[0];
-    const openAPISpec = generateOpenAPI(config);
+    const adapter = await getOpenApiAdapter();
+    const config = readYamaConfig(configPath) as Parameters<typeof adapter.generate>[0];
+    const openAPISpec = adapter.generate(config);
 
     const format = options.format || "openapi";
     const outputPath = options.output || getDefaultOutputPath(configPath, format);
 
     await generateDocs(openAPISpec, format, outputPath, configPath);
 
-    console.log(`\n✅ Documentation generated: ${outputPath}`);
+    console.log(`\nâœ… Documentation generated: ${outputPath}`);
   } catch (error) {
-    console.error("❌ Documentation generation failed:", error instanceof Error ? error.message : String(error));
+    console.error("âŒ Documentation generation failed:", error instanceof Error ? error.message : String(error));
     process.exit(1);
   }
 }
@@ -83,7 +83,7 @@ async function generateDocs(
   // If outputPath is absolute (starts with / or has drive letter), use it as-is
   // Otherwise, treat it as relative to the config directory
   const isAbsolute = outputPath.length > 0 && (
-    outputPath[0] === '/' || 
+    outputPath[0] === '/' ||
     (outputPath.length > 1 && outputPath[1] === ':') ||
     outputPath.startsWith(configDir)
   );
@@ -134,7 +134,7 @@ async function generateDocs(
 
 function generateSwaggerUIHTML(spec: OpenAPISpec): string {
   const specJson = JSON.stringify(spec, null, 2);
-  
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -186,7 +186,7 @@ function generateSwaggerUIHTML(spec: OpenAPISpec): string {
 function generateMarkdown(spec: OpenAPISpec): string {
   let md = `# ${spec.info.title}\n\n`;
   md += `**Version:** ${spec.info.version}\n\n`;
-  
+
   if (spec.info.description) {
     md += `${spec.info.description}\n\n`;
   }
@@ -242,7 +242,7 @@ function generateMarkdown(spec: OpenAPISpec): string {
         for (const param of op.parameters) {
           const schema = param.schema;
           const type = (typeof schema.$ref === "string" && schema.$ref)
-            ? schema.$ref.split("/").pop() 
+            ? schema.$ref.split("/").pop()
             : (schema.type as string) || "unknown";
           const required = param.required ? "Yes" : "No";
           md += `| ${param.name} | ${param.in} | ${required} | ${type} | ${param.description || ""} |\n`;
@@ -254,7 +254,7 @@ function generateMarkdown(spec: OpenAPISpec): string {
       if (op.requestBody) {
         const schema = op.requestBody.content["application/json"].schema;
         const type = (typeof schema.$ref === "string" && schema.$ref)
-          ? schema.$ref.split("/").pop() 
+          ? schema.$ref.split("/").pop()
           : (schema.type as string) || "unknown";
         md += `**Request Body:** \`${type}\`\n\n`;
       }

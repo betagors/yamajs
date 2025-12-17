@@ -1,23 +1,24 @@
-import { existsSync, readFileSync, writeFileSync } from "fs";
-import { join } from "path";
 import { getAllSnapshotHashes } from "./snapshots.js";
 import { ensureTransitionsDir, getAllTransitions } from "./transitions.js";
+import { getFileSystem, getPathModule } from "../platform/fs.js";
+const fs = () => getFileSystem();
+const path = () => getPathModule();
 /**
  * Get graph file path
  */
 export function getGraphPath(configDir) {
-    return join(configDir, ".yama", "graph.json");
+    return path().join(configDir, ".yama", "graph.json");
 }
 /**
  * Load transition graph from disk
  */
 export function loadGraph(configDir) {
     const graphPath = getGraphPath(configDir);
-    if (!existsSync(graphPath)) {
+    if (!fs().existsSync(graphPath)) {
         return buildGraph(configDir);
     }
     try {
-        const content = readFileSync(graphPath, "utf-8");
+        const content = fs().readFileSync(graphPath, "utf-8");
         const data = JSON.parse(content);
         const graph = {
             nodes: new Set(data.nodes),
@@ -90,7 +91,7 @@ export function saveGraph(configDir, graph) {
         ])),
         transitionHashes: Array.from(graph.transitions.keys()),
     };
-    writeFileSync(graphPath, JSON.stringify(data, null, 2), "utf-8");
+    fs().writeFileSync(graphPath, JSON.stringify(data, null, 2), "utf-8");
 }
 /**
  * Find shortest path between two snapshots using BFS

@@ -1,8 +1,8 @@
-import { existsSync } from "fs";
+﻿import { existsSync } from "fs";
 import { findYamaConfig } from "../utils/project-detection.ts";
 import { readYamaConfig, getConfigDir } from "../utils/file-utils.ts";
-import { loadEnvFile, resolveEnvVars } from "@betagors/yama-core";
-import type { DatabaseConfig } from "@betagors/yama-core";
+import { loadEnvFile, resolveEnvVars } from "@yamajs/core";
+import type { DatabaseConfig } from "@yamajs/core";
 import {
   entitiesToModel,
   getCurrentSnapshot,
@@ -20,7 +20,7 @@ import {
   type TableModel,
   type ColumnModel,
   type YamaEntities,
-} from "@betagors/yama-core";
+} from "@yamajs/core";
 import {
   success,
   error,
@@ -288,7 +288,7 @@ export async function schemaApplyCommand(options: SchemaApplyOptions): Promise<v
     // Show what will be applied
     console.log("");
     console.log(fmt.bold("Changes to Apply"));
-    console.log(dim("─".repeat(40)));
+    console.log(dim("â”€".repeat(40)));
     
     let hasDestructive = false;
     for (const step of steps) {

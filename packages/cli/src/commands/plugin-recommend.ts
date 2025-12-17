@@ -1,4 +1,4 @@
-import { existsSync } from "fs";
+﻿import { existsSync } from "fs";
 import { findYamaConfig } from "../utils/project-detection.ts";
 import { readYamaConfig } from "../utils/file-utils.ts";
 
@@ -53,7 +53,7 @@ export async function pluginRecommendCommand(
   );
   if (!hasDatabasePlugin && config.entities) {
     recommendations.push({
-      plugin: "@betagors/yama-pglite",
+      plugin: "@yamajs/pglite",
       reason: "Project has entities but no database plugin configured",
       priority: "high",
       category: "database",
@@ -62,9 +62,9 @@ export async function pluginRecommendCommand(
   }
 
   // Check for authentication needs
-  if (config.auth && !existingPlugins.has("@betagors/yama-auth")) {
+  if (config.auth && !existingPlugins.has("@yamajs/auth")) {
     recommendations.push({
-      plugin: "@betagors/yama-auth",
+      plugin: "@yamajs/auth",
       reason: "Authentication is configured but auth plugin is not installed",
       priority: "high",
       category: "authentication",
@@ -86,9 +86,9 @@ export async function pluginRecommendCommand(
       );
     });
 
-    if (hasFileFields && !existingPlugins.has("@betagors/yama-s3")) {
+    if (hasFileFields && !existingPlugins.has("@yamajs/s3")) {
       recommendations.push({
-        plugin: "@betagors/yama-s3",
+        plugin: "@yamajs/s3",
         reason: "Entities contain file/image fields but no storage plugin configured",
         priority: "medium",
         category: "storage",
@@ -104,9 +104,9 @@ export async function pluginRecommendCommand(
       ep.path?.includes("email") ||
       ep.path?.includes("send")
   );
-  if (hasEmailEndpoints && !existingPlugins.has("@betagors/yama-smtp")) {
+  if (hasEmailEndpoints && !existingPlugins.has("@yamajs/smtp")) {
     recommendations.push({
-      plugin: "@betagors/yama-smtp",
+      plugin: "@yamajs/smtp",
       reason: "Endpoints suggest email functionality but no email plugin configured",
       priority: "medium",
       category: "email",
@@ -116,9 +116,9 @@ export async function pluginRecommendCommand(
 
   // Check for realtime features
   if (config.endpoints?.some((ep) => ep.path?.includes("realtime") || ep.path?.includes("ws"))) {
-    if (!existingPlugins.has("@betagors/yama-realtime")) {
+    if (!existingPlugins.has("@yamajs/realtime")) {
       recommendations.push({
-        plugin: "@betagors/yama-realtime",
+        plugin: "@yamajs/realtime",
         reason: "Realtime endpoints detected but realtime plugin is not configured",
         priority: "medium",
         category: "realtime",
@@ -128,9 +128,9 @@ export async function pluginRecommendCommand(
   }
 
   // Check for logging needs (production readiness)
-  if (!existingPlugins.has("@betagors/yama-logging")) {
+  if (!existingPlugins.has("@yamajs/logging")) {
     recommendations.push({
-      plugin: "@betagors/yama-logging",
+      plugin: "@yamajs/logging",
       reason: "Structured logging is recommended for production applications",
       priority: "low",
       category: "observability",
@@ -139,9 +139,9 @@ export async function pluginRecommendCommand(
   }
 
   // Check for metrics needs
-  if (!existingPlugins.has("@betagors/yama-metrics")) {
+  if (!existingPlugins.has("@yamajs/metrics")) {
     recommendations.push({
-      plugin: "@betagors/yama-metrics",
+      plugin: "@yamajs/metrics",
       reason: "Metrics collection is recommended for monitoring production applications",
       priority: "low",
       category: "observability",
@@ -150,9 +150,9 @@ export async function pluginRecommendCommand(
   }
 
   // Check for health checks
-  if (!existingPlugins.has("@betagors/yama-health")) {
+  if (!existingPlugins.has("@yamajs/health")) {
     recommendations.push({
-      plugin: "@betagors/yama-health",
+      plugin: "@yamajs/health",
       reason: "Health checks are recommended for production deployments",
       priority: "low",
       category: "observability",

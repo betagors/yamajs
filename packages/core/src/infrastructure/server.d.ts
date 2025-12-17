@@ -35,6 +35,7 @@ export interface HandlerContext {
     params: Record<string, unknown>;
     body: unknown;
     headers: Record<string, string | undefined>;
+    requestId?: string;
     auth?: AuthContext;
     status(code: number): HandlerContext;
     db?: unknown;
@@ -144,7 +145,17 @@ export interface HandlerContext {
          * Log a debug message with optional metadata
          */
         debug(message: string, meta?: Record<string, unknown>): void;
+        /**
+         * Create a child logger with additional bound context
+         * Useful for adding request-scoped metadata (e.g., requestId, userId)
+         */
+        child?(bindings: Record<string, unknown>): HandlerContext['logger'];
     };
+    /**
+     * Resolved configuration values
+     * Validated at startup based on the config schema in yama.yaml
+     */
+    config?: Record<string, string | number | boolean | undefined>;
     metrics?: {
         /**
          * Increment a counter metric
@@ -248,3 +259,4 @@ export declare function registerHttpServerAdapter(engine: string, factory: HttpS
  * Create an HTTP server adapter for the given engine
  */
 export declare function createHttpServerAdapter(engine?: string, options?: Record<string, unknown>): HttpServerAdapter;
+//# sourceMappingURL=server.d.ts.map

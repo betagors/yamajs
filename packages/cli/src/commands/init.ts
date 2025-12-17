@@ -1,4 +1,4 @@
-import { writeFileSync, existsSync, readFileSync, appendFileSync } from "fs";
+﻿import { writeFileSync, existsSync, readFileSync, appendFileSync } from "fs";
 import { join, basename, relative, dirname } from "path";
 import { ensureDir, readPackageJson, writePackageJson } from "../utils/file-utils.ts";
 import { getYamaDir, getDbDir, getSdkDir, getYamaSchemaPath } from "../utils/paths.ts";
@@ -41,7 +41,7 @@ export async function initCommand(options: InitOptions): Promise<void> {
   const projectName = options.name || getProjectName(cwd);
   const version = options.version || "1.0.0";
 
-  console.log("🚀 Initializing Yama project...\n");
+  console.log("ðŸš€ Initializing Yama project...\n");
 
   // Ask about plugins
   const pluginAnswers = await inquirer.prompt([
@@ -50,10 +50,10 @@ export async function initCommand(options: InitOptions): Promise<void> {
       name: "database",
       message: "Which database would you like to use?",
       choices: [
-        { name: "PostgreSQL", value: "@betagors/yama-postgres" },
+        { name: "PostgreSQL", value: "@yamajs/postgres" },
         { name: "None (add later)", value: null },
       ],
-      default: "@betagors/yama-postgres",
+      default: "@yamajs/postgres",
     },
   ]);
 
@@ -68,7 +68,7 @@ export async function initCommand(options: InitOptions): Promise<void> {
     pluginsConfig = "\nplugins:\n";
     for (const plugin of selectedPlugins) {
       // Add database config inside plugin config if it's a database plugin
-      if (plugin === "@betagors/yama-postgres") {
+      if (plugin === "@yamajs/postgres") {
         pluginsConfig += `  ${plugin}:\n    url: \${DATABASE_URL}\n`;
       } else {
         pluginsConfig += `  ${plugin}: {}\n`;
@@ -99,14 +99,14 @@ endpoints:
   // Create yama.yaml FIRST (always create it)
   const yamaPath = join(cwd, "yama.yaml");
   if (existsSync(yamaPath)) {
-    console.log("⚠️  yama.yaml already exists, skipping...");
+    console.log("âš ï¸  yama.yaml already exists, skipping...");
   } else {
     // Add schema reference for autocomplete
     const schemaPath = getYamaSchemaPath(yamaPath);
     const yamlWithSchema = `# yaml-language-server: $schema=${schemaPath}
 ${yamlContent}`;
     writeFileSync(yamaPath, yamlWithSchema, "utf-8");
-    console.log("✅ Created yama.yaml");
+    console.log("âœ… Created yama.yaml");
   }
 
   // Check if we're in a workspace (monorepo)
@@ -115,7 +115,7 @@ ${yamlContent}`;
   
   // Install selected plugins
   if (selectedPlugins.length > 0) {
-    console.log("\n📦 Installing plugins...");
+    console.log("\nðŸ“¦ Installing plugins...");
     try {
       // Detect package manager
       const hasPnpm = existsSync(join(cwd, "pnpm-lock.yaml")) || existsSync(join(cwd, "../pnpm-workspace.yaml")) || isInWorkspace;
@@ -129,8 +129,8 @@ ${yamlContent}`;
         let pluginPath: string | null = null;
         if (isInWorkspace && workspaceRoot) {
           const possiblePaths = [
-            join(workspaceRoot, "packages", plugin.replace("@betagors/yama-", "")),
-            join(workspaceRoot, plugin.replace("@betagors/yama-", "")),
+            join(workspaceRoot, "packages", plugin.replace("@yamajs/", "")),
+            join(workspaceRoot, plugin.replace("@yamajs/", "")),
           ];
           for (const path of possiblePaths) {
             if (existsSync(join(path, "package.json"))) {
@@ -159,7 +159,7 @@ ${yamlContent}`;
           } catch (error) {
             // If npm install fails and we're in workspace, try workspace path
             if (isInWorkspace && workspaceRoot) {
-              const fallbackPath = join(workspaceRoot, "packages", plugin.replace("@betagors/yama-", ""));
+              const fallbackPath = join(workspaceRoot, "packages", plugin.replace("@yamajs/", ""));
               if (existsSync(join(fallbackPath, "package.json"))) {
                 // In pnpm workspace, just use package name
                 if (hasPnpm) {
@@ -177,9 +177,9 @@ ${yamlContent}`;
           }
         }
       }
-      console.log("✅ Plugins installed successfully");
+      console.log("âœ… Plugins installed successfully");
     } catch (error) {
-      console.warn(`⚠️  Failed to install plugins: ${error instanceof Error ? error.message : String(error)}`);
+      console.warn(`âš ï¸  Failed to install plugins: ${error instanceof Error ? error.message : String(error)}`);
       console.log("   You can install them manually later");
     }
   }
@@ -188,19 +188,19 @@ ${yamlContent}`;
   // Create src/handlers directory
   const handlersDir = join(cwd, "src", "handlers");
   ensureDir(handlersDir);
-  console.log("✅ Created src/handlers/ directory");
+  console.log("âœ… Created src/handlers/ directory");
 
   // Create .yama directory structure
   const yamaDir = getYamaDir(cwd);
   ensureDir(yamaDir);
   ensureDir(getDbDir(cwd));
   ensureDir(getSdkDir(cwd));
-  console.log("✅ Created .yama/ directory structure");
+  console.log("âœ… Created .yama/ directory structure");
 
   // Create example handler
   const exampleHandlerPath = join(handlersDir, "getExamples.ts");
   if (!existsSync(exampleHandlerPath)) {
-    const handlerContent = `import type { GetExamplesHandlerContext, Example } from "@yama/gen";
+    const handlerContent = `import type { GetExamplesHandlerContext, Example } from "@yamajs/gen";
 
 export async function getExamples(
   context: GetExamplesHandlerContext
@@ -212,7 +212,7 @@ export async function getExamples(
 }
 `;
     writeFileSync(exampleHandlerPath, handlerContent, "utf-8");
-    console.log("✅ Created example handler: src/handlers/getExamples.ts");
+    console.log("âœ… Created example handler: src/handlers/getExamples.ts");
   }
 
   // Update package.json if it exists
@@ -259,12 +259,12 @@ export async function getExamples(
       }
 
       writePackageJson(packageJsonPath, pkg);
-      console.log("✅ Added scripts to package.json");
+      console.log("âœ… Added scripts to package.json");
     } catch (error) {
-      console.log("⚠️  Could not update package.json:", error instanceof Error ? error.message : String(error));
+      console.log("âš ï¸  Could not update package.json:", error instanceof Error ? error.message : String(error));
     }
   } else {
-    console.log("ℹ️  No package.json found - run 'npm init' first");
+    console.log("â„¹ï¸  No package.json found - run 'npm init' first");
   }
 
   // Create or update tsconfig.json
@@ -294,7 +294,7 @@ export async function getExamples(
       };
 
       writeFileSync(tsconfigPath, JSON.stringify(tsconfig, null, 2) + "\n");
-      console.log("✅ Updated tsconfig.json");
+      console.log("âœ… Updated tsconfig.json");
     } else {
       // Create new tsconfig.json
       const tsconfig = {
@@ -322,10 +322,10 @@ export async function getExamples(
         ],
       };
       writeFileSync(tsconfigPath, JSON.stringify(tsconfig, null, 2) + "\n");
-      console.log("✅ Created tsconfig.json");
+      console.log("âœ… Created tsconfig.json");
     }
   } catch (error) {
-    console.log("⚠️  Could not update tsconfig.json:", error instanceof Error ? error.message : String(error));
+    console.log("âš ï¸  Could not update tsconfig.json:", error instanceof Error ? error.message : String(error));
   }
 
   // Update .gitignore
@@ -341,16 +341,16 @@ export async function getExamples(
     
     if (!cleanedContent.includes(".yama/")) {
       writeFileSync(gitignorePath, cleanedContent + gitignoreEntry, "utf-8");
-      console.log("✅ Updated .gitignore");
+      console.log("âœ… Updated .gitignore");
     }
   } else {
     writeFileSync(gitignorePath, gitignoreEntry.trimStart(), "utf-8");
-    console.log("✅ Created .gitignore");
+    console.log("âœ… Created .gitignore");
   }
 
-  console.log("\n✨ Yama project initialized!");
+  console.log("\nâœ¨ Yama project initialized!");
   console.log("\nNext steps:");
-  console.log("  1. Install dependencies: npm install @betagors/yama-node");
+  console.log("  1. Install dependencies: npm install @yamajs/node");
   console.log("  2. Start dev server: yama dev");
   console.log("  3. Generate types: yama generate");
 }

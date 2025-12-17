@@ -41,3 +41,4 @@ export declare function isPluginTrusted(manifest: PluginManifest): boolean;
  * Get security warnings for plugin
  */
 export declare function getSecurityWarnings(manifest: PluginManifest): string[];
+//# sourceMappingURL=security.d.ts.map

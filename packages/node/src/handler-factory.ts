@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Handler factory utilities for YAMA Node Runtime
  * 
  * This module creates handlers for endpoints, including:
@@ -11,20 +11,20 @@ import type {
   HandlerContext,
   YamaEntities,
   EntityDefinition,
-} from "@betagors/yama-core";
+} from "@yamajs/core";
 import {
   parseFieldDefinition,
   normalizePaginationConfig,
   calculatePaginationMetadata,
   wrapPaginatedResponse,
   detectPaginationFromQuery,
-} from "@betagors/yama-core";
+} from "@yamajs/core";
 import {
   NotFoundError,
   ValidationError,
   ConfigurationError,
   ErrorCodes,
-} from "@betagors/yama-errors";
+} from "@yamajs/errors";
 import type { EndpointDefinition, QueryHandlerConfig, YamaConfig } from "./types.js";
 import { isQueryHandler } from "./types.js";
 import { extractEntityNameFromResponseType, getPrimaryKeyFieldName, getApiFieldNameFromEntity } from "./entity-utils.js";
@@ -155,7 +155,7 @@ export function createQueryHandler(
           // For other operators (gt, gte, lt, lte), we'd need repository extension
           // For MVP, log a warning and skip
           console.warn(
-            `⚠️  Operator "${filter.operator}" not fully supported for field "${filter.field}" in query handler. Only "eq" and "ilike" are supported.`
+            `âš ï¸  Operator "${filter.operator}" not fully supported for field "${filter.field}" in query handler. Only "eq" and "ilike" are supported.`
           );
         }
       }
@@ -273,12 +273,12 @@ export function createQueryHandler(
  * - Provide helpful error messages
  * 
  * Supported operations:
- * - GET /path → list (findAll with pagination/filtering)
- * - GET /path/:id → get single (findById)
- * - POST /path → create
- * - PUT /path/:id → full update
- * - PATCH /path/:id → partial update
- * - DELETE /path/:id → delete
+ * - GET /path â†’ list (findAll with pagination/filtering)
+ * - GET /path/:id â†’ get single (findById)
+ * - POST /path â†’ create
+ * - PUT /path/:id â†’ full update
+ * - PATCH /path/:id â†’ partial update
+ * - DELETE /path/:id â†’ delete
  * 
  * @param endpoint - Endpoint definition
  * @param responseType - Expected response type (entity name or Entity[])
@@ -324,15 +324,15 @@ export function createDefaultHandler(
     // Try to detect entity from response type
     if (entities && config) {
       const entityName = extractEntityNameFromResponseType(responseType, entities);
-      console.log(`🔍 createDefaultHandler: responseType="${responseType}", entityName="${entityName}"`);
-      console.log(`🔍 Available entities in context:`, context.entities ? Object.keys(context.entities) : 'none');
-      console.log(`🔍 Available entities in config:`, entities ? Object.keys(entities) : 'none');
+      console.log(`ðŸ” createDefaultHandler: responseType="${responseType}", entityName="${entityName}"`);
+      console.log(`ðŸ” Available entities in context:`, context.entities ? Object.keys(context.entities) : 'none');
+      console.log(`ðŸ” Available entities in config:`, entities ? Object.keys(entities) : 'none');
       
       if (entityName && context.entities && context.entities[entityName]) {
         const repository = context.entities[entityName] as any;
         const entityDef = entities[entityName];
         const method = endpoint.method.toUpperCase();
-        console.log(`✅ Found repository for ${entityName}, method=${method}`);
+        console.log(`âœ… Found repository for ${entityName}, method=${method}`);
 
         try {
           // ===== GET /path (list) =====
@@ -390,9 +390,9 @@ export function createDefaultHandler(
                 details: [{ message: 'Request body cannot be empty' }],
               });
             }
-            console.log(`📤 Creating ${entityName} with body:`, JSON.stringify(context.body, null, 2));
+            console.log(`ðŸ“¤ Creating ${entityName} with body:`, JSON.stringify(context.body, null, 2));
             const result = await repository.create(context.body);
-            console.log(`📥 Repository.create returned:`, JSON.stringify(result, null, 2));
+            console.log(`ðŸ“¥ Repository.create returned:`, JSON.stringify(result, null, 2));
             if (!result) {
               throw new Error(`Failed to create ${entityName}: repository returned null/undefined`);
             }

@@ -54,3 +54,4 @@ export declare function isAuditEntryExpired(entry: AuditLogEntry, retentionDays:
  * Convert operation string to audit operation
  */
 export declare function toAuditOperation(operation: "create" | "update" | "delete"): "INSERT" | "UPDATE" | "DELETE";
+//# sourceMappingURL=audit.d.ts.map

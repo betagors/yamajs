@@ -1,10 +1,10 @@
-import { colors, error, warning, info, success } from "./cli-utils.ts";
+﻿import { colors, error, warning, info, success } from "./cli-utils.ts";
 import {
   YamaError,
   isYamaError,
   ErrorCodes,
   type ErrorCode,
-} from "@betagors/yama-errors";
+} from "@yamajs/errors";
 
 /**
  * Error context for CLI display
@@ -60,19 +60,19 @@ function getContextTypeFromCode(code: string): ErrorContextType {
  */
 function getErrorIcon(type: ErrorContextType): string {
   switch (type) {
-    case "validation": return "📝";
-    case "auth": return "🔐";
-    case "not_found": return "🔍";
-    case "database": return "💾";
-    case "plugin": return "🔌";
-    case "config": return "⚙️";
-    case "rate_limit": return "⏱️";
-    case "timeout": return "⌛";
-    case "column_exists": return "📋";
-    case "foreign_key_violation": return "🔗";
-    case "hash_mismatch": return "🔢";
-    case "syntax_error": return "📜";
-    default: return "❌";
+    case "validation": return "ðŸ“";
+    case "auth": return "ðŸ”";
+    case "not_found": return "ðŸ”";
+    case "database": return "ðŸ’¾";
+    case "plugin": return "ðŸ”Œ";
+    case "config": return "âš™ï¸";
+    case "rate_limit": return "â±ï¸";
+    case "timeout": return "âŒ›";
+    case "column_exists": return "ðŸ“‹";
+    case "foreign_key_violation": return "ðŸ”—";
+    case "hash_mismatch": return "ðŸ”¢";
+    case "syntax_error": return "ðŸ“œ";
+    default: return "âŒ";
   }
 }
 
@@ -268,9 +268,9 @@ export function printError(
     console.log(colors.dim("\n   Validation errors:"));
     for (const detail of parsed.details) {
       if (detail.field) {
-        console.log(colors.dim(`     • ${detail.field}: ${detail.message}`));
+        console.log(colors.dim(`     â€¢ ${detail.field}: ${detail.message}`));
       } else {
-        console.log(colors.dim(`     • ${detail.message}`));
+        console.log(colors.dim(`     â€¢ ${detail.message}`));
       }
     }
   }
@@ -279,7 +279,7 @@ export function printError(
   if (parsed.suggestions.length > 0) {
     warning("\n   Recovery options:");
     parsed.suggestions.forEach((suggestion) => {
-      console.log(colors.dim(`     → ${suggestion}`));
+      console.log(colors.dim(`     â†’ ${suggestion}`));
     });
   }
 }
@@ -288,22 +288,22 @@ export function printError(
  * Print a success message
  */
 export function printSuccess(message: string): void {
-  success(`✅ ${message}`);
+  success(`âœ… ${message}`);
 }
 
 /**
  * Print a warning message
  */
 export function printWarning(message: string): void {
-  warning(`⚠️  ${message}`);
+  warning(`âš ï¸  ${message}`);
 }
 
 /**
  * Print an info message
  */
 export function printInfo(message: string): void {
-  info(`ℹ️  ${message}`);
+  info(`â„¹ï¸  ${message}`);
 }
 
 // Re-export error utilities for convenience
-export { isYamaError, ErrorCodes } from "@betagors/yama-errors";
+export { isYamaError, ErrorCodes } from "@yamajs/errors";

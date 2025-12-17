@@ -1,4 +1,4 @@
-import type { DeleteTodoHandlerContext } from "@yama/gen";
+import type { DeleteTodoHandlerContext } from "@yamajs/gen";
 
 export async function deleteTodo(
   context: DeleteTodoHandlerContext

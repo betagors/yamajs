@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Route registration module for YAMA Node Runtime
  * 
  * This module handles registration of HTTP routes with validation,
@@ -34,7 +34,7 @@ import type {
   MiddlewareRegistry,
   RateLimiter,
   ValidationResult,
-} from "@betagors/yama-core";
+} from "@yamajs/core";
 import {
   createHttpServerAdapter,
   createSchemaValidator,
@@ -44,7 +44,7 @@ import {
   createRateLimiterFromConfig,
   formatRateLimitHeaders,
   type YamaEntities,
-} from "@betagors/yama-core";
+} from "@yamajs/core";
 import type { EndpointDefinition, YamaConfig } from "./types.js";
 import { isQueryHandler } from "./types.js";
 import { loadHandlerByPath } from "./handler-loader.js";
@@ -184,7 +184,7 @@ export async function registerRoutes(
         const loadedHandler = await loadHandlerByPath(handlerPath, configDir);
         if (!loadedHandler) {
           console.warn(
-            `⚠️  Handler "${handlerPath}" not found for ${method} ${path}, using default handler`
+            `âš ï¸  Handler "${handlerPath}" not found for ${method} ${path}, using default handler`
           );
           handlerFn = createDefaultHandler(endpointDef, responseType, config, allEntitiesForHandlers);
           handlerLabel = "default";
@@ -197,7 +197,7 @@ export async function registerRoutes(
         handlerFn = createDefaultHandler(endpointDef, responseType, config, allEntitiesForHandlers);
         handlerLabel = "default";
         console.log(
-          `ℹ️  No handler specified for ${method} ${path}, using default handler`
+          `â„¹ï¸  No handler specified for ${method} ${path}, using default handler`
         );
       }
 
@@ -220,7 +220,7 @@ export async function registerRoutes(
           // ============================================
           // MONITORING: Request Start
           // ============================================
-          console.log(`🔍 [${requestId}] Creating handler context with ${repositories ? Object.keys(repositories).length : 0} repositories:`, repositories ? Object.keys(repositories) : 'none');
+          console.log(`ðŸ” [${requestId}] Creating handler context with ${repositories ? Object.keys(repositories).length : 0} repositories:`, repositories ? Object.keys(repositories) : 'none');
           handlerContext = createHandlerContext(
             request,
             reply,
@@ -235,7 +235,7 @@ export async function registerRoutes(
             metricsService,
             requestId
           );
-          console.log(`🔍 [${requestId}] Handler context created, entities available:`, handlerContext.entities ? Object.keys(handlerContext.entities as any) : 'none');
+          console.log(`ðŸ” [${requestId}] Handler context created, entities available:`, handlerContext.entities ? Object.keys(handlerContext.entities as any) : 'none');
           
           // Call monitoring hooks if available
           if (monitoringService?.onRequestStart) {
@@ -320,7 +320,7 @@ export async function registerRoutes(
                 };
               } else {
                 console.warn(
-                  `⚠️  Auth handler "${authHandlerPath}" not found for ${method} ${path}, authorization will fail`
+                  `âš ï¸  Auth handler "${authHandlerPath}" not found for ${method} ${path}, authorization will fail`
                 );
               }
             }
@@ -582,7 +582,7 @@ export async function registerRoutes(
           
           // Debug: log result for create operations
           if (method.toUpperCase() === 'POST' && result !== undefined) {
-            console.log(`📝 POST handler result for ${path}:`, JSON.stringify(result, null, 2));
+            console.log(`ðŸ“ POST handler result for ${path}:`, JSON.stringify(result, null, 2));
           }
           
           // ============================================
@@ -636,7 +636,7 @@ export async function registerRoutes(
                   if (missingField === 'id' && result && typeof result === 'object') {
                     // If id is missing but this is a create response, it might be a mapper issue
                     // For now, we'll be lenient and allow it (though ideally id should be present)
-                    console.warn(`⚠️  Warning: Response missing 'id' field - this should normally be present`);
+                    console.warn(`âš ï¸  Warning: Response missing 'id' field - this should normally be present`);
                     return false; // Filter out id error (be lenient)
                   }
                   
@@ -656,7 +656,7 @@ export async function registerRoutes(
               
               // Only fail if there are still errors after filtering
               if (filteredErrors.length > 0) {
-                console.error(`❌ [${requestId}] Response validation failed for ${handlerLabel}:`, filteredErrors);
+                console.error(`âŒ [${requestId}] Response validation failed for ${handlerLabel}:`, filteredErrors);
                 const validationError = new ValidationError(
                   process.env.NODE_ENV === "development" 
                     ? "Response validation failed" 
@@ -805,7 +805,7 @@ export async function registerRoutes(
 
       // ===== Register route using adapter =====
       // Debug: Log the exact path being registered
-      console.log(`🔍 Registering route: ${method.toUpperCase()} ${path} (raw path from endpoint)`);
+      console.log(`ðŸ” Registering route: ${method.toUpperCase()} ${path} (raw path from endpoint)`);
       serverAdapter.registerRoute(server, method, path, wrappedHandler);
 
       // ===== Log route registration =====
@@ -815,7 +815,7 @@ export async function registerRoutes(
       const bodyType = body && typeof body === 'object' && 'type' in body ? body.type : undefined;
       
       console.log(
-        `✅ Registered route: ${method.toUpperCase()} ${path} -> ${handlerLabel}${authStatus}${description ? ` (${description})` : ""}${params ? ` [validates path params]` : ""}${query ? ` [validates query params]` : ""}${bodyType ? ` [validates body: ${bodyType}]` : ""}${responseType ? ` [validates response: ${responseType}]` : ""}`
+        `âœ… Registered route: ${method.toUpperCase()} ${path} -> ${handlerLabel}${authStatus}${description ? ` (${description})` : ""}${params ? ` [validates path params]` : ""}${query ? ` [validates query params]` : ""}${bodyType ? ` [validates body: ${bodyType}]` : ""}${responseType ? ` [validates response: ${responseType}]` : ""}`
       );
     }
   }

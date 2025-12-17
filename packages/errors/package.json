@@ -1,8 +1,8 @@
-{
-  "name": "@betagors/yama-errors",
+﻿{
+  "name": "@yamajs/errors",
   "version": "0.1.0-alpha.0",
   "type": "module",
-  "description": "Yama — standardized error handling and error types",
+  "description": "Yama â€” standardized error handling and error types",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [

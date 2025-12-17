@@ -1,4 +1,4 @@
-import type { YamaPlugin } from "@betagors/yama-core";
+﻿import type { YamaPlugin } from "@yamajs/core";
 import { RealtimeAdapter } from "./adapter";
 import { ChannelRegistry } from "./channel";
 import { setupWebSocketServer } from "./server";
@@ -19,7 +19,7 @@ export interface RealtimePluginAPI {
  * Realtime plugin
  */
 const plugin: YamaPlugin = {
-  name: "@betagors/yama-realtime",
+  name: "@yamajs/realtime",
   category: "realtime",
   pluginApi: "1.0",
   yamaCore: "^0.1.0",

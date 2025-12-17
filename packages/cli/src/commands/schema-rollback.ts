@@ -1,12 +1,12 @@
-import { existsSync, readdirSync, readFileSync } from "fs";
+﻿import { existsSync, readdirSync, readFileSync } from "fs";
 import { join } from "path";
 import yaml from "js-yaml";
 import { findYamaConfig } from "../utils/project-detection.ts";
 import { getConfigDir, readYamaConfig } from "../utils/file-utils.ts";
 import { success, error, info, warning, printBox, printTable, formatDuration, createSpinner } from "../utils/cli-utils.ts";
 import { confirm } from "../utils/interactive.ts";
-import type { DatabaseConfig, MigrationStepUnion } from "@betagors/yama-core";
-import { resolveEnvVars, loadEnvFile } from "@betagors/yama-core";
+import type { DatabaseConfig, MigrationStepUnion } from "@yamajs/core";
+import { resolveEnvVars, loadEnvFile } from "@yamajs/core";
 import { getDatabasePluginAndConfig } from "../utils/db-plugin.ts";
 
 interface SchemaRollbackOptions {
@@ -115,7 +115,7 @@ export async function schemaRollbackCommand(options: SchemaRollbackOptions): Pro
     // Safety check for production
     const isProduction = environment === "production" || environment === "prod";
     if (isProduction && !options.force && !options.dryRun) {
-      warning("⚠️  WARNING: Rolling back in PRODUCTION!");
+      warning("âš ï¸  WARNING: Rolling back in PRODUCTION!");
       if (!options.skipConfirm) {
         const confirmed = await confirm("Continue?", false);
         if (!confirmed) {

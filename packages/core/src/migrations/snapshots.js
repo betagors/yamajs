@@ -1,31 +1,32 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
-import { join } from "path";
+import { getFileSystem, getPathModule } from "../platform/fs.js";
 import { entitiesToModel } from "./model.js";
+const fs = () => getFileSystem();
+const path = () => getPathModule();
 /**
  * Get snapshots directory path
  */
 export function getSnapshotsDir(configDir) {
-    return join(configDir, ".yama", "snapshots");
+    return path().join(configDir, ".yama", "snapshots");
 }
 /**
  * Get snapshot file path
  */
 export function getSnapshotPath(configDir, hash) {
-    return join(getSnapshotsDir(configDir), `${hash}.json`);
+    return path().join(getSnapshotsDir(configDir), `${hash}.json`);
 }
 /**
  * Get manifest file path
  */
 export function getManifestPath(configDir) {
-    return join(getSnapshotsDir(configDir), "manifest.json");
+    return path().join(getSnapshotsDir(configDir), "manifest.json");
 }
 /**
  * Ensure snapshots directory exists
  */
 export function ensureSnapshotsDir(configDir) {
     const snapshotsDir = getSnapshotsDir(configDir);
-    if (!existsSync(snapshotsDir)) {
-        mkdirSync(snapshotsDir, { recursive: true });
+    if (!fs().existsSync(snapshotsDir)) {
+        fs().mkdirSync(snapshotsDir, { recursive: true });
     }
 }
 /**
@@ -33,11 +34,11 @@ export function ensureSnapshotsDir(configDir) {
  */
 export function loadManifest(configDir) {
     const manifestPath = getManifestPath(configDir);
-    if (!existsSync(manifestPath)) {
+    if (!fs().existsSync(manifestPath)) {
         return { snapshots: [] };
     }
     try {
-        const content = readFileSync(manifestPath, "utf-8");
+        const content = fs().readFileSync(manifestPath, "utf-8");
         return JSON.parse(content);
     }
     catch {
@@ -50,7 +51,7 @@ export function loadManifest(configDir) {
 export function saveManifest(configDir, manifest) {
     ensureSnapshotsDir(configDir);
     const manifestPath = getManifestPath(configDir);
-    writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), "utf-8");
+    fs().writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), "utf-8");
 }
 /**
  * Create a snapshot from entities
@@ -70,7 +71,7 @@ export function createSnapshot(entities, metadata, parentHash) {
 export function saveSnapshot(configDir, snapshot) {
     ensureSnapshotsDir(configDir);
     const snapshotPath = getSnapshotPath(configDir, snapshot.hash);
-    writeFileSync(snapshotPath, JSON.stringify(snapshot, null, 2), "utf-8");
+    fs().writeFileSync(snapshotPath, JSON.stringify(snapshot, null, 2), "utf-8");
     // Update manifest
     const manifest = loadManifest(configDir);
     const existingIndex = manifest.snapshots.findIndex(s => s.hash === snapshot.hash);
@@ -95,10 +96,10 @@ export function saveSnapshot(configDir, snapshot) {
  */
 export function loadSnapshot(configDir, hash) {
     const snapshotPath = getSnapshotPath(configDir, hash);
-    if (!existsSync(snapshotPath)) {
+    if (!fs().existsSync(snapshotPath)) {
         throw new Error(`Snapshot not found: ${hash}`);
     }
-    const content = readFileSync(snapshotPath, "utf-8");
+    const content = fs().readFileSync(snapshotPath, "utf-8");
     return JSON.parse(content);
 }
 /**
@@ -106,7 +107,7 @@ export function loadSnapshot(configDir, hash) {
  */
 export function snapshotExists(configDir, hash) {
     const snapshotPath = getSnapshotPath(configDir, hash);
-    return existsSync(snapshotPath);
+    return fs().existsSync(snapshotPath);
 }
 /**
  * Get all snapshot hashes
@@ -136,9 +137,8 @@ export function getSnapshotMetadata(configDir, hash) {
  */
 export function deleteSnapshot(configDir, hash) {
     const snapshotPath = getSnapshotPath(configDir, hash);
-    if (existsSync(snapshotPath)) {
-        const fs = require("fs");
-        fs.unlinkSync(snapshotPath);
+    if (fs().existsSync(snapshotPath) && fs().unlinkSync) {
+        fs().unlinkSync(snapshotPath);
     }
     // Update manifest
     const manifest = loadManifest(configDir);

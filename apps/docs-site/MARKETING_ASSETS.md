@@ -1,9 +1,9 @@
-# Yama Marketing Assets
+﻿# Yama Marketing Assets
 
 ## Social Media Cards (OG Images)
 
 ### Main OG Image Specs
-- **Size**: 1200×630px
+- **Size**: 1200Ã—630px
 - **Background**: Black (#000000)
 - **Grid**: Cyan (#06b6d4) with 10% opacity
 - **Content**:
@@ -25,7 +25,7 @@ Same as OG image but optimized for Twitter's display
 
 ### Version Badge
 ```markdown
-[![Yama Version](https://img.shields.io/npm/v/@betagors/yama-cli?label=yama&color=00b6d4)](https://www.npmjs.com/package/@betagors/yama-cli)
+[![Yama Version](https://img.shields.io/npm/v/@yamajs/cli?label=yama&color=00b6d4)](https://www.npmjs.com/package/@yamajs/cli)
 ```
 
 ### License
@@ -42,13 +42,13 @@ Same as OG image but optimized for Twitter's display
 
 All favicons should be generated from the Yama logo with:
 - Background: Black
-- Icon: Cyan gradient (#06b6d4 → #22c55e)
+- Icon: Cyan gradient (#06b6d4 â†’ #22c55e)
 
 Files needed:
-- `favicon.ico` (16×16, 32×32, 48×48)
+- `favicon.ico` (16Ã—16, 32Ã—32, 48Ã—48)
 - `favicon-16x16.png`
 - `favicon-32x32.png`
-- `apple-touch-icon.png` (180×180)
+- `apple-touch-icon.png` (180Ã—180)
 - `android-chrome-192x192.png`
 - `android-chrome-512x512.png`
 
@@ -114,24 +114,24 @@ Policy: https://github.com/betagors/yamajs/security/policy
 
 ## Twitter/X Thread Template
 
-🧵 Thread for launch:
+ðŸ§µ Thread for launch:
 
-1/ 🚀 Just launched Yama JS - the backend framework that removes 90% of the code
+1/ ðŸš€ Just launched Yama JS - the backend framework that removes 90% of the code
 
 Full CRUD API with auth, docs, and type-safe SDKs in ~80 lines
 
-No more boilerplate. No more config hell. Just ship. 🔥
+No more boilerplate. No more config hell. Just ship. ðŸ”¥
 
 [Link + screenshot]
 
 2/ Here's what you get out of the box:
-✅ Auto-generated OpenAPI spec
-✅ Type-safe client SDK
-✅ JWT authentication
-✅ PostgreSQL support
-✅ Database migrations
-✅ Docker setup
-✅ CI/CD config
+âœ… Auto-generated OpenAPI spec
+âœ… Type-safe client SDK
+âœ… JWT authentication
+âœ… PostgreSQL support
+âœ… Database migrations
+âœ… Docker setup
+âœ… CI/CD config
 
 All from a single YAML file + handlers
 
@@ -141,13 +141,13 @@ Yama: 80 lines
 Express: 400+ lines
 NestJS: 500+ lines
 
-Same functionality. 80% less code. 🤯
+Same functionality. 80% less code. ðŸ¤¯
 
 [Comparison table image]
 
 4/ The secret? Configuration-first architecture
 
-Define structure in YAML → Write logic in TypeScript → Deploy anywhere
+Define structure in YAML â†’ Write logic in TypeScript â†’ Deploy anywhere
 
 The framework handles routing, validation, docs, and SDK generation
 
@@ -164,11 +164,11 @@ That's it. You now have:
 Ready to deploy.
 
 6/ It runs everywhere:
-🐳 Docker
-✈️ Fly.io
-🚂 Railway
-🖥️ Any VPS
-☁️ AWS/GCP/Azure
+ðŸ³ Docker
+âœˆï¸ Fly.io
+ðŸš‚ Railway
+ðŸ–¥ï¸ Any VPS
+â˜ï¸ AWS/GCP/Azure
 
 Zero lock-in. 100% open source. MPL-2.0 licensed.
 
@@ -181,9 +181,9 @@ npm create yama@latest
 Docs: yamajs.com
 GitHub: github.com/betagors/yamajs
 
-If you build something cool, tag me! 🙏
+If you build something cool, tag me! ðŸ™
 
-RT to help indie devs ship faster 🚀
+RT to help indie devs ship faster ðŸš€
 
 ## Press Kit
 

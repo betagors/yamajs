@@ -1,27 +1,33 @@
-import { existsSync } from "fs";
+﻿import { existsSync } from "fs";
 import { findYamaConfig } from "../utils/project-detection.ts";
 import { getConfigDir, readYamaConfig } from "../utils/file-utils.ts";
-import { resolveEnvVars, loadEnvFile } from "@betagors/yama-core";
+import { resolveEnvVars, loadEnvFile } from "@yamajs/core";
 import { success, error, info, warning, printBox } from "../utils/cli-utils.ts";
 import { getDatabasePlugin } from "../utils/db-plugin.ts";
-import { confirm } from "../utils/interactive.ts";
+import { confirm, promptInput } from "../utils/interactive.ts";
 import {
   loadPlugin,
   getAllPlugins,
   getPluginByCategory,
-} from "@betagors/yama-core";
+} from "@yamajs/core";
 import {
   ensurePluginMigrationTables,
   getInstalledPluginVersion,
   getPendingPluginMigrations,
-  executePluginMigration,
-  updatePluginVersion,
   getPluginPackageDir,
-} from "@betagors/yama-core";
+  // Phase 1 Safety imports
+  MigrationRunner,
+  analyzeMigrationSafety,
+  analyzeMultipleMigrations,
+  formatSafetyAnalysis,
+  getConfirmationPrompt,
+  validateConfirmation,
+} from "@yamajs/core";
 import {
   getMigrationPlan,
   formatMigrationPlan,
-} from "@betagors/yama-core";
+} from "@yamajs/core";
+import type { MigrationSafetyAnalysis } from "@yamajs/core";
 
 interface PluginMigrateOptions {
   plugin?: string;
@@ -32,6 +38,56 @@ interface PluginMigrateOptions {
   force?: boolean;
   skipConfirm?: boolean;
   interactive?: boolean;
+}
+
+/**
+ * Format risk level with appropriate emoji
+ */
+function formatRiskLevel(level: string): string {
+  const badges: Record<string, string> = {
+    low: "✅ LOW RISK",
+    medium: "⚠️  MEDIUM RISK",
+    high: "🔶 HIGH RISK",
+    critical: "🔴 CRITICAL RISK",
+  };
+  return badges[level] || level;
+}
+
+/**
+ * Display safety analysis to user
+ */
+function displaySafetyAnalysis(analysis: MigrationSafetyAnalysis, pluginName: string): void {
+  console.log();
+  console.log(`  ${formatRiskLevel(analysis.riskLevel)}`);
+  console.log();
+
+  if (analysis.destructiveOperations.length > 0) {
+    console.log("  Destructive Operations:");
+    for (const op of analysis.destructiveOperations) {
+      const icon = op.severity === "danger" ? "🔴" : "⚠️";
+      const reversibleNote = op.reversible ? "" : " (IRREVERSIBLE)";
+      console.log(`    ${icon} ${op.type}: ${op.target}${reversibleNote}`);
+      console.log(`       ${op.message}`);
+    }
+    console.log();
+  }
+
+  if (analysis.warnings.length > 0) {
+    console.log("  Warnings:");
+    for (const w of analysis.warnings) {
+      console.log(`    ${w}`);
+    }
+    console.log();
+  }
+
+  if (analysis.affectedTables.length > 0) {
+    console.log(`  Affected Tables: ${analysis.affectedTables.join(", ")}`);
+    console.log();
+  }
+
+  if (analysis.requiresBackup) {
+    warning("  📦 Recommendation: Create a backup before proceeding");
+  }
 }
 
 export async function pluginMigrateCommand(
@@ -62,7 +118,7 @@ export async function pluginMigrateCommand(
       warning("   This operation will modify your production database.");
       warning("   Consider testing migrations in staging first.");
       console.log();
-      
+
       if (!options.skipConfirm) {
         const confirmed = await confirm(
           "Are you absolutely sure you want to continue?",
@@ -132,6 +188,7 @@ export async function pluginMigrateCommand(
 
     let migratedCount = 0;
     let skippedCount = 0;
+    let failedCount = 0;
 
     for (const pluginName of pluginsToMigrate) {
       try {
@@ -169,83 +226,105 @@ export async function pluginMigrateCommand(
         // Show plan
         console.log(`\n${formatMigrationPlan(plan)}`);
 
-        if (options.dryRun) {
-          info(`Would migrate ${pluginName} (dry run)`);
-          continue;
+        // Get plugin directory early for safety analysis
+        const pluginDir = await getPluginPackageDir(pluginName, configDir);
+
+        // Create migration runner
+        const runner = new MigrationRunner(sql, {
+          transactional: true,
+          dryRun: options.dryRun || false,
+          force: options.force || false,
+          logger: {
+            info: (msg: string) => info(`  ${msg}`),
+            warn: (msg: string) => warning(`  ${msg}`),
+            error: (msg: string) => error(`  ${msg}`),
+          },
+        });
+
+        // Run with safety analysis
+        const result = await runner.run(plugin, manifest, plan.migrations, pluginDir);
+
+        // Display safety analysis if there are concerns
+        if (!result.safetyAnalysis.safe) {
+          displaySafetyAnalysis(result.safetyAnalysis, pluginName);
         }
 
-        // Interactive confirmation for each plugin
-        if (options.interactive && !options.skipConfirm) {
-          const confirmed = await confirm(
-            `Apply ${plan.migrations.length} migration(s) for ${pluginName}?`,
-            true
-          );
-          if (!confirmed) {
-            warning(`Skipping migrations for ${pluginName}`);
+        // If not dry run and requires confirmation, prompt user
+        if (!options.dryRun && result.safetyAnalysis.requiresConfirmation && !options.force) {
+          if (options.skipConfirm) {
+            warning(`  ⚠️  Skipping destructive operations (use --force to override)`);
             skippedCount++;
             continue;
           }
+
+          // For critical operations, require typing the operation
+          const prompt = getConfirmationPrompt(result.safetyAnalysis);
+          console.log();
+          console.log(`  ⚠️  ${prompt}`);
+
+          const input = await promptInput("  > ");
+
+          if (!validateConfirmation(input, result.safetyAnalysis)) {
+            warning("  Confirmation failed, skipping plugin");
+            skippedCount++;
+            continue;
+          }
+
+          // Re-run without dry-run flag since we now have confirmation
+          const confirmedRunner = new MigrationRunner(sql, {
+            transactional: true,
+            dryRun: false,
+            force: true, // User confirmed
+            logger: {
+              info: (msg: string) => info(`  ${msg}`),
+              warn: (msg: string) => warning(`  ${msg}`),
+              error: (msg: string) => error(`  ${msg}`),
+            },
+          });
+
+          const confirmedResult = await confirmedRunner.run(plugin, manifest, plan.migrations, pluginDir);
+
+          if (confirmedResult.success) {
+            success(`  ✅ Migrated ${pluginName} (${confirmedResult.migrationsRun} migration(s) in ${confirmedResult.duration}ms)`);
+            migratedCount++;
+          } else {
+            error(`  ❌ Migration failed for ${pluginName}`);
+            if (confirmedResult.failedMigration) {
+              error(`     Version ${confirmedResult.failedMigration.version}: ${confirmedResult.failedMigration.error.message}`);
+            }
+            if (confirmedResult.rolledBack) {
+              info(`  ↩️  Transaction rolled back, no changes made`);
+            }
+            failedCount++;
+          }
+        } else if (!options.dryRun) {
+          // Non-destructive migration, proceed directly
+          if (result.success) {
+            success(`  ✅ Migrated ${pluginName} (${result.migrationsRun} migration(s) in ${result.duration}ms)`);
+            migratedCount++;
+          } else {
+            error(`  ❌ Migration failed for ${pluginName}`);
+            if (result.failedMigration) {
+              error(`     Version ${result.failedMigration.version}: ${result.failedMigration.error.message}`);
+            }
+            if (result.rolledBack) {
+              info(`  ↩️  Transaction rolled back, no changes made`);
+            }
+            failedCount++;
+          }
+        } else {
+          // Dry run
+          info(`  Would migrate ${pluginName} (dry run, ${plan.migrations.length} migration(s))`);
         }
 
-        // Get plugin directory
-        const pluginDir = await getPluginPackageDir(pluginName, configDir);
-
-        // Execute migrations
-        for (const migration of plan.migrations) {
-          try {
-            // Call onBeforeMigrate hook if present
-            if (plugin.onBeforeMigrate) {
-              await plugin.onBeforeMigrate(
-                migration.fromVersion,
-                migration.toVersion
-              );
-            }
-
-            // Execute migration
-            await executePluginMigration(migration, sql, pluginDir);
-
-            success(
-              `Migrated ${pluginName} from ${migration.fromVersion} to ${migration.toVersion}`
-            );
-
-            // Call onAfterMigrate hook if present
-            if (plugin.onAfterMigrate) {
-              await plugin.onAfterMigrate(
-                migration.fromVersion,
-                migration.toVersion
-              );
-            }
-          } catch (err) {
-            const errorMsg = err instanceof Error ? err.message : String(err);
-
-            // Call onMigrationError hook if present
-            if (plugin.onMigrationError) {
-              await plugin.onMigrationError(
-                err instanceof Error ? err : new Error(errorMsg),
-                migration.fromVersion,
-                migration.toVersion
-              );
-            }
-
-            error(
-              `Migration failed for ${pluginName} from ${migration.fromVersion} to ${migration.toVersion}: ${errorMsg}`
-            );
-            
-            // Provide helpful error recovery tips
-            console.log("\n💡 Recovery Tips:");
-            console.log("   1. Check the error message above for details");
-            console.log("   2. Verify your database connection and permissions");
-            console.log("   3. Review the migration script for syntax errors");
-            console.log("   4. Check if the database is in a consistent state");
-            console.log("   5. Consider rolling back if needed: yama plugin rollback <plugin> --steps 1");
-            
-            throw err; // Stop on error
+        // Interactive confirmation for next plugin
+        if (options.interactive && !options.skipConfirm && pluginsToMigrate.indexOf(pluginName) < pluginsToMigrate.length - 1) {
+          const continueNext = await confirm("Continue to next plugin?", true);
+          if (!continueNext) {
+            info("Migration stopped by user");
+            break;
           }
         }
-
-        // Update version record
-        await updatePluginVersion(pluginName, currentVersion, sql);
-        migratedCount++;
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : String(err);
         if (errorMsg.includes("Cannot find module") || errorMsg.includes("not found")) {
@@ -253,6 +332,7 @@ export async function pluginMigrateCommand(
           skippedCount++;
         } else {
           error(`Failed to migrate ${pluginName}: ${errorMsg}`);
+          failedCount++;
           // Continue with other plugins
         }
       }
@@ -269,12 +349,19 @@ export async function pluginMigrateCommand(
     if (skippedCount > 0) {
       info(`Skipped: ${skippedCount} plugin(s)`);
     }
-    if (migratedCount === 0 && skippedCount === 0) {
+    if (failedCount > 0) {
+      error(`Failed: ${failedCount} plugin(s)`);
+    }
+    if (migratedCount === 0 && skippedCount === 0 && failedCount === 0) {
       info("No migrations to apply");
+    }
+
+    // Exit with error code if any failures
+    if (failedCount > 0 && !options.dryRun) {
+      process.exit(1);
     }
   } catch (err) {
     error(`Failed to run plugin migrations: ${err instanceof Error ? err.message : String(err)}`);
     process.exit(1);
   }
 }
-

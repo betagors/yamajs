@@ -1,5 +1,5 @@
-import type { YamaEntities, EntityDefinition, EntityField, MigrationStepUnion } from "@betagors/yama-core";
-import { DatabaseTypeMapper } from "@betagors/yama-core";
+﻿import type { YamaEntities, EntityDefinition, EntityField, MigrationStepUnion } from "@yamajs/core";
+import { parseFieldDefinition, DatabaseTypeMapper } from "@yamajs/core";
 import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync } from "fs";
 import { join } from "path";
 import { createHash } from "crypto";
@@ -29,8 +29,8 @@ function generateSQLColumn(fieldName: string, field: EntityField, dbColumnName: 
       enumValues: field.enum as string[],
       pattern: field.pattern,
     };
-    
-    // Use DatabaseTypeMapper for PostgreSQL
+
+    // Use DatabaseTypeMapper for PostgreSQL (PGlite uses PostgreSQL types)
     sqlType = DatabaseTypeMapper.toPostgreSQL(fieldType);
   }
 
@@ -63,10 +63,15 @@ function generateSQLColumn(fieldName: string, field: EntityField, dbColumnName: 
 /**
  * Generate CREATE TABLE SQL for an entity
  */
-function generateCreateTableSQL(entityDef: EntityDefinition): string {
+function generateCreateTableSQL(entityDef: EntityDefinition, availableEntities: Set<string>): string {
   const columns: string[] = [];
 
-  for (const [fieldName, field] of Object.entries(entityDef.fields)) {
+  for (const [fieldName, fieldDef] of Object.entries(entityDef.fields || {})) {
+    const field = parseFieldDefinition(fieldName, fieldDef, availableEntities);
+    // Skip inline relations
+    if (field._isInlineRelation) {
+      continue;
+    }
     const dbColumnName = field.dbColumn || fieldName;
     columns.push(generateSQLColumn(fieldName, field, dbColumnName));
   }
@@ -79,7 +84,7 @@ ${columns.join(",\n")}
 /**
  * Generate CREATE INDEX SQL statements
  */
-function generateIndexSQL(entityDef: EntityDefinition): string[] {
+function generateIndexSQL(entityDef: EntityDefinition, availableEntities: Set<string>): string[] {
   const indexStatements: string[] = [];
 
   // Indexes from entity definition
@@ -87,8 +92,10 @@ function generateIndexSQL(entityDef: EntityDefinition): string[] {
     for (const index of entityDef.indexes) {
       const indexName = index.name || `${entityDef.table}_${index.fields.join("_")}_idx`;
       const fields = index.fields.map(f => {
-        const field = entityDef.fields[f];
-        return field?.dbColumn || f;
+        const fieldDef = entityDef.fields?.[f];
+        if (!fieldDef) return f;
+        const field = parseFieldDefinition(f, fieldDef, availableEntities);
+        return field.dbColumn || f;
       }).join(", ");
       const unique = index.unique ? "UNIQUE " : "";
       indexStatements.push(`CREATE ${unique}INDEX IF NOT EXISTS ${indexName} ON ${entityDef.table} (${fields});`);
@@ -96,7 +103,8 @@ function generateIndexSQL(entityDef: EntityDefinition): string[] {
   }
 
   // Indexes from field index: true
-  for (const [fieldName, field] of Object.entries(entityDef.fields)) {
+  for (const [fieldName, fieldDef] of Object.entries(entityDef.fields || {})) {
+    const field = parseFieldDefinition(fieldName, fieldDef, availableEntities);
     if (field.index) {
       const dbColumnName = field.dbColumn || fieldName;
       const indexName = `${entityDef.table}_${dbColumnName}_idx`;
@@ -117,16 +125,18 @@ export function generateMigrationSQL(entities: YamaEntities, migrationName?: str
   statements.push(`-- Migration: ${migrationName || "auto-generated"}`);
   statements.push(`-- Generated from yama.yaml entities\n`);
 
+  const availableEntities = new Set(Object.keys(entities));
+
   // Generate CREATE TABLE statements
   for (const [entityName, entityDef] of Object.entries(entities)) {
     statements.push(`-- Table: ${entityDef.table}`);
-    statements.push(generateCreateTableSQL(entityDef));
+    statements.push(generateCreateTableSQL(entityDef, availableEntities));
     statements.push("");
   }
 
   // Generate CREATE INDEX statements
   for (const [entityName, entityDef] of Object.entries(entities)) {
-    const indexes = generateIndexSQL(entityDef);
+    const indexes = generateIndexSQL(entityDef, availableEntities);
     if (indexes.length > 0) {
       statements.push(`-- Indexes for ${entityDef.table}`);
       statements.push(...indexes);
@@ -254,6 +264,14 @@ export function generateSQLFromSteps(steps: MigrationStepUnion[]): string {
         statements.push(`ALTER TABLE ${step.table} DROP COLUMN IF EXISTS ${step.column} CASCADE;`);
         break;
 
+      case "rename_column":
+        statements.push(`-- Rename column: ${step.table}.${step.column} -> ${step.newName}`);
+        // PostgreSQL stores unquoted identifiers as lowercase
+        // Old name is lowercase (from database), new name should be camelCase (quoted)
+        // If old name might be quoted, try both - but typically it's lowercase
+        statements.push(`ALTER TABLE ${step.table} RENAME COLUMN "${step.column}" TO "${step.newName}";`);
+        break;
+
       case "modify_column":
         statements.push(`-- Modify column: ${step.table}.${step.column}`);
         // PostgreSQL ALTER COLUMN syntax
@@ -274,8 +292,8 @@ export function generateSQLFromSteps(steps: MigrationStepUnion[]): string {
             const defaultVal = step.changes.default === "now()" || step.changes.default === "now"
               ? "NOW()"
               : typeof step.changes.default === "string"
-              ? `'${String(step.changes.default).replace(/'/g, "''")}'`
-              : String(step.changes.default);
+                ? `'${String(step.changes.default).replace(/'/g, "''")}'`
+                : String(step.changes.default);
             statements.push(`ALTER TABLE ${step.table} ALTER COLUMN ${step.column} SET DEFAULT ${defaultVal};`);
           }
         }
@@ -284,8 +302,10 @@ export function generateSQLFromSteps(steps: MigrationStepUnion[]): string {
       case "add_index":
         statements.push(`-- Add index: ${step.index.name} on ${step.table}`);
         const unique = step.index.unique ? "UNIQUE " : "";
+        // Quote column names to preserve case (they should be camelCase after renames)
+        const quotedColumns = step.index.columns.map(col => `"${col}"`).join(", ");
         statements.push(
-          `CREATE ${unique}INDEX IF NOT EXISTS ${step.index.name} ON ${step.table} (${step.index.columns.join(", ")});`
+          `CREATE ${unique}INDEX IF NOT EXISTS ${step.index.name} ON ${step.table} (${quotedColumns});`
         );
         break;
 
@@ -354,4 +374,3 @@ export function getMigrationRunsTableSQL(): string {
     );
   `;
 }
-

@@ -1,5 +1,5 @@
-import Fastify from "fastify";
-import { helloYamaCore, createModelValidator, fieldToJsonSchema } from "@betagors/yama-core";
+﻿import Fastify from "fastify";
+import { helloYamaCore, createModelValidator, fieldToJsonSchema } from "@yamajs/core";
 import yaml from "js-yaml";
 import { readFileSync, readdirSync, existsSync } from "fs";
 import { join, dirname, extname, resolve } from "path";
@@ -10,7 +10,7 @@ import { pathToFileURL } from "url";
 async function loadHandlers(handlersDir) {
     const handlers = {};
     if (!existsSync(handlersDir)) {
-        console.warn(`⚠️  Handlers directory not found: ${handlersDir}`);
+        console.warn(`âš ï¸  Handlers directory not found: ${handlersDir}`);
         return handlers;
     }
     try {
@@ -33,19 +33,19 @@ async function loadHandlers(handlersDir) {
                 const handlerFn = handlerModule[handlerName] || handlerModule.default;
                 if (typeof handlerFn === "function") {
                     handlers[handlerName] = handlerFn;
-                    console.log(`✅ Loaded handler: ${handlerName}`);
+                    console.log(`âœ… Loaded handler: ${handlerName}`);
                 }
                 else {
-                    console.warn(`⚠️  Handler ${handlerName} does not export a function`);
+                    console.warn(`âš ï¸  Handler ${handlerName} does not export a function`);
                 }
             }
             catch (error) {
-                console.error(`❌ Failed to load handler ${handlerName}:`, error);
+                console.error(`âŒ Failed to load handler ${handlerName}:`, error);
             }
         }
     }
     catch (error) {
-        console.error(`❌ Failed to read handlers directory:`, error);
+        console.error(`âŒ Failed to read handlers directory:`, error);
     }
     return handlers;
 }
@@ -131,7 +131,7 @@ function registerRoutes(app, config, handlers, validator) {
         const { path, method, handler: handlerName, description, params, body, query, response } = endpoint;
         const handlerFn = handlers[handlerName];
         if (!handlerFn) {
-            console.warn(`⚠️  Handler "${handlerName}" not found for ${method} ${path}`);
+            console.warn(`âš ï¸  Handler "${handlerName}" not found for ${method} ${path}`);
             continue;
         }
         const methodLower = method.toLowerCase();
@@ -191,7 +191,7 @@ function registerRoutes(app, config, handlers, validator) {
                 if (response?.type && result !== undefined) {
                     const responseValidation = validator.validate(response.type, result);
                     if (!responseValidation.valid) {
-                        console.error(`❌ Response validation failed for ${handlerName}:`, responseValidation.errors);
+                        console.error(`âŒ Response validation failed for ${handlerName}:`, responseValidation.errors);
                         // In development, return validation errors; in production, log and return generic error
                         if (process.env.NODE_ENV === "development") {
                             reply.status(500).send({
@@ -220,7 +220,7 @@ function registerRoutes(app, config, handlers, validator) {
                 });
             }
         });
-        console.log(`✅ Registered route: ${method.toUpperCase()} ${path} -> ${handlerName}${description ? ` (${description})` : ""}${params ? ` [validates path params]` : ""}${query ? ` [validates query params]` : ""}${body?.type ? ` [validates body: ${body.type}]` : ""}${response?.type ? ` [validates response: ${response.type}]` : ""}`);
+        console.log(`âœ… Registered route: ${method.toUpperCase()} ${path} -> ${handlerName}${description ? ` (${description})` : ""}${params ? ` [validates path params]` : ""}${query ? ` [validates query params]` : ""}${body?.type ? ` [validates body: ${body.type}]` : ""}${response?.type ? ` [validates response: ${response.type}]` : ""}`);
     }
 }
 export async function startYamaNodeRuntime(port = 3000, yamlConfigPath) {
@@ -234,18 +234,18 @@ export async function startYamaNodeRuntime(port = 3000, yamlConfigPath) {
         try {
             const configFile = readFileSync(yamlConfigPath, "utf-8");
             config = yaml.load(configFile);
-            console.log("✅ Loaded YAML config");
+            console.log("âœ… Loaded YAML config");
             // Register models for validation
             if (config.models) {
                 validator.registerModels(config.models);
-                console.log(`✅ Registered ${Object.keys(config.models).length} model(s) for validation`);
+                console.log(`âœ… Registered ${Object.keys(config.models).length} model(s) for validation`);
             }
             // Determine handlers directory (src/handlers relative to YAML file)
             const configDir = dirname(yamlConfigPath);
             handlersDir = join(configDir, "src", "handlers");
         }
         catch (error) {
-            console.error("❌ Failed to load YAML config:", error);
+            console.error("âŒ Failed to load YAML config:", error);
         }
     }
     app.get("/health", async () => ({

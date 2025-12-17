@@ -1,7 +1,9 @@
-import { readFileSync, existsSync } from "fs";
-import { join, dirname, resolve } from "path";
-import { createHash } from "crypto";
+import { getFileSystem, getPathModule } from "../platform/fs.js";
+import { getEnvProvider } from "../platform/env.js";
+import { sha256Hex } from "../platform/hash.js";
 import semver from "semver";
+const fs = () => getFileSystem();
+const path = () => getPathModule();
 /**
  * SQL for plugin migrations tracking table
  */
@@ -33,12 +35,14 @@ export const PLUGIN_VERSIONS_TABLE_SQL = `
  * Get plugin package directory path
  */
 export async function getPluginPackageDir(packageName, projectDir) {
+    const fs = getFileSystem();
+    const path = getPathModule();
     try {
         const { createRequire } = await import("module");
-        const projectRoot = projectDir || process.cwd();
+        const projectRoot = projectDir || getEnvProvider().cwd();
         let packagePath;
         try {
-            const projectRequire = createRequire(resolve(projectRoot, "package.json"));
+            const projectRequire = createRequire(path.resolve(projectRoot, "package.json"));
             packagePath = projectRequire.resolve(packageName);
         }
         catch {
@@ -49,22 +53,22 @@ export async function getPluginPackageDir(packageName, projectDir) {
         // If packagePath points to a file, get its directory
         // If it points to a directory, use it directly
         let packageDir;
-        if (existsSync(packagePath) && !existsSync(join(packagePath, "package.json"))) {
+        if (fs.existsSync(packagePath) && !fs.existsSync(path.join(packagePath, "package.json"))) {
             // It's a file, get its directory
-            packageDir = dirname(packagePath);
+            packageDir = path.dirname(packagePath);
         }
         else {
             // It's likely a directory or index file
-            packageDir = dirname(packagePath.replace(/\/[^/]+$/, "").replace(/\\[^\\]+$/, ""));
+            packageDir = path.dirname(packagePath.replace(/\/[^/]+$/, "").replace(/\\[^\\]+$/, ""));
         }
         // Walk up to find package.json
         let currentPath = packageDir;
-        while (currentPath !== dirname(currentPath)) {
-            const packageJsonPath = join(currentPath, "package.json");
-            if (existsSync(packageJsonPath)) {
+        while (currentPath !== path.dirname(currentPath)) {
+            const packageJsonPath = path.join(currentPath, "package.json");
+            if (fs.existsSync(packageJsonPath)) {
                 return currentPath;
             }
-            currentPath = dirname(currentPath);
+            currentPath = path.dirname(currentPath);
         }
         return packageDir;
     }
@@ -105,7 +109,7 @@ export async function getInstalledPluginVersion(pluginName, sql) {
  * Compute checksum for migration content
  */
 export function computeChecksum(content) {
-    return createHash("sha256").update(content).digest("hex").substring(0, 16);
+    return sha256Hex(content).substring(0, 16);
 }
 /**
  * Get pending migrations for a plugin
@@ -160,11 +164,11 @@ async function loadMigrationScript(migration, pluginDir, direction) {
     }
     if (typeof script === "string") {
         // It's a file path - resolve relative to plugin directory
-        const filePath = join(pluginDir, script);
-        if (!existsSync(filePath)) {
+        const filePath = path.join(pluginDir, script);
+        if (!fs().existsSync(filePath)) {
             throw new Error(`Migration file not found: ${filePath}`);
         }
-        return readFileSync(filePath, "utf-8");
+        return fs().readFileSync(filePath, "utf-8");
     }
     else {
         // It's a function

@@ -1,5 +1,5 @@
-/**
- * @betagors/yama-core - Migration Generator
+﻿/**
+ * @yamajs/core - Migration Generator
  * 
  * Semi-automatic migration generation from entity changes.
  * Generates migration steps with preview and confirmation support.
@@ -211,7 +211,7 @@ function assessMigrationSafety(
       level = Math.max(level, SafetyLevel.RequiresReview);
       warnings.push(`Type change on ${mod.table}.${mod.column} may cause data conversion issues`);
     }
-    if (mod.changes.some(c => c.includes("nullable: true → false"))) {
+    if (mod.changes.some(c => c.includes("nullable: true â†’ false"))) {
       warnings.push(`Making ${mod.table}.${mod.column} non-nullable may fail if NULL values exist`);
     }
   }
@@ -489,7 +489,7 @@ export function formatMigration(migration: GeneratedMigration): string {
   lines.push("");
   
   if (migration.safety.warnings.length > 0) {
-    lines.push("⚠️  Warnings:");
+    lines.push("âš ï¸  Warnings:");
     for (const warning of migration.safety.warnings) {
       lines.push(`   - ${warning}`);
     }
@@ -497,7 +497,7 @@ export function formatMigration(migration: GeneratedMigration): string {
   }
   
   if (migration.safety.recommendations.length > 0) {
-    lines.push("💡 Recommendations:");
+    lines.push("ðŸ’¡ Recommendations:");
     for (const rec of migration.safety.recommendations) {
       lines.push(`   - ${rec}`);
     }

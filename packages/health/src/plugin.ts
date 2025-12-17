@@ -1,4 +1,4 @@
-import type { YamaPlugin, PluginContext } from "@betagors/yama-core";
+﻿import type { YamaPlugin, PluginContext } from "@yamajs/core";
 import type { HealthPluginConfig, HealthStatus, ComponentHealth } from "./types.js";
 import { collectHealthStatus } from "./health-checker.js";
 
@@ -51,7 +51,7 @@ export interface HealthPluginAPI {
  * Health plugin implementation
  */
 const plugin: YamaPlugin = {
-  name: "@betagors/yama-health",
+  name: "@yamajs/health",
   category: "observability",
   pluginApi: "1.0",
   yamaCore: "^0.1.0",

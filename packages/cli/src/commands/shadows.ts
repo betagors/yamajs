@@ -1,4 +1,4 @@
-import { existsSync } from "fs";
+﻿import { existsSync } from "fs";
 import { findYamaConfig } from "../utils/project-detection.ts";
 import { getConfigDir, readYamaConfig } from "../utils/file-utils.ts";
 import {
@@ -10,7 +10,7 @@ import {
   loadShadowManifest,
   loadEnvFile,
   resolveEnvVars,
-} from "@betagors/yama-core";
+} from "@yamajs/core";
 import { info, error, success, warning } from "../utils/cli-utils.ts";
 import { table } from "table";
 import { getDatabasePlugin } from "../utils/db-plugin.ts";

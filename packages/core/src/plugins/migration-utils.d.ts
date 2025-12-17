@@ -37,3 +37,4 @@ export declare function getPluginMigrationStatus(pluginName: string, plugin: Yam
         type: string;
     }>;
 }>;
+//# sourceMappingURL=migration-utils.d.ts.map

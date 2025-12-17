@@ -1,11 +1,11 @@
-import Fastify, { FastifyRequest, FastifyReply, FastifyInstance } from "fastify";
+﻿import Fastify, { FastifyRequest, FastifyReply, FastifyInstance } from "fastify";
 import type {
   HttpServerAdapter,
   HttpServerInstance,
   HttpRequest,
   HttpResponse,
   RouteHandler,
-} from "@betagors/yama-core";
+} from "@yamajs/core";
 
 /**
  * Fastify HTTP server adapter

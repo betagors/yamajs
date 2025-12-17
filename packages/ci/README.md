@@ -1,24 +1,24 @@
-# @betagors/yama-ci
+﻿# @yamajs/ci
 
 CI/CD plugin for Yama applications. Automatically generates GitHub Actions workflow files for testing, building, and deploying your application.
 
 ## Features
 
-- 🧪 **Test Workflow** - Automatically runs tests on PR/push
-- 🏗️ **Build Workflow** - Builds your application for production
-- 🚀 **Deploy Workflow** - Deploys to Docker, Vercel, AWS, GCP, or Azure
-- 📦 **Package Manager Detection** - Supports pnpm, npm, and yarn
-- 🔍 **Test Framework Detection** - Auto-detects vitest, jest, mocha
-- ⚙️ **Configurable** - Matrix builds, Node versions, deployment targets
+- ðŸ§ª **Test Workflow** - Automatically runs tests on PR/push
+- ðŸ—ï¸ **Build Workflow** - Builds your application for production
+- ðŸš€ **Deploy Workflow** - Deploys to Docker, Vercel, AWS, GCP, or Azure
+- ðŸ“¦ **Package Manager Detection** - Supports pnpm, npm, and yarn
+- ðŸ” **Test Framework Detection** - Auto-detects vitest, jest, mocha
+- âš™ï¸ **Configurable** - Matrix builds, Node versions, deployment targets
 
 ## Installation
 
 ```bash
-pnpm add @betagors/yama-ci
+pnpm add @yamajs/ci
 # or
-npm install @betagors/yama-ci
+npm install @yamajs/ci
 # or
-yarn add @betagors/yama-ci
+yarn add @yamajs/ci
 ```
 
 ## Configuration
@@ -27,7 +27,7 @@ Add to your `yama.yaml`:
 
 ```yaml
 plugins:
-  "@betagors/yama-ci":
+  "@yamajs/ci":
     nodeVersions: ["20", "22"]
     enableTest: true
     enableBuild: true
@@ -64,9 +64,9 @@ yama ci write --deploy-only
 ### Programmatic API
 
 ```typescript
-import { getPluginAPI } from "@betagors/yama-core";
+import { getPluginAPI } from "@yamajs/core";
 
-const ci = getPluginAPI("@betagors/yama-ci");
+const ci = getPluginAPI("@yamajs/ci");
 
 // Generate workflows
 const workflows = ci.generateAllWorkflows();
@@ -145,14 +145,14 @@ The plugin automatically detects:
 ### Basic Usage
 
 ```typescript
-const ci = getPluginAPI("@betagors/yama-ci");
+const ci = getPluginAPI("@yamajs/ci");
 ci.writeAll();
 ```
 
 ### Custom Configuration
 
 ```typescript
-const ci = getPluginAPI("@betagors/yama-ci");
+const ci = getPluginAPI("@yamajs/ci");
 ci.updateConfig({
   nodeVersions: ["18", "20", "22"],
   enableDeploy: true,
@@ -171,7 +171,7 @@ ci.writeAll(true);
 ### Generate Without Writing
 
 ```typescript
-const ci = getPluginAPI("@betagors/yama-ci");
+const ci = getPluginAPI("@yamajs/ci");
 const workflows = ci.generateAllWorkflows();
 // Use the generated content as needed
 ```

@@ -1,4 +1,4 @@
-import type { AuthProvider } from "../schemas.js";
+﻿import type { AuthProvider } from "../schemas.js";
 
 // =============================================================================
 // Core Auth Types (v1 Stable Interface)
@@ -149,13 +149,13 @@ export interface AuthContext {
   // Plugin Extension Points
   // ==========================================================================
   
-  /** Session info (populated by @betagors/yama-session plugin) */
+  /** Session info (populated by @yamajs/session plugin) */
   session?: SessionInfo;
   
-  /** MFA status (populated by @betagors/yama-mfa plugin) */
+  /** MFA status (populated by @yamajs/mfa plugin) */
   mfa?: MfaInfo;
   
-  /** OAuth info (populated by @betagors/yama-oauth plugin) */
+  /** OAuth info (populated by @yamajs/oauth plugin) */
   oauth?: OAuthInfo;
 }
 

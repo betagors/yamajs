@@ -1,5 +1,5 @@
-import { z } from "zod";
-import type { PluginMCPTool, MCPToolResult } from "@betagors/yama-core";
+﻿import { z } from "zod";
+import type { PluginMCPTool, MCPToolResult } from "@yamajs/core";
 import type { DockerPluginAPI } from "./plugin.js";
 
 /**
@@ -25,11 +25,11 @@ export function createDockerMCPTools(api: DockerPluginAPI, pluginName: string): 
             content: [
               {
                 type: "text",
-                text: `✅ Docker files generated successfully!\n\n` +
-                      `📄 Dockerfile:\n\`\`\`dockerfile\n${dockerfile}\n\`\`\`\n\n` +
-                      `📄 docker-compose.yml:\n\`\`\`yaml\n${compose}\n\`\`\`\n\n` +
-                      `📄 .dockerignore:\n\`\`\`\n${dockerignore}\n\`\`\`\n\n` +
-                      `💡 Use 'yama docker write' to write these files to your project.`,
+                text: `âœ… Docker files generated successfully!\n\n` +
+                      `ðŸ“„ Dockerfile:\n\`\`\`dockerfile\n${dockerfile}\n\`\`\`\n\n` +
+                      `ðŸ“„ docker-compose.yml:\n\`\`\`yaml\n${compose}\n\`\`\`\n\n` +
+                      `ðŸ“„ .dockerignore:\n\`\`\`\n${dockerignore}\n\`\`\`\n\n` +
+                      `ðŸ’¡ Use 'yama docker write' to write these files to your project.`,
               },
             ],
           };
@@ -38,7 +38,7 @@ export function createDockerMCPTools(api: DockerPluginAPI, pluginName: string): 
             content: [
               {
                 type: "text",
-                text: `❌ Failed to generate Docker files: ${error instanceof Error ? error.message : String(error)}`,
+                text: `âŒ Failed to generate Docker files: ${error instanceof Error ? error.message : String(error)}`,
               },
             ],
             isError: true,
@@ -62,7 +62,7 @@ export function createDockerMCPTools(api: DockerPluginAPI, pluginName: string): 
             content: [
               {
                 type: "text",
-                text: `✅ All Docker files written successfully!\n\n` +
+                text: `âœ… All Docker files written successfully!\n\n` +
                       `- Dockerfile\n` +
                       `- docker-compose.yml\n` +
                       `- .dockerignore`,
@@ -74,7 +74,7 @@ export function createDockerMCPTools(api: DockerPluginAPI, pluginName: string): 
             content: [
               {
                 type: "text",
-                text: `❌ Failed to write Docker files: ${error instanceof Error ? error.message : String(error)}`,
+                text: `âŒ Failed to write Docker files: ${error instanceof Error ? error.message : String(error)}`,
               },
             ],
             isError: true,

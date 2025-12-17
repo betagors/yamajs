@@ -9,8 +9,8 @@ const __dirname = dirname(__filename);
 export default defineConfig({
   resolve: {
     alias: {
-      "@yama/db": resolve(__dirname, ".yama/db"),
-      "@yama/types": resolve(__dirname, ".yama/types.ts"),
+      "@yamajs/db": resolve(__dirname, ".yama/db"),
+      "@yamajs/types": resolve(__dirname, ".yama/types.ts"),
     },
   },
   test: {

@@ -1,4 +1,4 @@
-# YAMA Roadmap
+﻿# YAMA Roadmap
 
 This document outlines planned features and improvements for YAMA, organized by strategic priority and implementation phases.
 
@@ -17,24 +17,24 @@ The roadmap is organized into tiers based on dependencies, production readiness,
 ## TIER 1: Backend-as-Config Enhancements (Foundation)
 
 ### Current State
-- ✅ CRUD endpoints are fully config-based (no code required)
-- ✅ Custom endpoints can be defined in YAML but require TypeScript handler files
-- ✅ Default handlers automatically query entity repositories based on response type detection
-- ✅ Handlers can access database repositories via `context.entities` without manual imports
-- ✅ CRUD endpoints support configurable search functionality
+- âœ… CRUD endpoints are fully config-based (no code required)
+- âœ… Custom endpoints can be defined in YAML but require TypeScript handler files
+- âœ… Default handlers automatically query entity repositories based on response type detection
+- âœ… Handlers can access database repositories via `context.entities` without manual imports
+- âœ… CRUD endpoints support configurable search functionality
 
 ### Planned Features
 
 #### 1. Database Access in Handler Context
-**Priority: High | TIER 1** ✅ **IMPLEMENTED**
+**Priority: High | TIER 1** âœ… **IMPLEMENTED**
 
 Add database access to `HandlerContext` so handlers can use repositories without manual imports.
 
 **Implementation Status:**
-- ✅ `context.db` populated with the database adapter
-- ✅ `context.entities` provides entity repositories (e.g., `context.entities.Product`)
-- ✅ Handlers can access database operations directly from context
-- ✅ Type generation supports typed entity repositories
+- âœ… `context.db` populated with the database adapter
+- âœ… `context.entities` provides entity repositories (e.g., `context.entities.Product`)
+- âœ… Handlers can access database operations directly from context
+- âœ… Type generation supports typed entity repositories
 
 **Example:**
 ```typescript
@@ -52,21 +52,21 @@ export async function myHandler(context: HandlerContext) {
 ---
 
 #### 2. Smart Default Handlers for Entity Endpoints
-**Priority: High | TIER 1** ✅ **IMPLEMENTED**
+**Priority: High | TIER 1** âœ… **IMPLEMENTED**
 
 Enable endpoints without handlers to automatically query entity repositories based on response type detection.
 
 **Implementation Status:**
-- ✅ `createDefaultHandler` detects entity-based response types (e.g., `ProductArray`, `Product`)
-- ✅ Dynamically loads and uses the appropriate repository based on entity name
-- ✅ Supports CRUD operations automatically:
-  - `GET /path` with `ProductArray` response → calls `productRepository.findAll(query)`
-  - `GET /path/:id` with `Product` response → calls `productRepository.findById(params.id)`
-  - `POST /path` with `Product` response → calls `productRepository.create(body)`
-  - `PUT/PATCH /path/:id` → calls `productRepository.update(params.id, body)`
-  - `DELETE /path/:id` → calls `productRepository.delete(params.id)`
-- ✅ Maps query parameters to repository method options
-- ✅ Supports pagination, filtering, and sorting through query parameters
+- âœ… `createDefaultHandler` detects entity-based response types (e.g., `ProductArray`, `Product`)
+- âœ… Dynamically loads and uses the appropriate repository based on entity name
+- âœ… Supports CRUD operations automatically:
+  - `GET /path` with `ProductArray` response â†’ calls `productRepository.findAll(query)`
+  - `GET /path/:id` with `Product` response â†’ calls `productRepository.findById(params.id)`
+  - `POST /path` with `Product` response â†’ calls `productRepository.create(body)`
+  - `PUT/PATCH /path/:id` â†’ calls `productRepository.update(params.id, body)`
+  - `DELETE /path/:id` â†’ calls `productRepository.delete(params.id)`
+- âœ… Maps query parameters to repository method options
+- âœ… Supports pagination, filtering, and sorting through query parameters
 
 **Example:**
 ```yaml
@@ -97,17 +97,17 @@ The default handler:
 ---
 
 #### 3. Auto-Implemented Search in CRUD
-**Priority: High | TIER 1** ✅ **IMPLEMENTED**
+**Priority: High | TIER 1** âœ… **IMPLEMENTED**
 
 Add configurable search functionality to CRUD endpoints that automatically implements search across specified fields.
 
 **Implementation Status:**
-- ✅ `CrudConfig` interface extended with search configuration
-- ✅ Search automatically enabled for entities with string/text fields
-- ✅ Repository `findAll` method supports search across configured fields
-- ✅ Supports all search modes: `contains`, `starts`, `ends`, `exact`
-- ✅ Full-text search across multiple fields with single `?search=query` parameter
-- ✅ Simplified syntax: `search: true`, `search: ["field1", "field2"]`, or full config object
+- âœ… `CrudConfig` interface extended with search configuration
+- âœ… Search automatically enabled for entities with string/text fields
+- âœ… Repository `findAll` method supports search across configured fields
+- âœ… Supports all search modes: `contains`, `starts`, `ends`, `exact`
+- âœ… Full-text search across multiple fields with single `?search=query` parameter
+- âœ… Simplified syntax: `search: true`, `search: ["field1", "field2"]`, or full config object
 
 **Example Configuration:**
 ```yaml
@@ -156,14 +156,14 @@ entities:
 ---
 
 #### 4. Separate Response Types for GET List vs Single Item
-**Priority: Medium | TIER 1** ✅ **IMPLEMENTED**
+**Priority: Medium | TIER 1** âœ… **IMPLEMENTED**
 
 Support for different response types for GET list endpoints vs single item endpoints.
 
 **Implementation Status:**
-- ✅ `GET_LIST` and `GET_ONE` method names supported in `responseTypes`
-- ✅ `GET` can be used as fallback for both endpoints
-- ✅ Backward compatible with existing configs
+- âœ… `GET_LIST` and `GET_ONE` method names supported in `responseTypes`
+- âœ… `GET` can be used as fallback for both endpoints
+- âœ… Backward compatible with existing configs
 
 **Previous State:**
 - `responseTypes.GET` applied to both `GET /{path}` (list) and `GET /{path}/:id` (single)
@@ -245,17 +245,17 @@ schemas:
 ---
 
 #### 5. Basic Query Handler Type
-**Priority: High | TIER 1** ✅ **IMPLEMENTED**
+**Priority: High | TIER 1** âœ… **IMPLEMENTED**
 
 Support built-in query handler type that can be configured directly in YAML without writing code.
 
 **Implementation Status:**
-- ✅ Query handler type support in YAML schema
-- ✅ Parameter resolution for `query.xxx` and `params.xxx` references
-- ✅ Filter support with operators: `eq` (exact match) and `ilike` (case-insensitive contains)
-- ✅ Pagination support with `limit` and `offset` from query params or config
-- ✅ OrderBy support from config or query params
-- ✅ Automatic repository integration via `context.entities`
+- âœ… Query handler type support in YAML schema
+- âœ… Parameter resolution for `query.xxx` and `params.xxx` references
+- âœ… Filter support with operators: `eq` (exact match) and `ilike` (case-insensitive contains)
+- âœ… Pagination support with `limit` and `offset` from query params or config
+- âœ… OrderBy support from config or query params
+- âœ… Automatic repository integration via `context.entities`
 
 **Implementation:**
 Execute database queries directly from config:
@@ -455,19 +455,19 @@ endpoints:
 ## TIER 2: Production-Ready Plugins
 
 ### Current State
-- ✅ Core plugin system with `YamaPlugin` interface
-- ✅ Database plugins: PostgreSQL, PGLite
-- ✅ HTTP server plugin: Fastify
-- ✅ Storage plugins: Filesystem, S3
-- ✅ Cache plugin: Redis
-- ✅ Realtime plugin: WebSocket support
-- ⚠️ Missing production-critical plugins: logging, metrics, error tracking, email, etc.
+- âœ… Core plugin system with `YamaPlugin` interface
+- âœ… Database plugins: PostgreSQL, PGLite
+- âœ… HTTP server plugin: Fastify
+- âœ… Storage plugins: Filesystem, S3
+- âœ… Cache plugin: Redis
+- âœ… Realtime plugin: WebSocket support
+- âš ï¸ Missing production-critical plugins: logging, metrics, error tracking, email, etc.
 
 ### Planned Production Plugins
 
 #### 1. Observability & Monitoring Plugins
 
-##### 1.1 Logging Plugin (`@betagors/yama-logging`)
+##### 1.1 Logging Plugin (`@yamajs/logging`)
 **Priority: High | TIER 2**
 
 Structured logging plugin with support for multiple logging libraries.
@@ -483,7 +483,7 @@ Structured logging plugin with support for multiple logging libraries.
 **Example Configuration:**
 ```yaml
 plugins:
-  "@betagors/yama-logging":
+  "@yamajs/logging":
     provider: pino  # or winston, bunyan
     level: info
     format: json
@@ -512,7 +512,7 @@ export async function myHandler(context: HandlerContext) {
 
 ---
 
-##### 1.2 Metrics Plugin (`@betagors/yama-metrics`)
+##### 1.2 Metrics Plugin (`@yamajs/metrics`)
 **Priority: High | TIER 2**
 
 Metrics and telemetry plugin with Prometheus and OpenTelemetry support.
@@ -528,7 +528,7 @@ Metrics and telemetry plugin with Prometheus and OpenTelemetry support.
 **Example Configuration:**
 ```yaml
 plugins:
-  "@betagors/yama-metrics":
+  "@yamajs/metrics":
     provider: prometheus  # or opentelemetry
     endpoint: /metrics
     enabled: true
@@ -552,7 +552,7 @@ export async function myHandler(context: HandlerContext) {
 
 ---
 
-##### 1.3 Error Tracking Plugin (`@betagors/yama-error-tracking`)
+##### 1.3 Error Tracking Plugin (`@yamajs/error-tracking`)
 **Priority: High | TIER 2**
 
 Error tracking and aggregation plugin.
@@ -568,7 +568,7 @@ Error tracking and aggregation plugin.
 **Example Configuration:**
 ```yaml
 plugins:
-  "@betagors/yama-error-tracking":
+  "@yamajs/error-tracking":
     provider: sentry  # or rollbar
     dsn: ${SENTRY_DSN}
     environment: production
@@ -598,7 +598,7 @@ export async function myHandler(context: HandlerContext) {
 
 ---
 
-##### 1.4 Tracing Plugin (`@betagors/yama-tracing`)
+##### 1.4 Tracing Plugin (`@yamajs/tracing`)
 **Priority: Medium | TIER 2**
 
 Distributed tracing plugin with OpenTelemetry support.
@@ -613,7 +613,7 @@ Distributed tracing plugin with OpenTelemetry support.
 **Example Configuration:**
 ```yaml
 plugins:
-  "@betagors/yama-tracing":
+  "@yamajs/tracing":
     provider: opentelemetry
     serviceName: my-api
     exporter: jaeger  # or zipkin, otlp
@@ -640,7 +640,7 @@ export async function myHandler(context: HandlerContext) {
 
 #### 2. Security Plugin
 
-##### 2.1 Security Plugin (`@betagors/yama-security`)
+##### 2.1 Security Plugin (`@yamajs/security`)
 **Priority: High | TIER 2**
 
 Security middleware and headers plugin.
@@ -656,7 +656,7 @@ Security middleware and headers plugin.
 **Example Configuration:**
 ```yaml
 plugins:
-  "@betagors/yama-security":
+  "@yamajs/security":
     helmet:
       enabled: true
       contentSecurityPolicy: true
@@ -678,7 +678,7 @@ plugins:
 
 #### 3. Email Service Plugins
 
-##### 3.1 SendGrid Plugin (`@betagors/yama-email-sendgrid`)
+##### 3.1 SendGrid Plugin (`@yamajs/email-sendgrid`)
 **Priority: High | TIER 2**
 
 SendGrid email service integration.
@@ -693,7 +693,7 @@ SendGrid email service integration.
 **Example Configuration:**
 ```yaml
 plugins:
-  "@betagors/yama-email-sendgrid":
+  "@yamajs/email-sendgrid":
     apiKey: ${SENDGRID_API_KEY}
     from: noreply@example.com
     templates:
@@ -716,7 +716,7 @@ export async function myHandler(context: HandlerContext) {
 
 ---
 
-##### 3.2 Resend Plugin (`@betagors/yama-email-resend`)
+##### 3.2 Resend Plugin (`@yamajs/email-resend`)
 **Priority: High | TIER 2**
 
 Resend email service integration.
@@ -730,14 +730,14 @@ Resend email service integration.
 **Example Configuration:**
 ```yaml
 plugins:
-  "@betagors/yama-email-resend":
+  "@yamajs/email-resend":
     apiKey: ${RESEND_API_KEY}
     from: noreply@example.com
 ```
 
 ---
 
-##### 3.3 AWS SES Plugin (`@betagors/yama-email-ses`)
+##### 3.3 AWS SES Plugin (`@yamajs/email-ses`)
 **Priority: Medium | TIER 2**
 
 AWS Simple Email Service integration.
@@ -751,7 +751,7 @@ AWS Simple Email Service integration.
 **Example Configuration:**
 ```yaml
 plugins:
-  "@betagors/yama-email-ses":
+  "@yamajs/email-ses":
     region: us-east-1
     accessKeyId: ${AWS_ACCESS_KEY_ID}
     secretAccessKey: ${AWS_SECRET_ACCESS_KEY}
@@ -760,7 +760,7 @@ plugins:
 
 ---
 
-##### 3.4 SMTP Plugin (`@betagors/yama-smtp`)
+##### 3.4 SMTP Plugin (`@yamajs/smtp`)
 **Priority: Medium | TIER 2**
 
 Generic SMTP email plugin with Mailpit support for local development.
@@ -778,7 +778,7 @@ Generic SMTP email plugin with Mailpit support for local development.
 **Example Configuration:**
 ```yaml
 plugins:
-  "@betagors/yama-smtp":
+  "@yamajs/smtp":
     host: localhost  # Auto-detects Mailpit on port 1025
     port: 1025
     from: noreply@example.com
@@ -801,7 +801,7 @@ When `host` is `localhost` and `port` is `1025`, the plugin automatically config
 
 #### 4. Health Checks
 
-##### 4.1 Health Plugin (`@betagors/yama-health`)
+##### 4.1 Health Plugin (`@yamajs/health`)
 **Priority: Medium | TIER 2**
 
 Enhanced health check and readiness/liveness endpoints.
@@ -817,7 +817,7 @@ Enhanced health check and readiness/liveness endpoints.
 **Example Configuration:**
 ```yaml
 plugins:
-  "@betagors/yama-health":
+  "@yamajs/health":
     endpoint: /health
     checks:
       database: true
@@ -847,7 +847,7 @@ export async function checkExternalAPI() {
 
 #### 5. Queue & Job Processing
 
-##### 5.1 BullMQ Plugin (`@betagors/yama-queue-bullmq`)
+##### 5.1 BullMQ Plugin (`@yamajs/queue-bullmq`)
 **Priority: Medium | TIER 4**
 
 BullMQ job queue integration.
@@ -862,7 +862,7 @@ BullMQ job queue integration.
 **Example Configuration:**
 ```yaml
 plugins:
-  "@betagors/yama-queue-bullmq":
+  "@yamajs/queue-bullmq":
     connection:
       host: ${REDIS_HOST}
       port: ${REDIS_PORT}
@@ -889,7 +889,7 @@ export async function myHandler(context: HandlerContext) {
 
 #### 6. Advanced Authentication
 
-##### 6.1 OAuth Plugin (`@betagors/yama-auth-oauth`)
+##### 6.1 OAuth Plugin (`@yamajs/auth-oauth`)
 **Priority: Medium | TIER 4**
 
 OAuth 2.0 provider integration (Google, GitHub, etc.).
@@ -904,7 +904,7 @@ OAuth 2.0 provider integration (Google, GitHub, etc.).
 **Example Configuration:**
 ```yaml
 plugins:
-  "@betagors/yama-auth-oauth":
+  "@yamajs/auth-oauth":
     providers:
       google:
         clientId: ${GOOGLE_CLIENT_ID}
@@ -921,37 +921,37 @@ plugins:
 #### 7. Additional Plugins (Lower Priority)
 
 ##### 7.1 Payment Processing
-- `@betagors/yama-payments-stripe` - Stripe payments (Priority: Low | TIER 5)
-- `@betagors/yama-payments-paypal` - PayPal payments (Priority: Low | TIER 5)
+- `@yamajs/payments-stripe` - Stripe payments (Priority: Low | TIER 5)
+- `@yamajs/payments-paypal` - PayPal payments (Priority: Low | TIER 5)
 
 ##### 7.2 Additional Auth Providers
-- `@betagors/yama-auth-clerk` - Clerk authentication (Priority: Low | TIER 5)
-- `@betagors/yama-auth-auth0` - Auth0 authentication (Priority: Low | TIER 5)
-- `@betagors/yama-auth-supabase` - Supabase authentication (Priority: Low | TIER 5)
+- `@yamajs/auth-clerk` - Clerk authentication (Priority: Low | TIER 5)
+- `@yamajs/auth-auth0` - Auth0 authentication (Priority: Low | TIER 5)
+- `@yamajs/auth-supabase` - Supabase authentication (Priority: Low | TIER 5)
 
 ##### 7.3 Additional Queue Providers
-- `@betagors/yama-queue-bull` - Bull queue (legacy) (Priority: Low | TIER 5)
-- `@betagors/yama-queue-sqs` - AWS SQS queue (Priority: Low | TIER 5)
+- `@yamajs/queue-bull` - Bull queue (legacy) (Priority: Low | TIER 5)
+- `@yamajs/queue-sqs` - AWS SQS queue (Priority: Low | TIER 5)
 
 ##### 7.4 Additional Database Adapters
-- `@betagors/yama-mysql` - MySQL/MariaDB (Priority: Low | TIER 5)
-- `@betagors/yama-sqlite` - SQLite (Priority: Low | TIER 5)
+- `@yamajs/mysql` - MySQL/MariaDB (Priority: Low | TIER 5)
+- `@yamajs/sqlite` - SQLite (Priority: Low | TIER 5)
 
 ##### 7.5 Additional Cache Providers
-- `@betagors/yama-cache-memcached` - Memcached (Priority: Low | TIER 5)
-- `@betagors/yama-cache-cloudflare` - Cloudflare KV (Priority: Low | TIER 5)
+- `@yamajs/cache-memcached` - Memcached (Priority: Low | TIER 5)
+- `@yamajs/cache-cloudflare` - Cloudflare KV (Priority: Low | TIER 5)
 
 ---
 
 ## TIER 2.5: Deployment & Build System
 
 ### Current State
-- ✅ Development server with `yama dev`
-- ✅ Migration system for database changes
-- ❌ No production build command
-- ❌ No deployment tooling
-- ❌ No platform-specific adapters
-- ❌ No environment configuration management
+- âœ… Development server with `yama dev`
+- âœ… Migration system for database changes
+- âŒ No production build command
+- âŒ No deployment tooling
+- âŒ No platform-specific adapters
+- âŒ No environment configuration management
 
 ### Planned Features
 
@@ -984,11 +984,11 @@ yama build --minify --tree-shake
 **Build Output:**
 ```
 dist/
-  ├── handlers/          # Compiled handler files
-  ├── migrations/        # Migration files ready for deployment
-  ├── config/            # Processed configuration
-  ├── manifest.json      # Deployment manifest
-  └── package.json       # Production dependencies
+  â”œâ”€â”€ handlers/          # Compiled handler files
+  â”œâ”€â”€ migrations/        # Migration files ready for deployment
+  â”œâ”€â”€ config/            # Processed configuration
+  â”œâ”€â”€ manifest.json      # Deployment manifest
+  â””â”€â”€ package.json       # Production dependencies
 ```
 
 **Benefits:**
@@ -1204,11 +1204,11 @@ Manage environment-specific configurations for different deployment stages.
 **Example Structure:**
 ```
 .
-├── yama.yaml              # Base configuration
-├── yama.dev.yaml          # Development overrides
-├── yama.staging.yaml       # Staging overrides
-├── yama.prod.yaml          # Production overrides
-└── .env.example            # Environment variable template
+â”œâ”€â”€ yama.yaml              # Base configuration
+â”œâ”€â”€ yama.dev.yaml          # Development overrides
+â”œâ”€â”€ yama.staging.yaml       # Staging overrides
+â”œâ”€â”€ yama.prod.yaml          # Production overrides
+â””â”€â”€ .env.example            # Environment variable template
 ```
 
 **Example Usage:**
@@ -1228,7 +1228,7 @@ database:
     ssl: true
 
 plugins:
-  "@betagors/yama-logging":
+  "@yamajs/logging":
     level: warn
     format: json
 ```
@@ -1391,17 +1391,17 @@ export class RailwayDeploymentAdapter implements YamaDeploymentAdapter {
 ## TIER 3: Microservices & Service Communication
 
 ### Current State
-- ✅ Basic TypeScript SDK generation from `yama.yaml`
-- ✅ Type-safe client generation
-- ❌ No service discovery
-- ❌ No inter-service communication
-- ❌ No circuit breakers/retries
-- ❌ No load balancing
-- ❌ No service mesh integration
+- âœ… Basic TypeScript SDK generation from `yama.yaml`
+- âœ… Type-safe client generation
+- âŒ No service discovery
+- âŒ No inter-service communication
+- âŒ No circuit breakers/retries
+- âŒ No load balancing
+- âŒ No service mesh integration
 
 ### Planned Features
 
-#### 1. Service Client Generator (`@betagors/yama-service-client`)
+#### 1. Service Client Generator (`@yamajs/service-client`)
 **Priority: High | TIER 3**
 
 Generate declarative, type-safe service clients (similar to OpenFeign) for inter-service communication.
@@ -1469,7 +1469,7 @@ export async function createOrder(context: HandlerContext) {
 
 ---
 
-#### 2. Service Discovery (`@betagors/yama-service-discovery`)
+#### 2. Service Discovery (`@yamajs/service-discovery`)
 **Priority: High | TIER 3**
 
 Support multiple service discovery mechanisms for dynamic service resolution.
@@ -1483,7 +1483,7 @@ Support multiple service discovery mechanisms for dynamic service resolution.
 **Example Configuration:**
 ```yaml
 plugins:
-  "@betagors/yama-service-discovery":
+  "@yamajs/service-discovery":
     provider: consul  # or kubernetes, eureka, etcd, static
     config:
       host: ${CONSUL_HOST}
@@ -1505,7 +1505,7 @@ services:
 
 ---
 
-#### 3. Resilience Plugin (`@betagors/yama-resilience`)
+#### 3. Resilience Plugin (`@yamajs/resilience`)
 **Priority: High | TIER 3**
 
 Circuit breakers, retries, timeouts, and load balancing for service calls.
@@ -1587,7 +1587,7 @@ services:
 
 ---
 
-#### 5. Service Mesh Integration (`@betagors/yama-service-mesh`)
+#### 5. Service Mesh Integration (`@yamajs/service-mesh`)
 **Priority: Low | TIER 5**
 
 Integration with service mesh solutions (Istio, Linkerd, Consul Connect).
@@ -1595,7 +1595,7 @@ Integration with service mesh solutions (Istio, Linkerd, Consul Connect).
 **Example Configuration:**
 ```yaml
 plugins:
-  "@betagors/yama-service-mesh":
+  "@yamajs/service-mesh":
     provider: istio  # or linkerd, consul-connect
     config:
       enabled: true
@@ -1615,19 +1615,19 @@ plugins:
 
 ### Development Tools
 
-#### 1. Dev Admin UI Plugin (`@betagors/yama-dev-admin`)
+#### 1. Dev Admin UI Plugin (`@yamajs/dev-admin`)
 **Priority: High | TIER 4**
 
 Auto-generated HTMX-based admin interface for development, similar to Django Admin. Provides full CRUD operations for all entities with `crud: true` enabled.
 
 **Current State:**
-- ✅ Realtime plugin has dev tools pattern (`dev.inspectorUI`)
-- ✅ CRUD endpoints are auto-generated from entities
-- ❌ No visual admin interface for data management
-- ❌ Developers must use curl/Postman for testing CRUD operations
+- âœ… Realtime plugin has dev tools pattern (`dev.inspectorUI`)
+- âœ… CRUD endpoints are auto-generated from entities
+- âŒ No visual admin interface for data management
+- âŒ Developers must use curl/Postman for testing CRUD operations
 
 **Implementation:**
-- Create `@betagors/yama-dev-admin` plugin following the dev tools pattern
+- Create `@yamajs/dev-admin` plugin following the dev tools pattern
 - Auto-discover all entities with `crud: true` enabled
 - Generate HTMX-based admin routes:
   - `GET /dev-admin` - Dashboard home (list of all entities)
@@ -1644,7 +1644,7 @@ Auto-generated HTMX-based admin interface for development, similar to Django Adm
 **Example Configuration:**
 ```yaml
 plugins:
-  "@betagors/yama-postgres": { ... }
+  "@yamajs/postgres": { ... }
 
 dev:
   adminUI:
@@ -1714,14 +1714,14 @@ dev:
 ### Plugin Ecosystem Development
 
 #### Current State
-- ✅ Plugin system with `YamaPlugin` interface
-- ✅ Plugin loading from npm packages
-- ✅ Plugin registry and validation
-- ✅ CLI commands: `yama plugin install`, `yama plugin list`, `yama plugin validate`
-- ⚠️ No plugin creation guide or templates
-- ⚠️ No plugin discovery/search mechanism
-- ⚠️ No official plugin registry or marketplace
-- ⚠️ Limited documentation for plugin developers
+- âœ… Plugin system with `YamaPlugin` interface
+- âœ… Plugin loading from npm packages
+- âœ… Plugin registry and validation
+- âœ… CLI commands: `yama plugin install`, `yama plugin list`, `yama plugin validate`
+- âš ï¸ No plugin creation guide or templates
+- âš ï¸ No plugin discovery/search mechanism
+- âš ï¸ No official plugin registry or marketplace
+- âš ï¸ Limited documentation for plugin developers
 
 ### Planned Features
 
@@ -1964,26 +1964,26 @@ Web-based plugin directory and marketplace.
 ### TIER 1: Foundation & Core DX (Do First)
 **Timeline: Months 1-2**
 
-1. ✅ Database access in handler context - **IMPLEMENTED**
-2. ✅ Smart default handlers for entity endpoints - **IMPLEMENTED**
-3. ✅ Auto-implemented search in CRUD - **IMPLEMENTED**
-4. ✅ Basic query handler type - **IMPLEMENTED**
+1. âœ… Database access in handler context - **IMPLEMENTED**
+2. âœ… Smart default handlers for entity endpoints - **IMPLEMENTED**
+3. âœ… Auto-implemented search in CRUD - **IMPLEMENTED**
+4. âœ… Basic query handler type - **IMPLEMENTED**
 
 **Why First:** These enable everything else and provide immediate developer experience improvements.
 
-**Status:** All 4 TIER 1 features are complete! ✅
+**Status:** All 4 TIER 1 features are complete! âœ…
 
 ---
 
 ### TIER 2: Production Essentials (Critical Path)
 **Timeline: Months 3-4**
 
-1. `@betagors/yama-logging` - Structured logging plugin
-2. `@betagors/yama-metrics` - Metrics and telemetry plugin
-3. `@betagors/yama-error-tracking` - Error tracking plugin
-4. `@betagors/yama-security` - Security middleware plugin
-5. `@betagors/yama-email-sendgrid` or `@betagors/yama-email-resend` - Email service plugin
-6. `@betagors/yama-health` - Enhanced health checks
+1. `@yamajs/logging` - Structured logging plugin
+2. `@yamajs/metrics` - Metrics and telemetry plugin
+3. `@yamajs/error-tracking` - Error tracking plugin
+4. `@yamajs/security` - Security middleware plugin
+5. `@yamajs/email-sendgrid` or `@yamajs/email-resend` - Email service plugin
+6. `@yamajs/health` - Enhanced health checks
 
 **Why Second:** Required for any production deployment. These are non-negotiable for real-world usage.
 
@@ -2007,9 +2007,9 @@ Web-based plugin directory and marketplace.
 ### TIER 3: Microservices & Inter-Service Communication (High Value)
 **Timeline: Months 5-6**
 
-1. Service Client Generator (`@betagors/yama-service-client`)
-2. Service Discovery (`@betagors/yama-service-discovery`)
-3. Resilience Plugin (`@betagors/yama-resilience`)
+1. Service Client Generator (`@yamajs/service-client`)
+2. Service Discovery (`@yamajs/service-discovery`)
+3. Resilience Plugin (`@yamajs/resilience`)
 4. Service Registry
 
 **Why Third:** Unlocks microservices architecture and enterprise use cases. High strategic value.
@@ -2019,15 +2019,15 @@ Web-based plugin directory and marketplace.
 ### TIER 4: Enhanced Developer Experience
 **Timeline: Months 7-8**
 
-1. `@betagors/yama-dev-admin` - Dev Admin UI plugin (HTMX-based CRUD interface)
+1. `@yamajs/dev-admin` - Dev Admin UI plugin (HTMX-based CRUD interface)
 2. Plugin Creation Guide & Templates
 3. Plugin Discovery & Search
 4. Plugin Documentation & Examples
 5. Relation handler type
 6. Aggregate handler type
 7. Handler templates
-8. `@betagors/yama-queue-bullmq` - Job queue processing
-9. `@betagors/yama-auth-oauth` - OAuth authentication
+8. `@yamajs/queue-bullmq` - Job queue processing
+9. `@yamajs/auth-oauth` - OAuth authentication
 
 **Why Fourth:** Improves productivity and adoption. Enables community growth. Dev tools provide immediate DX value.
 
@@ -2036,9 +2036,9 @@ Web-based plugin directory and marketplace.
 ### TIER 5: Advanced Features & Nice-to-Have
 **Timeline: Months 9+**
 
-1. `@betagors/yama-tracing` - Distributed tracing
-2. `@betagors/yama-email-ses` - AWS SES email plugin
-3. `@betagors/yama-smtp` - Generic SMTP plugin
+1. `@yamajs/tracing` - Distributed tracing
+2. `@yamajs/email-ses` - AWS SES email plugin
+3. `@yamajs/smtp` - Generic SMTP plugin
 4. Payment plugins (Stripe, PayPal)
 5. Additional auth providers (Clerk, Auth0, Supabase)
 6. Additional database adapters (MySQL, SQLite)

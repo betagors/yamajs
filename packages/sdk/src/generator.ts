@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Legacy SDK generator removed.
  * Use Yama IR and the runtime client (YamaClient).
  */
@@ -10,8 +10,8 @@ export function generateSDK(): string {
  * Generates TypeScript SDK client from yama.yaml endpoint definitions
  */
 
-import type { SchemaField } from "@betagors/yama-core";
-import { normalizeQueryOrParams, normalizeApisConfig } from "@betagors/yama-core";
+import type { SchemaField } from "@yamajs/core";
+import { normalizeQueryOrParams, normalizeApisConfig } from "@yamajs/core";
 
 export interface EndpointDefinition {
   path: string;
@@ -400,7 +400,7 @@ export function generateSDK(
   }
   
   if (needsPaginatedResponse) {
-    imports += `import type { PaginatedResponse } from "@betagors/yama-core";\n`;
+    imports += `import type { PaginatedResponse } from "@yamajs/core";\n`;
   }
   
   imports += "\n";

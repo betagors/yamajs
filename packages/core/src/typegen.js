@@ -1,28 +1,38 @@
-import { entitiesToSchemas, mergeSchemas } from "./entities.js";
-import { normalizeQueryOrParams } from "./schemas.js";
+﻿import { entitiesToSchemas, mergeSchemas } from "./entities.js";
+import { normalizeQueryOrParams, normalizeBodyDefinition, parseSchemaFieldDefinition } from "./schemas.js";
+import { normalizeApisConfig } from "./apis/index.js";
 /**
  * Convert a Yama schema field to TypeScript type string
  */
 function fieldToTypeScript(field, indent = 0, schemas, visited = new Set()) {
     const spaces = "  ".repeat(indent);
+    // Handle case where field is still a string (defensive check)
+    let normalizedField;
+    if (typeof field === "string") {
+        // This shouldn't happen if normalization is working correctly, but handle it gracefully
+        normalizedField = parseSchemaFieldDefinition("", field);
+    }
+    else {
+        normalizedField = field;
+    }
     // Handle legacy $ref (deprecated but still supported)
-    if (field.$ref) {
-        if (visited.has(field.$ref)) {
-            throw new Error(`Circular reference detected in type generation: ${field.$ref}`);
+    if (normalizedField.$ref) {
+        if (visited.has(normalizedField.$ref)) {
+            throw new Error(`Circular reference detected in type generation: ${normalizedField.$ref}`);
         }
-        if (!schemas || !schemas[field.$ref]) {
-            throw new Error(`Schema reference "${field.$ref}" not found in type generation`);
+        if (!schemas || !schemas[normalizedField.$ref]) {
+            throw new Error(`Schema reference "${normalizedField.$ref}" not found in type generation`);
         }
         // Return the referenced schema name directly
-        return field.$ref;
+        return normalizedField.$ref;
     }
     // Type is required
-    if (!field.type) {
-        throw new Error(`Field must have a type`);
+    if (!normalizedField.type) {
+        throw new Error(`Field must have a type. Field definition: ${JSON.stringify(normalizedField)}`);
     }
-    const typeStr = String(field.type);
+    const typeStr = String(normalizedField.type);
     // Define primitive types that should NOT be treated as schema references
-    const primitiveTypes = ["string", "number", "boolean", "integer", "array", "list", "object"];
+    const primitiveTypes = ["uuid", "string", "number", "boolean", "integer", "array", "list", "object"];
     const isPrimitive = primitiveTypes.includes(typeStr);
     // Handle array syntax like "User[]" - this is the preferred way
     const arrayMatch = typeStr.match(/^(.+)\[\]$/);
@@ -53,10 +63,13 @@ function fieldToTypeScript(field, indent = 0, schemas, visited = new Set()) {
     }
     // Handle primitive types
     switch (typeStr) {
+        case "uuid":
+            // UUID is represented as string in TypeScript
+            return "string";
         case "string":
             // Handle enum types
-            if (field.enum && Array.isArray(field.enum)) {
-                const enumValues = field.enum
+            if (normalizedField.enum && Array.isArray(normalizedField.enum)) {
+                const enumValues = normalizedField.enum
                     .map((val) => (typeof val === "string" ? `"${val}"` : String(val)))
                     .join(" | ");
                 return enumValues;
@@ -65,31 +78,35 @@ function fieldToTypeScript(field, indent = 0, schemas, visited = new Set()) {
         case "number":
         case "integer":
             // Handle enum types for numbers
-            if (field.enum && Array.isArray(field.enum)) {
-                const enumValues = field.enum.map((val) => String(val)).join(" | ");
+            if (normalizedField.enum && Array.isArray(normalizedField.enum)) {
+                const enumValues = normalizedField.enum.map((val) => String(val)).join(" | ");
                 return enumValues;
             }
             return "number";
         case "boolean":
             // Handle enum types for booleans
-            if (field.enum && Array.isArray(field.enum)) {
-                const enumValues = field.enum.map((val) => String(val)).join(" | ");
+            if (normalizedField.enum && Array.isArray(normalizedField.enum)) {
+                const enumValues = normalizedField.enum.map((val) => String(val)).join(" | ");
                 return enumValues;
             }
             return "boolean";
         case "array":
         case "list":
-            if (field.items) {
-                const itemType = fieldToTypeScript(field.items, indent, schemas, visited);
+            if (normalizedField.items) {
+                const itemType = fieldToTypeScript(normalizedField.items, indent, schemas, visited);
                 return `${itemType}[]`;
             }
             return "unknown[]";
         case "object":
-            if (field.properties && typeof field.properties === 'object' && field.properties !== null) {
+            if (normalizedField.properties && typeof normalizedField.properties === 'object' && normalizedField.properties !== null) {
                 const props = [];
-                for (const [propName, propField] of Object.entries(field.properties)) {
+                for (const [propName, propField] of Object.entries(normalizedField.properties)) {
                     const propType = fieldToTypeScript(propField, indent + 1, schemas, visited);
-                    const optional = propField.required ? "" : "?";
+                    // Handle case where propField might be a string
+                    const propFieldNormalized = typeof propField === "string"
+                        ? parseSchemaFieldDefinition(propName, propField)
+                        : propField;
+                    const optional = propFieldNormalized.required ? "" : "?";
                     props.push(`${spaces}  ${propName}${optional}: ${propType};`);
                 }
                 return `{\n${props.join("\n")}\n${spaces}}`;
@@ -102,17 +119,89 @@ function fieldToTypeScript(field, indent = 0, schemas, visited = new Set()) {
 }
 /**
  * Generate TypeScript type definition for a schema
+ * Handles source inheritance, computed fields, and inline nested types
  */
-function generateSchemaType(schemaName, schemaDef, schemas, visited = new Set()) {
+function generateSchemaType(schemaName, schemaDef, schemas, entities, visited = new Set()) {
+    if (visited.has(schemaName)) {
+        throw new Error(`Circular reference detected in schema: ${schemaName}`);
+    }
+    visited.add(schemaName);
     const fields = [];
-    if (!schemaDef.fields || typeof schemaDef.fields !== 'object') {
-        return `export interface ${schemaName} {}`;
+    // Handle source inheritance
+    if (schemaDef.source && schemas) {
+        const sourceName = schemaDef.source;
+        const sourceSchema = schemas[sourceName];
+        if (sourceSchema) {
+            // Include fields from source
+            const includeFields = schemaDef.include;
+            if (Array.isArray(includeFields)) {
+                // Only include specified fields
+                for (const fieldName of includeFields) {
+                    if (sourceSchema.fields[fieldName]) {
+                        const field = sourceSchema.fields[fieldName];
+                        const fieldType = fieldToTypeScript(field, 1, schemas, new Set(visited));
+                        const optional = field.required ? "" : "?";
+                        fields.push(`  ${fieldName}${optional}: ${fieldType};`);
+                    }
+                }
+            }
+            else {
+                // Include all fields from source
+                for (const [fieldName, field] of Object.entries(sourceSchema.fields)) {
+                    const fieldType = fieldToTypeScript(field, 1, schemas, new Set(visited));
+                    const optional = field.required ? "" : "?";
+                    fields.push(`  ${fieldName}${optional}: ${fieldType};`);
+                }
+            }
+        }
     }
-    for (const [fieldName, field] of Object.entries(schemaDef.fields)) {
-        const fieldType = fieldToTypeScript(field, 1, schemas, visited);
-        const optional = field.required ? "" : "?";
-        fields.push(`  ${fieldName}${optional}: ${fieldType};`);
+    // Add fields from this schema (override source fields)
+    if (schemaDef.fields && typeof schemaDef.fields === 'object') {
+        for (const [fieldName, field] of Object.entries(schemaDef.fields)) {
+            // Handle inline nested types
+            if (typeof field === "object" && "properties" in field && field.properties) {
+                // Inline nested type
+                const nestedFields = [];
+                for (const [propName, propField] of Object.entries(field.properties)) {
+                    const propType = fieldToTypeScript(propField, 2, schemas, new Set(visited));
+                    const propFieldNormalized = typeof propField === "string"
+                        ? parseSchemaFieldDefinition(propName, propField)
+                        : propField;
+                    const optional = propFieldNormalized.required ? "" : "?";
+                    nestedFields.push(`    ${propName}${optional}: ${propType};`);
+                }
+                const fieldOptional = field.required ? "" : "?";
+                fields.push(`  ${fieldName}${fieldOptional}: {\n${nestedFields.join("\n")}\n  };`);
+            }
+            else {
+                const fieldType = fieldToTypeScript(field, 1, schemas, new Set(visited));
+                const optional = field.required ? "" : "?";
+                fields.push(`  ${fieldName}${optional}: ${fieldType};`);
+            }
+        }
     }
+    // Add computed fields
+    if (schemaDef.computed && typeof schemaDef.computed === 'object') {
+        for (const [fieldName, computedDef] of Object.entries(schemaDef.computed)) {
+            // Determine computed field type
+            let computedType = "unknown";
+            if (typeof computedDef === "object" && computedDef.type) {
+                computedType = computedDef.type;
+            }
+            else {
+                // Try to infer from expression
+                const expr = typeof computedDef === "string" ? computedDef : computedDef.expression;
+                if (expr.includes("count(") || expr.includes("sum(") || expr.includes("avg(")) {
+                    computedType = "number";
+                }
+                else if (expr.includes("{{") && expr.includes("}}")) {
+                    computedType = "string";
+                }
+            }
+            fields.push(`  ${fieldName}: ${computedType};`);
+        }
+    }
+    visited.delete(schemaName);
     return `export interface ${schemaName} {\n${fields.join("\n")}\n}`;
 }
 /**
@@ -134,16 +223,21 @@ export function generateTypes(schemas, entities) {
     }
     const typeDefinitions = [];
     for (const [schemaName, schemaDef] of Object.entries(allSchemas)) {
-        typeDefinitions.push(generateSchemaType(schemaName, schemaDef, allSchemas));
+        typeDefinitions.push(generateSchemaType(schemaName, schemaDef, allSchemas, entities));
     }
     return imports + typeDefinitions.join("\n\n") + "\n";
 }
 /**
- * Convert handler name to TypeScript interface name
+ * Convert handler path to TypeScript interface name
+ * Extracts filename from path and converts to PascalCase
  */
-function handlerNameToInterfaceName(handlerName) {
+function handlerNameToInterfaceName(handlerPath) {
+    // Extract filename from path (handle both / and \ separators)
+    const fileName = handlerPath.split(/[/\\]/).pop() || handlerPath;
+    // Remove extension
+    const nameWithoutExt = fileName.replace(/\.(ts|js)$/, "");
     // Convert camelCase to PascalCase and add "HandlerContext" suffix
-    const pascalCase = handlerName.charAt(0).toUpperCase() + handlerName.slice(1);
+    const pascalCase = nameWithoutExt.charAt(0).toUpperCase() + nameWithoutExt.slice(1);
     return `${pascalCase}HandlerContext`;
 }
 /**
@@ -155,11 +249,25 @@ function generateParamsOrQueryType(fields, schemas, visited = new Set(), useType
     }
     const props = [];
     for (const [fieldName, field] of Object.entries(fields)) {
-        let fieldType = fieldToTypeScript(field, 0, schemas, visited);
+        // Handle case where field is still a string (shouldn't happen, but be defensive)
+        let normalizedField;
+        if (typeof field === "string") {
+            normalizedField = parseSchemaFieldDefinition(fieldName, field);
+        }
+        else if (field && typeof field === "object") {
+            normalizedField = field;
+        }
+        else {
+            throw new Error(`Field "${fieldName}" has invalid type. Expected string or SchemaField object, got ${typeof field}`);
+        }
+        if (!normalizedField.type) {
+            throw new Error(`Field "${fieldName}" must have a type property. Field definition: ${JSON.stringify(normalizedField)}`);
+        }
+        let fieldType = fieldToTypeScript(normalizedField, 0, schemas, visited);
         // If using Types namespace and field is a schema reference (not a primitive), prefix with Types.
         // Check if the type is a schema reference by seeing if it exists in schemas
-        if (useTypesNamespace && schemas && field.type) {
-            const typeStr = String(field.type);
+        if (useTypesNamespace && schemas && normalizedField.type) {
+            const typeStr = String(normalizedField.type);
             const primitiveTypes = ["string", "number", "boolean", "integer", "array", "list", "object"];
             const isPrimitive = primitiveTypes.includes(typeStr);
             // Check for array syntax like "User[]"
@@ -176,7 +284,7 @@ function generateParamsOrQueryType(fields, schemas, visited = new Set(), useType
                 }
             }
         }
-        const optional = field.required ? "" : "?";
+        const optional = normalizedField.required ? "" : "?";
         props.push(`  ${fieldName}${optional}: ${fieldType};`);
     }
     return `{\n${props.join("\n")}\n}`;
@@ -184,7 +292,7 @@ function generateParamsOrQueryType(fields, schemas, visited = new Set(), useType
 /**
  * Generate handler context types from Yama config
  */
-export function generateHandlerContexts(config, typesImportPath = "../types", handlerContextImportPath = "@betagors/yama-core", repositoryTypesImportPath, availableServices) {
+export function generateHandlerContexts(config, typesImportPath = "../types", handlerContextImportPath = "@yamajs/core", repositoryTypesImportPath, availableServices) {
     // Determine which services are available
     // Services are only available if both the plugin is configured AND the service is actually used
     const hasDb = availableServices?.db ?? false;
@@ -223,16 +331,29 @@ import type { HandlerContext } from "${handlerContextImportPath}";
 ${dbImport}import type * as Types from "${typesImportPath}";
 ${repositoryTypesImport}
 `;
-    if (!config.endpoints || config.endpoints.length === 0) {
-        return imports + "// No endpoints defined\n";
+    // Normalize APIs config (includes operations conversion)
+    // Convert schemas to entities format for normalizer
+    const schemasAsEntities = config.schemas ? Object.fromEntries(Object.entries(config.schemas).map(([name, schema]) => [
+        name,
+        { ...schema, fields: schema.fields || {} }
+    ])) : undefined;
+    const normalizedApis = normalizeApisConfig({
+        apis: config.apis,
+        operations: config.operations,
+        policies: config.policies,
+        schemas: schemasAsEntities,
+    });
+    const allEndpoints = normalizedApis.rest.flatMap(restConfig => restConfig.endpoints);
+    if (allEndpoints.length === 0) {
+        return imports + "// No REST endpoints defined\n";
     }
     // Convert entities to schemas and merge with explicit schemas
     const entitySchemas = config.entities ? entitiesToSchemas(config.entities) : {};
     const allSchemas = mergeSchemas(config.schemas, entitySchemas) || {};
     // Group endpoints by handler name (in case multiple endpoints use same handler)
     const handlerEndpoints = new Map();
-    for (const endpoint of config.endpoints) {
-        if (endpoint.handler) {
+    for (const endpoint of allEndpoints) {
+        if (endpoint.handler && typeof endpoint.handler === 'string') {
             const existing = handlerEndpoints.get(endpoint.handler) || [];
             existing.push(endpoint);
             handlerEndpoints.set(endpoint.handler, existing);
@@ -248,25 +369,54 @@ ${repositoryTypesImport}
         const interfaceName = handlerNameToInterfaceName(handlerName);
         // Generate body type
         let bodyType = "unknown";
-        if (endpoint.body?.type) {
-            const bodySchemaType = endpoint.body.type;
-            // Check for array syntax like "User[]"
-            const arrayMatch = bodySchemaType.match(/^(.+)\[\]$/);
-            if (arrayMatch) {
-                const baseType = arrayMatch[1];
-                if (allSchemas[baseType]) {
-                    bodyType = `Types.${baseType}[]`;
+        if (endpoint.body) {
+            // String shorthand - schema reference
+            if (typeof endpoint.body === 'string') {
+                const bodySchemaType = endpoint.body;
+                const arrayMatch = bodySchemaType.match(/^(.+)\[\]$/);
+                if (arrayMatch) {
+                    const baseType = arrayMatch[1];
+                    if (allSchemas[baseType]) {
+                        bodyType = `Types.${baseType}[]`;
+                    }
+                    else {
+                        bodyType = bodySchemaType;
+                    }
+                }
+                else if (allSchemas[bodySchemaType]) {
+                    bodyType = `Types.${bodySchemaType}`;
                 }
                 else {
                     bodyType = bodySchemaType;
                 }
             }
-            else if (allSchemas[bodySchemaType]) {
-                // Direct schema reference
-                bodyType = `Types.${bodySchemaType}`;
+            // Object with type (schema reference)
+            else if (typeof endpoint.body === 'object' && 'type' in endpoint.body && endpoint.body.type) {
+                const bodySchemaType = endpoint.body.type;
+                const arrayMatch = bodySchemaType.match(/^(.+)\[\]$/);
+                if (arrayMatch) {
+                    const baseType = arrayMatch[1];
+                    if (allSchemas[baseType]) {
+                        bodyType = `Types.${baseType}[]`;
+                    }
+                    else {
+                        bodyType = bodySchemaType;
+                    }
+                }
+                else if (allSchemas[bodySchemaType]) {
+                    bodyType = `Types.${bodySchemaType}`;
+                }
+                else {
+                    bodyType = bodySchemaType;
+                }
             }
-            else {
-                bodyType = bodySchemaType;
+            // Object with fields (inline object definition)
+            else if (typeof endpoint.body === 'object' && 'fields' in endpoint.body && endpoint.body.fields) {
+                // Normalize the body first to ensure fields are properly parsed
+                const normalizedBodyDef = normalizeBodyDefinition(endpoint.body);
+                if (normalizedBodyDef?.fields) {
+                    bodyType = generateParamsOrQueryType(normalizedBodyDef.fields, allSchemas, new Set(), true);
+                }
             }
         }
         // Normalize and generate params type
@@ -279,7 +429,7 @@ ${repositoryTypesImport}
         let responseType = "unknown";
         if (endpoint.response) {
             // Handle response with type (schema reference)
-            if (endpoint.response.type) {
+            if ('type' in endpoint.response && endpoint.response.type) {
                 const responseSchemaType = endpoint.response.type;
                 // Check for array syntax like "User[]"
                 const arrayMatch = responseSchemaType.match(/^(.+)\[\]$/);
@@ -315,38 +465,56 @@ ${repositoryTypesImport}
             `  params: ${paramsType};`,
             `  query: ${queryType};`
         ];
-        // Add services only if they're available
+        // Always include all HandlerContext utility properties for better IDE autocomplete
+        // Make them required when available, optional otherwise
+        properties.push(`  // Database access`);
         if (hasDb) {
             properties.push(`  db: DatabaseAdapter;`);
+        }
+        else {
+            properties.push(`  db?: HandlerContext['db'];`);
         }
         if (hasEntities) {
             properties.push(`  entities: ${entitiesType};`);
         }
+        else {
+            properties.push(`  entities?: HandlerContext['entities'];`);
+        }
+        properties.push(`  // Cache access`);
         if (hasCache) {
             properties.push(`  cache: NonNullable<HandlerContext['cache']>;`);
         }
+        else {
+            properties.push(`  cache?: HandlerContext['cache'];`);
+        }
+        properties.push(`  // Storage access`);
         if (hasStorage) {
             properties.push(`  storage: NonNullable<HandlerContext['storage']>;`);
         }
+        else {
+            properties.push(`  storage?: HandlerContext['storage'];`);
+        }
+        properties.push(`  // Realtime access`);
         if (hasRealtime) {
             properties.push(`  realtime: NonNullable<HandlerContext['realtime']>;`);
         }
-        // Build the interface with Omit to exclude optional properties that we're making required
-        const omitProperties = [];
-        if (hasDb)
-            omitProperties.push("'db'");
-        if (hasEntities)
-            omitProperties.push("'entities'");
-        if (hasCache)
-            omitProperties.push("'cache'");
-        if (hasStorage)
-            omitProperties.push("'storage'");
-        if (hasRealtime)
-            omitProperties.push("'realtime'");
-        const omitType = omitProperties.length > 0
-            ? `Omit<HandlerContext, ${omitProperties.join(" | ")}>`
-            : "HandlerContext";
-        const interfaceDef = `export interface ${interfaceName} extends ${omitType} {
+        else {
+            properties.push(`  realtime?: HandlerContext['realtime'];`);
+        }
+        properties.push(`  // Email service`);
+        properties.push(`  email?: HandlerContext['email'];`);
+        properties.push(`  // Logger service`);
+        properties.push(`  logger?: HandlerContext['logger'];`);
+        properties.push(`  // Metrics service`);
+        properties.push(`  metrics?: HandlerContext['metrics'];`);
+        properties.push(`  // Tracing service`);
+        properties.push(`  tracing?: HandlerContext['tracing'];`);
+        properties.push(`  // Auth context`);
+        properties.push(`  auth?: HandlerContext['auth'];`);
+        properties.push(`  // Response helpers`);
+        properties.push(`  status: HandlerContext['status'];`);
+        // Build the interface extending HandlerContext (we override specific properties above)
+        const interfaceDef = `export interface ${interfaceName} extends Omit<HandlerContext, 'body' | 'params' | 'query'${hasDb ? " | 'db'" : ""}${hasEntities ? " | 'entities'" : ""}${hasCache ? " | 'cache'" : ""}${hasStorage ? " | 'storage'" : ""}${hasRealtime ? " | 'realtime'" : ""}> {
 ${properties.join("\n")}
 }`;
         contextInterfaces.push(interfaceDef);

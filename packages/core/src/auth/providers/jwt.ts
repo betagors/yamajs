@@ -1,6 +1,6 @@
-import type { AuthProviderHandler, AuthResult, AuthUser, TokenPair, TokenGenerationOptions } from "../types.js";
+﻿import type { AuthProviderHandler, AuthResult, AuthUser, TokenPair, TokenGenerationOptions } from "../types.js";
 import type { JwtAuthProvider, AuthContext } from "../../schemas.js";
-import { ErrorCodes } from "@betagors/yama-errors";
+import { ErrorCodes } from "@yamajs/errors";
 import { getTokenSigner, TokenExpiredError, JsonWebTokenError } from "../../platform/crypto.js";
 
 // Local definition to avoid importing from jsonwebtoken

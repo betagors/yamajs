@@ -1,5 +1,5 @@
-{
-  "name": "@betagors/yama-logging",
+﻿{
+  "name": "@yamajs/logging",
   "version": "0.1.0-alpha.0",
   "type": "module",
   "description": "Yama logging plugin with console, file, and S3 transports",
@@ -44,7 +44,7 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
-    "@betagors/yama-core": "workspace:*"
+    "@yamajs/core": "workspace:*"
   },
   "devDependencies": {
     "rimraf": "^5.0.0",

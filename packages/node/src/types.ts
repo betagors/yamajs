@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Type definitions for YAMA Node Runtime
  * 
  * This module contains all shared types and interfaces used across the runtime.
@@ -17,7 +17,7 @@ import type {
   HandlerContext,
   HandlerFunction,
   StorageBucket,
-} from "@betagors/yama-core";
+} from "@yamajs/core";
 
 /**
  * Query handler configuration for declarative query endpoints

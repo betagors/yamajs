@@ -86,3 +86,4 @@ export declare function deleteSnapshot(configDir: string, hash: string): void;
  * Get all snapshots
  */
 export declare function getAllSnapshots(configDir: string): Snapshot[];
+//# sourceMappingURL=snapshots.d.ts.map

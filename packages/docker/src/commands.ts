@@ -1,4 +1,4 @@
-import type { PluginCLICommand } from "@betagors/yama-core";
+﻿import type { PluginCLICommand } from "@yamajs/core";
 import type { DockerPluginAPI } from "./plugin.js";
 import { interactiveDockerComposeSetup } from "./interactive.js";
 
@@ -21,23 +21,23 @@ export function createDockerCommands(api: DockerPluginAPI, pluginName: string): 
       action: async (options: { overwrite?: boolean }) => {
         const overwrite = options.overwrite || false;
         try {
-          console.log("🐳 Generating Docker files...\n");
+          console.log("ðŸ³ Generating Docker files...\n");
           
           const dockerfile = api.generateDockerfile();
           const compose = api.generateDockerCompose();
           const dockerignore = api.generateDockerIgnore();
           
-          console.log("📄 Dockerfile:");
+          console.log("ðŸ“„ Dockerfile:");
           console.log(dockerfile);
-          console.log("\n📄 docker-compose.yml:");
+          console.log("\nðŸ“„ docker-compose.yml:");
           console.log(compose);
-          console.log("\n📄 .dockerignore:");
+          console.log("\nðŸ“„ .dockerignore:");
           console.log(dockerignore);
           
-          console.log("\n✅ Docker files generated successfully!");
-          console.log("💡 Use 'yama docker write' to write these files to your project.");
+          console.log("\nâœ… Docker files generated successfully!");
+          console.log("ðŸ’¡ Use 'yama docker write' to write these files to your project.");
         } catch (error) {
-          console.error("❌ Failed to generate Docker files:", error instanceof Error ? error.message : String(error));
+          console.error("âŒ Failed to generate Docker files:", error instanceof Error ? error.message : String(error));
           throw error;
         }
       },
@@ -56,11 +56,11 @@ export function createDockerCommands(api: DockerPluginAPI, pluginName: string): 
       action: async (options: { overwrite?: boolean }) => {
         const overwrite = options.overwrite || false;
         try {
-          console.log("🐳 Writing Docker files...\n");
+          console.log("ðŸ³ Writing Docker files...\n");
           api.writeAll(overwrite);
-          console.log("\n✅ All Docker files written successfully!");
+          console.log("\nâœ… All Docker files written successfully!");
         } catch (error) {
-          console.error("❌ Failed to write Docker files:", error instanceof Error ? error.message : String(error));
+          console.error("âŒ Failed to write Docker files:", error instanceof Error ? error.message : String(error));
           throw error;
         }
       },
@@ -95,27 +95,27 @@ export function createDockerCommands(api: DockerPluginAPI, pluginName: string): 
             },
           });
           
-          console.log("\n✅ Configuration saved!");
-          console.log("\n📋 Selected services:");
+          console.log("\nâœ… Configuration saved!");
+          console.log("\nðŸ“‹ Selected services:");
           if (composeConfig.includeDatabase) {
-            console.log(`  ✓ Database: ${composeConfig.databaseType || "postgres"}`);
+            console.log(`  âœ“ Database: ${composeConfig.databaseType || "postgres"}`);
             if (composeConfig.includePgAdmin) {
-              console.log(`  ✓ pgAdmin: http://localhost:5050`);
+              console.log(`  âœ“ pgAdmin: http://localhost:5050`);
             }
             if (composeConfig.includeAdminer) {
-              console.log(`  ✓ Adminer: http://localhost:8080`);
+              console.log(`  âœ“ Adminer: http://localhost:8080`);
             }
           }
           if (composeConfig.includeRedis) {
-            console.log(`  ✓ Redis: localhost:6379`);
+            console.log(`  âœ“ Redis: localhost:6379`);
           }
           if (composeConfig.includeMailpit) {
-            console.log(`  ✓ Mailpit: http://localhost:8025 (SMTP: localhost:1025)`);
+            console.log(`  âœ“ Mailpit: http://localhost:8025 (SMTP: localhost:1025)`);
           }
           
-          console.log("\n💡 Run 'yama docker write' to generate the docker-compose.yml file.");
+          console.log("\nðŸ’¡ Run 'yama docker write' to generate the docker-compose.yml file.");
         } catch (error) {
-          console.error("❌ Setup failed:", error instanceof Error ? error.message : String(error));
+          console.error("âŒ Setup failed:", error instanceof Error ? error.message : String(error));
           throw error;
         }
       },
@@ -150,29 +150,29 @@ export function createDockerCommands(api: DockerPluginAPI, pluginName: string): 
             },
           });
           
-          console.log("\n📝 Writing Docker files...\n");
+          console.log("\nðŸ“ Writing Docker files...\n");
           api.writeAll(overwrite);
           
-          console.log("\n✅ All Docker files written successfully!");
-          console.log("\n📋 Services configured:");
+          console.log("\nâœ… All Docker files written successfully!");
+          console.log("\nðŸ“‹ Services configured:");
           if (composeConfig.includeDatabase) {
-            console.log(`  ✓ Database: ${composeConfig.databaseType || "postgres"}`);
+            console.log(`  âœ“ Database: ${composeConfig.databaseType || "postgres"}`);
             if (composeConfig.includePgAdmin) {
-              console.log(`  ✓ pgAdmin: http://localhost:5050`);
+              console.log(`  âœ“ pgAdmin: http://localhost:5050`);
             }
             if (composeConfig.includeAdminer) {
-              console.log(`  ✓ Adminer: http://localhost:8080`);
+              console.log(`  âœ“ Adminer: http://localhost:8080`);
             }
           }
           if (composeConfig.includeRedis) {
-            console.log(`  ✓ Redis: localhost:6379`);
+            console.log(`  âœ“ Redis: localhost:6379`);
           }
           if (composeConfig.includeMailpit) {
-            console.log(`  ✓ Mailpit: http://localhost:8025 (SMTP: localhost:1025)`);
+            console.log(`  âœ“ Mailpit: http://localhost:8025 (SMTP: localhost:1025)`);
           }
-          console.log("\n🚀 Run 'docker-compose up' to start your development environment!");
+          console.log("\nðŸš€ Run 'docker-compose up' to start your development environment!");
         } catch (error) {
-          console.error("❌ Setup failed:", error instanceof Error ? error.message : String(error));
+          console.error("âŒ Setup failed:", error instanceof Error ? error.message : String(error));
           throw error;
         }
       },

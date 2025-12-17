@@ -1,10 +1,10 @@
-import postgres from "postgres";
+﻿import postgres from "postgres";
 import { drizzle as drizzlePostgres } from "drizzle-orm/postgres-js";
 import type {
   DatabaseAdapter,
   DatabaseConnection,
-} from "@betagors/yama-core";
-import type { DatabaseConfig, YamaEntities } from "@betagors/yama-core";
+} from "@yamajs/core";
+import type { DatabaseConfig, YamaEntities } from "@yamajs/core";
 import { generateDrizzleSchema } from "./drizzle-schema";
 import { generateMigrationSQL } from "./migrations";
 

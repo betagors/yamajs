@@ -1,13 +1,13 @@
-# @betagors/yama-redis
+﻿# @yamajs/redis
 
 Redis cache adapter plugin for Yama.
 
 ## Installation
 
 ```bash
-npm install @betagors/yama-redis ioredis
+npm install @yamajs/redis ioredis
 # or
-npm install @betagors/yama-redis redis
+npm install @yamajs/redis redis
 ```
 
 You need to install either `ioredis` or `redis` package as a peer dependency.
@@ -18,7 +18,7 @@ Add the plugin to your `yama.yaml`:
 
 ```yaml
 plugins:
-  "@betagors/yama-redis":
+  "@yamajs/redis":
     url: redis://localhost:6379
     # or
     host: localhost
@@ -42,7 +42,7 @@ Any additional options will be passed to the Redis client.
 Once the plugin is loaded, the cache adapter is available in handler context:
 
 ```typescript
-import type { HandlerContext } from '@betagors/yama-core';
+import type { HandlerContext } from '@yamajs/core';
 
 export async function myHandler(context: HandlerContext) {
   // Check cache

@@ -1,19 +1,19 @@
-/**
+﻿/**
  * Entity and field utilities for YAMA Node Runtime
  * 
  * This module provides utilities for working with entity definitions,
  * extracting field names, and mapping between database and API representations.
  */
 
-import type { YamaEntities, EntityField, EntityDefinition } from "@betagors/yama-core";
-import { parseFieldDefinition } from "@betagors/yama-core";
+import type { YamaEntities, EntityField, EntityDefinition } from "@yamajs/core";
+import { parseFieldDefinition } from "@yamajs/core";
 
 /**
  * Extract entity name from response type
  * 
  * Handles patterns like:
- * - "Product[]" → "Product"
- * - "Product" → "Product"
+ * - "Product[]" â†’ "Product"
+ * - "Product" â†’ "Product"
  * 
  * Used to detect which entity a response type refers to.
  * 

@@ -1,4 +1,4 @@
-# Example YAMA configuration showcasing the new clean syntax
+﻿# Example YAMA configuration showcasing the new clean syntax
 # This demonstrates the improved entity and relation syntax inspired by modern frameworks
 
 project:
@@ -145,4 +145,4 @@ monitoring:
 
 # Plugins
 plugins:
-  "@betagors/yama-pglite":
+  "@yamajs/pglite":

@@ -1,4 +1,4 @@
-import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+﻿import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
   CallToolRequestSchema,
@@ -9,8 +9,8 @@ import {
 import { existsSync } from "fs";
 import { findYamaConfig } from "../utils/project-detection.ts";
 import { getConfigDir, readYamaConfig } from "../utils/file-utils.ts";
-import { resolveEnvVars, loadEnvFile, setPluginRegistryConfig, loadPlugin, getAllMCPTools } from "@betagors/yama-core";
-import type { PluginMCPTool } from "@betagors/yama-core";
+import { resolveEnvVars, loadEnvFile, setPluginRegistryConfig, loadPlugin, getAllMCPTools } from "@yamajs/core";
+import type { PluginMCPTool } from "@yamajs/core";
 import { zodToJsonSchema } from "zod-to-json-schema";
 
 // Import tools
@@ -111,10 +111,10 @@ async function loadPluginTools(): Promise<PluginMCPTool[]> {
 
       for (const pluginItem of config.plugins) {
         if (typeof pluginItem === "string") {
-          // String shorthand: "@betagors/yama-pglite"
+          // String shorthand: "@yamajs/pglite"
           pluginEntries.push({ name: pluginItem, config: {} });
         } else if (pluginItem && typeof pluginItem === "object") {
-          // Object format: { "@betagors/yama-redis": { config: {...} } }
+          // Object format: { "@yamajs/redis": { config: {...} } }
           const keys = Object.keys(pluginItem);
           if (keys.length !== 1) {
             throw new Error(`Plugin object must have exactly one key (plugin name), got: ${keys.join(", ")}`);

@@ -1,8 +1,8 @@
-{
-  "name": "@betagors/yama-cli",
+﻿{
+  "name": "@yamajs/cli",
   "version": "0.1.0-alpha.0",
   "type": "module",
-  "description": "Yama CLI — global CLI tool for Yama framework",
+  "description": "Yama CLI â€” global CLI tool for Yama framework",
   "bin": {
     "yama": "dist/cli/src/cli.js"
   },
@@ -41,12 +41,12 @@
     "start": "ts-node src/cli.ts"
   },
   "dependencies": {
-    "@betagors/yama-core": "workspace:*",
-    "@betagors/yama-errors": "workspace:*",
-    "@betagors/yama-openapi": "workspace:*",
-    "@betagors/yama-postgres": "workspace:*",
-    "@betagors/yama-node": "workspace:*",
-    "@betagors/yama-sdk": "workspace:*",
+    "@yamajs/core": "workspace:*",
+    "@yamajs/errors": "workspace:*",
+    "@yamajs/openapi": "workspace:*",
+    "@yamajs/postgres": "workspace:*",
+    "@yamajs/node": "workspace:*",
+    "@yamajs/sdk": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.0.4",
     "boxen": "^8.0.1",
     "chalk": "^5.3.0",

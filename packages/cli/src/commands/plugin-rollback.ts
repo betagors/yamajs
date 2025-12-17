@@ -1,11 +1,11 @@
-import { existsSync } from "fs";
+﻿import { existsSync } from "fs";
 import { findYamaConfig } from "../utils/project-detection.ts";
 import { getConfigDir, readYamaConfig } from "../utils/file-utils.ts";
-import { resolveEnvVars, loadEnvFile } from "@betagors/yama-core";
+import { resolveEnvVars, loadEnvFile } from "@yamajs/core";
 import { success, error, info, warning, printBox, printTable } from "../utils/cli-utils.ts";
 import { getDatabasePlugin } from "../utils/db-plugin.ts";
 import { confirm } from "../utils/interactive.ts";
-import { loadPlugin } from "@betagors/yama-core";
+import { loadPlugin } from "@yamajs/core";
 import {
   ensurePluginMigrationTables,
   rollbackPluginMigration,
@@ -13,7 +13,7 @@ import {
   getInstalledPluginVersion,
   updatePluginVersion,
   getPluginMigrationHistory,
-} from "@betagors/yama-core";
+} from "@yamajs/core";
 import semver from "semver";
 
 interface PluginRollbackOptions {
@@ -98,7 +98,7 @@ export async function pluginRollbackCommand(
     // Safety check: production environment warning
     const isProduction = environment === "production" || environment === "prod";
     if (isProduction && !options.force && !options.dryRun) {
-      warning("⚠️  WARNING: You are about to rollback migrations in PRODUCTION!");
+      warning("âš ï¸  WARNING: You are about to rollback migrations in PRODUCTION!");
       warning("   This operation can cause data loss and service disruption.");
       warning("   Consider taking a database backup first.");
       console.log();
@@ -248,7 +248,7 @@ export async function pluginRollbackCommand(
     }
 
     if (missingRollback.length > 0) {
-      warning("\n⚠️  Warning: The following migrations do not have rollback scripts:");
+      warning("\nâš ï¸  Warning: The following migrations do not have rollback scripts:");
       missingRollback.forEach((v) => warning(`   - ${v}`));
       warning("   These migrations cannot be safely rolled back.");
       
@@ -266,14 +266,14 @@ export async function pluginRollbackCommand(
     }
 
     if (options.dryRun) {
-      info("\n🔍 Dry run mode - no changes will be made");
+      info("\nðŸ” Dry run mode - no changes will be made");
       await dbPlugin.client.closeDatabase();
       return;
     }
 
     // Confirm rollback (unless forced or in non-interactive mode)
     if (!options.skipConfirm && !options.force) {
-      console.log("\n⚠️  Warning: Rollback will undo database changes!");
+      console.log("\nâš ï¸  Warning: Rollback will undo database changes!");
       const confirmed = await confirm(
         `Rollback ${pluginName} from ${installedVersion} to ${toVersion}?`,
         false
@@ -301,12 +301,12 @@ export async function pluginRollbackCommand(
       // Update version record
       await updatePluginVersion(pluginName, toVersion, sql);
 
-      success(`\n✅ Successfully rolled back ${pluginName} from ${installedVersion} to ${toVersion}`);
+      success(`\nâœ… Successfully rolled back ${pluginName} from ${installedVersion} to ${toVersion}`);
       info(`   Rolled back ${migrationsToRollback.length} migration(s)`);
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : String(err);
-      error(`\n❌ Rollback failed: ${errorMsg}`);
-      error("\n💡 Tips:");
+      error(`\nâŒ Rollback failed: ${errorMsg}`);
+      error("\nðŸ’¡ Tips:");
       error("   - Check the error message above for details");
       error("   - Verify your database connection");
       error("   - Ensure rollback scripts are valid");

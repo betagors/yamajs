@@ -65,3 +65,4 @@ export declare function getPluginMigrationHistory(pluginName: string, sql: any):
     applied_at: Date;
     type: string;
 }>>;
+//# sourceMappingURL=migrations.d.ts.map

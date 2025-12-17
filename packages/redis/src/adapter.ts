@@ -1,4 +1,4 @@
-import type { CacheAdapter } from "@betagors/yama-core";
+﻿import type { CacheAdapter } from "@yamajs/core";
 import type { RedisClient } from "./client";
 
 /**

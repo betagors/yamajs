@@ -1,6 +1,6 @@
-import { execSync } from "child_process";
+﻿import { execSync } from "child_process";
 import { readPackageJson } from "../utils/file-utils.ts";
-import { loadPluginFromPackage } from "@betagors/yama-core";
+import { loadPluginFromPackage } from "@yamajs/core";
 
 interface PluginOptions {
   package?: string;
@@ -32,16 +32,16 @@ export async function pluginListCommand(): Promise<void> {
       }
     }
 
-    console.log("📦 Installed Yama service plugins:\n");
+    console.log("ðŸ“¦ Installed Yama service plugins:\n");
 
     if (plugins.length === 0) {
       console.log("  No service plugins installed.");
-      console.log("\n💡 Install a plugin with: yama plugin install <package-name>");
+      console.log("\nðŸ’¡ Install a plugin with: yama plugin install <package-name>");
       return;
     }
 
     for (const plugin of plugins) {
-      console.log(`  ✅ ${plugin.name}@${plugin.version}`);
+      console.log(`  âœ… ${plugin.name}@${plugin.version}`);
       if (plugin.manifest) {
         const manifest = plugin.manifest as { type?: string; service?: string };
         if (manifest.type) {
@@ -54,7 +54,7 @@ export async function pluginListCommand(): Promise<void> {
       console.log();
     }
   } catch (error) {
-    console.error("❌ Failed to list plugins:", error instanceof Error ? error.message : String(error));
+    console.error("âŒ Failed to list plugins:", error instanceof Error ? error.message : String(error));
     process.exit(1);
   }
 }
@@ -66,12 +66,12 @@ export async function pluginInstallCommand(options: PluginOptions): Promise<void
   const packageName = options.package;
 
   if (!packageName) {
-    console.error("❌ Package name required");
+    console.error("âŒ Package name required");
     console.error("   Usage: yama plugin install <package-name>");
     process.exit(1);
   }
 
-  console.log(`📦 Installing service plugin: ${packageName}\n`);
+  console.log(`ðŸ“¦ Installing service plugin: ${packageName}\n`);
 
   try {
     // Install the package
@@ -82,16 +82,16 @@ export async function pluginInstallCommand(options: PluginOptions): Promise<void
     console.log("\nValidating plugin...");
     const manifest = await loadPluginFromPackage(packageName);
 
-    console.log(`\n✅ Plugin installed successfully!`);
+    console.log(`\nâœ… Plugin installed successfully!`);
     console.log(`   Name: ${manifest.name || packageName}`);
     console.log(`   Version: ${manifest.version || "unknown"}`);
     console.log(`   Type: ${manifest.type}`);
     if (manifest.service) {
       console.log(`   Service: ${manifest.service}`);
     }
-    console.log("\n💡 Configure the plugin in your yama.yaml file");
+    console.log("\nðŸ’¡ Configure the plugin in your yama.yaml file");
   } catch (error) {
-    console.error(`\n❌ Failed to install plugin: ${error instanceof Error ? error.message : String(error)}`);
+    console.error(`\nâŒ Failed to install plugin: ${error instanceof Error ? error.message : String(error)}`);
     process.exit(1);
   }
 }
@@ -132,23 +132,23 @@ export async function pluginValidateCommand(): Promise<void> {
 
 
     // Fallback to text output
-    console.log("🔍 Validating service plugins...\n");
+    console.log("ðŸ” Validating service plugins...\n");
 
     for (const result of results) {
       if (result.valid) {
-        console.log(`✅ ${result.plugin} - Valid`);
+        console.log(`âœ… ${result.plugin} - Valid`);
       } else {
-        console.log(`❌ ${result.plugin} - Invalid: ${result.error || "Unknown error"}`);
+        console.log(`âŒ ${result.plugin} - Invalid: ${result.error || "Unknown error"}`);
       }
     }
 
-    console.log(`\n📊 Results: ${validCount} valid, ${invalidCount} invalid`);
+    console.log(`\nðŸ“Š Results: ${validCount} valid, ${invalidCount} invalid`);
 
     if (invalidCount > 0) {
       process.exit(1);
     }
   } catch (error) {
-    console.error("❌ Failed to validate plugins:", error instanceof Error ? error.message : String(error));
+    console.error("âŒ Failed to validate plugins:", error instanceof Error ? error.message : String(error));
     process.exit(1);
   }
 }

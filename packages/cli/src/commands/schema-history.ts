@@ -1,14 +1,14 @@
-import { existsSync } from "fs";
+﻿import { existsSync } from "fs";
 import { findYamaConfig } from "../utils/project-detection.ts";
 import { readYamaConfig, getConfigDir } from "../utils/file-utils.ts";
-import { loadEnvFile, resolveEnvVars } from "@betagors/yama-core";
-import type { DatabaseConfig } from "@betagors/yama-core";
+import { loadEnvFile, resolveEnvVars } from "@yamajs/core";
+import type { DatabaseConfig } from "@yamajs/core";
 import {
   getAllSnapshots,
   getAllTransitions,
   getCurrentSnapshot,
   getAllStates,
-} from "@betagors/yama-core";
+} from "@yamajs/core";
 import { getDatabasePluginAndConfig } from "../utils/db-plugin.ts";
 import { error, info, dim, fmt, printTable } from "../utils/cli-utils.ts";
 
@@ -39,7 +39,7 @@ export async function schemaHistoryCommand(options: SchemaHistoryOptions): Promi
 
     console.log("");
     console.log(fmt.bold("Schema History"));
-    console.log(dim("─".repeat(40)));
+    console.log(dim("â”€".repeat(40)));
     console.log("");
 
     if (options.graph) {
@@ -62,8 +62,8 @@ export async function schemaHistoryCommand(options: SchemaHistoryOptions): Promi
           const from = t.fromHash ? t.fromHash.substring(0, 8) : "empty";
           const to = t.toHash.substring(0, 8);
           const isCurrent = t.toHash === currentSnapshot;
-          const marker = isCurrent ? fmt.green(" ← current") : "";
-          console.log(`  ${from} → ${to}${marker}`);
+          const marker = isCurrent ? fmt.green(" â† current") : "";
+          console.log(`  ${from} â†’ ${to}${marker}`);
           console.log(dim(`    ${t.steps.length} step(s): ${t.metadata.description || ""}`));
         }
       }
@@ -84,7 +84,7 @@ export async function schemaHistoryCommand(options: SchemaHistoryOptions): Promi
       
       for (const s of snapshots.slice(0, 10)) {
         const isCurrent = s.hash === currentSnapshot;
-        const hash = `${s.hash.substring(0, 8)}${isCurrent ? " ✓" : ""}`;
+        const hash = `${s.hash.substring(0, 8)}${isCurrent ? " âœ“" : ""}`;
         snapshotData.push([
           hash,
           new Date(s.metadata.createdAt).toLocaleDateString(),
@@ -160,7 +160,7 @@ export async function schemaHistoryCommand(options: SchemaHistoryOptions): Promi
       console.log("");
       console.log(fmt.bold("Environment States"));
       for (const state of states) {
-        const marker = state.environment === environment ? " ←" : "";
+        const marker = state.environment === environment ? " â†" : "";
         console.log(`  ${state.environment}: ${state.currentSnapshot?.substring(0, 8) || dim("none")}${marker}`);
       }
     }

@@ -1,8 +1,8 @@
-import { existsSync } from "fs";
+﻿import { existsSync } from "fs";
 import { findYamaConfig } from "../utils/project-detection.ts";
 import { readYamaConfig } from "../utils/file-utils.ts";
-import { loadEnvFile, resolveEnvVars } from "@betagors/yama-core";
-import type { DatabaseConfig } from "@betagors/yama-core";
+import { loadEnvFile, resolveEnvVars } from "@yamajs/core";
+import type { DatabaseConfig } from "@yamajs/core";
 import { getDatabasePluginAndConfig } from "../utils/db-plugin.ts";
 import { success, error, info, printTable, colors } from "../utils/cli-utils.ts";
 
@@ -102,7 +102,7 @@ export async function dbInspectCommand(
         : countValue;
 
       // Display schema information
-      console.log(`\n📋 Table: ${colors.bold(tableName)}\n`);
+      console.log(`\nðŸ“‹ Table: ${colors.bold(tableName)}\n`);
 
       // Column schema table
       const schemaData: unknown[][] = [["Column", "Type", "Nullable", "Default", "PK"]];
@@ -135,15 +135,15 @@ export async function dbInspectCommand(
           typeStr,
           isNullable ? "Yes" : colors.dim("No"),
           defaultStr,
-          isPK ? colors.success("✓") : "-",
+          isPK ? colors.success("âœ“") : "-",
         ]);
       }
 
 
       // Fallback to text output
-      console.log("📐 Schema:\n");
+      console.log("ðŸ“ Schema:\n");
       printTable(schemaData);
-      console.log(`\n📊 Total rows: ${colors.bold(rowCount.toLocaleString())}\n`);
+      console.log(`\nðŸ“Š Total rows: ${colors.bold(rowCount.toLocaleString())}\n`);
 
       if (sampleData) {
         // Get column names from first row
@@ -167,7 +167,7 @@ export async function dbInspectCommand(
           sampleTableData.push(rowData);
         }
 
-        console.log("📄 Sample Data (first 10 rows):\n");
+        console.log("ðŸ“„ Sample Data (first 10 rows):\n");
         printTable(sampleTableData);
         
         if (rowCount > 10) {

@@ -1,4 +1,4 @@
-import type { UpdateTodoHandlerContext, Todo } from "@yama/gen";
+import type { UpdateTodoHandlerContext, Todo } from "@yamajs/gen";
 
 export async function updateTodo(
   context: UpdateTodoHandlerContext

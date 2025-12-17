@@ -1,6 +1,6 @@
-import { existsSync, statSync } from "fs";
+﻿import { existsSync, statSync } from "fs";
 import { dirname, join, relative, extname } from "path";
-import { startYamaNodeRuntime, type YamaServer } from "@betagors/yama-node";
+import { startYamaNodeRuntime, type YamaServer } from "@yamajs/node";
 import type { FSWatcher } from "chokidar";
 import chokidar from "chokidar";
 import { findYamaConfig } from "../utils/project-detection.ts";
@@ -19,7 +19,7 @@ import {
   createTransition,
   saveTransition,
   snapshotExists,
-} from "@betagors/yama-core";
+} from "@yamajs/core";
 import { readYamaConfig, getConfigDir } from "../utils/file-utils.ts";
 import { info } from "../utils/cli-utils.ts";
 
@@ -394,7 +394,7 @@ async function setupWatchMode(configPath: string): Promise<void> {
     
     // Note: File change notifications are informational and fine to keep as console.log
     // in fallback mode since they're real-time events
-    console.log(`📝 ${relativePath} changed...`);
+    console.log(`ðŸ“ ${relativePath} changed...`);
     queueRestart({ type: changeType, path: filePath, timestamp: Date.now() });
   });
 
@@ -417,7 +417,7 @@ async function setupWatchMode(configPath: string): Promise<void> {
     
     // Note: File change notifications are informational and fine to keep as console.log
     // in fallback mode since they're real-time events
-    console.log(`➕ ${relativePath} added...`);
+    console.log(`âž• ${relativePath} added...`);
     queueRestart({ type: changeType, path: filePath, timestamp: Date.now() });
   });
 
@@ -437,7 +437,7 @@ async function setupWatchMode(configPath: string): Promise<void> {
     const relativePath = relative(projectRoot, filePath);
     // Note: File change notifications are informational and fine to keep as console.log
     // in fallback mode since they're real-time events
-    console.log(`🗑️  ${relativePath} removed...`);
+    console.log(`ðŸ—‘ï¸  ${relativePath} removed...`);
     queueRestart({ type: "handler", path: filePath, timestamp: Date.now() });
   });
 

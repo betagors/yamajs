@@ -1,6 +1,6 @@
-import { createHash, randomBytes } from "node:crypto";
+﻿import { createHash, randomBytes } from "node:crypto";
 import type { CsrfConfig } from "./types.js";
-import type { HttpRequest } from "@betagors/yama-core";
+import type { HttpRequest } from "@yamajs/core";
 
 /**
  * Response-like object for collecting headers

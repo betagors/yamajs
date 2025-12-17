@@ -1,8 +1,8 @@
-# @betagors/yama-openapi
+﻿# @yamajs/openapi
 
 > OpenAPI documentation generator for Yama (internal tool)
 
-[![npm version](https://img.shields.io/npm/v/@betagors/yama-openapi.svg)](https://www.npmjs.com/package/@betagors/yama-openapi)
+[![npm version](https://img.shields.io/npm/v/@yamajs/openapi.svg)](https://www.npmjs.com/package/@yamajs/openapi)
 [![License: MPL-2.0](https://img.shields.io/badge/License-MPL_2.0-brightgreen.svg)](https://opensource.org/licenses/MPL-2.0)
 
 Internal tool used by the Yama runtime to generate OpenAPI 3.0 specifications from `yama.yaml` configurations. This package is typically used indirectly through the runtime, but can also be used programmatically.
@@ -10,7 +10,7 @@ Internal tool used by the Yama runtime to generate OpenAPI 3.0 specifications fr
 ## Installation
 
 ```bash
-npm install @betagors/yama-openapi
+npm install @yamajs/openapi
 ```
 
 ## Usage
@@ -18,7 +18,7 @@ npm install @betagors/yama-openapi
 ### Programmatic Usage
 
 ```typescript
-import { generateOpenAPI, type YamaConfig } from '@betagors/yama-openapi';
+import { generateOpenAPI, type YamaConfig } from '@yamajs/openapi';
 
 const config: YamaConfig = {
   name: 'my-api',
@@ -73,7 +73,7 @@ console.log(JSON.stringify(openAPISpec, null, 2));
 The Yama runtime automatically generates OpenAPI documentation and serves it at `/openapi.json` and `/docs`:
 
 ```typescript
-import { startYamaNodeRuntime } from '@betagors/yama-node';
+import { startYamaNodeRuntime } from '@yamajs/node';
 
 const server = await startYamaNodeRuntime(3000, './yama.yaml');
 
@@ -155,7 +155,7 @@ The generator creates a complete OpenAPI 3.0 specification including:
 
 - **Automatic Schema Conversion** - Converts Yama schemas to OpenAPI schemas
 - **Entity Support** - Converts Yama entities to OpenAPI schemas
-- **Path Parameters** - Extracts and documents path parameters (`:id` → `{id}`)
+- **Path Parameters** - Extracts and documents path parameters (`:id` â†’ `{id}`)
 - **Query Parameters** - Documents query parameters with validation rules
 - **Request/Response Bodies** - Documents request and response schemas
 - **Authentication** - Documents JWT and API key authentication
@@ -164,7 +164,7 @@ The generator creates a complete OpenAPI 3.0 specification including:
 ## Requirements
 
 - Node.js >= 18
-- `@betagors/yama-core` - For schema types and utilities
+- `@yamajs/core` - For schema types and utilities
 
 ## Note
 

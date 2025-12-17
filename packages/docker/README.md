@@ -1,25 +1,25 @@
-# @betagors/yama-docker
+﻿# @yamajs/docker
 
 Docker and Docker Compose plugin for Yama applications. Automatically generates Dockerfiles and docker-compose.yml files based on your project configuration.
 
 ## Features
 
-- 🐳 **Automatic Dockerfile generation** - Multi-stage builds optimized for production
-- 🐙 **Docker Compose support** - Auto-detects and includes database/Redis services
-- 📦 **Package manager detection** - Supports pnpm, npm, and yarn
-- 🔍 **Plugin detection** - Automatically detects database and Redis plugins from yama.yaml
-- 🏥 **Health checks** - Built-in health check support
-- 🔒 **Security** - Non-root user by default
-- ⚙️ **Configurable** - Extensive configuration options
+- ðŸ³ **Automatic Dockerfile generation** - Multi-stage builds optimized for production
+- ðŸ™ **Docker Compose support** - Auto-detects and includes database/Redis services
+- ðŸ“¦ **Package manager detection** - Supports pnpm, npm, and yarn
+- ðŸ” **Plugin detection** - Automatically detects database and Redis plugins from yama.yaml
+- ðŸ¥ **Health checks** - Built-in health check support
+- ðŸ”’ **Security** - Non-root user by default
+- âš™ï¸ **Configurable** - Extensive configuration options
 
 ## Installation
 
 ```bash
-pnpm add @betagors/yama-docker
+pnpm add @yamajs/docker
 # or
-npm install @betagors/yama-docker
+npm install @yamajs/docker
 # or
-yarn add @betagors/yama-docker
+yarn add @yamajs/docker
 ```
 
 ## Configuration
@@ -28,7 +28,7 @@ Add to your `yama.yaml`:
 
 ```yaml
 plugins:
-  "@betagors/yama-docker":
+  "@yamajs/docker":
     nodeVersion: "20"
     baseImage: "alpine"
     port: 4000
@@ -51,9 +51,9 @@ plugins:
 ### Programmatic API
 
 ```typescript
-import { getPluginAPI } from "@betagors/yama-core";
+import { getPluginAPI } from "@yamajs/core";
 
-const docker = getPluginAPI("@betagors/yama-docker");
+const docker = getPluginAPI("@yamajs/docker");
 
 // Generate files
 const dockerfile = docker.generateDockerfile();
@@ -145,14 +145,14 @@ The plugin automatically detects:
 ### Basic Usage
 
 ```typescript
-const docker = getPluginAPI("@betagors/yama-docker");
+const docker = getPluginAPI("@yamajs/docker");
 docker.writeAll();
 ```
 
 ### Custom Configuration
 
 ```typescript
-const docker = getPluginAPI("@betagors/yama-docker");
+const docker = getPluginAPI("@yamajs/docker");
 docker.updateConfig({
   nodeVersion: "18",
   port: 3000,
@@ -172,7 +172,7 @@ docker.writeAll(true);
 ### Generate Without Writing
 
 ```typescript
-const docker = getPluginAPI("@betagors/yama-docker");
+const docker = getPluginAPI("@yamajs/docker");
 const dockerfile = docker.generateDockerfile();
 const compose = docker.generateDockerCompose();
 // Use the generated content as needed

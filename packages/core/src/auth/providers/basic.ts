@@ -1,7 +1,7 @@
-import type { AuthProviderHandler, AuthResult } from "../types.js";
+﻿import type { AuthProviderHandler, AuthResult } from "../types.js";
 import type { BasicAuthProvider, AuthContext } from "../../schemas.js";
 import { getGlobalDatabaseAdapter } from "../../infrastructure/database-registry.js";
-import { ErrorCodes } from "@betagors/yama-errors";
+import { ErrorCodes } from "@yamajs/errors";
 
 /**
  * Resolve environment variable references in strings

@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+﻿import { describe, it, expect, beforeEach, vi } from "vitest";
 import { createTodo } from "./createTodo.ts";
-import type { HandlerContext } from "@betagors/yama-core";
-import type { CreateTodoInput } from "@yama/types";
+import type { HandlerContext } from "@yamajs/core";
+import type { CreateTodoInput } from "@yamajs/types";
 
 describe("createTodo Handler", () => {
   let mockContext: Partial<HandlerContext>;

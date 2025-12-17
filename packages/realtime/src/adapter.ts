@@ -1,5 +1,5 @@
-import type { WebSocket } from "@fastify/websocket";
-import type { AuthContext } from "@betagors/yama-core";
+﻿import type { WebSocket } from "@fastify/websocket";
+import type { AuthContext } from "@yamajs/core";
 
 /**
  * WebSocket connection with metadata
@@ -66,7 +66,7 @@ export class RealtimeAdapter {
         });
       }
     } catch (error) {
-      console.warn("⚠️  Failed to setup Redis pub/sub for realtime:", error instanceof Error ? error.message : String(error));
+      console.warn("âš ï¸  Failed to setup Redis pub/sub for realtime:", error instanceof Error ? error.message : String(error));
       this.useRedis = false;
     }
   }

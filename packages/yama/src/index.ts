@@ -1,7 +1,7 @@
-/**
- * @betagors/yama - Main convenience package
- * Re-exports everything from @betagors/yama-core
+﻿/**
+ * @yamajs/yama - Main convenience package
+ * Re-exports everything from @yamajs/core
  */
 
-export * from "@betagors/yama-core";
+export * from "@yamajs/core";
 

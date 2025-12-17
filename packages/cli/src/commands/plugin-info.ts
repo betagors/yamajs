@@ -1,8 +1,8 @@
-import { existsSync } from "fs";
+﻿import { existsSync } from "fs";
 import { findYamaConfig } from "../utils/project-detection.ts";
 import { getConfigDir } from "../utils/file-utils.ts";
 import { success, error, info } from "../utils/cli-utils.ts";
-import { loadPluginFromPackage } from "@betagors/yama-core";
+import { loadPluginFromPackage } from "@yamajs/core";
 import { table } from "table";
 
 interface PluginInfoOptions {
@@ -73,7 +73,7 @@ export async function pluginInfoCommand(
     const latestPkgVersion = pkgInfo.versions[latestVersion] as any;
     const yamaMetadata = latestPkgVersion?.yama;
     // Display plugin information
-    console.log(`📦 ${pkgInfo.name}\n`);
+    console.log(`ðŸ“¦ ${pkgInfo.name}\n`);
     console.log(`Version: ${latestVersion}`);
     if (pkgInfo.description) {
       console.log(`Description: ${pkgInfo.description}`);
@@ -90,7 +90,7 @@ export async function pluginInfoCommand(
 
     // Show Yama-specific metadata if available
     if (yamaMetadata) {
-      console.log(`\n🔌 Yama Plugin Metadata:`);
+      console.log(`\nðŸ”Œ Yama Plugin Metadata:`);
       if (yamaMetadata.category) {
         console.log(`  Category: ${yamaMetadata.category}`);
       }
@@ -107,17 +107,17 @@ export async function pluginInfoCommand(
 
     // Show local installation status
     if (localManifest) {
-      success(`\n✅ Installed locally`);
+      success(`\nâœ… Installed locally`);
       if (localManifest.yamaCore) {
         console.log(`   Compatible with Yama Core: ${localManifest.yamaCore}`);
       }
     } else {
-      info(`\n📥 Not installed locally`);
+      info(`\nðŸ“¥ Not installed locally`);
       console.log(`   Install with: yama plugin install ${packageName}`);
     }
 
     // Show available versions
-    console.log(`\n📋 Available Versions (showing last 10):`);
+    console.log(`\nðŸ“‹ Available Versions (showing last 10):`);
     const versionTableRows: string[][] = [["Version", "Published"]];
     for (const version of recentVersions) {
       const versionInfo = pkgInfo.versions[version] as any;
@@ -127,7 +127,7 @@ export async function pluginInfoCommand(
     console.log(table(versionTableRows));
 
     // Show download stats if available
-    console.log(`\n📊 Package Info:`);
+    console.log(`\nðŸ“Š Package Info:`);
     console.log(`   Total versions: ${versions.length}`);
     console.log(`   Created: ${pkgInfo.time?.created || "Unknown"}`);
     console.log(`   Modified: ${pkgInfo.time?.modified || "Unknown"}`);

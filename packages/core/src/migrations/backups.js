@@ -1,37 +1,38 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync, statSync } from "fs";
-import { join } from "path";
-import { createHash } from "crypto";
+import { getFileSystem, getPathModule } from "../platform/fs.js";
+import { sha256Hex } from "../platform/hash.js";
+const fs = () => getFileSystem();
+const path = () => getPathModule();
 /**
  * Get backups directory path
  */
 export function getBackupsDir(configDir) {
-    return join(configDir, ".yama", "backups");
+    return path().join(configDir, ".yama", "backups");
 }
 /**
  * Get snapshots backup directory
  */
 export function getSnapshotsBackupDir(configDir) {
-    return join(getBackupsDir(configDir), "snapshots");
+    return path().join(getBackupsDir(configDir), "snapshots");
 }
 /**
  * Get incremental backup directory
  */
 export function getIncrementalBackupDir(configDir) {
-    return join(getBackupsDir(configDir), "incremental");
+    return path().join(getBackupsDir(configDir), "incremental");
 }
 /**
  * Get backup manifests directory
  */
 export function getBackupManifestsDir(configDir) {
-    return join(getBackupsDir(configDir), "manifests");
+    return path().join(getBackupsDir(configDir), "manifests");
 }
 /**
  * Ensure backup directories exist
  */
 export function ensureBackupDirs(configDir) {
-    mkdirSync(getSnapshotsBackupDir(configDir), { recursive: true });
-    mkdirSync(getIncrementalBackupDir(configDir), { recursive: true });
-    mkdirSync(getBackupManifestsDir(configDir), { recursive: true });
+    fs().mkdirSync(getSnapshotsBackupDir(configDir), { recursive: true });
+    fs().mkdirSync(getIncrementalBackupDir(configDir), { recursive: true });
+    fs().mkdirSync(getBackupManifestsDir(configDir), { recursive: true });
 }
 /**
  * Generate backup filename
@@ -44,9 +45,8 @@ export function generateBackupFilename(snapshot, timestamp, extension = "dump") 
  * Calculate checksum of data
  */
 export function calculateChecksum(data) {
-    const hash = createHash("sha256");
-    hash.update(data);
-    return `sha256:${hash.digest("hex")}`;
+    const asBytes = typeof data === "string" ? new TextEncoder().encode(data) : data;
+    return `sha256:${sha256Hex(asBytes)}`;
 }
 /**
  * Register a backup
@@ -54,19 +54,19 @@ export function calculateChecksum(data) {
 export function registerBackup(configDir, metadata, filename) {
     ensureBackupDirs(configDir);
     // Save metadata
-    const metadataPath = join(getBackupManifestsDir(configDir), `${metadata.snapshot}_${metadata.timestamp.replace(/[:.]/g, "-")}.json`);
-    writeFileSync(metadataPath, JSON.stringify(metadata, null, 2), "utf-8");
+    const metadataPath = path().join(getBackupManifestsDir(configDir), `${metadata.snapshot}_${metadata.timestamp.replace(/[:.]/g, "-")}.json`);
+    fs().writeFileSync(metadataPath, JSON.stringify(metadata, null, 2), "utf-8");
 }
 /**
  * Load backup metadata
  */
 export function loadBackupMetadata(configDir, snapshot, timestamp) {
-    const metadataPath = join(getBackupManifestsDir(configDir), `${snapshot}_${timestamp.replace(/[:.]/g, "-")}.json`);
-    if (!existsSync(metadataPath)) {
+    const metadataPath = path().join(getBackupManifestsDir(configDir), `${snapshot}_${timestamp.replace(/[:.]/g, "-")}.json`);
+    if (!fs().existsSync(metadataPath)) {
         return null;
     }
     try {
-        const content = readFileSync(metadataPath, "utf-8");
+        const content = fs().readFileSync(metadataPath, "utf-8");
         return JSON.parse(content);
     }
     catch {
@@ -78,22 +78,21 @@ export function loadBackupMetadata(configDir, snapshot, timestamp) {
  */
 export function listBackups(configDir) {
     const manifestsDir = getBackupManifestsDir(configDir);
-    if (!existsSync(manifestsDir)) {
+    if (!fs().existsSync(manifestsDir)) {
         return [];
     }
-    const fs = require("fs");
-    const files = fs.readdirSync(manifestsDir);
+    const files = fs().readdirSync?.(manifestsDir) ?? [];
     const backups = [];
     for (const file of files) {
         if (file.endsWith(".json")) {
             try {
-                const content = readFileSync(join(manifestsDir, file), "utf-8");
+                const content = fs().readFileSync(path().join(manifestsDir, file), "utf-8");
                 const metadata = JSON.parse(content);
                 const filename = generateBackupFilename(metadata.snapshot, metadata.timestamp);
-                const filePath = join(getSnapshotsBackupDir(configDir), filename);
+                const filePath = path().join(getSnapshotsBackupDir(configDir), filename);
                 let size = 0;
-                if (existsSync(filePath)) {
-                    size = statSync(filePath).size;
+                if (fs().existsSync(filePath) && fs().statSync) {
+                    size = fs().statSync(filePath).size ?? 0;
                 }
                 backups.push({
                     filename,
@@ -143,12 +142,12 @@ export function createBackupChain(configDir, baseSnapshot) {
  * Load backup chain
  */
 export function loadBackupChain(configDir, chainFile) {
-    const chainPath = join(getBackupManifestsDir(configDir), chainFile);
-    if (!existsSync(chainPath)) {
+    const chainPath = path().join(getBackupManifestsDir(configDir), chainFile);
+    if (!fs().existsSync(chainPath)) {
         return null;
     }
     try {
-        const content = readFileSync(chainPath, "utf-8");
+        const content = fs().readFileSync(chainPath, "utf-8");
         return JSON.parse(content);
     }
     catch {

@@ -1,8 +1,7 @@
 import semver from "semver";
-import { existsSync } from "fs";
-import { join } from "path";
 import Ajv from "ajv";
 import addFormats from "ajv-formats";
+import { getFileSystem, getPathModule } from "../platform/fs.js";
 // Create Ajv instance with formats
 const ajv = new Ajv({ allErrors: true, strict: false });
 addFormats(ajv);
@@ -114,6 +113,8 @@ export function validatePluginConfig(config, manifest) {
  * Validate migration definitions in manifest
  */
 export function validateMigrations(manifest, pluginDir) {
+    const fs = getFileSystem();
+    const path = getPathModule();
     const errors = [];
     if (!manifest.migrations) {
         return { valid: true };
@@ -132,15 +133,15 @@ export function validateMigrations(manifest, pluginDir) {
         }
         // If up is a string (file path), check if file exists (if pluginDir provided)
         if (typeof migration.up === "string" && pluginDir) {
-            const filePath = join(pluginDir, migration.up);
-            if (!existsSync(filePath)) {
+            const filePath = path.join(pluginDir, migration.up);
+            if (!fs.existsSync(filePath)) {
                 errors.push(`Migration ${version} up file not found: ${filePath}`);
             }
         }
         // If down is a string (file path), check if file exists (if pluginDir provided)
         if (migration.down && typeof migration.down === "string" && pluginDir) {
-            const filePath = join(pluginDir, migration.down);
-            if (!existsSync(filePath)) {
+            const filePath = path.join(pluginDir, migration.down);
+            if (!fs.existsSync(filePath)) {
                 errors.push(`Migration ${version} down file not found: ${filePath}`);
             }
         }

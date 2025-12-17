@@ -1,4 +1,4 @@
-import { existsSync } from "fs";
+﻿import { existsSync } from "fs";
 import { findYamaConfig } from "../utils/project-detection.ts";
 import { getConfigDir, readYamaConfig } from "../utils/file-utils.ts";
 import {
@@ -10,7 +10,7 @@ import {
   resolveEnvVars,
   loadEnvFile,
   entitiesToModel,
-} from "@betagors/yama-core";
+} from "@yamajs/core";
 import { info, error, success, dim, fmt } from "../utils/cli-utils.ts";
 import { confirm } from "../utils/interactive.ts";
 
@@ -68,7 +68,7 @@ export async function snapshotCreateCommand(options: SnapshotCreateOptions): Pro
     // Show what will be created
     console.log("");
     console.log(fmt.bold("Create Snapshot"));
-    console.log(dim("─".repeat(35)));
+    console.log(dim("â”€".repeat(35)));
     console.log(`Hash:   ${fmt.cyan(newSnapshot.hash.substring(0, 12))}`);
     console.log(`Parent: ${currentSnapshotHash ? currentSnapshotHash.substring(0, 12) : dim("none")}`);
     console.log(`Env:    ${environment}`);

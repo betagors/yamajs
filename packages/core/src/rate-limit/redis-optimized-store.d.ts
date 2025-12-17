@@ -24,3 +24,4 @@ export declare class RedisOptimizedRateLimitStore implements RateLimitStore {
  * Create a Redis-optimized rate limit store
  */
 export declare function createRedisOptimizedRateLimitStore(client: RedisClient, keyPrefix?: string, failClosed?: boolean): RedisOptimizedRateLimitStore;
+//# sourceMappingURL=redis-optimized-store.d.ts.map

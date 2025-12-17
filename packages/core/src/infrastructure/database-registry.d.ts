@@ -9,3 +9,4 @@ export declare function registerGlobalDatabaseAdapter(adapter: DatabaseAdapter):
  * Returns null if not registered
  */
 export declare function getGlobalDatabaseAdapter(): DatabaseAdapter | null;
+//# sourceMappingURL=database-registry.d.ts.map

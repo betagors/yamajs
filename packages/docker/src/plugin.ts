@@ -1,6 +1,6 @@
-import { writeFileSync, existsSync } from "node:fs";
+﻿import { writeFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
-import type { YamaPlugin, PluginContext } from "@betagors/yama-core";
+import type { YamaPlugin, PluginContext } from "@yamajs/core";
 import type { DockerPluginConfig } from "./types.js";
 import {
   getProjectInfo,
@@ -70,7 +70,7 @@ export interface DockerPluginAPI {
  * Docker plugin implementation
  */
 const plugin: YamaPlugin = {
-  name: "@betagors/yama-docker",
+  name: "@yamajs/docker",
   category: "deployment",
   pluginApi: "1.0",
   yamaCore: "^0.1.0",

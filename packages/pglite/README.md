@@ -1,8 +1,8 @@
-# @betagors/yama-pglite
+﻿# @yamajs/pglite
 
 > PGLite database adapter for Yama
 
-[![npm version](https://img.shields.io/npm/v/@betagors/yama-pglite.svg)](https://www.npmjs.com/package/@betagors/yama-pglite)
+[![npm version](https://img.shields.io/npm/v/@yamajs/pglite.svg)](https://www.npmjs.com/package/@yamajs/pglite)
 [![License: MPL-2.0](https://img.shields.io/badge/License-MPL_2.0-brightgreen.svg)](https://opensource.org/licenses/MPL-2.0)
 
 PGLite database adapter for Yama that provides an in-memory PostgreSQL-compatible database using [PGLite](https://github.com/electric-sql/pglite). Perfect for development, testing, and serverless environments.
@@ -10,7 +10,7 @@ PGLite database adapter for Yama that provides an in-memory PostgreSQL-compatibl
 ## Installation
 
 ```bash
-npm install @betagors/yama-pglite drizzle-orm @electric-sql/pglite
+npm install @yamajs/pglite drizzle-orm @electric-sql/pglite
 ```
 
 ## Usage
@@ -22,18 +22,18 @@ The recommended way to use this adapter is as a Yama plugin in your `yama.yaml`:
 ```yaml
 # yama.yaml
 plugins:
-  - @betagors/yama-pglite
+  - @yamajs/pglite
 
 # Or with configuration:
 plugins:
-  @betagors/yama-pglite:
+  @yamajs/pglite:
     dataDir: ./data  # Optional: persist data to disk
 ```
 
 ### Programmatic Usage
 
 ```typescript
-import plugin from '@betagors/yama-pglite';
+import plugin from '@yamajs/pglite';
 
 // Initialize the plugin (in-memory by default)
 const pluginApi = await plugin.init({});
@@ -53,8 +53,8 @@ const result = await adapter.query('SELECT * FROM users');
 ### Direct Adapter Usage
 
 ```typescript
-import { pgliteAdapter } from '@betagors/yama-pglite';
-import { createDatabaseAdapter } from '@betagors/yama-core';
+import { pgliteAdapter } from '@yamajs/pglite';
+import { createDatabaseAdapter } from '@yamajs/core';
 
 // Register the adapter
 registerDatabaseAdapter('pglite', pgliteAdapter);
@@ -103,7 +103,7 @@ await adapter.init({
 ### Drizzle Schema Generation
 
 ```typescript
-import { generateDrizzleSchema } from '@betagors/yama-pglite';
+import { generateDrizzleSchema } from '@yamajs/pglite';
 
 const schema = generateDrizzleSchema(entities);
 // Returns Drizzle schema definitions
@@ -114,7 +114,7 @@ const schema = generateDrizzleSchema(entities);
 PGLite supports the same migration system as PostgreSQL:
 
 ```typescript
-import { generateSQLFromSteps } from '@betagors/yama-pglite';
+import { generateSQLFromSteps } from '@yamajs/pglite';
 
 const sql = generateSQLFromSteps(steps, 'pglite');
 ```

@@ -1,4 +1,4 @@
-{
+﻿{
   "name": "yama-example-todo-api",
   "private": true,
   "version": "0.0.1",
@@ -14,7 +14,7 @@
     "yama": "node ../../packages/cli/dist/cli/src/cli.js"
   },
   "dependencies": {
-    "@betagors/yama-pglite": "0.1.0-alpha.0"
+    "@yamajs/pglite": "workspace:*"
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^1.0.0",

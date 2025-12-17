@@ -1,10 +1,10 @@
-import type {
+﻿import type {
   StorageAdapter,
   StorageBucket,
   UploadOptions,
   UploadResult,
   StorageMetadata,
-} from "@betagors/yama-core";
+} from "@yamajs/core";
 import {
   GetObjectCommand,
   PutObjectCommand,

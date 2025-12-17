@@ -82,3 +82,4 @@ export declare function calculateExpirationDate(retentionDays?: number): string;
  * Check if shadow column is expired
  */
 export declare function isShadowExpired(shadow: ShadowColumn): boolean;
+//# sourceMappingURL=shadows.d.ts.map

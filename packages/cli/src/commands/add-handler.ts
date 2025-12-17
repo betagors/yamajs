@@ -1,11 +1,11 @@
-import { existsSync, writeFileSync } from "fs";
+﻿import { existsSync, writeFileSync } from "fs";
 import { join } from "path";
 import { findYamaConfig } from "../utils/project-detection.ts";
 import { getConfigDir, readYamaConfig } from "../utils/file-utils.ts";
 import { success, error } from "../utils/cli-utils.ts";
 import { generateOnce } from "./generate.ts";
-import type { YamaSchemas, YamaEntities } from "@betagors/yama-core";
-import type { SchemaField } from "@betagors/yama-core";
+import type { YamaSchemas, YamaEntities } from "@yamajs/core";
+import type { SchemaField } from "@yamajs/core";
 
 // Local type definition matching HandlerContextConfig
 interface HandlerContextConfig {
@@ -78,7 +78,7 @@ export async function addHandlerCommand(options: AddHandlerOptions): Promise<voi
     // Check if we're overwriting
     const isOverwriting = existsSync(handlerFile);
     if (isOverwriting && options.force) {
-      console.log(`⚠️  Overwriting existing handler file: ${handlerFile}`);
+      console.log(`âš ï¸  Overwriting existing handler file: ${handlerFile}`);
     }
 
     // Read YAML config to find endpoint and generate types
@@ -96,16 +96,16 @@ export async function addHandlerCommand(options: AddHandlerOptions): Promise<voi
       ? handlerContextTypeName 
       : "HandlerContext";
     
-    // Build single import from @yama/gen (simpler than separate imports)
+    // Build single import from @yamajs/gen (simpler than separate imports)
     let imports: string;
     if (useTypedContext) {
       const importedTypes = [handlerContextTypeName];
       if (endpoint?.response?.type) {
         importedTypes.push(endpoint.response.type);
       }
-      imports = `import type { ${importedTypes.join(", ")} } from "@yama/gen";`;
+      imports = `import type { ${importedTypes.join(", ")} } from "@yamajs/gen";`;
     } else {
-      imports = `import type { HandlerContext } from "@betagors/yama-core";`;
+      imports = `import type { HandlerContext } from "@yamajs/core";`;
     }
 
     // Determine return type from endpoint response
@@ -136,31 +136,31 @@ export async function ${handlerName}(
 
     // Generate types and handler contexts if endpoint exists
     if (endpoint) {
-      console.log(`\n📝 Found endpoint configuration for handler "${handlerName}"`);
+      console.log(`\nðŸ“ Found endpoint configuration for handler "${handlerName}"`);
       console.log(`   Generating types and handler contexts...`);
       
       try {
         await generateOnce(configPath, { typesOnly: false });
-        console.log(`✅ Types and handler contexts generated`);
+        console.log(`âœ… Types and handler contexts generated`);
       } catch (genError) {
         // Check if it's just a database plugin issue (non-critical)
         const errorMsg = genError instanceof Error ? genError.message : String(genError);
         if (errorMsg.includes("database plugin") || errorMsg.includes("No database plugin")) {
-          console.log(`✅ Types and handler contexts generated`);
-          console.log(`ℹ️  Database code generation skipped (database plugin not installed)`);
-          console.log(`   Install a database plugin (e.g., @betagors/yama-postgres) to generate database code`);
+          console.log(`âœ… Types and handler contexts generated`);
+          console.log(`â„¹ï¸  Database code generation skipped (database plugin not installed)`);
+          console.log(`   Install a database plugin (e.g., @yamajs/postgres) to generate database code`);
         } else {
-          console.warn(`⚠️  Failed to generate types: ${errorMsg}`);
+          console.warn(`âš ï¸  Failed to generate types: ${errorMsg}`);
           console.log(`   You can run 'yama generate' manually to generate types`);
         }
       }
     } else {
-      console.log(`\n⚠️  No endpoint found in yama.yaml for handler "${handlerName}"`);
+      console.log(`\nâš ï¸  No endpoint found in yama.yaml for handler "${handlerName}"`);
       console.log(`   Using generic HandlerContext type`);
       console.log(`   Add an endpoint in yama.yaml and run 'yama generate' to get typed context`);
     }
 
-    console.log("\n💡 Next steps:");
+    console.log("\nðŸ’¡ Next steps:");
     if (!endpoint) {
       console.log("   1. Add an endpoint in yama.yaml that references this handler");
       console.log("   2. Run 'yama generate' to update types and handler contexts");

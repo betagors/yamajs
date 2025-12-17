@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Handler context creation utilities for YAMA Node Runtime
  * 
  * This module creates the context object that handlers receive,
@@ -11,8 +11,8 @@ import type {
   AuthContext,
   HandlerContext,
   StorageBucket,
-} from "@betagors/yama-core";
-import { enhanceAuthContext } from "@betagors/yama-core";
+} from "@yamajs/core";
+import { enhanceAuthContext } from "@yamajs/core";
 
 /**
  * Create a handler context from request and reply

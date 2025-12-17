@@ -1,10 +1,10 @@
-/**
+﻿/**
  * YAMA Node.js Runtime
  * 
  * Main entry point for the YAMA Node.js runtime.
  * Provides HTTP server with automatic CRUD, validation, auth, and more.
  * 
- * @module @betagors/yama-node
+ * @module @yamajs/node
  */
 
 // ===== Core imports =====
@@ -44,8 +44,8 @@ import {
   setEnvProvider,
   setCryptoProvider,
   setPasswordHasher,
-} from "@betagors/yama-core";
-import { createFastifyAdapter } from "@betagors/yama-fastify";
+} from "@yamajs/core";
+import { createFastifyAdapter } from "@yamajs/fastify";
 import yaml from "js-yaml";
 import { readFileSync, existsSync } from "fs";
 import { join, dirname } from "path";
@@ -98,14 +98,14 @@ function configureNodePlatformAdapters(): void {
  * 
  * @internal
  */
-async function getGenerateOpenAPI() {
+async function getOpenApiAdapter() {
   try {
     // @ts-ignore - dynamic import, package may not be available at compile time
-    const openapiModule = await import("@betagors/yama-openapi");
-    return openapiModule.generateOpenAPI;
+    const openapiModule = await import("@yamajs/openapi");
+    return openapiModule.openapiAdapter;
   } catch (error) {
     throw new Error(
-      `Failed to load @betagors/yama-openapi. Make sure it's built and available. ` +
+      `Failed to load @yamajs/openapi. Make sure it's built and available. ` +
       `Original error: ${error instanceof Error ? error.message : String(error)}`
     );
   }
@@ -148,13 +148,13 @@ export async function startYamaNodeRuntime(
 
   // Create schema validator
   const validator = createSchemaValidator();
-  
+
   // Store loaded plugins
   const loadedPlugins = new Map<string, YamaPlugin>();
-  
+
   // Rate limiter (initialized later if config has rateLimit)
   let globalRateLimiter: RateLimiter | null = null;
-  
+
   // Cache adapter (initialized from cache plugin if available)
   let cacheAdapter: unknown = null;
 
@@ -176,14 +176,14 @@ export async function startYamaNodeRuntime(
     try {
       // Load .env file before parsing config (with environment support)
       loadEnvFile(yamlConfigPath, environment);
-      
+
       const configFile = readFileSync(yamlConfigPath, "utf-8");
       config = yaml.load(configFile) as YamaConfig;
-      
+
       // Resolve environment variables in config
       config = resolveEnvVars(config as Record<string, unknown>) as YamaConfig;
-      
-      console.log("✅ Loaded YAML config");
+
+      console.log("âœ… Loaded YAML config");
 
       // Set registry configuration
       configDir = dirname(yamlConfigPath || process.cwd());
@@ -198,13 +198,13 @@ export async function startYamaNodeRuntime(
 
         // Extract plugin names and configs from array
         const pluginEntries: Array<{ name: string; config: Record<string, unknown> }> = [];
-        
+
         for (const pluginItem of config.plugins) {
           if (typeof pluginItem === "string") {
-            // String shorthand: "@betagors/yama-pglite"
+            // String shorthand: "@yamajs/pglite"
             pluginEntries.push({ name: pluginItem, config: {} });
           } else if (pluginItem && typeof pluginItem === "object") {
-            // Object format: { "@betagors/yama-redis": { config: {...} } }
+            // Object format: { "@yamajs/redis": { config: {...} } }
             const pluginObj = pluginItem as Record<string, any>;
             const keys = Object.keys(pluginObj);
             if (keys.length !== 1) {
@@ -220,33 +220,33 @@ export async function startYamaNodeRuntime(
             throw new Error(`Invalid plugin item: expected string or object, got ${typeof pluginItem}`);
           }
         }
-        
+
         // Load database plugin first if present, so migrations for other plugins can run
-        const dbPluginIndex = pluginEntries.findIndex((entry) => 
+        const dbPluginIndex = pluginEntries.findIndex((entry) =>
           entry.name.includes("postgres") || entry.name.includes("pglite") || entry.name.includes("database")
         );
         const orderedPlugins = dbPluginIndex >= 0
           ? [pluginEntries[dbPluginIndex], ...pluginEntries.filter((_, i) => i !== dbPluginIndex)]
           : pluginEntries;
-        
+
         for (const { name: pluginName, config: pluginConfig } of orderedPlugins) {
           try {
             // Load plugin (init is called automatically with context in registry)
             const plugin = await loadPlugin(pluginName, configDir, pluginConfig);
-            
+
             // Get plugin API (already initialized by registry)
             const pluginApi = pluginRegistry.getPluginAPI(pluginName);
-            
+
             // Store plugin and its API
             loadedPlugins.set(pluginName, plugin);
-            
+
             // Call onInit lifecycle hook if present
             if (plugin.onInit) {
               await plugin.onInit(pluginConfig);
             }
-            
-            console.log(`✅ Loaded plugin: ${pluginName}`);
-            
+
+            console.log(`âœ… Loaded plugin: ${pluginName}`);
+
             // If this is a database plugin, initialize the database connection
             if (plugin.category === "database" && pluginApi && typeof pluginApi === "object" && "adapter" in pluginApi) {
               try {
@@ -260,18 +260,18 @@ export async function startYamaNodeRuntime(
                   // Try to infer from plugin name or use a default
                   dialect = "postgresql";
                 }
-                
+
                 // Build database config from plugin config
                 // Resolve environment variables in URL if present
                 const dbConfig: DatabaseConfig = {
                   dialect: dialect as "postgresql" | "pglite",
                   ...pluginConfig,
                 };
-                
+
                 if (typeof dbConfig.url === "string" && dbConfig.url.includes("${")) {
                   dbConfig.url = resolveEnvVars(dbConfig.url) as string;
                 }
-                
+
                 // Initialize database adapter
                 // For PGlite, URL is optional (defaults to in-memory)
                 // For PostgreSQL, URL is required
@@ -281,26 +281,26 @@ export async function startYamaNodeRuntime(
                   await dbAdapter.init(dbConfig);
                   // Register global database adapter for auth providers
                   registerGlobalDatabaseAdapter(dbAdapter);
-                  console.log("✅ Database connection initialized (pglite - in-memory)");
+                  console.log("âœ… Database connection initialized (pglite - in-memory)");
                 } else if (dbConfig.url && !dbConfig.url.includes("user:password")) {
                   // PostgreSQL requires URL
                   dbAdapter = createDatabaseAdapter(dialect, dbConfig);
                   await dbAdapter.init(dbConfig);
                   // Register global database adapter for auth providers
                   registerGlobalDatabaseAdapter(dbAdapter);
-                  console.log("✅ Database connection initialized (postgresql)");
+                  console.log("âœ… Database connection initialized (postgresql)");
                 } else {
-                  console.log("⚠️  Database URL not configured - running without database");
+                  console.log("âš ï¸  Database URL not configured - running without database");
                 }
               } catch (error) {
-                console.warn("⚠️  Failed to initialize database (continuing without DB):", error instanceof Error ? error.message : String(error));
+                console.warn("âš ï¸  Failed to initialize database (continuing without DB):", error instanceof Error ? error.message : String(error));
               }
             }
-            
+
             // If this is a cache plugin, store the cache adapter
             if (plugin.category === "cache" && pluginApi && typeof pluginApi === "object" && "adapter" in pluginApi) {
               cacheAdapter = pluginApi.adapter;
-              console.log("✅ Cache adapter initialized");
+              console.log("âœ… Cache adapter initialized");
             }
 
             // If this is a storage plugin, collect storage buckets
@@ -308,11 +308,11 @@ export async function startYamaNodeRuntime(
               if ("buckets" in pluginApi && typeof pluginApi.buckets === "object" && pluginApi.buckets !== null) {
                 // S3 plugin returns buckets object
                 Object.assign(storageBuckets, pluginApi.buckets);
-                console.log(`✅ Storage buckets initialized: ${Object.keys(pluginApi.buckets).join(", ")}`);
+                console.log(`âœ… Storage buckets initialized: ${Object.keys(pluginApi.buckets).join(", ")}`);
               } else if ("bucket" in pluginApi) {
                 // FS plugin returns single bucket (also exposed as buckets.default)
                 storageBuckets.default = pluginApi.bucket;
-                console.log("✅ Storage bucket initialized (default)");
+                console.log("âœ… Storage bucket initialized (default)");
               }
             }
 
@@ -320,7 +320,7 @@ export async function startYamaNodeRuntime(
             if (plugin.category === "realtime" && pluginApi && typeof pluginApi === "object" && "adapter" in pluginApi) {
               realtimeAdapter = pluginApi.adapter;
               realtimePluginApi = pluginApi;
-              
+
               // Pass Redis client if available from cache plugin
               if (cacheAdapter && typeof (cacheAdapter as any).getRedisClient === "function") {
                 const redisClient = (cacheAdapter as any).getRedisClient();
@@ -334,18 +334,18 @@ export async function startYamaNodeRuntime(
                   // The plugin will check for redisClient in its setup
                 }
               }
-              
-              console.log("✅ Realtime adapter initialized");
+
+              console.log("âœ… Realtime adapter initialized");
             }
 
             // If this is an email plugin, store the email service
             if (plugin.category === "email" && pluginApi && typeof pluginApi === "object" && "service" in pluginApi) {
               // Email service is available via pluginApi.service
               // It will be accessed via plugin registry context later
-              console.log("✅ Email service initialized");
+              console.log("âœ… Email service initialized");
             }
           } catch (error) {
-            console.warn(`⚠️  Failed to load plugin ${pluginName}:`, error instanceof Error ? error.message : String(error));
+            console.warn(`âš ï¸  Failed to load plugin ${pluginName}:`, error instanceof Error ? error.message : String(error));
           }
         }
       }
@@ -362,12 +362,12 @@ export async function startYamaNodeRuntime(
 
       // ===== Convert entities to schemas and merge =====
       const entitySchemas = config.entities ? entitiesToSchemas(config.entities) : {};
-      
+
       // Generate CRUD input schemas and array schemas for entities with CRUD enabled
       if (config.entities) {
         const crudInputSchemas: YamaSchemas = {};
         const crudArraySchemas: YamaSchemas = {};
-        
+
         for (const [entityName, entityDef] of Object.entries(config.entities)) {
           if (entityDef.crud) {
             const inputSchemas = generateCrudInputSchemas(entityName, entityDef);
@@ -376,18 +376,18 @@ export async function startYamaNodeRuntime(
             Object.assign(crudArraySchemas, arraySchemas);
           }
         }
-        
+
         // Merge: entity schemas -> CRUD input schemas -> CRUD array schemas -> explicit schemas
         const mergedWithInputs = mergeSchemas(crudInputSchemas, entitySchemas);
         const mergedWithArrays = mergeSchemas(crudArraySchemas, mergedWithInputs);
         const allSchemas = mergeSchemas(config.schemas, mergedWithArrays);
-        
+
         // Register schemas for validation
         if (Object.keys(allSchemas).length > 0) {
           validator.registerSchemas(allSchemas);
-          console.log(`✅ Registered ${Object.keys(allSchemas).length} schema(s) for validation`);
+          console.log(`âœ… Registered ${Object.keys(allSchemas).length} schema(s) for validation`);
         }
-        
+
         // ===== Generate CRUD endpoints and merge with existing endpoints =====
         const crudEndpoints = generateAllCrudEndpoints(config.entities);
         if (crudEndpoints.length > 0) {
@@ -403,7 +403,7 @@ export async function startYamaNodeRuntime(
             auth: ep.auth,
             // No handler specified - will use default handler
           }));
-          
+
           // Add CRUD endpoints to apis.rest.default
           if (!config.apis) {
             config.apis = {};
@@ -426,23 +426,23 @@ export async function startYamaNodeRuntime(
             }
             restConfig.default.endpoints.push(...convertedCrudEndpoints);
           }
-          
-          console.log(`✅ Generated ${crudEndpoints.length} CRUD endpoint(s) from entities`);
+
+          console.log(`âœ… Generated ${crudEndpoints.length} CRUD endpoint(s) from entities`);
         }
       } else {
         const allSchemas = mergeSchemas(config.schemas, entitySchemas);
-        
+
         // Register schemas for validation
         if (Object.keys(allSchemas).length > 0) {
           validator.registerSchemas(allSchemas);
-          console.log(`✅ Registered ${Object.keys(allSchemas).length} schema(s) for validation`);
+          console.log(`âœ… Registered ${Object.keys(allSchemas).length} schema(s) for validation`);
         }
       }
 
       // Determine config directory (directory containing yama.yaml)
       configDir = dirname(yamlConfigPath);
     } catch (error) {
-      console.error("❌ Failed to load YAML config:", error);
+      console.error("âŒ Failed to load YAML config:", error);
     }
   }
 
@@ -457,28 +457,28 @@ export async function startYamaNodeRuntime(
       }
     }
   }
-  
-  console.log(`🔍 Repository loading: found ${Object.keys(allEntitiesForRepos).length} entities/schemas with database:`, Object.keys(allEntitiesForRepos));
-  console.log(`🔍 configDir for repository loading:`, configDir);
-  
+
+  console.log(`ðŸ” Repository loading: found ${Object.keys(allEntitiesForRepos).length} entities/schemas with database:`, Object.keys(allEntitiesForRepos));
+  console.log(`ðŸ” configDir for repository loading:`, configDir);
+
   let repositories: Record<string, unknown> = {};
   if (Object.keys(allEntitiesForRepos).length > 0 && configDir) {
     try {
       repositories = await loadRepositories(configDir, allEntitiesForRepos);
-      console.log(`🔍 After loadRepositories, repositories object has ${Object.keys(repositories).length} keys:`, Object.keys(repositories));
+      console.log(`ðŸ” After loadRepositories, repositories object has ${Object.keys(repositories).length} keys:`, Object.keys(repositories));
       if (Object.keys(repositories).length > 0) {
-        console.log(`✅ Loaded ${Object.keys(repositories).length} repository/repositories for handler context`);
+        console.log(`âœ… Loaded ${Object.keys(repositories).length} repository/repositories for handler context`);
       } else {
-        console.warn(`⚠️  No repositories were loaded. Check that 'yama generate' has been run.`);
+        console.warn(`âš ï¸  No repositories were loaded. Check that 'yama generate' has been run.`);
       }
     } catch (error) {
       console.warn(
-        "⚠️  Failed to load repositories (handlers can still use manual imports):",
+        "âš ï¸  Failed to load repositories (handlers can still use manual imports):",
         error instanceof Error ? error.message : String(error)
       );
     }
   } else {
-    console.warn(`⚠️  Skipping repository loading: ${Object.keys(allEntitiesForRepos).length === 0 ? 'no entities found' : 'configDir missing'}`);
+    console.warn(`âš ï¸  Skipping repository loading: ${Object.keys(allEntitiesForRepos).length === 0 ? 'no entities found' : 'configDir missing'}`);
   }
 
   // ===== Initialize rate limiter =====
@@ -486,15 +486,15 @@ export async function startYamaNodeRuntime(
     try {
       // Use cache adapter if available (works with any cache implementation)
       globalRateLimiter = await createRateLimiterFromConfig(config.rateLimit as any, cacheAdapter as any);
-      console.log("✅ Initialized rate limiter");
+      console.log("âœ… Initialized rate limiter");
     } catch (error) {
-      console.warn(`⚠️  Failed to initialize rate limiter: ${error instanceof Error ? error.message : String(error)}`);
+      console.warn(`âš ï¸  Failed to initialize rate limiter: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
   // ===== Create middleware registry =====
   const middlewareRegistry = new MiddlewareRegistry();
-  
+
   // Set middleware registry in plugin registry so plugins can access it
   pluginRegistry.setMiddlewareRegistry(middlewareRegistry);
 
@@ -509,7 +509,7 @@ export async function startYamaNodeRuntime(
           }
 
           let handler: MiddlewareDefinition['handler'];
-          
+
           // Check if it's plugin-provided middleware
           if (mwConfig.name.startsWith('@')) {
             const pluginAPI = pluginRegistry.getPluginAPI(mwConfig.name);
@@ -557,7 +557,7 @@ export async function startYamaNodeRuntime(
             config: mwConfig.config,
           });
         }
-        console.log(`✅ Loaded ${config.middleware.global.filter(m => m.enabled !== false).length} global middleware`);
+        console.log(`âœ… Loaded ${config.middleware.global.filter(m => m.enabled !== false).length} global middleware`);
       }
 
       // Load endpoint-specific middleware
@@ -569,7 +569,7 @@ export async function startYamaNodeRuntime(
             }
 
             let handler: MiddlewareDefinition['handler'];
-            
+
             // Check if it's plugin-provided middleware
             if (mwConfig.name.startsWith('@')) {
               const pluginAPI = pluginRegistry.getPluginAPI(mwConfig.name);
@@ -626,10 +626,10 @@ export async function startYamaNodeRuntime(
           (sum, ep) => sum + ep.middleware.filter(m => m.enabled !== false).length,
           0
         );
-        console.log(`✅ Loaded ${endpointMwCount} endpoint-specific middleware`);
+        console.log(`âœ… Loaded ${endpointMwCount} endpoint-specific middleware`);
       }
     } catch (error) {
-      console.error(`❌ Failed to load middleware:`, error instanceof Error ? error.message : String(error));
+      console.error(`âŒ Failed to load middleware:`, error instanceof Error ? error.message : String(error));
       throw error;
     }
   }
@@ -646,16 +646,16 @@ export async function startYamaNodeRuntime(
   if (realtimePluginApi && typeof realtimePluginApi.setupServer === "function") {
     try {
       await realtimePluginApi.setupServer(server, config?.auth);
-      console.log("✅ Realtime WebSocket server initialized");
-      
+      console.log("âœ… Realtime WebSocket server initialized");
+
       // Register channels from config
       if (config?.realtime?.channels && realtimePluginApi.registerChannel) {
         for (const channel of config.realtime.channels) {
           realtimePluginApi.registerChannel(channel);
         }
-        console.log(`✅ Registered ${config.realtime.channels.length} realtime channel(s)`);
+        console.log(`âœ… Registered ${config.realtime.channels.length} realtime channel(s)`);
       }
-      
+
       // Setup entity events if configured
       if (config?.realtime?.entities && realtimePluginApi.setupEntityEvents) {
         realtimePluginApi.setupEntityEvents(config.realtime.entities, repositories);
@@ -663,11 +663,11 @@ export async function startYamaNodeRuntime(
           (name) => config.realtime?.entities?.[name]?.enabled
         ).length;
         if (entityCount > 0) {
-          console.log(`✅ Enabled realtime events for ${entityCount} entity/entities`);
+          console.log(`âœ… Enabled realtime events for ${entityCount} entity/entities`);
         }
       }
     } catch (error) {
-      console.warn("⚠️  Failed to setup realtime WebSocket server:", error instanceof Error ? error.message : String(error));
+      console.warn("âš ï¸  Failed to setup realtime WebSocket server:", error instanceof Error ? error.message : String(error));
     }
   }
 
@@ -723,11 +723,11 @@ export async function startYamaNodeRuntime(
       return;
     }
     try {
-      const generateOpenAPI = await getGenerateOpenAPI();
-      const openAPISpec = generateOpenAPI(config as any);
+      const adapter = await getOpenApiAdapter();
+      const openAPISpec = adapter.generate(config as any);
       reply.type("application/json").send(openAPISpec);
     } catch (error) {
-      reply.status(500).send({ 
+      reply.status(500).send({
         error: "Failed to generate OpenAPI spec",
         message: error instanceof Error ? error.message : String(error)
       });
@@ -740,10 +740,10 @@ export async function startYamaNodeRuntime(
       return;
     }
     try {
-      const generateOpenAPI = await getGenerateOpenAPI();
-      const openAPISpec = generateOpenAPI(config as any);
+      const adapter = await getOpenApiAdapter();
+      const openAPISpec = adapter.generate(config as any);
       const specJson = JSON.stringify(openAPISpec, null, 2);
-      
+
       const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -790,10 +790,10 @@ export async function startYamaNodeRuntime(
   </script>
 </body>
 </html>`;
-      
+
       reply.type("text/html").send(html);
     } catch (error) {
-      reply.status(500).send({ 
+      reply.status(500).send({
         error: "Failed to generate OpenAPI spec",
         message: error instanceof Error ? error.message : String(error)
       });
@@ -808,10 +808,10 @@ export async function startYamaNodeRuntime(
       if (provider.type.startsWith("oauth-")) {
         const oauthMetadata = oauthProviders.get(provider.type.toLowerCase());
         const autoGenerate = (provider as any).autoGenerateEndpoints !== false; // Default to true
-        
+
         if (oauthMetadata && autoGenerate) {
           const providerName = provider.type.replace("oauth-", "");
-          
+
           // Register OAuth initiation endpoint
           serverAdapter.registerRoute(
             server,
@@ -824,7 +824,7 @@ export async function startYamaNodeRuntime(
               reply.status(501).send({ error: "OAuth flow not implemented" });
             }
           );
-          
+
           // Register OAuth callback endpoint
           const callbackPath = oauthMetadata.callbackPath || `/auth/${providerName}/callback`;
           serverAdapter.registerRoute(
@@ -838,8 +838,8 @@ export async function startYamaNodeRuntime(
               reply.status(501).send({ error: "OAuth callback not implemented" });
             }
           );
-          
-          console.log(`✅ Auto-generated OAuth endpoints for ${provider.type}`);
+
+          console.log(`âœ… Auto-generated OAuth endpoints for ${provider.type}`);
         }
       }
     }
@@ -850,22 +850,22 @@ export async function startYamaNodeRuntime(
   let metricsService: any = null;
   let monitoringService: any = null;
   let healthService: any = null;
-  
+
   // Get logger service from logging plugin
   const loggingPlugin = pluginRegistry.getPluginsByCategory("logging")[0];
   if (loggingPlugin) {
     const loggingPluginApi = pluginRegistry.getPluginAPI(loggingPlugin.name);
     if (loggingPluginApi && typeof loggingPluginApi === "object" && "logger" in loggingPluginApi) {
       loggerService = loggingPluginApi.logger;
-      
+
       // Apply monitoring log level if configured
       if (config?.monitoring?.level && typeof loggerService.setLevel === "function") {
         loggerService.setLevel(config.monitoring.level);
-        console.log(`✅ Set monitoring log level to: ${config.monitoring.level}`);
+        console.log(`âœ… Set monitoring log level to: ${config.monitoring.level}`);
       }
     }
   }
-  
+
   // Get metrics service from metrics plugin
   const metricsPlugin = pluginRegistry.getPluginsByCategory("observability")?.find(p => p.name.includes("metrics"));
   if (metricsPlugin) {
@@ -876,7 +876,7 @@ export async function startYamaNodeRuntime(
       if (typeof metricsPluginApi === "object" && ("onRequestStart" in metricsPluginApi || "onRequestEnd" in metricsPluginApi || "onError" in metricsPluginApi)) {
         monitoringService = metricsPluginApi;
       }
-      
+
       // Register custom metrics if configured
       if (config?.monitoring?.custom && Array.isArray(config.monitoring.custom)) {
         for (const customMetric of config.monitoring.custom) {
@@ -888,15 +888,15 @@ export async function startYamaNodeRuntime(
             } else if (customMetric.type === "histogram") {
               metricsPluginApi.registerHistogram(customMetric.name, []);
             }
-            console.log(`✅ Registered custom metric: ${customMetric.name} (${customMetric.type})`);
+            console.log(`âœ… Registered custom metric: ${customMetric.name} (${customMetric.type})`);
           } catch (error) {
-            console.warn(`⚠️  Failed to register custom metric ${customMetric.name}:`, error instanceof Error ? error.message : String(error));
+            console.warn(`âš ï¸  Failed to register custom metric ${customMetric.name}:`, error instanceof Error ? error.message : String(error));
           }
         }
       }
     }
   }
-  
+
   // Get health service from health plugin
   const healthPlugin = pluginRegistry.getPluginsByCategory("observability")?.find(p => p.name.includes("health"));
   if (healthPlugin) {
@@ -912,7 +912,7 @@ export async function startYamaNodeRuntime(
     const healthPath = (healthService.getConfig && typeof healthService.getConfig === "function")
       ? healthService.getConfig().path || "/_health"
       : "/_health";
-    
+
     serverAdapter.registerRoute(server, "GET", healthPath, async (request: HttpRequest, reply: HttpResponse) => {
       try {
         const healthStatus = await healthService.getHealth();
@@ -924,9 +924,9 @@ export async function startYamaNodeRuntime(
         });
       }
     });
-    console.log(`✅ Registered health endpoint: GET ${healthPath}`);
+    console.log(`âœ… Registered health endpoint: GET ${healthPath}`);
   }
-  
+
   if (metricsService) {
     serverAdapter.registerRoute(server, "GET", "/_metrics", async (request: HttpRequest, reply: HttpResponse) => {
       try {
@@ -939,11 +939,11 @@ export async function startYamaNodeRuntime(
         });
       }
     });
-    console.log(`✅ Registered metrics endpoint: GET /_metrics`);
+    console.log(`âœ… Registered metrics endpoint: GET /_metrics`);
   }
 
   // ===== Register AdminX dev UI (if plugin installed) =====
-  const adminPlugin = pluginRegistry.getPluginsByCategory("devtools")?.find((p) => p.name === "@betagors/yama-adminx");
+  const adminPlugin = pluginRegistry.getPluginsByCategory("devtools")?.find((p) => p.name === "@yamajs/adminx");
   if (adminPlugin) {
     const adminApi: any = pluginRegistry.getPluginAPI(adminPlugin.name);
     if (adminApi && typeof adminApi.registerRoutes === "function") {
@@ -962,13 +962,13 @@ export async function startYamaNodeRuntime(
         const adminConfig = typeof adminApi.getConfig === "function" ? adminApi.getConfig() : null;
         const adminPath = adminConfig?.path || "/adminx";
         if (adminConfig?.enabled !== false) {
-          console.log(`✅ Registered AdminX routes at ${adminPath}`);
+          console.log(`âœ… Registered AdminX routes at ${adminPath}`);
         } else {
-          console.log(`ℹ️  AdminX plugin disabled by config`);
+          console.log(`â„¹ï¸  AdminX plugin disabled by config`);
         }
       } catch (error) {
         console.warn(
-          "⚠️  Failed to register AdminX routes:",
+          "âš ï¸  Failed to register AdminX routes:",
           error instanceof Error ? error.message : String(error)
         );
       }
@@ -987,7 +987,7 @@ export async function startYamaNodeRuntime(
         emailService = emailPluginApi.service;
       }
     }
-    
+
     await registerRoutes(
       serverAdapter,
       server,
@@ -1014,7 +1014,7 @@ export async function startYamaNodeRuntime(
       try {
         await plugin.onStart();
       } catch (error) {
-        console.warn(`⚠️  Plugin ${plugin.name} onStart hook failed:`, error instanceof Error ? error.message : String(error));
+        console.warn(`âš ï¸  Plugin ${plugin.name} onStart hook failed:`, error instanceof Error ? error.message : String(error));
       }
     }
   }
@@ -1032,11 +1032,11 @@ export async function startYamaNodeRuntime(
           try {
             await plugin.onStop();
           } catch (error) {
-            console.warn(`⚠️  Plugin ${plugin.name} onStop hook failed:`, error instanceof Error ? error.message : String(error));
+            console.warn(`âš ï¸  Plugin ${plugin.name} onStop hook failed:`, error instanceof Error ? error.message : String(error));
           }
         }
       }
-      
+
       await serverAdapter?.stop(server);
       if (dbAdapter) {
         await dbAdapter.close();

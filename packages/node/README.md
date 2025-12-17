@@ -1,8 +1,8 @@
-# @betagors/yama-node
+﻿# @yamajs/node
 
 > Node.js runtime adapter for Yama
 
-[![npm version](https://img.shields.io/npm/v/@betagors/yama-node.svg)](https://www.npmjs.com/package/@betagors/yama-node)
+[![npm version](https://img.shields.io/npm/v/@yamajs/node.svg)](https://www.npmjs.com/package/@yamajs/node)
 [![License: MPL-2.0](https://img.shields.io/badge/License-MPL_2.0-brightgreen.svg)](https://opensource.org/licenses/MPL-2.0)
 
 Node.js runtime adapter that provides a complete runtime environment for Yama applications. This package integrates all the pieces needed to run a Yama API server, including HTTP server, database adapters, plugin loading, and handler execution.
@@ -10,7 +10,7 @@ Node.js runtime adapter that provides a complete runtime environment for Yama ap
 ## Installation
 
 ```bash
-npm install @betagors/yama-node
+npm install @yamajs/node
 ```
 
 ## Usage
@@ -18,7 +18,7 @@ npm install @betagors/yama-node
 ### Basic Usage
 
 ```typescript
-import { startYamaNodeRuntime } from '@betagors/yama-node';
+import { startYamaNodeRuntime } from '@yamajs/node';
 
 // Start the runtime with a yama.yaml config file
 const server = await startYamaNodeRuntime(
@@ -69,8 +69,8 @@ The runtime automatically loads and initializes plugins specified in `yama.yaml`
 ```yaml
 # yama.yaml
 plugins:
-  - @betagors/yama-postgres
-  - @betagors/yama-fastify
+  - @yamajs/postgres
+  - @yamajs/fastify
 ```
 
 ### Handler Loading
@@ -79,7 +79,7 @@ Handlers are automatically loaded from `src/handlers/`:
 
 ```typescript
 // src/handlers/listTodos.ts
-import { HandlerContext } from '@betagors/yama-core';
+import { HandlerContext } from '@yamajs/core';
 
 export async function listTodos(context: HandlerContext) {
   return [
@@ -143,8 +143,8 @@ server:
     logger: true
 
 plugins:
-  - @betagors/yama-postgres
-  - @betagors/yama-redis:
+  - @yamajs/postgres
+  - @yamajs/redis:
       url: redis://localhost:6379
 
 database:
@@ -176,7 +176,7 @@ endpoints:
 Handlers receive a single `HandlerContext` parameter with request information and framework services:
 
 ```typescript
-import { HandlerContext } from '@betagors/yama-core';
+import { HandlerContext } from '@yamajs/core';
 
 export async function myHandler(context: HandlerContext) {
   // Access authenticated user
@@ -225,10 +225,10 @@ The runtime automatically handles errors and returns appropriate HTTP status cod
 ## Dependencies
 
 This package depends on:
-- `@betagors/yama-core` - Core runtime
-- `@betagors/yama-openapi` - OpenAPI generation
-- `@betagors/yama-postgres` - PostgreSQL adapter (or other database adapter)
-- `@betagors/yama-fastify` - Fastify HTTP adapter
+- `@yamajs/core` - Core runtime
+- `@yamajs/openapi` - OpenAPI generation
+- `@yamajs/postgres` - PostgreSQL adapter (or other database adapter)
+- `@yamajs/fastify` - Fastify HTTP adapter
 - `js-yaml` - YAML parsing
 - `dotenv` - Environment variable loading
 

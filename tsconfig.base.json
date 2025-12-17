@@ -1,4 +1,4 @@
-{
+﻿{
   "compilerOptions": {
     "target": "ES2020",
     "module": "ESNext",
@@ -12,18 +12,18 @@
     "sourceMap": true,
     "baseUrl": ".",
     "paths": {
-      "@betagors/yama-core": ["packages/core/src"],
-      "@betagors/yama-node": ["packages/node/src"],
-      "@betagors/yama-sdk": ["packages/sdk/src"],
-      "@betagors/yama-openapi": ["packages/openapi/src"],
-      "@betagors/yama": ["packages/yama/src"],
-      "@betagors/yama-docker": ["packages/docker/src"],
-      "@betagors/yama-ci": ["packages/ci/src"],
-      "@betagors/yama-cli": ["packages/cli/src"],
-      "@betagors/yama-postgres": ["packages/postgres/src"],
-      "@betagors/yama-fastify": ["packages/fastify/src"],
-      "@betagors/yama-errors": ["packages/errors/src"],
-      "@betagors/yama-adminx": ["packages/adminx/src"]
+      "@yamajs/core": ["packages/core/src"],
+      "@yamajs/node": ["packages/node/src"],
+      "@yamajs/sdk": ["packages/sdk/src"],
+      "@yamajs/openapi": ["packages/openapi/src"],
+      "@yamajs/yama": ["packages/yama/src"],
+      "@yamajs/docker": ["packages/docker/src"],
+      "@yamajs/ci": ["packages/ci/src"],
+      "@yamajs/cli": ["packages/cli/src"],
+      "@yamajs/postgres": ["packages/postgres/src"],
+      "@yamajs/fastify": ["packages/fastify/src"],
+      "@yamajs/errors": ["packages/errors/src"],
+      "@yamajs/adminx": ["packages/adminx/src"]
     }
   }
 }

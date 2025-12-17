@@ -1,17 +1,17 @@
-import { existsSync } from "fs";
+﻿import { existsSync } from "fs";
 import { findYamaConfig } from "../utils/project-detection.ts";
 import { getConfigDir, readYamaConfig } from "../utils/file-utils.ts";
-import { resolveEnvVars, loadEnvFile } from "@betagors/yama-core";
+import { resolveEnvVars, loadEnvFile } from "@yamajs/core";
 import { success, error, info, warning } from "../utils/cli-utils.ts";
 import { getDatabasePlugin } from "../utils/db-plugin.ts";
-import { loadPlugin, getAllPlugins } from "@betagors/yama-core";
+import { loadPlugin, getAllPlugins } from "@yamajs/core";
 import {
   ensurePluginMigrationTables,
   getPluginMigrationHistory,
-} from "@betagors/yama-core";
+} from "@yamajs/core";
 import {
   getPluginMigrationStatus,
-} from "@betagors/yama-core";
+} from "@yamajs/core";
 import { table } from "table";
 
 interface PluginStatusOptions {
@@ -84,7 +84,7 @@ export async function pluginStatusCommand(
 
         let installedVersion = "N/A";
         let pendingMigrations = 0;
-        let status = "✅ Up to date";
+        let status = "âœ… Up to date";
 
         if (sql && manifest?.migrations) {
           const statusInfo = await getPluginMigrationStatus(
@@ -97,9 +97,9 @@ export async function pluginStatusCommand(
           pendingMigrations = statusInfo.pendingMigrations;
 
           if (pendingMigrations > 0) {
-            status = `⚠️  ${pendingMigrations} pending`;
+            status = `âš ï¸  ${pendingMigrations} pending`;
           } else if (installedVersion === "Not installed") {
-            status = "📦 Not migrated";
+            status = "ðŸ“¦ Not migrated";
           }
         }
 
@@ -120,7 +120,7 @@ export async function pluginStatusCommand(
             "N/A",
             "N/A",
             "N/A",
-            "❌ Not installed",
+            "âŒ Not installed",
           ]);
         } else {
           statusRows.push([
@@ -128,14 +128,14 @@ export async function pluginStatusCommand(
             "N/A",
             "N/A",
             "N/A",
-            `❌ Error: ${errorMsg}`,
+            `âŒ Error: ${errorMsg}`,
           ]);
         }
       }
     }
 
     // Display status table
-    console.log("\n📦 Plugin Migration Status\n");
+    console.log("\nðŸ“¦ Plugin Migration Status\n");
     console.log(table(statusRows));
 
     // Show migration history for specific plugin if requested
@@ -145,7 +145,7 @@ export async function pluginStatusCommand(
         const history = await getPluginMigrationHistory(options.plugin, sql);
 
         if (history.length > 0) {
-          console.log(`\n📜 Migration History for ${options.plugin}\n`);
+          console.log(`\nðŸ“œ Migration History for ${options.plugin}\n`);
           const historyRows: string[][] = [
             ["Version", "Migration", "Type", "Applied At"],
           ];

@@ -1,4 +1,4 @@
-# @betagors/yama-errors
+﻿# @yamajs/errors
 
 Standardized error handling for YAMA applications.
 
@@ -13,7 +13,7 @@ Standardized error handling for YAMA applications.
 ## Installation
 
 ```bash
-pnpm add @betagors/yama-errors
+pnpm add @yamajs/errors
 ```
 
 ## Usage
@@ -26,7 +26,7 @@ import {
   NotFoundError, 
   AuthenticationError,
   ErrorCodes 
-} from '@betagors/yama-errors';
+} from '@yamajs/errors';
 
 // Validation error with details
 throw new ValidationError('Invalid request body', {
@@ -55,7 +55,7 @@ throw new AuthenticationError('Invalid token', {
 ### Formatting Errors for API Responses
 
 ```typescript
-import { formatRestError, formatGraphQLError } from '@betagors/yama-errors';
+import { formatRestError, formatGraphQLError } from '@yamajs/errors';
 
 // REST API format
 const restResponse = formatRestError(error, requestId);

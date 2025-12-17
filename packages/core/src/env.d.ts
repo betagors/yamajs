@@ -20,3 +20,4 @@ export declare function resolveEnvVar(value: string): string;
  * Resolve environment variables in an object recursively
  */
 export declare function resolveEnvVars<T>(obj: T): T;
+//# sourceMappingURL=env.d.ts.map

@@ -1,4 +1,4 @@
-export interface CryptoProvider {
+﻿export interface CryptoProvider {
   randomBytes(length: number): Uint8Array;
   randomInt(min: number, max: number): number;
   timingSafeEqual(a: Uint8Array, b: Uint8Array): boolean;
@@ -24,7 +24,7 @@ export function getCryptoProvider(): CryptoProvider {
   const provider = cryptoProvider ?? detectWebCryptoProvider();
   if (!provider) {
     throw new Error(
-      "Crypto provider not configured for @betagors/yama-core. Supply one via setCryptoProvider (e.g., from @betagors/yama-node or a Web Crypto host)."
+      "Crypto provider not configured for @yamajs/core. Supply one via setCryptoProvider (e.g., from @yamajs/node or a Web Crypto host)."
     );
   }
   cryptoProvider = provider;

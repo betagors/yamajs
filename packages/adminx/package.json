@@ -1,8 +1,8 @@
-{
-  "name": "@betagors/yama-adminx",
+﻿{
+  "name": "@yamajs/adminx",
   "version": "0.1.0-alpha.0",
   "type": "module",
-  "description": "Yama AdminX — development admin UI for YAMA projects",
+  "description": "Yama AdminX â€” development admin UI for YAMA projects",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
@@ -40,7 +40,7 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
-    "@betagors/yama-core": "workspace:*"
+    "@yamajs/core": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

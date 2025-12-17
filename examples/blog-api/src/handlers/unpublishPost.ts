@@ -1,4 +1,4 @@
-import type { UnpublishPostHandlerContext, Post } from "@yama/gen";
+import type { UnpublishPostHandlerContext, Post } from "@yamajs/gen";
 
 export async function unpublishPost(
   context: UnpublishPostHandlerContext

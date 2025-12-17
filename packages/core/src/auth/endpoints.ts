@@ -1,5 +1,5 @@
-/**
- * @betagors/yama-core - Auto-Generated Auth Endpoints
+﻿/**
+ * @yamajs/core - Auto-Generated Auth Endpoints
  * 
  * This module provides builders for standard auth endpoints:
  * - POST /auth/login
@@ -16,7 +16,7 @@
 import type { AuthEndpoint, AuthEndpointContext, AuthEndpointResponse, AuthEndpointsConfig, AuthUserEntityConfig } from "./plugin-types.js";
 import type { AuthUser, TokenPair } from "./types.js";
 import { hashPassword, verifyPassword, checkPasswordStrength, generateSecureToken } from "./utils.js";
-import { ErrorCodes } from "@betagors/yama-errors";
+import { ErrorCodes } from "@yamajs/errors";
 
 /**
  * Options for building auth endpoints

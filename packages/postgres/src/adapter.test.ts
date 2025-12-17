@@ -1,6 +1,6 @@
-import { describe, it, expect } from "vitest";
+﻿import { describe, it, expect } from "vitest";
 import { postgresqlAdapter } from "./adapter";
-import type { DatabaseConfig } from "@betagors/yama-core";
+import type { DatabaseConfig } from "@yamajs/core";
 
 describe("PostgreSQL Adapter", () => {
   const mockConfig: DatabaseConfig = {

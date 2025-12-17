@@ -36,3 +36,4 @@ export declare class RedisRateLimitStore implements RateLimitStore {
  * Attempts to dynamically import and create a Redis client
  */
 export declare function createRedisRateLimitStore(config: any): Promise<RedisRateLimitStore>;
+//# sourceMappingURL=redis-store.d.ts.map

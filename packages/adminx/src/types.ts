@@ -1,4 +1,4 @@
-import type { YamaEntities, YamaSchemas } from "@betagors/yama-core";
+﻿import type { YamaEntities, YamaSchemas } from "@yamajs/core";
 
 export interface AdminXPluginConfig {
   enabled?: boolean;

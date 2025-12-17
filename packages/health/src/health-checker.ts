@@ -1,4 +1,4 @@
-import type { PluginContext } from "@betagors/yama-core";
+﻿import type { PluginContext } from "@yamajs/core";
 import type {
   HealthPluginConfig,
   HealthStatus,

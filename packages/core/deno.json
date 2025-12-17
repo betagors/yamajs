@@ -1,6 +1,6 @@
-{
+﻿{
   "imports": {
-    "@betagors/yama-core": "npm:@betagors/yama-core"
+    "@yamajs/core": "npm:@yamajs/core"
   }
 }
 

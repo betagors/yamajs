@@ -1,5 +1,5 @@
-/**
- * @betagors/yama-core - Schema Versioning
+﻿/**
+ * @yamajs/core - Schema Versioning
  * 
  * Track schema versions with checksums for migration management.
  */

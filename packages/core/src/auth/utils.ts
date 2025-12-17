@@ -1,5 +1,5 @@
-/**
- * @betagors/yama-core - Auth Utilities
+﻿/**
+ * @yamajs/core - Auth Utilities
  * 
  * Password hashing, verification, and strength checking utilities.
  */

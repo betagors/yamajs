@@ -74,7 +74,7 @@ export declare function generateBackupFilename(snapshot: string, timestamp: stri
 /**
  * Calculate checksum of data
  */
-export declare function calculateChecksum(data: string | Buffer): string;
+export declare function calculateChecksum(data: string | Uint8Array): string;
 /**
  * Register a backup
  */
@@ -111,3 +111,4 @@ export declare function isBackupExpired(metadata: BackupMetadata, now?: Date): b
  * Get expired backups
  */
 export declare function getExpiredBackups(configDir: string): BackupEntry[];
+//# sourceMappingURL=backups.d.ts.map

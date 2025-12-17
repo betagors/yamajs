@@ -1,4 +1,126 @@
 /**
+ * Plugin System Type Definitions
+ * 
+ * Core types for Yama's plugin system including:
+ * - Plugin lifecycle hooks
+ * - Migration definitions
+ * - Directive support
+ * - Schema-level plugin configuration ($$ blocks)
+ */
+
+// ============================================================================
+// Directive Types for Plugins
+// ============================================================================
+
+/**
+ * Directive target types
+ */
+export type PluginDirectiveTarget = 'field' | 'schema' | 'both';
+
+/**
+ * Directive arguments (parsed from directive syntax)
+ */
+export interface PluginDirectiveArgs {
+  _value?: unknown;
+  enabled?: boolean;
+  values?: unknown[];
+  [key: string]: unknown;
+}
+
+/**
+ * Directive definition that plugins can register
+ */
+export interface PluginDirectiveDefinition {
+  /** Where can this directive be used? */
+  targets: PluginDirectiveTarget[];
+
+  /** JSON Schema for argument validation */
+  argsSchema?: Record<string, unknown>;
+
+  /** Human-readable description */
+  description?: string;
+
+  /** Field-level hook - called when directive is applied to a field */
+  onField?(context: {
+    fieldName: string;
+    fieldType: Record<string, unknown>;
+    schemaName: string;
+    args: PluginDirectiveArgs;
+    meta: Record<string, unknown>;
+    getSchema(): Record<string, unknown>;
+  }): void | Promise<void>;
+
+  /** Schema-level hook - called when directive is applied to a schema */
+  onSchema?(context: {
+    schemaName: string;
+    schema: Record<string, unknown>;
+    args: PluginDirectiveArgs;
+    meta: Record<string, unknown>;
+  }): void | Promise<void>;
+
+  /** Transform hook - called during request processing */
+  transform?(
+    value: unknown,
+    args: PluginDirectiveArgs,
+    context: {
+      fieldName: string;
+      schemaName: string;
+      operation: 'create' | 'update' | 'read';
+      requestData: Record<string, unknown>;
+    }
+  ): unknown | Promise<unknown>;
+
+  /** Validate hook - return true if valid, or error message */
+  validate?(
+    value: unknown,
+    args: PluginDirectiveArgs,
+    context: {
+      fieldName: string;
+      schemaName: string;
+      operation: 'create' | 'update';
+      requestData: Record<string, unknown>;
+    }
+  ): boolean | string | Promise<boolean | string>;
+}
+
+/**
+ * JSON Schema for plugin's schema-level options (used in $$ blocks)
+ */
+export interface PluginSchemaOptionsSchema {
+  type: 'object';
+  properties: Record<string, unknown>;
+  required?: string[];
+  additionalProperties?: boolean;
+}
+
+/**
+ * Schema definition with plugin options (from $$ block)
+ */
+export interface SchemaWithPluginOptions {
+  /** Schema name */
+  name: string;
+
+  /** Field definitions */
+  fields: Record<string, unknown>;
+
+  /** Plugin configurations from $$ block, keyed by plugin name */
+  pluginOptions?: Record<string, Record<string, unknown>>;
+
+  /** Computed fields */
+  computed?: Record<string, unknown>;
+
+  /** Schema variants */
+  variants?: Record<string, unknown>;
+
+  /** Database configuration */
+  database?: Record<string, unknown>;
+}
+
+// ============================================================================
+// Plugin Migration Definition
+// ============================================================================
+
+/**
  * Plugin migration definition
  */
 export interface PluginMigrationDefinition {
@@ -6,21 +128,32 @@ export interface PluginMigrationDefinition {
    * Migration up script - can be a file path (relative to plugin package) or a function
    */
   up: string | (() => Promise<void> | void);
-  
+
   /**
    * Migration down script for rollback (optional)
    */
   down?: string | (() => Promise<void> | void);
-  
+
   /**
    * Migration type: 'schema' (database changes), 'config' (configuration changes), or 'data' (data transformations)
    */
   type?: 'schema' | 'config' | 'data';
-  
+
   /**
    * Description of what this migration does
    */
   description?: string;
+
+  /**
+   * [NEW] Required plugins that must be installed before this migration runs
+   * Used for cross-plugin migration dependencies
+   */
+  requires?: Array<{
+    /** Plugin name (e.g., "@yamajs/plugin-clerk") */
+    plugin: string;
+    /** Minimum version required (semver) */
+    version: string;
+  }>;
 }
 
 /**
@@ -29,13 +162,37 @@ export interface PluginMigrationDefinition {
 export interface PluginDependencies {
   /**
    * Plugin dependencies - list of plugin package names this plugin requires
+   * @deprecated Use YamaPlugin.requires instead
    */
   plugins?: string[];
-  
+
   /**
    * Core version requirement - semver range (e.g., "^0.1.0")
    */
   core?: string;
+}
+
+/**
+ * Plugin dependency relationship types
+ */
+export interface PluginRelationships {
+  /**
+   * Required plugins - must be loaded before this plugin
+   * If missing, plugin loading will fail with clear error
+   */
+  requires?: string[];
+
+  /**
+   * Optional plugins - used if available, gracefully ignored if not
+   * Plugin can check for their presence at runtime
+   */
+  optional?: string[];
+
+  /**
+   * Conflicting plugins - cannot be loaded together
+   * If both are present, loading will fail with clear error
+   */
+  conflicts?: string[];
 }
 
 /**
@@ -48,29 +205,29 @@ export interface PluginManifest {
   type?: string; // Service type (e.g., "payment", "email", "sms")
   service?: string; // Specific service name (e.g., "stripe", "sendgrid")
   entryPoint?: string; // Entry point file (default: "./dist/plugin.ts")
-  
+
   /**
    * Plugin dependencies
    */
   dependencies?: PluginDependencies;
-  
+
   /**
    * Plugin migrations - maps version strings to migration definitions
    * Versions should be semver-compatible (e.g., "1.0.0", "1.1.0")
    */
   migrations?: Record<string, PluginMigrationDefinition>;
-  
+
   /**
    * Initial schema for plugins that create tables
    * Can be a file path (relative to plugin package) or a function that returns SQL
    */
   initialSchema?: string | (() => Promise<string> | string);
-  
+
   /**
    * JSON Schema for plugin configuration validation
    */
   configSchema?: Record<string, unknown>;
-  
+
   /**
    * Security policy for the plugin
    */
@@ -80,7 +237,22 @@ export interface PluginManifest {
     sandboxed?: boolean;
     trustedPublisher?: string;
   };
-  
+
+  /**
+   * [NEW] Table access policy for sandbox enforcement
+   * Controls which database tables this plugin can access
+   */
+  tablePolicy?: {
+    /** Policy mode: strict = deny by default, permissive = allow by default */
+    mode?: "strict" | "permissive";
+    /** Allowed table prefixes (e.g., ["stripe_", "payment_"]) */
+    allowedPrefixes?: string[];
+    /** Explicitly allowed tables (e.g., ["users"]) */
+    allowedTables?: string[];
+    /** Tables shared across multiple plugins */
+    sharedTables?: string[];
+  };
+
   [key: string]: unknown; // Allow additional metadata
 }
 
@@ -89,19 +261,40 @@ export interface PluginManifest {
  */
 export interface PluginLifecycle {
   /**
-   * Called when plugin is initialized
+   * Called when plugin is initialized (during load phase)
+   * @deprecated Use init() method instead
    */
   onInit?(config: Record<string, unknown>): Promise<void> | void;
 
   /**
    * Called when plugin is started
+   * @deprecated Use onReady() for post-initialization logic
    */
   onStart?(): Promise<void> | void;
 
   /**
+   * [NEW] Called after ALL plugins have been initialized
+   * This is the safe place to interact with other plugins
+   * Runs in dependency order (dependents run after their dependencies)
+   * 
+   * @param context - Plugin context with access to all initialized plugins
+   */
+  onReady?(context: PluginContext): Promise<void> | void;
+
+  /**
    * Called when plugin is stopped
+   * @deprecated Use onShutdown() for cleanup
    */
   onStop?(): Promise<void> | void;
+
+  /**
+   * [NEW] Called during graceful shutdown
+   * Runs in reverse dependency order (dependents shut down before dependencies)
+   * Use for cleanup: close connections, flush buffers, etc.
+   * 
+   * @param context - Plugin context
+   */
+  onShutdown?(context: PluginContext): Promise<void> | void;
 
   /**
    * Called when an error occurs
@@ -131,15 +324,19 @@ export interface PluginLifecycle {
   onMigrationError?(error: Error, fromVersion: string, toVersion: string): Promise<void> | void;
 
   /**
-   * Health check hook - called to verify plugin is healthy
+   * [ENHANCED] Health check hook - called to verify plugin is healthy
+   * Used by /health endpoint for Kubernetes/Docker readiness probes
+   * 
    * @returns Health status with details
    */
   onHealthCheck?(): Promise<{
     healthy: boolean;
+    latency?: number;
     details?: Record<string, unknown>;
     error?: string;
   }> | {
     healthy: boolean;
+    latency?: number;
     details?: Record<string, unknown>;
     error?: string;
   };
@@ -149,7 +346,7 @@ export interface PluginLifecycle {
  * Future-proof plugin interface
  * Plugins implement this interface and return their API from init()
  */
-export interface YamaPlugin extends PluginLifecycle {
+export interface YamaPlugin extends PluginLifecycle, PluginRelationships {
   /**
    * Plugin name (package name)
    */
@@ -179,6 +376,70 @@ export interface YamaPlugin extends PluginLifecycle {
    * Plugin manifest (optional, can be inferred from package.json)
    */
   manifest?: PluginManifest;
+
+  /**
+   * [NEW] Human-readable description of what this plugin does
+   */
+  description?: string;
+
+  /**
+   * [NEW] Plugin author or maintainer
+   */
+  author?: string;
+
+  /**
+   * [NEW] Repository URL
+   */
+  repository?: string;
+
+  /**
+   * [NEW] Directives this plugin provides
+   * Map of directive name (with @) to directive definition
+   * 
+   * @example
+   * ```typescript
+   * directives: {
+   *   '@searchable': {
+   *     targets: ['field'],
+   *     description: 'Marks field for full-text search',
+   *     onField({ fieldType, args, meta }) {
+   *       meta.searchable = true;
+   *       meta.searchWeight = args.weight ?? 1;
+   *     }
+   *   }
+   * }
+   * ```
+   */
+  directives?: Record<string, PluginDirectiveDefinition>;
+
+  /**
+   * [NEW] Schema-level options this plugin accepts (for $$ block)
+   * JSON Schema that validates plugin configuration in schema $$ blocks
+   * 
+   * @example
+   * ```typescript
+   * schemaOptions: {
+   *   type: 'object',
+   *   properties: {
+   *     index: { type: 'boolean', default: false },
+   *     filterable: { type: 'array', items: { type: 'string' } }
+   *   }
+   * }
+   * ```
+   */
+  schemaOptions?: PluginSchemaOptionsSchema;
+
+  /**
+   * [NEW] Called after all schemas have been loaded, with $$ configs
+   * Runs in dependency order, after all plugins are initialized
+   * 
+   * @param schemas - All parsed schemas with their $$ configurations
+   * @param context - Plugin context
+   */
+  onSchemaLoaded?(
+    schemas: Record<string, SchemaWithPluginOptions>,
+    context: PluginContext
+  ): void | Promise<void>;
 
   /**
    * Initialize the plugin with configuration and context
@@ -219,22 +480,22 @@ export interface PluginCLICommand {
    * Can be a single word or space-separated for nested commands
    */
   name: string;
-  
+
   /**
    * Command description
    */
   description: string;
-  
+
   /**
    * Command options/flags
    */
   options?: PluginCLICommandOption[];
-  
+
   /**
    * Command action handler
    */
   action: (options: Record<string, any>) => Promise<void> | void;
-  
+
   /**
    * Plugin name that registered this command (for namespacing)
    */
@@ -268,22 +529,22 @@ export interface PluginMCPTool {
    * Tool name (should be namespaced, e.g., "yama_docker_generate")
    */
   name: string;
-  
+
   /**
    * Tool description
    */
   description: string;
-  
+
   /**
    * Input schema (Zod schema)
    */
   inputSchema: any; // Using any to avoid requiring zod as a dependency in core
-  
+
   /**
    * Tool handler function
    */
   handler: (args: any) => Promise<MCPToolResult>;
-  
+
   /**
    * Plugin name that registered this tool (for namespacing)
    */
@@ -299,77 +560,77 @@ export interface PluginContext {
    * Full Yama configuration
    */
   config: Record<string, unknown>;
-  
+
   /**
    * Project directory path
    */
   projectDir: string;
-  
+
   /**
    * Logger instance for plugin logging
    */
   logger: Logger;
-  
+
   /**
    * Get a plugin by name
    */
   getPlugin(name: string): YamaPlugin | null;
-  
+
   /**
    * Get plugin API (returned from init())
    */
   getPluginAPI(name: string): any;
-  
+
   /**
    * Get all plugins by category
    */
   getPluginsByCategory(category: string): YamaPlugin[];
-  
+
   /**
    * Register a service that other plugins can access
    */
   registerService(name: string, service: any): void;
-  
+
   /**
    * Get a service by name
    */
   getService(name: string): any;
-  
+
   /**
    * Check if a service exists
    */
   hasService(name: string): boolean;
-  
+
   /**
    * Get middleware registry to register middleware
    */
   getMiddlewareRegistry(): import("../middleware/registry.js").MiddlewareRegistry;
-  
+
   /**
    * Register a CLI command that will be available in the Yama CLI
    */
   registerCLICommand(command: PluginCLICommand): void;
-  
+
   /**
    * Register an MCP tool that will be available in the MCP server
    */
   registerMCPTool(tool: PluginMCPTool): void;
-  
+
   /**
    * Emit an event
    */
   emit(event: string, data?: any): void;
-  
+
   /**
    * Listen to an event
    */
   on(event: string, handler: Function): void;
-  
+
   /**
    * Remove event listener
    */
   off(event: string, handler: Function): void;
-  
+
   /**
    * Listen to an event once
    */

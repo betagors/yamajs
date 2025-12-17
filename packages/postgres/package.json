@@ -1,5 +1,5 @@
-{
-  "name": "@betagors/yama-postgres",
+﻿{
+  "name": "@yamajs/postgres",
   "version": "0.1.0-alpha.0",
   "type": "module",
   "description": "Yama PostgreSQL database adapter",
@@ -9,10 +9,6 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
-    },
-    "./dist/plugin.js": {
-      "types": "./dist/plugin.d.ts",
-      "default": "./dist/plugin.js"
     }
   },
   "files": [
@@ -31,16 +27,9 @@
     "postgres",
     "postgresql",
     "database",
-    "adapter",
-    "plugin"
+    "adapter"
   ],
   "license": "MPL-2.0",
-  "yama": {
-    "pluginApi": "1.0",
-    "yamaCore": "^0.1.0",
-    "category": "database",
-    "entryPoint": "./dist/plugin.js"
-  },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "dev": "tsc -w -p tsconfig.build.json",
@@ -52,7 +41,7 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
-    "@betagors/yama-core": "workspace:*",
+    "@yamajs/core": "workspace:*",
     "drizzle-orm": "^0.30.0",
     "postgres": "^3.4.3"
   },
@@ -66,5 +55,3 @@
     "node": ">=18"
   }
 }
-
-

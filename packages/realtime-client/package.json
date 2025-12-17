@@ -1,5 +1,5 @@
-{
-  "name": "@betagors/yama-realtime-client",
+﻿{
+  "name": "@yamajs/realtime-client",
   "version": "0.1.0-alpha.0",
   "type": "module",
   "description": "Yama realtime client SDK for WebSocket connections",

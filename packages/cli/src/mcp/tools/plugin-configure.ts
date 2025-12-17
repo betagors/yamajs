@@ -1,4 +1,4 @@
-import { z } from "zod";
+﻿import { z } from "zod";
 import { pluginConfigureCommand, applyPluginConfig } from "../../commands/plugin-configure.ts";
 import { executeCommand } from "../utils/output-capture.ts";
 import { findYamaConfig } from "../../utils/project-detection.ts";
@@ -6,7 +6,7 @@ import { existsSync } from "fs";
 
 const inputSchema = z.object({
   config: z.string().optional().describe("Path to yama.yaml configuration file"),
-  plugin: z.string().describe("Plugin package name to configure (e.g., @betagors/yama-postgres)"),
+  plugin: z.string().describe("Plugin package name to configure (e.g., @yamajs/postgres)"),
   settings: z.record(z.unknown()).optional().describe("Optional: specific settings to configure as key-value pairs"),
   apply: z.boolean().optional().describe("Whether to apply the configuration to yama.yaml (default: false)"),
 });
@@ -23,7 +23,7 @@ export const yamaPluginConfigureTool = {
         content: [
           {
             type: "text" as const,
-            text: `❌ Config file not found: ${configPath}\n\nRun 'yama init' to create a yama.yaml file.`,
+            text: `âŒ Config file not found: ${configPath}\n\nRun 'yama init' to create a yama.yaml file.`,
           },
         ],
       };
@@ -59,23 +59,23 @@ export const yamaPluginConfigureTool = {
             .join("\n\n")
         : "No examples available";
 
-      let responseText = `⚙️  Plugin Configuration: **${configInfo.plugin}**\n\n`;
-      responseText += `📋 Current Configuration:\n${currentConfigStr}\n\n`;
-      responseText += `✨ Recommended Configuration:\n${recommendedConfigStr}\n\n`;
-      responseText += `🔴 Required Fields:\n${requiredFieldsStr}\n\n`;
-      responseText += `⚪ Optional Fields:\n${optionalFieldsStr}\n\n`;
-      responseText += `📚 Configuration Examples:\n${examplesStr}\n`;
+      let responseText = `âš™ï¸  Plugin Configuration: **${configInfo.plugin}**\n\n`;
+      responseText += `ðŸ“‹ Current Configuration:\n${currentConfigStr}\n\n`;
+      responseText += `âœ¨ Recommended Configuration:\n${recommendedConfigStr}\n\n`;
+      responseText += `ðŸ”´ Required Fields:\n${requiredFieldsStr}\n\n`;
+      responseText += `âšª Optional Fields:\n${optionalFieldsStr}\n\n`;
+      responseText += `ðŸ“š Configuration Examples:\n${examplesStr}\n`;
 
       // Apply configuration if requested
       if (args.apply) {
         try {
           await applyPluginConfig(configPath, args.plugin, configInfo.recommendedConfig);
-          responseText += `\n✅ Configuration applied to yama.yaml`;
+          responseText += `\nâœ… Configuration applied to yama.yaml`;
         } catch (error) {
-          responseText += `\n❌ Failed to apply configuration: ${error instanceof Error ? error.message : String(error)}`;
+          responseText += `\nâŒ Failed to apply configuration: ${error instanceof Error ? error.message : String(error)}`;
         }
       } else {
-        responseText += `\n💡 Set \`apply: true\` to automatically apply this configuration to yama.yaml.`;
+        responseText += `\nðŸ’¡ Set \`apply: true\` to automatically apply this configuration to yama.yaml.`;
       }
 
       return {
@@ -91,7 +91,7 @@ export const yamaPluginConfigureTool = {
         content: [
           {
             type: "text" as const,
-            text: `❌ Failed to get plugin configuration\n\n${error instanceof Error ? error.message : String(error)}`,
+            text: `âŒ Failed to get plugin configuration\n\n${error instanceof Error ? error.message : String(error)}`,
           },
         ],
       };

@@ -13,14 +13,14 @@ Extend Yama with plugins for databases, storage, caching, and more.
 Install a plugin using npm or pnpm:
 
 ```bash
-pnpm add @betagors/yama-postgres
+pnpm add @yamajs/postgres
 ```
 
 Configure in `yama.yaml`:
 
 ```yaml
 plugins:
-  - name: "@betagors/yama-postgres"
+  - name: "@yamajs/postgres"
     config:
       url: ${DATABASE_URL}
 ```
@@ -29,20 +29,20 @@ plugins:
 
 ### Database Adapters
 Connect to different databases:
-- `@betagors/yama-postgres` — PostgreSQL
-- `@betagors/yama-pglite` — PGLite (embedded)
+- `@yamajs/postgres` — PostgreSQL
+- `@yamajs/pglite` — PGLite (embedded)
 
 ### Storage
 File and object storage:
-- `@betagors/yama-s3` — AWS S3
+- `@yamajs/s3` — AWS S3
 
 ### Caching
 Caching and session storage:
-- `@betagors/yama-redis` — Redis
+- `@yamajs/redis` — Redis
 
 ### Realtime
 Live updates and subscriptions:
-- `@betagors/yama-realtime` — WebSocket realtime
+- `@yamajs/realtime` — WebSocket realtime
 
 ## Using Plugins
 

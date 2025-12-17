@@ -30,7 +30,3 @@ export {
   listSnapshots,
 } from "./snapshots";
 
-// Export plugin (default export)
-export { default as plugin } from "./plugin";
-export { default } from "./plugin";
-

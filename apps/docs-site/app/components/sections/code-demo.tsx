@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { Check, Copy } from 'lucide-react';
@@ -32,7 +32,7 @@ endpoints:
       handler: handlers/completeTodo
       auth: true`;
 
-const handlerCode = `import { HandlerContext } from '@betagors/yama';
+const handlerCode = `import { HandlerContext } from '@yamajs/yama';
 
 export async function completeTodo(ctx: HandlerContext) {
   const { id } = ctx.body;
@@ -104,7 +104,7 @@ export function CodeDemoSection() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16 space-y-4">
           <h2 className="text-4xl md:text-5xl font-bold text-foreground">
-            Write this <span className="text-primary">→</span> Get this
+            Write this <span className="text-primary">â†’</span> Get this
           </h2>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             One config file + minimal handlers = Full API with docs and SDKs
@@ -192,7 +192,7 @@ export function CodeDemoSection() {
                     {activeTab === 'openapi' ? 'generated/openapi.yaml' : 'generated/client.ts'}
                   </span>
                 </div>
-                <span className="text-xs text-muted-foreground">✨ Auto-generated</span>
+                <span className="text-xs text-muted-foreground">âœ¨ Auto-generated</span>
               </div>
               <pre className="overflow-x-auto p-6 font-mono text-sm text-foreground/80 leading-relaxed h-full">
                 {activeTab === 'openapi' ? openApiCode : sdkCode}
@@ -208,7 +208,7 @@ export function CodeDemoSection() {
             <div className="text-sm text-muted-foreground">Lines of code</div>
           </div>
           <div className="p-6 rounded-lg bg-secondary/5 border border-secondary/20">
-            <div className="text-3xl font-bold text-secondary mb-2">∞</div>
+            <div className="text-3xl font-bold text-secondary mb-2">âˆž</div>
             <div className="text-sm text-muted-foreground">API endpoints</div>
           </div>
           <div className="p-6 rounded-lg bg-purple-500/5 border border-purple-500/20">

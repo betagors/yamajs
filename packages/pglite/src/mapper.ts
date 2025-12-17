@@ -1,5 +1,5 @@
-import type { YamaEntities, EntityDefinition, EntityField } from "@betagors/yama-core";
-import { parseFieldDefinition } from "@betagors/yama-core";
+﻿import type { YamaEntities, EntityDefinition, EntityField } from "@yamajs/core";
+import { parseFieldDefinition } from "@yamajs/core";
 
 /**
  * Convert snake_case to camelCase
@@ -38,7 +38,7 @@ function generateEntityMapper(entityName: string, entityDef: EntityDefinition, a
   const mappings: string[] = [];
   const apiSchemaName = entityDef.apiSchema || entityName;
 
-  for (const [fieldName, fieldDef] of Object.entries(entityDef.fields)) {
+  for (const [fieldName, fieldDef] of Object.entries(entityDef.fields || {})) {
     const field = parseFieldDefinition(fieldName, fieldDef, availableEntities);
     // Skip inline relations
     if (field._isInlineRelation) {
@@ -50,7 +50,7 @@ function generateEntityMapper(entityName: string, entityDef: EntityDefinition, a
     }
 
     const dbColumnName = field.dbColumn || fieldName;
-    
+
     // Handle type conversions
     if (field.type === "timestamp") {
       // Convert timestamp to ISO string
@@ -64,10 +64,10 @@ function generateEntityMapper(entityName: string, entityDef: EntityDefinition, a
     }
   }
 
-  const functionName = entityName === apiSchemaName 
+  const functionName = entityName === apiSchemaName
     ? `map${entityName}EntityTo${apiSchemaName}`
     : `map${entityName}To${apiSchemaName}`;
-    
+
   return `export function ${functionName}(entity: any): ${apiSchemaName} {
   return {
 ${mappings.join("\n")}
@@ -83,21 +83,14 @@ function generateReverseMapper(entityName: string, entityDef: EntityDefinition, 
   const apiSchemaName = entityDef.apiSchema || entityName;
 
   // Find primary field or id field to determine if we should skip it
-  let primaryField: [string, EntityField] | undefined;
-  let idField: EntityField | undefined;
-  for (const [fieldName, fieldDef] of Object.entries(entityDef.fields)) {
-    const field = parseFieldDefinition(fieldName, fieldDef, availableEntities);
-    if (field.primary) {
-      primaryField = [fieldName, field];
-    }
-    if (fieldName === 'id' && !primaryField) {
-      idField = field;
-    }
-  }
-  const shouldSkipId = (primaryField?.[1] || idField) && (primaryField?.[1] || idField)?.type && ((primaryField?.[1] || idField)?.type === 'string' || (primaryField?.[1] || idField)?.type === 'uuid') && !(primaryField?.[1] || idField)?.generated;
-  const idFieldName = primaryField ? primaryField[0] : (idField ? 'id' : null);
+  const primaryFieldEntry = Object.entries(entityDef.fields || {}).find(([, f]) => typeof f === 'object' && !Array.isArray(f) && (f as any).primary);
+  const primaryField = primaryFieldEntry ? parseFieldDefinition(primaryFieldEntry[0], primaryFieldEntry[1], availableEntities) : undefined;
+  const idField = primaryField ? primaryField : (entityDef.fields?.['id'] ? parseFieldDefinition('id', entityDef.fields['id'], availableEntities) : undefined);
 
-  for (const [fieldName, fieldDef] of Object.entries(entityDef.fields)) {
+  const shouldSkipId = (primaryField || idField) && (primaryField || idField)?.type && ((primaryField || idField)?.type === 'string' || (primaryField || idField)?.type === 'uuid') && !(primaryField || idField)?.generated;
+  const idFieldName = primaryFieldEntry ? primaryFieldEntry[0] : (entityDef.fields?.['id'] ? 'id' : null);
+
+  for (const [fieldName, fieldDef] of Object.entries(entityDef.fields || {})) {
     const field = parseFieldDefinition(fieldName, fieldDef, availableEntities);
     // Skip inline relations
     if (field._isInlineRelation) {
@@ -114,7 +107,7 @@ function generateReverseMapper(entityName: string, entityDef: EntityDefinition, 
     }
 
     const dbColumnName = field.dbColumn || fieldName;
-    
+
     // Handle type conversions
     if (field.type === "timestamp") {
       // Convert ISO string to timestamp
@@ -132,7 +125,7 @@ function generateReverseMapper(entityName: string, entityDef: EntityDefinition, 
   const functionName = entityName === apiSchemaName
     ? `map${apiSchemaName}To${entityName}Entity`
     : `map${apiSchemaName}To${entityName}`;
-    
+
   return `export function ${functionName}(schema: ${apiSchemaName}): Partial<any> {
   return {
 ${mappings.join("\n")}

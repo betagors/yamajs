@@ -4,17 +4,17 @@ Plugins maintained by the Yama team.
 
 ## Database
 
-### @betagors/yama-postgres
+### @yamajs/postgres
 
 PostgreSQL adapter with connection pooling and migrations.
 
 ```bash
-pnpm add @betagors/yama-postgres
+pnpm add @yamajs/postgres
 ```
 
 ```yaml
 plugins:
-  - name: "@betagors/yama-postgres"
+  - name: "@yamajs/postgres"
     config:
       url: ${DATABASE_URL}
       pool:
@@ -22,34 +22,34 @@ plugins:
         max: 10
 ```
 
-### @betagors/yama-pglite
+### @yamajs/pglite
 
 Embedded PostgreSQL using PGLite. Great for development and testing.
 
 ```bash
-pnpm add @betagors/yama-pglite
+pnpm add @yamajs/pglite
 ```
 
 ```yaml
 plugins:
-  - name: "@betagors/yama-pglite"
+  - name: "@yamajs/pglite"
     config:
       dataDir: ./data
 ```
 
 ## Storage
 
-### @betagors/yama-s3
+### @yamajs/s3
 
 AWS S3 compatible storage adapter.
 
 ```bash
-pnpm add @betagors/yama-s3
+pnpm add @yamajs/s3
 ```
 
 ```yaml
 plugins:
-  - name: "@betagors/yama-s3"
+  - name: "@yamajs/s3"
     config:
       bucket: ${S3_BUCKET}
       region: ${AWS_REGION}
@@ -75,17 +75,17 @@ export async function uploadFile(context: HandlerContext) {
 
 ## Caching
 
-### @betagors/yama-redis
+### @yamajs/redis
 
 Redis adapter for caching and session storage.
 
 ```bash
-pnpm add @betagors/yama-redis
+pnpm add @yamajs/redis
 ```
 
 ```yaml
 plugins:
-  - name: "@betagors/yama-redis"
+  - name: "@yamajs/redis"
     config:
       url: ${REDIS_URL}
 ```
@@ -110,17 +110,17 @@ export async function getData(context: HandlerContext) {
 
 ## Realtime
 
-### @betagors/yama-realtime
+### @yamajs/realtime
 
 WebSocket support for real-time updates.
 
 ```bash
-pnpm add @betagors/yama-realtime
+pnpm add @yamajs/realtime
 ```
 
 ```yaml
 plugins:
-  - name: "@betagors/yama-realtime"
+  - name: "@yamajs/realtime"
     config:
       path: /ws
 ```
@@ -150,13 +150,13 @@ export async function createTodo(context: HandlerContext) {
 
 | Package | Description |
 |---------|-------------|
-| `@betagors/yama-cli` | Command-line interface |
-| `@betagors/yama-core` | Core runtime and types |
-| `@betagors/yama-fastify` | Fastify HTTP adapter |
-| `@betagors/yama-postgres` | PostgreSQL adapter |
-| `@betagors/yama-pglite` | PGLite adapter |
-| `@betagors/yama-redis` | Redis adapter |
-| `@betagors/yama-s3` | S3 storage adapter |
-| `@betagors/yama-realtime` | WebSocket realtime |
-| `@betagors/yama-sdk` | SDK generator |
-| `@betagors/yama-openapi` | OpenAPI generator |
+| `@yamajs/cli` | Command-line interface |
+| `@yamajs/core` | Core runtime and types |
+| `@yamajs/fastify` | Fastify HTTP adapter |
+| `@yamajs/postgres` | PostgreSQL adapter |
+| `@yamajs/pglite` | PGLite adapter |
+| `@yamajs/redis` | Redis adapter |
+| `@yamajs/s3` | S3 storage adapter |
+| `@yamajs/realtime` | WebSocket realtime |
+| `@yamajs/sdk` | SDK generator |
+| `@yamajs/openapi` | OpenAPI generator |

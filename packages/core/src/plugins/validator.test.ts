@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+﻿import { describe, it, expect } from "vitest";
 import {
   validateManifest,
   validateYamaPlugin,
@@ -40,7 +40,7 @@ describe("Plugin Validator", () => {
   describe("validateYamaPlugin", () => {
     it("should validate correct plugin", () => {
       const plugin: YamaPlugin = {
-        name: "@betagors/yama-plugin-postgres",
+        name: "@yamajs/plugin-postgres",
         version: "1.0.0",
         category: "database",
         init: async () => ({ adapter: {} }),
@@ -52,7 +52,7 @@ describe("Plugin Validator", () => {
 
     it("should validate plugin without optional fields", () => {
       const plugin: YamaPlugin = {
-        name: "@betagors/yama-plugin-test",
+        name: "@yamajs/plugin-test",
         init: async () => ({}),
       };
 
@@ -62,7 +62,7 @@ describe("Plugin Validator", () => {
 
     it("should reject plugin without init method", () => {
       const plugin = {
-        name: "@betagors/yama-plugin-test",
+        name: "@yamajs/plugin-test",
       } as YamaPlugin;
 
       const result = validateYamaPlugin(plugin);

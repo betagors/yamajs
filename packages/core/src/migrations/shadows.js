@@ -1,5 +1,6 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
-import { join } from "path";
+import { getFileSystem, getPathModule } from "../platform/fs.js";
+const fs = () => getFileSystem();
+const path = () => getPathModule();
 /**
  * Default retention period in days
  */
@@ -8,21 +9,21 @@ export const DEFAULT_SHADOW_RETENTION_DAYS = 30;
  * Get shadows directory path
  */
 export function getShadowsDir(configDir) {
-    return join(configDir, ".yama", "shadows");
+    return path().join(configDir, ".yama", "shadows");
 }
 /**
  * Get shadow manifest file path
  */
 export function getShadowManifestPath(configDir) {
-    return join(getShadowsDir(configDir), "manifest.json");
+    return path().join(getShadowsDir(configDir), "manifest.json");
 }
 /**
  * Ensure shadows directory exists
  */
 export function ensureShadowsDir(configDir) {
     const shadowsDir = getShadowsDir(configDir);
-    if (!existsSync(shadowsDir)) {
-        mkdirSync(shadowsDir, { recursive: true });
+    if (!fs().existsSync(shadowsDir)) {
+        fs().mkdirSync(shadowsDir, { recursive: true });
     }
 }
 /**
@@ -37,11 +38,11 @@ export function generateShadowColumnName(originalName, snapshot, timestamp) {
  */
 export function loadShadowManifest(configDir) {
     const manifestPath = getShadowManifestPath(configDir);
-    if (!existsSync(manifestPath)) {
+    if (!fs().existsSync(manifestPath)) {
         return { shadows: [] };
     }
     try {
-        const content = readFileSync(manifestPath, "utf-8");
+        const content = fs().readFileSync(manifestPath, "utf-8");
         return JSON.parse(content);
     }
     catch {
@@ -54,7 +55,7 @@ export function loadShadowManifest(configDir) {
 export function saveShadowManifest(configDir, manifest) {
     ensureShadowsDir(configDir);
     const manifestPath = getShadowManifestPath(configDir);
-    writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), "utf-8");
+    fs().writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), "utf-8");
 }
 /**
  * Register a shadow column

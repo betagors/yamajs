@@ -1,6 +1,6 @@
-import { escapeHtml, layout, renderKeyValueTable } from "./templates.js";
+﻿import { escapeHtml, layout, renderKeyValueTable } from "./templates.js";
 import type { AdminXResolvedConfig, AdminXRouteArgs } from "./types.js";
-import type { EntityDefinition, EntityFieldDefinition, YamaEntities, YamaSchemas } from "@betagors/yama-core";
+import type { EntityDefinition, EntityFieldDefinition, YamaEntities, YamaSchemas } from "@yamajs/core";
 import { existsSync, readFileSync } from "fs";
 import { join } from "path";
 
@@ -59,7 +59,7 @@ export function registerAdminXRoutes(
   register("GET", basePath, async (ctx) => {
     const crudEntities = getCrudEntities(ctx.entities);
     const html = layout({
-      title: "AdminX · Dashboard",
+      title: "AdminX Â· Dashboard",
       basePath,
       currentPath: basePath,
       content: `
@@ -107,7 +107,7 @@ export function registerAdminXRoutes(
   register("GET", `${basePath}/entities`, async (ctx) => {
     const crudEntities = getCrudEntities(ctx.entities);
     const html = layout({
-      title: "AdminX · Entities",
+      title: "AdminX Â· Entities",
       basePath,
       currentPath: `${basePath}/entities`,
       content: crudEntities.length === 0
@@ -150,7 +150,7 @@ export function registerAdminXRoutes(
     }
 
     const html = layout({
-      title: `AdminX · ${entity} list`,
+      title: `AdminX Â· ${entity} list`,
       basePath,
       currentPath: `${basePath}/entities`,
       message: errorMsg || undefined,
@@ -173,7 +173,7 @@ export function registerAdminXRoutes(
       return sendNotFound(ctx.reply, basePath, `Entity "${escapeHtml(String(entity))}" not found or not CRUD-enabled.`);
     }
     const html = layout({
-      title: `AdminX · New ${entity}`,
+      title: `AdminX Â· New ${entity}`,
       basePath,
       currentPath: `${basePath}/entities`,
       content: renderEntityForm(basePath, entity, entityDef, "create"),
@@ -318,7 +318,7 @@ export function registerAdminXRoutes(
     const schemas = ctx.schemas || {};
     const entityEntries = Object.entries(ctx.entities || {});
     const html = layout({
-      title: "AdminX · Schemas",
+      title: "AdminX Â· Schemas",
       basePath,
       currentPath: `${basePath}/schemas`,
       content: `
@@ -333,7 +333,7 @@ export function registerAdminXRoutes(
   register("GET", `${basePath}/endpoints`, async (ctx) => {
     const endpoints = collectEndpoints(args.config);
     const html = layout({
-      title: "AdminX · Endpoints",
+      title: "AdminX Â· Endpoints",
       basePath,
       currentPath: `${basePath}/endpoints`,
       content: endpoints.length === 0
@@ -347,7 +347,7 @@ export function registerAdminXRoutes(
   register("GET", `${basePath}/migrations`, async (ctx) => {
     const history = loadVersionHistorySafe(ctx.projectDir);
     const html = layout({
-      title: "AdminX · Migrations",
+      title: "AdminX Â· Migrations",
       basePath,
       currentPath: `${basePath}/migrations`,
       content: history

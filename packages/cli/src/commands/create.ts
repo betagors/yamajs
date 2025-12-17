@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, writeFileSync, readFileSync, rmSync } from "fs";
+﻿import { existsSync, mkdirSync, writeFileSync, readFileSync, rmSync } from "fs";
 import { join, basename, resolve, dirname, relative } from "path";
 import { execSync, spawn } from "child_process";
 import inquirer from "inquirer";
@@ -118,7 +118,7 @@ function setupVSCodeSettings(cwd: string, schemaPath: string): void {
   // Yama YAML autocomplete configuration
   // Works with VS Code and Cursor (both use .vscode folder)
   // 
-  // 📦 Required Extension: Install "YAML" by Red Hat (redhat.vscode-yaml)
+  // ðŸ“¦ Required Extension: Install "YAML" by Red Hat (redhat.vscode-yaml)
   //    - Open Extensions (Ctrl+Shift+X) and search for "YAML"
   //    - Or install via command:
   //      VS Code: code --install-extension redhat.vscode-yaml
@@ -370,7 +370,7 @@ export async function createCommand(projectName?: string, options: CreateOptions
   // Show welcome message
   console.log();
   printBox(
-    `✨ Welcome to Yama!\n\nCreating your project: ${colors.bold(finalProjectName)}`,
+    `âœ¨ Welcome to Yama!\n\nCreating your project: ${colors.bold(finalProjectName)}`,
     { borderColor: "cyan" }
   );
   console.log();
@@ -418,9 +418,9 @@ export async function createCommand(projectName?: string, options: CreateOptions
   const selectedPlugins: Record<string, Record<string, unknown>> = {};
   
   if (databaseChoice === "pglite") {
-    selectedPlugins["@betagors/yama-pglite"] = {};
+    selectedPlugins["@yamajs/pglite"] = {};
   } else if (databaseChoice === "postgresql") {
-    selectedPlugins["@betagors/yama-postgres"] = {
+    selectedPlugins["@yamajs/postgres"] = {
       url: "${DATABASE_URL}"
     };
   }
@@ -437,21 +437,21 @@ export async function createCommand(projectName?: string, options: CreateOptions
     // Core dependencies
     if (isInWorkspace && workspaceRootForProject) {
       // Use file: protocol for workspace packages
-      dependencies["@betagors/yama-core"] = `file:${relative(projectPath, join(workspaceRootForProject, "packages", "core")).replace(/\\/g, "/")}`;
-      dependencies["@betagors/yama-node"] = `file:${relative(projectPath, join(workspaceRootForProject, "packages", "node")).replace(/\\/g, "/")}`;
-      devDependencies["@betagors/yama-cli"] = `file:${relative(projectPath, join(workspaceRootForProject, "packages", "cli")).replace(/\\/g, "/")}`;
+      dependencies["@yamajs/core"] = `file:${relative(projectPath, join(workspaceRootForProject, "packages", "core")).replace(/\\/g, "/")}`;
+      dependencies["@yamajs/node"] = `file:${relative(projectPath, join(workspaceRootForProject, "packages", "node")).replace(/\\/g, "/")}`;
+      devDependencies["@yamajs/cli"] = `file:${relative(projectPath, join(workspaceRootForProject, "packages", "cli")).replace(/\\/g, "/")}`;
     } else {
-      dependencies["@betagors/yama-core"] = "latest";
-      dependencies["@betagors/yama-node"] = "latest";
-      // Note: @betagors/yama-cli should be installed globally, not as a project dependency
-      // Users should run: npm install -g @betagors/yama-cli (once published)
-      // Or use: npx @betagors/yama-cli <command>
+      dependencies["@yamajs/core"] = "latest";
+      dependencies["@yamajs/node"] = "latest";
+      // Note: @yamajs/cli should be installed globally, not as a project dependency
+      // Users should run: npm install -g @yamajs/cli (once published)
+      // Or use: npx @yamajs/cli <command>
     }
     
     // Add plugins
     for (const plugin of Object.keys(selectedPlugins)) {
       if (isInWorkspace && workspaceRootForProject) {
-        const packageName = plugin.replace("@betagors/yama-", "");
+        const packageName = plugin.replace("@yamajs/", "");
         dependencies[plugin] = `file:${relative(projectPath, join(workspaceRootForProject, "packages", packageName)).replace(/\\/g, "/")}`;
       } else {
         dependencies[plugin] = "latest";
@@ -461,7 +461,7 @@ export async function createCommand(projectName?: string, options: CreateOptions
     // Add native dependencies from plugins
     if (isInWorkspace && workspaceRootForProject) {
       for (const plugin of Object.keys(selectedPlugins)) {
-        const packageName = plugin.replace("@betagors/yama-", "");
+        const packageName = plugin.replace("@yamajs/", "");
         const pluginPath = join(workspaceRootForProject, "packages", packageName);
         const pluginPackageJson = join(pluginPath, "package.json");
         if (existsSync(pluginPackageJson)) {
@@ -495,7 +495,7 @@ export async function createCommand(projectName?: string, options: CreateOptions
     // Create package.json
     const packageManager = detectPackageManager(workspaceRootForProject || cwd);
     
-    // Use node to directly run @betagors/yama-cli from node_modules
+    // Use node to directly run @yamajs/cli from node_modules
     // This works reliably after package installation creates the node_modules structure
     // Works for both workspace and non-workspace projects
     const yamaExec = "yama";
@@ -616,7 +616,7 @@ ${yamlContent}`;
   // Create example handler
   const handlerSpinner = createSpinner("Creating example handler...");
   try {
-    const handlerContent = `import type { GetExamplesHandlerContext, Example } from "@yama/gen";
+    const handlerContent = `import type { GetExamplesHandlerContext, Example } from "@yamajs/gen";
 
 export async function getExamples(
   context: GetExamplesHandlerContext
@@ -714,11 +714,11 @@ shamefully-hoist=false
     
     // Show editor setup instructions
     console.log();
-    info(`📝 Editor Setup (${getIDEName(detectedIDE)}):`);
+    info(`ðŸ“ Editor Setup (${getIDEName(detectedIDE)}):`);
     console.log(colors.dim(`   Autocomplete is configured!`));
     
     if (detectedIDE === "vscode" || detectedIDE === "cursor") {
-      console.log(colors.warning(`   ⚠️  Don't forget to install the YAML extension:`));
+      console.log(colors.warning(`   âš ï¸  Don't forget to install the YAML extension:`));
       console.log(colors.dim(`     1. Open Extensions (Ctrl+Shift+X)`));
       console.log(colors.dim(`     2. Search for "YAML" by Red Hat`));
       console.log(colors.dim(`     3. Install and reload ${getIDEName(detectedIDE)}`));
@@ -727,14 +727,14 @@ shamefully-hoist=false
         : "code --install-extension redhat.vscode-yaml";
       console.log(colors.dim(`   Or run: ${installCmd}`));
     } else if (detectedIDE === "webstorm") {
-      console.log(colors.dim(`   ✅ WebStorm has built-in YAML support!`));
+      console.log(colors.dim(`   âœ… WebStorm has built-in YAML support!`));
       console.log(colors.dim(`   The schema is configured in .idea/jsonSchemas.xml`));
       console.log(colors.dim(`   You may need to restart WebStorm for changes to take effect.`));
     }
   } else {
     // No supported IDE detected
     console.log();
-    warning("📝 Editor Setup:");
+    warning("ðŸ“ Editor Setup:");
     console.log(colors.dim(`   No supported IDE detected (VS Code, Cursor, Zed, or WebStorm).`));
     console.log(colors.dim(`   Autocomplete will still work via the schema comment in yama.yaml`));
     console.log(colors.dim(`   if you have a YAML Language Server extension installed.`));
@@ -795,7 +795,7 @@ The server will start on [http://localhost:4000](http://localhost:4000).
   // Success message
   console.log();
   printBox(
-    `✨ ${colors.bold("Yama project created successfully!")}\n\n` +
+    `âœ¨ ${colors.bold("Yama project created successfully!")}\n\n` +
     `Project: ${colors.cyan(finalProjectName)}\n` +
     `Database: ${colors.cyan(databaseChoice === "none" ? "None" : databaseChoice)}\n` +
     `Plugins: ${Object.keys(selectedPlugins).length > 0 ? colors.cyan(Object.keys(selectedPlugins).join(", ")) : colors.dim("None")}`,
@@ -811,8 +811,8 @@ The server will start on [http://localhost:4000](http://localhost:4000).
   
   // Note about CLI installation
   if (!isInWorkspace) {
-    console.log(colors.dim(`   2. Install Yama CLI globally: npm install -g @betagors/yama-cli`));
-    console.log(colors.dim(`      (Or use: npx @betagors/yama-cli <command> for each command)`));
+    console.log(colors.dim(`   2. Install Yama CLI globally: npm install -g @yamajs/cli`));
+    console.log(colors.dim(`      (Or use: npx @yamajs/cli <command> for each command)`));
     console.log(colors.dim(`   3. ${packageManager} install`));
     console.log(colors.dim(`   4. ${packageManager} dev`));
   } else {
@@ -823,9 +823,9 @@ The server will start on [http://localhost:4000](http://localhost:4000).
   }
   if (databaseChoice === "none") {
     console.log();
-    info("💡 Tip: Add a database later with:");
-    console.log(colors.dim(`   yama plugin install @betagors/yama-pglite     # In-memory, no setup needed`));
-    console.log(colors.dim(`   yama plugin install @betagors/yama-postgres   # Pure JS PostgreSQL`));
+    info("ðŸ’¡ Tip: Add a database later with:");
+    console.log(colors.dim(`   yama plugin install @yamajs/pglite     # In-memory, no setup needed`));
+    console.log(colors.dim(`   yama plugin install @yamajs/postgres   # Pure JS PostgreSQL`));
   }
   console.log();
 }

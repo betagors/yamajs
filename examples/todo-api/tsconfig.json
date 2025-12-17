@@ -1,4 +1,4 @@
-{
+﻿{
   "compilerOptions": {
     "target": "ES2020",
     "module": "ESNext",
@@ -9,19 +9,19 @@
     "resolveJsonModule": true,
     "baseUrl": ".",
     "paths": {
-      "@betagors/yama-db": [
+      "@yamajs/db": [
         ".yama/db"
       ],
-      "@betagors/yama-sdk": [
+      "@yamajs/sdk": [
         ".yama/sdk"
       ],
-      "@betagors/yama-types": [
+      "@yamajs/types": [
         ".yama/types.ts"
       ],
-      "@yama/db": [
+      "@yamajs/db": [
         ".yama/db"
       ],
-      "@yama/types": [
+      "@yamajs/types": [
         ".yama/types.ts"
       ],
       "@gen/db": [
@@ -33,19 +33,19 @@
       "@gen/types": [
         ".yama/gen/types.ts"
       ],
-      "@yama/gen/handler-contexts": [
+      "@yamajs/gen/handler-contexts": [
         ".yama/gen/handler-contexts.ts"
       ],
-      "@yama/gen/types": [
+      "@yamajs/gen/types": [
         ".yama/gen/types.ts"
       ],
-      "@betagors/yama-core": [
+      "@yamajs/core": [
         "../../packages/core/src/index"
       ],
       "@gen": [
         ".yama/gen/index.ts"
       ],
-      "@yama/gen": [
+      "@yamajs/gen": [
         ".yama/gen/index.ts"
       ]
     }

@@ -1,4 +1,5 @@
-import type { YamaEntities, EntityDefinition, EntityField } from "@betagors/yama-core";
+﻿import type { YamaEntities, EntityDefinition, EntityField } from "@yamajs/core";
+import { parseFieldDefinition } from "@yamajs/core";
 
 /**
  * Convert snake_case to camelCase
@@ -33,18 +34,23 @@ function getApiFieldName(fieldName: string, field: EntityField): string | null {
 /**
  * Generate mapper function for a single entity
  */
-function generateEntityMapper(entityName: string, entityDef: EntityDefinition): string {
+function generateEntityMapper(entityName: string, entityDef: EntityDefinition, availableEntities: Set<string>): string {
   const mappings: string[] = [];
   const apiSchemaName = entityDef.apiSchema || entityName;
 
-  for (const [fieldName, field] of Object.entries(entityDef.fields)) {
+  for (const [fieldName, fieldDef] of Object.entries(entityDef.fields || {})) {
+    const field = parseFieldDefinition(fieldName, fieldDef, availableEntities);
+    // Skip inline relations
+    if (field._isInlineRelation) {
+      continue;
+    }
     const apiFieldName = getApiFieldName(fieldName, field);
     if (!apiFieldName) {
       continue; // Skip excluded fields
     }
 
     const dbColumnName = field.dbColumn || fieldName;
-    
+
     // Handle type conversions
     if (field.type === "timestamp") {
       // Convert timestamp to ISO string
@@ -58,10 +64,10 @@ function generateEntityMapper(entityName: string, entityDef: EntityDefinition): 
     }
   }
 
-  const functionName = entityName === apiSchemaName 
+  const functionName = entityName === apiSchemaName
     ? `map${entityName}EntityTo${apiSchemaName}`
     : `map${entityName}To${apiSchemaName}`;
-    
+
   return `export function ${functionName}(entity: any): ${apiSchemaName} {
   return {
 ${mappings.join("\n")}
@@ -72,17 +78,24 @@ ${mappings.join("\n")}
 /**
  * Generate reverse mapper (API schema to entity)
  */
-function generateReverseMapper(entityName: string, entityDef: EntityDefinition): string {
+function generateReverseMapper(entityName: string, entityDef: EntityDefinition, availableEntities: Set<string>): string {
   const mappings: string[] = [];
   const apiSchemaName = entityDef.apiSchema || entityName;
 
   // Find primary field or id field to determine if we should skip it
-  const primaryField = Object.entries(entityDef.fields).find(([, f]) => f.primary);
-  const idField = primaryField ? primaryField[1] : entityDef.fields['id'];
-  const shouldSkipId = idField && typeof idField === 'object' && !Array.isArray(idField) && (idField.type === 'string' || idField.type === 'uuid') && !idField.generated;
-  const idFieldName = idField ? (primaryField ? primaryField[0] : 'id') : null;
+  const primaryFieldEntry = Object.entries(entityDef.fields || {}).find(([, f]) => typeof f === 'object' && !Array.isArray(f) && (f as any).primary);
+  const primaryField = primaryFieldEntry ? parseFieldDefinition(primaryFieldEntry[0], primaryFieldEntry[1], availableEntities) : undefined;
+  const idField = primaryField ? primaryField : (entityDef.fields?.['id'] ? parseFieldDefinition('id', entityDef.fields['id'], availableEntities) : undefined);
 
-  for (const [fieldName, field] of Object.entries(entityDef.fields)) {
+  const shouldSkipId = (primaryField || idField) && (primaryField || idField)?.type && ((primaryField || idField)?.type === 'string' || (primaryField || idField)?.type === 'uuid') && !(primaryField || idField)?.generated;
+  const idFieldName = primaryFieldEntry ? primaryFieldEntry[0] : (entityDef.fields?.['id'] ? 'id' : null);
+
+  for (const [fieldName, fieldDef] of Object.entries(entityDef.fields || {})) {
+    const field = parseFieldDefinition(fieldName, fieldDef, availableEntities);
+    // Skip inline relations
+    if (field._isInlineRelation) {
+      continue;
+    }
     const apiFieldName = getApiFieldName(fieldName, field);
     if (!apiFieldName) {
       continue; // Skip excluded fields
@@ -94,7 +107,7 @@ function generateReverseMapper(entityName: string, entityDef: EntityDefinition):
     }
 
     const dbColumnName = field.dbColumn || fieldName;
-    
+
     // Handle type conversions
     if (field.type === "timestamp") {
       // Convert ISO string to timestamp
@@ -112,7 +125,7 @@ function generateReverseMapper(entityName: string, entityDef: EntityDefinition):
   const functionName = entityName === apiSchemaName
     ? `map${apiSchemaName}To${entityName}Entity`
     : `map${apiSchemaName}To${entityName}`;
-    
+
   return `export function ${functionName}(schema: ${apiSchemaName}): Partial<any> {
   return {
 ${mappings.join("\n")}
@@ -132,13 +145,13 @@ import type { ${Object.entries(entities).map(([name, def]) => def.apiSchema || n
 `;
 
   const mapperFunctions: string[] = [];
+  const availableEntities = new Set(Object.keys(entities));
 
   for (const [entityName, entityDef] of Object.entries(entities)) {
-    mapperFunctions.push(generateEntityMapper(entityName, entityDef));
+    mapperFunctions.push(generateEntityMapper(entityName, entityDef, availableEntities));
     mapperFunctions.push(""); // Empty line between mappers
-    mapperFunctions.push(generateReverseMapper(entityName, entityDef));
+    mapperFunctions.push(generateReverseMapper(entityName, entityDef, availableEntities));
   }
 
   return header + mapperFunctions.join("\n\n") + "\n";
 }
-

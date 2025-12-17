@@ -1,4 +1,4 @@
-import { YamaError, YamaErrorOptions } from '../base.js';
+﻿import { YamaError, YamaErrorOptions } from '../base.js';
 
 /**
  * Error thrown when a plugin operation fails.
@@ -9,7 +9,7 @@ import { YamaError, YamaErrorOptions } from '../base.js';
  * ```typescript
  * throw new PluginError('Plugin initialization failed', {
  *   code: ErrorCodes.PLUGIN_INIT_FAILED,
- *   context: { pluginName: '@betagors/yama-postgres' },
+ *   context: { pluginName: '@yamajs/postgres' },
  *   cause: originalError,
  *   suggestions: [
  *     'Check that the plugin is installed correctly',

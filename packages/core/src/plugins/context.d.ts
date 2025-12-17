@@ -93,3 +93,4 @@ export declare class PluginContextImpl {
      */
     getMCPTool(name: string): PluginMCPTool | undefined;
 }
+//# sourceMappingURL=context.d.ts.map

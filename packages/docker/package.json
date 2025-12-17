@@ -1,5 +1,5 @@
-{
-  "name": "@betagors/yama-docker",
+﻿{
+  "name": "@yamajs/docker",
   "version": "0.1.0-alpha.0",
   "type": "module",
   "description": "Yama Docker and Docker Compose plugin for containerization",
@@ -42,7 +42,7 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
-    "@betagors/yama-core": "workspace:*",
+    "@yamajs/core": "workspace:*",
     "inquirer": "^10.2.2",
     "js-yaml": "^4.1.0",
     "zod": "^3.22.4"

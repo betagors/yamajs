@@ -34,3 +34,4 @@ export declare function isExpired(entry: TrashEntry): boolean;
  * Trash entry status
  */
 export type TrashStatus = "active" | "expired" | "restored";
+//# sourceMappingURL=trash.d.ts.map

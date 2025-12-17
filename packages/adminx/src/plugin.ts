@@ -1,10 +1,10 @@
-import type { YamaPlugin } from "@betagors/yama-core";
+﻿import type { YamaPlugin } from "@yamajs/core";
 import { resolveAdminXConfig } from "./config.js";
 import { registerAdminXRoutes } from "./routes.js";
 import type { AdminXPluginAPI, AdminXPluginConfig } from "./types.js";
 
 const plugin: YamaPlugin = {
-  name: "@betagors/yama-adminx",
+  name: "@yamajs/adminx",
   category: "devtools",
   pluginApi: "1.0",
   yamaCore: "^0.1.0",

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Middleware execution utilities for YAMA Node Runtime
  * 
  * This module handles middleware execution across different phases
@@ -10,7 +10,7 @@ import type {
   MiddlewarePhase,
   MiddlewareContext,
   MiddlewareRegistry,
-} from "@betagors/yama-core";
+} from "@yamajs/core";
 
 /**
  * Execute middleware phase with proper context

@@ -1,8 +1,8 @@
-# @betagors/yama-core
+﻿# @yamajs/core
 
 > Core runtime and types for Yama - backend as config framework
 
-[![npm version](https://img.shields.io/npm/v/@betagors/yama-core.svg)](https://www.npmjs.com/package/@betagors/yama-core)
+[![npm version](https://img.shields.io/npm/v/@yamajs/core.svg)](https://www.npmjs.com/package/@yamajs/core)
 [![License: MPL-2.0](https://img.shields.io/badge/License-MPL_2.0-brightgreen.svg)](https://opensource.org/licenses/MPL-2.0)
 
 The core package provides the foundational runtime, types, and utilities for the Yama framework. It includes schema validation, authentication, type generation, database adapters, HTTP server adapters, and the plugin system.
@@ -10,19 +10,19 @@ The core package provides the foundational runtime, types, and utilities for the
 ## Installation
 
 ```bash
-npm install @betagors/yama-core
+npm install @yamajs/core
 ```
 
 ### Deno
 
 ```bash
-deno add npm:@betagors/yama-core
+deno add npm:@yamajs/core
 ```
 
 ### Bun
 
 ```bash
-bun add @betagors/yama-core
+bun add @yamajs/core
 ```
 
 ## Features
@@ -48,12 +48,12 @@ The core is runtime-neutral and expects the host to provide web-standard APIs (`
 - `setEnvProvider`: provide `getEnv`/`setEnv`/`cwd`.
 - `setCryptoProvider`, `setPasswordHasher`: override random bytes/ints/timingSafeEqual and password hashing.
 
-If you use `@betagors/yama-node`, these are configured for you. Other runtimes (Deno/Bun/edge) can inject equivalents before calling APIs that need them.
+If you use `@yamajs/node`, these are configured for you. Other runtimes (Deno/Bun/edge) can inject equivalents before calling APIs that need them.
 
 #### Deno adapter example (npm mode)
 
 ```ts
-import { setFileSystem, setPathModule, setEnvProvider } from "@betagors/yama-core";
+import { setFileSystem, setPathModule, setEnvProvider } from "@yamajs/core";
 
 setFileSystem({
   readFileSync: (p) => Deno.readTextFileSync(p),
@@ -89,7 +89,7 @@ setEnvProvider({
 #### Bun adapter example
 
 ```ts
-import { setFileSystem, setPathModule, setEnvProvider } from "@betagors/yama-core";
+import { setFileSystem, setPathModule, setEnvProvider } from "@yamajs/core";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -111,7 +111,7 @@ setEnvProvider({
 ### Schema Validation
 
 ```typescript
-import { createSchemaValidator, type YamaSchemas } from '@betagors/yama-core';
+import { createSchemaValidator, type YamaSchemas } from '@yamajs/core';
 
 const validator = createSchemaValidator();
 
@@ -143,7 +143,7 @@ if (result.valid) {
 ### Authentication
 
 ```typescript
-import { authenticateAndAuthorize, type AuthConfig } from '@betagors/yama-core';
+import { authenticateAndAuthorize, type AuthConfig } from '@yamajs/core';
 
 const authConfig: AuthConfig = {
   providers: [
@@ -169,7 +169,7 @@ if (authResult.authorized) {
 ### Type Generation
 
 ```typescript
-import { generateTypes } from '@betagors/yama-core';
+import { generateTypes } from '@yamajs/core';
 
 const types = generateTypes(schemas);
 // Returns TypeScript type definitions as a string
@@ -283,7 +283,7 @@ import {
   calculatePaginationMetadata,
   wrapPaginatedResponse,
   type PaginationConfig
-} from '@betagors/yama-core';
+} from '@yamajs/core';
 
 // Normalize pagination config from YAML
 const normalized = normalizePaginationConfig(
@@ -311,7 +311,7 @@ const response = wrapPaginatedResponse(
 ### Database Adapters
 
 ```typescript
-import { createDatabaseAdapter, type DatabaseConfig } from '@betagors/yama-core';
+import { createDatabaseAdapter, type DatabaseConfig } from '@yamajs/core';
 
 const dbConfig: DatabaseConfig = {
   dialect: 'postgresql',
@@ -328,7 +328,7 @@ const result = await adapter.query('SELECT * FROM users');
 ### HTTP Server Adapters
 
 ```typescript
-import { createHttpServerAdapter, type RouteHandler } from '@betagors/yama-core';
+import { createHttpServerAdapter, type RouteHandler } from '@yamajs/core';
 
 const adapter = createHttpServerAdapter('fastify', {});
 const server = adapter.createServer({});
@@ -344,10 +344,10 @@ await adapter.start(server, 3000, '0.0.0.0');
 
 ### Cache Adapters
 
-The cache adapter interface provides a unified API for cache operations. Cache adapters are typically provided via plugins (e.g., `@betagors/yama-redis`).
+The cache adapter interface provides a unified API for cache operations. Cache adapters are typically provided via plugins (e.g., `@yamajs/redis`).
 
 ```typescript
-import { type CacheAdapter } from '@betagors/yama-core';
+import { type CacheAdapter } from '@yamajs/core';
 
 // Cache adapters are available in HandlerContext
 export async function myHandler(context: HandlerContext) {
@@ -385,7 +385,7 @@ await tenantCache?.set('user:42', userData); // Stores as "tenant:123:user:42"
 Yama provides configurable rate limiting with automatic Redis optimization:
 
 ```typescript
-import { createRateLimiterFromConfig, type RateLimitConfig } from '@betagors/yama-core';
+import { createRateLimiterFromConfig, type RateLimitConfig } from '@yamajs/core';
 
 const config: RateLimitConfig = {
   maxRequests: 100,
@@ -413,7 +413,7 @@ See [rate-limit/README.md](./src/rate-limit/README.md) for detailed documentatio
 User handlers use `HandlerFunction` with `HandlerContext`:
 
 ```typescript
-import { type HandlerContext } from '@betagors/yama-core';
+import { type HandlerContext } from '@yamajs/core';
 
 export async function myHandler(context: HandlerContext) {
   // Access request data
@@ -441,9 +441,9 @@ export async function myHandler(context: HandlerContext) {
 ### Plugin System
 
 ```typescript
-import { loadPlugin, type YamaPlugin } from '@betagors/yama-core';
+import { loadPlugin, type YamaPlugin } from '@yamajs/core';
 
-const plugin = await loadPlugin('@betagors/yama-postgres');
+const plugin = await loadPlugin('@yamajs/postgres');
 const pluginApi = await plugin.init({
   url: process.env.DATABASE_URL!
 });
@@ -452,7 +452,7 @@ const pluginApi = await plugin.init({
 ### Entity System
 
 ```typescript
-import { entitiesToSchemas, type YamaEntities } from '@betagors/yama-core';
+import { entitiesToSchemas, type YamaEntities } from '@yamajs/core';
 
 const entities: YamaEntities = {
   User: {
@@ -502,7 +502,7 @@ const schemas = entitiesToSchemas(entities);
 ### Cache Adapters
 
 - `CacheAdapter` - Cache adapter interface
-- Cache adapters are provided via plugins (e.g., `@betagors/yama-redis`)
+- Cache adapters are provided via plugins (e.g., `@yamajs/redis`)
 - Available in `HandlerContext.cache` when a cache plugin is loaded
 
 ### Rate Limiting

@@ -1,7 +1,7 @@
-import { existsSync } from "fs";
+﻿import { existsSync } from "fs";
 import { findYamaConfig } from "../utils/project-detection.ts";
 import { getConfigDir } from "../utils/file-utils.ts";
-import { loadPluginFromPackage } from "@betagors/yama-core";
+import { loadPluginFromPackage } from "@yamajs/core";
 
 interface PluginSelectionOptions {
   category?: string; // e.g., "database", "email", "storage"
@@ -34,7 +34,7 @@ export async function pluginSelectCommand(
   if (!options.category || options.category.toLowerCase() === "database") {
     if (!options.feature || options.feature.toLowerCase().includes("pglite") || options.feature.toLowerCase().includes("lite")) {
       optionsList.push({
-        name: "@betagors/yama-pglite",
+        name: "@yamajs/pglite",
         category: "database",
         description: "In-memory PostgreSQL database for development and testing",
         pros: [
@@ -57,7 +57,7 @@ export async function pluginSelectCommand(
 
     if (!options.feature || options.feature.toLowerCase().includes("postgres") || options.feature.toLowerCase().includes("postgresql")) {
       optionsList.push({
-        name: "@betagors/yama-postgres",
+        name: "@yamajs/postgres",
         category: "database",
         description: "PostgreSQL database adapter for production use",
         pros: [
@@ -83,7 +83,7 @@ export async function pluginSelectCommand(
   if (!options.category || options.category.toLowerCase() === "email") {
     if (!options.feature || options.feature.toLowerCase().includes("smtp")) {
       optionsList.push({
-        name: "@betagors/yama-smtp",
+        name: "@yamajs/smtp",
         category: "email",
         description: "SMTP email sending plugin",
         pros: [
@@ -113,7 +113,7 @@ export async function pluginSelectCommand(
   if (!options.category || options.category.toLowerCase() === "storage") {
     if (!options.feature || options.feature.toLowerCase().includes("s3")) {
       optionsList.push({
-        name: "@betagors/yama-s3",
+        name: "@yamajs/s3",
         category: "storage",
         description: "S3-compatible object storage plugin",
         pros: [
@@ -143,7 +143,7 @@ export async function pluginSelectCommand(
   if (!options.category || options.category.toLowerCase() === "realtime") {
     if (!options.feature || options.feature.toLowerCase().includes("realtime") || options.feature.toLowerCase().includes("websocket")) {
       optionsList.push({
-        name: "@betagors/yama-realtime",
+        name: "@yamajs/realtime",
         category: "realtime",
         description: "WebSocket-based realtime communication",
         pros: [
@@ -167,7 +167,7 @@ export async function pluginSelectCommand(
   if (!options.category || options.category.toLowerCase() === "observability") {
     if (!options.feature || options.feature.toLowerCase().includes("logging")) {
       optionsList.push({
-        name: "@betagors/yama-logging",
+        name: "@yamajs/logging",
         category: "observability",
         description: "Structured logging plugin",
         pros: [
@@ -188,7 +188,7 @@ export async function pluginSelectCommand(
 
     if (!options.feature || options.feature.toLowerCase().includes("metrics")) {
       optionsList.push({
-        name: "@betagors/yama-metrics",
+        name: "@yamajs/metrics",
         category: "observability",
         description: "Metrics collection and export",
         pros: [
@@ -208,7 +208,7 @@ export async function pluginSelectCommand(
 
     if (!options.feature || options.feature.toLowerCase().includes("health")) {
       optionsList.push({
-        name: "@betagors/yama-health",
+        name: "@yamajs/health",
         category: "observability",
         description: "Health check endpoints",
         pros: [

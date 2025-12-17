@@ -141,16 +141,16 @@ importers:
 
   examples/blog-api:
     dependencies:
-      '@betagors/yama-core':
+      '@yamajs/core':
         specifier: file:../../packages/core
         version: file:packages/core(bcryptjs@2.4.3)(jsonwebtoken@9.0.2)
-      '@betagors/yama-node':
+      '@yamajs/node':
         specifier: file:../../packages/node
         version: file:packages/node
-      '@betagors/yama-pglite':
+      '@yamajs/pglite':
         specifier: file:../../packages/pglite
         version: file:packages/pglite(drizzle-orm@0.30.10(@electric-sql/pglite@0.2.17)(@types/react@19.2.7)(better-sqlite3@9.2.2)(postgres@3.4.7)(react@19.2.1))
-      '@betagors/yama-postgres':
+      '@yamajs/postgres':
         specifier: file:../../packages/postgres
         version: file:packages/postgres(@electric-sql/pglite@0.2.17)(@types/react@19.2.7)(better-sqlite3@9.2.2)(react@19.2.1)
       drizzle-orm:
@@ -160,15 +160,15 @@ importers:
         specifier: ^3.4.3
         version: 3.4.7
     devDependencies:
-      '@betagors/yama-cli':
+      '@yamajs/cli':
         specifier: file:../../packages/cli
         version: file:packages/cli
 
   examples/todo-api:
     dependencies:
-      '@betagors/yama-pglite':
-        specifier: 0.1.0-alpha.0
-        version: 0.1.0-alpha.0(@types/react@19.2.7)(better-sqlite3@9.2.2)(postgres@3.4.7)(react@19.2.1)
+      '@yamajs/pglite':
+        specifier: workspace:*
+        version: link:../../packages/pglite
     devDependencies:
       '@vitest/coverage-v8':
         specifier: ^1.0.0
@@ -182,7 +182,7 @@ importers:
 
   packages/adminx:
     dependencies:
-      '@betagors/yama-core':
+      '@yamajs/core':
         specifier: workspace:*
         version: link:../core
     devDependencies:
@@ -196,9 +196,28 @@ importers:
         specifier: ^5.9.2
         version: 5.9.2
 
+  packages/cache:
+    dependencies:
+      '@yamajs/core':
+        specifier: workspace:*
+        version: link:../core
+    devDependencies:
+      '@types/node':
+        specifier: ^20.0.0
+        version: 20.19.25
+      '@vitest/coverage-v8':
+        specifier: ^1.0.0
+        version: 1.6.1(vitest@1.6.1(@types/node@20.19.25)(lightningcss@1.30.2))
+      rimraf:
+        specifier: ^5.0.0
+        version: 5.0.10
+      vitest:
+        specifier: ^1.0.0
+        version: 1.6.1(@types/node@20.19.25)(lightningcss@1.30.2)
+
   packages/ci:
     dependencies:
-      '@betagors/yama-core':
+      '@yamajs/core':
         specifier: workspace:*
         version: link:../core
       js-yaml:
@@ -226,27 +245,27 @@ importers:
 
   packages/cli:
     dependencies:
-      '@betagors/yama-core':
-        specifier: workspace:*
-        version: link:../core
-      '@betagors/yama-errors':
-        specifier: workspace:*
-        version: link:../errors
-      '@betagors/yama-node':
-        specifier: workspace:*
-        version: link:../node
-      '@betagors/yama-openapi':
-        specifier: workspace:*
-        version: link:../openapi
-      '@betagors/yama-postgres':
-        specifier: workspace:*
-        version: link:../postgres
-      '@betagors/yama-sdk':
-        specifier: workspace:*
-        version: link:../sdk
       '@modelcontextprotocol/sdk':
         specifier: ^1.0.4
         version: 1.23.0(zod@3.25.76)
+      '@yamajs/core':
+        specifier: workspace:*
+        version: link:../core
+      '@yamajs/errors':
+        specifier: workspace:*
+        version: link:../errors
+      '@yamajs/node':
+        specifier: workspace:*
+        version: link:../node
+      '@yamajs/openapi':
+        specifier: workspace:*
+        version: link:../openapi
+      '@yamajs/postgres':
+        specifier: workspace:*
+        version: link:../postgres
+      '@yamajs/sdk':
+        specifier: workspace:*
+        version: link:../sdk
       boxen:
         specifier: ^8.0.1
         version: 8.0.1
@@ -311,7 +330,7 @@ importers:
 
   packages/core:
     dependencies:
-      '@betagors/yama-errors':
+      '@yamajs/errors':
         specifier: workspace:*
         version: link:../errors
       ajv:
@@ -360,7 +379,7 @@ importers:
 
   packages/docker:
     dependencies:
-      '@betagors/yama-core':
+      '@yamajs/core':
         specifier: workspace:*
         version: link:../core
       inquirer:
@@ -409,7 +428,7 @@ importers:
 
   packages/fastify:
     dependencies:
-      '@betagors/yama-core':
+      '@yamajs/core':
         specifier: workspace:*
         version: link:../core
       fastify:
@@ -431,7 +450,7 @@ importers:
 
   packages/fs:
     dependencies:
-      '@betagors/yama-core':
+      '@yamajs/core':
         specifier: workspace:*
         version: link:../core
     devDependencies:
@@ -450,7 +469,7 @@ importers:
 
   packages/health:
     dependencies:
-      '@betagors/yama-core':
+      '@yamajs/core':
         specifier: workspace:*
         version: link:../core
     devDependencies:
@@ -469,7 +488,7 @@ importers:
 
   packages/logging:
     dependencies:
-      '@betagors/yama-core':
+      '@yamajs/core':
         specifier: workspace:*
         version: link:../core
     devDependencies:
@@ -488,7 +507,7 @@ importers:
 
   packages/metrics:
     dependencies:
-      '@betagors/yama-core':
+      '@yamajs/core':
         specifier: workspace:*
         version: link:../core
     devDependencies:
@@ -507,19 +526,19 @@ importers:
 
   packages/node:
     dependencies:
-      '@betagors/yama-core':
+      '@yamajs/core':
         specifier: workspace:*
         version: link:../core
-      '@betagors/yama-errors':
+      '@yamajs/errors':
         specifier: workspace:*
         version: link:../errors
-      '@betagors/yama-fastify':
+      '@yamajs/fastify':
         specifier: workspace:*
         version: link:../fastify
-      '@betagors/yama-openapi':
+      '@yamajs/openapi':
         specifier: workspace:*
         version: link:../openapi
-      '@betagors/yama-postgres':
+      '@yamajs/postgres':
         specifier: workspace:*
         version: link:../postgres
       bcryptjs:
@@ -550,7 +569,7 @@ importers:
 
   packages/openapi:
     dependencies:
-      '@betagors/yama-core':
+      '@yamajs/core':
         specifier: workspace:*
         version: link:../core
     devDependencies:
@@ -563,12 +582,12 @@ importers:
 
   packages/pglite:
     dependencies:
-      '@betagors/yama-core':
-        specifier: workspace:*
-        version: link:../core
       '@electric-sql/pglite':
         specifier: ^0.2.0
         version: 0.2.17
+      '@yamajs/core':
+        specifier: workspace:*
+        version: link:../core
       drizzle-orm:
         specifier: ^0.30.0
         version: 0.30.10(@electric-sql/pglite@0.2.17)(@types/react@19.2.7)(better-sqlite3@9.2.2)(postgres@3.4.7)(react@19.2.1)
@@ -591,7 +610,7 @@ importers:
 
   packages/postgres:
     dependencies:
-      '@betagors/yama-core':
+      '@yamajs/core':
         specifier: workspace:*
         version: link:../core
       drizzle-orm:
@@ -616,12 +635,12 @@ importers:
 
   packages/realtime:
     dependencies:
-      '@betagors/yama-core':
-        specifier: workspace:*
-        version: link:../core
       '@fastify/websocket':
         specifier: ^11.0.0
         version: 11.2.0
+      '@yamajs/core':
+        specifier: workspace:*
+        version: link:../core
       fastify:
         specifier: ^5.0.0
         version: 5.6.2
@@ -656,7 +675,10 @@ importers:
 
   packages/redis:
     dependencies:
-      '@betagors/yama-core':
+      '@yamajs/cache':
+        specifier: workspace:0.1.0-alpha.0
+        version: link:../cache
+      '@yamajs/core':
         specifier: workspace:*
         version: link:../core
       ioredis:
@@ -687,7 +709,7 @@ importers:
       '@aws-sdk/s3-request-presigner':
         specifier: ^3.490.0
         version: 3.940.0
-      '@betagors/yama-core':
+      '@yamajs/core':
         specifier: workspace:*
         version: link:../core
     devDependencies:
@@ -706,7 +728,7 @@ importers:
 
   packages/sdk:
     dependencies:
-      '@betagors/yama-core':
+      '@yamajs/core':
         specifier: workspace:*
         version: link:../core
     devDependencies:
@@ -719,7 +741,7 @@ importers:
 
   packages/security:
     dependencies:
-      '@betagors/yama-core':
+      '@yamajs/core':
         specifier: workspace:*
         version: link:../core
     devDependencies:
@@ -738,7 +760,7 @@ importers:
 
   packages/smtp:
     dependencies:
-      '@betagors/yama-core':
+      '@yamajs/core':
         specifier: workspace:*
         version: link:../core
     devDependencies:
@@ -761,9 +783,28 @@ importers:
         specifier: ^1.0.0
         version: 1.6.1(@types/node@20.19.25)(lightningcss@1.30.2)
 
+  packages/storage:
+    dependencies:
+      '@yamajs/core':
+        specifier: workspace:*
+        version: link:../core
+    devDependencies:
+      '@types/node':
+        specifier: ^20.0.0
+        version: 20.19.25
+      '@vitest/coverage-v8':
+        specifier: ^1.0.0
+        version: 1.6.1(vitest@1.6.1(@types/node@20.19.25)(lightningcss@1.30.2))
+      rimraf:
+        specifier: ^5.0.0
+        version: 5.0.10
+      vitest:
+        specifier: ^1.0.0
+        version: 1.6.1(@types/node@20.19.25)(lightningcss@1.30.2)
+
   packages/yama:
     dependencies:
-      '@betagors/yama-core':
+      '@yamajs/core':
         specifier: workspace:*
         version: link:../core
     devDependencies:
@@ -1031,47 +1072,6 @@ packages:
 
   '@bcoe/v8-coverage@0.2.3':
     resolution: {integrity: sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==}
-
-  '@betagors/yama-cli@file:packages/cli':
-    resolution: {directory: packages/cli, type: directory}
-    engines: {node: '>=18'}
-    hasBin: true
-
-  '@betagors/yama-core@0.1.0-alpha.0':
-    resolution: {integrity: sha512-YcxkIfnuO7/Uji8qA0A3GIpLB0FmTMHDwGVKuUPP045eOJ3adxEb9yMUMAmesgBiepkFsOBkld5Aeseesg30rw==}
-    engines: {node: '>=18'}
-    hasBin: true
-
-  '@betagors/yama-core@file:packages/core':
-    resolution: {directory: packages/core, type: directory}
-    engines: {node: '>=18'}
-    hasBin: true
-    peerDependencies:
-      bcryptjs: ^2.4.3
-      jsonwebtoken: ^9.0.2
-    peerDependenciesMeta:
-      bcryptjs:
-        optional: true
-      jsonwebtoken:
-        optional: true
-
-  '@betagors/yama-node@file:packages/node':
-    resolution: {directory: packages/node, type: directory}
-    engines: {node: '>=18'}
-
-  '@betagors/yama-pglite@0.1.0-alpha.0':
-    resolution: {integrity: sha512-VXygkwfHlTT58LD65t1jYym7N7sE8HBbC8mhU2i5T6+U32wIVGYjWzddVziNtImQDcULtC+D2OzyE8OrVI3RMg==}
-    engines: {node: '>=18'}
-
-  '@betagors/yama-pglite@file:packages/pglite':
-    resolution: {directory: packages/pglite, type: directory}
-    engines: {node: '>=18'}
-    peerDependencies:
-      drizzle-orm: ^0.30.0
-
-  '@betagors/yama-postgres@file:packages/postgres':
-    resolution: {directory: packages/postgres, type: directory}
-    engines: {node: '>=18'}
 
   '@changesets/apply-release-plan@7.0.13':
     resolution: {integrity: sha512-BIW7bofD2yAWoE8H4V40FikC+1nNFEKBisMECccS16W1rt6qqhNTBDmIw5HaqmMgtLNz9e7oiALiEUuKrQ4oHg==}
@@ -3106,6 +3106,38 @@ packages:
 
   '@vitest/utils@1.6.1':
     resolution: {integrity: sha512-jOrrUvXM4Av9ZWiG1EajNto0u96kWAhJ1LmPmJhXXQx/32MecEKd10pOLYgS2BQx1TgkGhloPU1ArDW2vvaY6g==}
+
+  '@yamajs/cli@file:packages/cli':
+    resolution: {directory: packages/cli, type: directory}
+    engines: {node: '>=18'}
+    hasBin: true
+
+  '@yamajs/core@file:packages/core':
+    resolution: {directory: packages/core, type: directory}
+    engines: {node: '>=18'}
+    hasBin: true
+    peerDependencies:
+      bcryptjs: ^2.4.3
+      jsonwebtoken: ^9.0.2
+    peerDependenciesMeta:
+      bcryptjs:
+        optional: true
+      jsonwebtoken:
+        optional: true
+
+  '@yamajs/node@file:packages/node':
+    resolution: {directory: packages/node, type: directory}
+    engines: {node: '>=18'}
+
+  '@yamajs/pglite@file:packages/pglite':
+    resolution: {directory: packages/pglite, type: directory}
+    engines: {node: '>=18'}
+    peerDependencies:
+      drizzle-orm: ^0.30.0
+
+  '@yamajs/postgres@file:packages/postgres':
+    resolution: {directory: packages/postgres, type: directory}
+    engines: {node: '>=18'}
 
   abstract-logging@2.0.1:
     resolution: {integrity: sha512-2BjRTZxTPvheOvGbBslFSYOUkr+SjPtOnrLP33f+VIWLzezQpZcqVg7ja3L4dBXmzzgwT+a029jRx5PCi3JuiA==}
@@ -7085,128 +7117,6 @@ snapshots:
 
   '@bcoe/v8-coverage@0.2.3': {}
 
-  '@betagors/yama-cli@file:packages/cli':
-    dependencies:
-      '@betagors/yama-core': link:packages/core
-      '@betagors/yama-errors': link:packages/errors
-      '@betagors/yama-node': link:packages/node
-      '@betagors/yama-openapi': link:packages/openapi
-      '@betagors/yama-postgres': link:packages/postgres
-      '@betagors/yama-sdk': link:packages/sdk
-      '@modelcontextprotocol/sdk': 1.23.0(zod@3.25.76)
-      boxen: 8.0.1
-      chalk: 5.6.2
-      chokidar: 4.0.3
-      commander: 12.1.0
-      dotenv: 16.6.1
-      inquirer: 10.2.2
-      js-yaml: 4.1.1
-      ora: 8.2.0
-      semver: 7.7.3
-      table: 6.9.0
-      zod: 3.25.76
-      zod-to-json-schema: 3.25.0(zod@3.25.76)
-    transitivePeerDependencies:
-      - '@cfworker/json-schema'
-      - supports-color
-
-  '@betagors/yama-core@0.1.0-alpha.0':
-    dependencies:
-      ajv: 8.17.1
-      ajv-formats: 2.1.1(ajv@8.17.1)
-      js-yaml: 4.1.1
-      jsonwebtoken: 9.0.2
-
-  '@betagors/yama-core@file:packages/core(bcryptjs@2.4.3)(jsonwebtoken@9.0.2)':
-    dependencies:
-      '@betagors/yama-errors': link:packages/errors
-      ajv: 8.17.1
-      ajv-formats: 2.1.1(ajv@8.17.1)
-      js-yaml: 4.1.1
-      semver: 7.7.3
-    optionalDependencies:
-      bcryptjs: 2.4.3
-      jsonwebtoken: 9.0.2
-
-  '@betagors/yama-node@file:packages/node':
-    dependencies:
-      '@betagors/yama-core': link:packages/core
-      '@betagors/yama-errors': link:packages/errors
-      '@betagors/yama-fastify': link:packages/fastify
-      '@betagors/yama-openapi': link:packages/openapi
-      '@betagors/yama-postgres': link:packages/postgres
-      bcryptjs: 2.4.3
-      dotenv: 16.6.1
-      js-yaml: 4.1.1
-
-  '@betagors/yama-pglite@0.1.0-alpha.0(@types/react@19.2.7)(better-sqlite3@9.2.2)(postgres@3.4.7)(react@19.2.1)':
-    dependencies:
-      '@betagors/yama-core': 0.1.0-alpha.0
-      '@electric-sql/pglite': 0.2.17
-      drizzle-orm: 0.30.10(@electric-sql/pglite@0.2.17)(@types/react@19.2.7)(better-sqlite3@9.2.2)(postgres@3.4.7)(react@19.2.1)
-    transitivePeerDependencies:
-      - '@aws-sdk/client-rds-data'
-      - '@cloudflare/workers-types'
-      - '@libsql/client'
-      - '@neondatabase/serverless'
-      - '@op-engineering/op-sqlite'
-      - '@opentelemetry/api'
-      - '@planetscale/database'
-      - '@types/better-sqlite3'
-      - '@types/pg'
-      - '@types/react'
-      - '@types/sql.js'
-      - '@vercel/postgres'
-      - '@xata.io/client'
-      - better-sqlite3
-      - bun-types
-      - expo-sqlite
-      - knex
-      - kysely
-      - mysql2
-      - pg
-      - postgres
-      - react
-      - sql.js
-      - sqlite3
-
-  '@betagors/yama-pglite@file:packages/pglite(drizzle-orm@0.30.10(@electric-sql/pglite@0.2.17)(@types/react@19.2.7)(better-sqlite3@9.2.2)(postgres@3.4.7)(react@19.2.1))':
-    dependencies:
-      '@betagors/yama-core': link:packages/core
-      '@electric-sql/pglite': 0.2.17
-      drizzle-orm: 0.30.10(@electric-sql/pglite@0.2.17)(@types/react@19.2.7)(better-sqlite3@9.2.2)(postgres@3.4.7)(react@19.2.1)
-
-  '@betagors/yama-postgres@file:packages/postgres(@electric-sql/pglite@0.2.17)(@types/react@19.2.7)(better-sqlite3@9.2.2)(react@19.2.1)':
-    dependencies:
-      '@betagors/yama-core': link:packages/core
-      drizzle-orm: 0.30.10(@electric-sql/pglite@0.2.17)(@types/react@19.2.7)(better-sqlite3@9.2.2)(postgres@3.4.7)(react@19.2.1)
-      postgres: 3.4.7
-    transitivePeerDependencies:
-      - '@aws-sdk/client-rds-data'
-      - '@cloudflare/workers-types'
-      - '@electric-sql/pglite'
-      - '@libsql/client'
-      - '@neondatabase/serverless'
-      - '@op-engineering/op-sqlite'
-      - '@opentelemetry/api'
-      - '@planetscale/database'
-      - '@types/better-sqlite3'
-      - '@types/pg'
-      - '@types/react'
-      - '@types/sql.js'
-      - '@vercel/postgres'
-      - '@xata.io/client'
-      - better-sqlite3
-      - bun-types
-      - expo-sqlite
-      - knex
-      - kysely
-      - mysql2
-      - pg
-      - react
-      - sql.js
-      - sqlite3
-
   '@changesets/apply-release-plan@7.0.13':
     dependencies:
       '@changesets/config': 3.1.1
@@ -9268,6 +9178,90 @@ snapshots:
       estree-walker: 3.0.3
       loupe: 2.3.7
       pretty-format: 29.7.0
+
+  '@yamajs/cli@file:packages/cli':
+    dependencies:
+      '@modelcontextprotocol/sdk': 1.23.0(zod@3.25.76)
+      '@yamajs/core': link:packages/core
+      '@yamajs/errors': link:packages/errors
+      '@yamajs/node': link:packages/node
+      '@yamajs/openapi': link:packages/openapi
+      '@yamajs/postgres': link:packages/postgres
+      '@yamajs/sdk': link:packages/sdk
+      boxen: 8.0.1
+      chalk: 5.6.2
+      chokidar: 4.0.3
+      commander: 12.1.0
+      dotenv: 16.6.1
+      inquirer: 10.2.2
+      js-yaml: 4.1.1
+      ora: 8.2.0
+      semver: 7.7.3
+      table: 6.9.0
+      zod: 3.25.76
+      zod-to-json-schema: 3.25.0(zod@3.25.76)
+    transitivePeerDependencies:
+      - '@cfworker/json-schema'
+      - supports-color
+
+  '@yamajs/core@file:packages/core(bcryptjs@2.4.3)(jsonwebtoken@9.0.2)':
+    dependencies:
+      '@yamajs/errors': link:packages/errors
+      ajv: 8.17.1
+      ajv-formats: 2.1.1(ajv@8.17.1)
+      js-yaml: 4.1.1
+      semver: 7.7.3
+    optionalDependencies:
+      bcryptjs: 2.4.3
+      jsonwebtoken: 9.0.2
+
+  '@yamajs/node@file:packages/node':
+    dependencies:
+      '@yamajs/core': link:packages/core
+      '@yamajs/errors': link:packages/errors
+      '@yamajs/fastify': link:packages/fastify
+      '@yamajs/openapi': link:packages/openapi
+      '@yamajs/postgres': link:packages/postgres
+      bcryptjs: 2.4.3
+      dotenv: 16.6.1
+      js-yaml: 4.1.1
+
+  '@yamajs/pglite@file:packages/pglite(drizzle-orm@0.30.10(@electric-sql/pglite@0.2.17)(@types/react@19.2.7)(better-sqlite3@9.2.2)(postgres@3.4.7)(react@19.2.1))':
+    dependencies:
+      '@electric-sql/pglite': 0.2.17
+      '@yamajs/core': link:packages/core
+      drizzle-orm: 0.30.10(@electric-sql/pglite@0.2.17)(@types/react@19.2.7)(better-sqlite3@9.2.2)(postgres@3.4.7)(react@19.2.1)
+
+  '@yamajs/postgres@file:packages/postgres(@electric-sql/pglite@0.2.17)(@types/react@19.2.7)(better-sqlite3@9.2.2)(react@19.2.1)':
+    dependencies:
+      '@yamajs/core': link:packages/core
+      drizzle-orm: 0.30.10(@electric-sql/pglite@0.2.17)(@types/react@19.2.7)(better-sqlite3@9.2.2)(postgres@3.4.7)(react@19.2.1)
+      postgres: 3.4.7
+    transitivePeerDependencies:
+      - '@aws-sdk/client-rds-data'
+      - '@cloudflare/workers-types'
+      - '@electric-sql/pglite'
+      - '@libsql/client'
+      - '@neondatabase/serverless'
+      - '@op-engineering/op-sqlite'
+      - '@opentelemetry/api'
+      - '@planetscale/database'
+      - '@types/better-sqlite3'
+      - '@types/pg'
+      - '@types/react'
+      - '@types/sql.js'
+      - '@vercel/postgres'
+      - '@xata.io/client'
+      - better-sqlite3
+      - bun-types
+      - expo-sqlite
+      - knex
+      - kysely
+      - mysql2
+      - pg
+      - react
+      - sql.js
+      - sqlite3
 
   abstract-logging@2.0.1: {}
 

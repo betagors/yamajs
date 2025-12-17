@@ -1,10 +1,10 @@
-# yaml-language-server: $schema=../../packages/cli/src/yama.schema.json
+﻿# yaml-language-server: $schema=../../packages/cli/src/yama.schema.json
 project:
   name: blog-api
   version: 1.0.0
 
 plugins:
-  - "@betagors/yama-pglite"
+  - "@yamajs/pglite"
 
 # ============================================================================
 # SCHEMAS: Data definitions

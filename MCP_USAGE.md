@@ -1,4 +1,4 @@
-# YAMA MCP (Model Context Protocol) Usage Guide
+﻿# YAMA MCP (Model Context Protocol) Usage Guide
 
 YAMA provides an MCP server that exposes YAMA CLI commands as tools and project data as resources for AI assistants like Cursor, Claude Desktop, and other MCP-compatible clients.
 
@@ -331,7 +331,7 @@ This error means the MCP server cannot find a `yama.yaml` file. Solutions:
 
 ### Server Won't Start
 
-- Ensure YAMA CLI is installed: `npm install -g @betagors/yama-cli`
+- Ensure YAMA CLI is installed: `npm install -g @yamajs/cli`
 - Check that `yama` command is in your PATH: `which yama` (Unix) or `where yama` (Windows)
 - Verify the MCP server script exists in the CLI package
 - If developing YAMA locally, rebuild: `cd packages/cli && pnpm build`

@@ -1,4 +1,4 @@
-import { startYamaNodeRuntime } from "@betagors/yama-node";
+import { startYamaNodeRuntime } from "@yamajs/node";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 

@@ -1,12 +1,12 @@
-import { existsSync } from "fs";
+﻿import { existsSync } from "fs";
 import { findYamaConfig } from "../utils/project-detection.ts";
 import { getConfigDir, readYamaConfig } from "../utils/file-utils.ts";
-import { resolveEnvVars, loadEnvFile } from "@betagors/yama-core";
+import { resolveEnvVars, loadEnvFile } from "@yamajs/core";
 import { success, error, info } from "../utils/cli-utils.ts";
-import { loadPlugin, setPluginRegistryConfig, pluginRegistry } from "@betagors/yama-core";
+import { loadPlugin, setPluginRegistryConfig, pluginRegistry } from "@yamajs/core";
 import {
   pluginMetricsCollector,
-} from "@betagors/yama-core";
+} from "@yamajs/core";
 import { table } from "table";
 
 interface PluginMetricsOptions {
@@ -55,13 +55,13 @@ export async function pluginMetricsCommand(
 
     // Try to load metrics plugin first if available
     let metricsService: any = null;
-    if (pluginList.includes("@betagors/yama-metrics")) {
+    if (pluginList.includes("@yamajs/metrics")) {
       try {
         const metricsConfig = !config.plugins || Array.isArray(config.plugins)
           ? {}
-          : (config.plugins["@betagors/yama-metrics"] || {});
-        await loadPlugin("@betagors/yama-metrics", configDir, metricsConfig);
-        metricsService = pluginRegistry.getPluginAPI("@betagors/yama-metrics");
+          : (config.plugins["@yamajs/metrics"] || {});
+        await loadPlugin("@yamajs/metrics", configDir, metricsConfig);
+        metricsService = pluginRegistry.getPluginAPI("@yamajs/metrics");
       } catch (err) {
         // Metrics plugin not available, fall back to direct collector
         info("Metrics plugin not available, using direct collector");
@@ -73,7 +73,7 @@ export async function pluginMetricsCommand(
     if (options.plugin) {
       pluginsToShow.push(options.plugin);
     } else {
-      pluginsToShow.push(...pluginList.filter((p) => p !== "@betagors/yama-metrics"));
+      pluginsToShow.push(...pluginList.filter((p) => p !== "@yamajs/metrics"));
     }
 
     // Load plugins to collect metrics
@@ -111,7 +111,7 @@ export async function pluginMetricsCommand(
 
 
     // Fallback to text output
-    console.log("\n📊 Plugin Metrics Summary\n");
+    console.log("\nðŸ“Š Plugin Metrics Summary\n");
     console.log(`Total Plugins: ${summary.totalPlugins}`);
     console.log(`Total Load Time: ${summary.totalLoadTime.toFixed(2)}ms`);
     console.log(`Total Init Time: ${summary.totalInitTime.toFixed(2)}ms`);
@@ -122,7 +122,7 @@ export async function pluginMetricsCommand(
 
     // Show per-plugin metrics (table format)
     if (pluginsToShow.length > 0) {
-      console.log("\n📦 Per-Plugin Metrics\n");
+      console.log("\nðŸ“¦ Per-Plugin Metrics\n");
       const rows: string[][] = [
         ["Plugin", "Load (ms)", "Init (ms)", "API Calls", "Errors", "Last Error"],
       ];
@@ -150,8 +150,8 @@ export async function pluginMetricsCommand(
       console.log(table(rows));
     }
 
-    console.log("\n💡 Tip: Use --reset to clear metrics");
-    console.log("💡 Tip: Use --format prometheus or --format json for export");
+    console.log("\nðŸ’¡ Tip: Use --reset to clear metrics");
+    console.log("ðŸ’¡ Tip: Use --format prometheus or --format json for export");
   } catch (err) {
     error(`Failed to get plugin metrics: ${err instanceof Error ? err.message : String(err)}`);
     process.exit(1);

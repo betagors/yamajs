@@ -1,8 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+﻿import { describe, it, expect, vi, beforeEach } from "vitest";
 import { createSMTPTransport, isMailpitConfig, type SMTPConfig } from "./client.js";
 import { createEmailService, type EmailOptions } from "./service.js";
 import plugin from "./plugin.js";
-import type { PluginContext } from "@betagors/yama-core";
+import type { PluginContext } from "@yamajs/core";
 
 // Mock nodemailer
 vi.mock("nodemailer", () => {

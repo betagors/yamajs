@@ -1,4 +1,4 @@
-import type { PluginCLICommand } from "@betagors/yama-core";
+﻿import type { PluginCLICommand } from "@yamajs/core";
 import type { CIPluginAPI } from "./plugin.js";
 
 /**
@@ -35,35 +35,35 @@ export function createCICommands(api: CIPluginAPI, pluginName: string): PluginCL
       action: async (options: { overwrite?: boolean; testOnly?: boolean; buildOnly?: boolean; deployOnly?: boolean }) => {
         const overwrite = options.overwrite || false;
         try {
-          console.log("🚀 Generating CI/CD workflow files...\n");
+          console.log("ðŸš€ Generating CI/CD workflow files...\n");
           
           const workflows = api.generateAllWorkflows();
           
           if (options.testOnly || (!options.buildOnly && !options.deployOnly)) {
             if (workflows.test) {
-              console.log("📄 .github/workflows/test.yml:");
+              console.log("ðŸ“„ .github/workflows/test.yml:");
               console.log(workflows.test);
             }
           }
           
           if (options.buildOnly || (!options.testOnly && !options.deployOnly)) {
             if (workflows.build) {
-              console.log("\n📄 .github/workflows/build.yml:");
+              console.log("\nðŸ“„ .github/workflows/build.yml:");
               console.log(workflows.build);
             }
           }
           
           if (options.deployOnly || (!options.testOnly && !options.buildOnly)) {
             if (workflows.deploy) {
-              console.log("\n📄 .github/workflows/deploy.yml:");
+              console.log("\nðŸ“„ .github/workflows/deploy.yml:");
               console.log(workflows.deploy);
             }
           }
           
-          console.log("\n✅ Workflow files generated successfully!");
-          console.log("💡 Use 'yama ci write' to write these files to your project.");
+          console.log("\nâœ… Workflow files generated successfully!");
+          console.log("ðŸ’¡ Use 'yama ci write' to write these files to your project.");
         } catch (error) {
-          console.error("❌ Failed to generate workflow files:", error instanceof Error ? error.message : String(error));
+          console.error("âŒ Failed to generate workflow files:", error instanceof Error ? error.message : String(error));
           throw error;
         }
       },
@@ -97,7 +97,7 @@ export function createCICommands(api: CIPluginAPI, pluginName: string): PluginCL
       action: async (options: { overwrite?: boolean; testOnly?: boolean; buildOnly?: boolean; deployOnly?: boolean }) => {
         const overwrite = options.overwrite || false;
         try {
-          console.log("🚀 Writing CI/CD workflow files...\n");
+          console.log("ðŸš€ Writing CI/CD workflow files...\n");
           
           if (options.testOnly || (!options.buildOnly && !options.deployOnly)) {
             api.writeTestWorkflow(overwrite);
@@ -111,9 +111,9 @@ export function createCICommands(api: CIPluginAPI, pluginName: string): PluginCL
             api.writeDeployWorkflow(overwrite);
           }
           
-          console.log("\n✅ All workflow files written successfully!");
+          console.log("\nâœ… All workflow files written successfully!");
         } catch (error) {
-          console.error("❌ Failed to write workflow files:", error instanceof Error ? error.message : String(error));
+          console.error("âŒ Failed to write workflow files:", error instanceof Error ? error.message : String(error));
           throw error;
         }
       },

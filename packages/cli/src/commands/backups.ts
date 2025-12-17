@@ -1,4 +1,4 @@
-import { existsSync, unlinkSync } from "fs";
+﻿import { existsSync, unlinkSync } from "fs";
 import { join } from "path";
 import { findYamaConfig } from "../utils/project-detection.ts";
 import { getConfigDir } from "../utils/file-utils.ts";
@@ -10,7 +10,7 @@ import {
   loadBackupMetadata,
   getSnapshotsBackupDir,
   getBackupManifestsDir,
-} from "@betagors/yama-core";
+} from "@yamajs/core";
 import { info, error, success, warning } from "../utils/cli-utils.ts";
 import { table } from "table";
 import { confirm } from "../utils/interactive.ts";
@@ -81,7 +81,7 @@ export async function backupsStatusCommand(options: BackupsStatusOptions): Promi
     const totalSize = calculateBackupSize(configDir);
     const expired = getExpiredBackups(configDir);
 
-    console.log("\n📦 Backup Status\n");
+    console.log("\nðŸ“¦ Backup Status\n");
     console.log(`Total backups: ${backups.length}`);
     console.log(`Total size: ${formatBytes(totalSize)}`);
     console.log(`Expired backups: ${expired.length}`);

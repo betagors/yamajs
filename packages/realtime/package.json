@@ -1,5 +1,5 @@
-{
-  "name": "@betagors/yama-realtime",
+﻿{
+  "name": "@yamajs/realtime",
   "version": "0.1.0-alpha.0",
   "type": "module",
   "description": "Yama realtime/WebSocket plugin",
@@ -40,7 +40,7 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
-    "@betagors/yama-core": "workspace:*",
+    "@yamajs/core": "workspace:*",
     "@fastify/websocket": "^11.0.0",
     "fastify": "^5.0.0"
   },

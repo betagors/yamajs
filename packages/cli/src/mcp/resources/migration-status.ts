@@ -1,9 +1,9 @@
-import { existsSync, readdirSync } from "fs";
+﻿import { existsSync, readdirSync } from "fs";
 import { join, resolve } from "path";
 import { findYamaConfig } from "../../utils/project-detection.ts";
 import { readYamaConfig, getConfigDir } from "../../utils/file-utils.ts";
-import { loadEnvFile, resolveEnvVars } from "@betagors/yama-core";
-import type { DatabaseConfig } from "@betagors/yama-core";
+import { loadEnvFile, resolveEnvVars } from "@yamajs/core";
+import type { DatabaseConfig } from "@yamajs/core";
 import { getDatabasePlugin } from "../../utils/db-plugin.ts";
 import { getMCPWorkingDir } from "../utils/workdir.ts";
 

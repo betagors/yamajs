@@ -1,11 +1,11 @@
-# @betagors/yama-realtime-client
+﻿# @yamajs/realtime-client
 
 Client SDK for connecting to YAMA realtime WebSocket servers.
 
 ## Installation
 
 ```bash
-npm install @betagors/yama-realtime-client
+npm install @yamajs/realtime-client
 ```
 
 ## Usage
@@ -13,7 +13,7 @@ npm install @betagors/yama-realtime-client
 ### Basic Connection
 
 ```typescript
-import { createYamaRealtimeClient } from '@betagors/yama-realtime-client';
+import { createYamaRealtimeClient } from '@yamajs/realtime-client';
 
 const client = createYamaRealtimeClient('ws://localhost:3000/ws', {
   token: 'your-jwt-token',  // Optional: for authentication

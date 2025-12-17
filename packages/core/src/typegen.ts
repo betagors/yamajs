@@ -1,4 +1,4 @@
-import type { SchemaField, SchemaDefinition, YamaSchemas } from "./schemas.js";
+﻿import type { SchemaField, SchemaDefinition, YamaSchemas } from "./schemas.js";
 import type { YamaEntities } from "./entities.js";
 import { entitiesToSchemas, mergeSchemas } from "./entities.js";
 import { normalizeQueryOrParams, normalizeBodyDefinition, parseSchemaFieldDefinition } from "./schemas.js";
@@ -402,7 +402,7 @@ function generateParamsOrQueryType(
 export function generateHandlerContexts(
   config: HandlerContextConfig,
   typesImportPath: string = "../types",
-  handlerContextImportPath: string = "@betagors/yama-core",
+  handlerContextImportPath: string = "@yamajs/core",
   repositoryTypesImportPath?: string,
   availableServices?: AvailableServices
 ): string {

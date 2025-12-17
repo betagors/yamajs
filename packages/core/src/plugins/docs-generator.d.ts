@@ -56,3 +56,4 @@ export declare function generateMarkdownDocs(docs: PluginDocumentation): string;
  * Generate HTML documentation
  */
 export declare function generateHTMLDocs(docs: PluginDocumentation): string;
+//# sourceMappingURL=docs-generator.d.ts.map

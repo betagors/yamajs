@@ -1,15 +1,15 @@
-import type { YamaPlugin, PluginContext } from "@betagors/yama-core";
+﻿import type { YamaPlugin, PluginContext } from "@yamajs/core";
 import type { SecurityPluginConfig } from "./types.js";
 import { createSecurityMiddleware } from "./middleware.js";
-// Note: This type is exported from @betagors/yama-core but may need to be imported
-// from source during development. Once core is built, use: import type { MiddlewareDefinition } from "@betagors/yama-core";
+// Note: This type is exported from @yamajs/core but may need to be imported
+// from source during development. Once core is built, use: import type { MiddlewareDefinition } from "@yamajs/core";
 import type { MiddlewareDefinition } from "../../core/src/middleware/index.js";
 
 /**
  * Security plugin for Yama
  */
 const plugin: YamaPlugin = {
-  name: "@betagors/yama-security",
+  name: "@yamajs/security",
   category: "security",
   pluginApi: "1.0",
   yamaCore: "^0.1.0",
@@ -33,7 +33,7 @@ const plugin: YamaPlugin = {
        */
       getMiddleware(): MiddlewareDefinition | MiddlewareDefinition[] {
         return {
-          name: "@betagors/yama-security",
+          name: "@yamajs/security",
           handler: securityMiddleware,
           phases: ["pre-auth"], // Run before authentication
           priority: 10, // High priority - run early

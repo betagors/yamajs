@@ -1,8 +1,8 @@
-# @betagors/yama-sdk
+﻿# @yamajs/sdk
 
 > TypeScript SDK generator for Yama (internal tool)
 
-[![npm version](https://img.shields.io/npm/v/@betagors/yama-sdk.svg)](https://www.npmjs.com/package/@betagors/yama-sdk)
+[![npm version](https://img.shields.io/npm/v/@yamajs/sdk.svg)](https://www.npmjs.com/package/@yamajs/sdk)
 [![License: MPL-2.0](https://img.shields.io/badge/License-MPL_2.0-brightgreen.svg)](https://opensource.org/licenses/MPL-2.0)
 
 Internal tool used by the Yama CLI to generate type-safe TypeScript SDKs from `yama.yaml` configurations. This package is typically used indirectly through the CLI, but can also be used programmatically.
@@ -10,7 +10,7 @@ Internal tool used by the Yama CLI to generate type-safe TypeScript SDKs from `y
 ## Installation
 
 ```bash
-npm install @betagors/yama-sdk
+npm install @yamajs/sdk
 ```
 
 ## Usage
@@ -18,7 +18,7 @@ npm install @betagors/yama-sdk
 ### Programmatic Usage
 
 ```typescript
-import { generateSDK, type YamaConfig } from '@betagors/yama-sdk';
+import { generateSDK, type YamaConfig } from '@yamajs/sdk';
 
 const config: YamaConfig = {
   name: 'my-api',
@@ -121,7 +121,7 @@ yama generate --ir ./.yama/yama-ir.json
 ```
 
 ```typescript
-import { YamaClient } from '@betagors/yama-sdk';
+import { YamaClient } from '@yamajs/sdk';
 import ir from './.yama/yama-ir.json';
 
 async function main() {

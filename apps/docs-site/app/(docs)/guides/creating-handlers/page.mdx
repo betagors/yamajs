@@ -21,7 +21,7 @@ Create a simple handler:
 
 ```typescript
 // src/handlers/listTodos.ts
-import { HandlerContext } from '@betagors/yama-core';
+import { HandlerContext } from '@yamajs/core';
 
 export async function listTodos(context: HandlerContext) {
   const todos = await context.entities.Todo.findAll();

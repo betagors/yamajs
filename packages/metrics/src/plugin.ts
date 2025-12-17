@@ -1,4 +1,4 @@
-import type {
+﻿import type {
   YamaPlugin,
   PluginContext,
   PluginMetrics,
@@ -8,12 +8,12 @@ import type {
   HttpResponse,
   HandlerContext,
   ErrorContext,
-} from "@betagors/yama-core";
+} from "@yamajs/core";
 import {
   pluginMetricsCollector,
   recordPluginAPICall,
   recordPluginError,
-} from "@betagors/yama-core";
+} from "@yamajs/core";
 import {
   Counter,
   Gauge,
@@ -82,7 +82,7 @@ export interface MetricsPluginAPI extends MonitoringHooks {
  * Metrics plugin implementation
  */
 const plugin: YamaPlugin = {
-  name: "@betagors/yama-metrics",
+  name: "@yamajs/metrics",
   category: "observability",
   pluginApi: "1.0",
   yamaCore: "^0.1.0",

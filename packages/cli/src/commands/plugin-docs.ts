@@ -1,14 +1,14 @@
-import { existsSync, writeFileSync } from "fs";
+﻿import { existsSync, writeFileSync } from "fs";
 import { join } from "path";
 import { findYamaConfig } from "../utils/project-detection.ts";
 import { getConfigDir } from "../utils/file-utils.ts";
 import { success, error, info } from "../utils/cli-utils.ts";
-import { loadPlugin, loadPluginFromPackage } from "@betagors/yama-core";
+import { loadPlugin, loadPluginFromPackage } from "@yamajs/core";
 import {
   generatePluginDocs,
   generateMarkdownDocs,
   generateHTMLDocs,
-} from "@betagors/yama-core";
+} from "@yamajs/core";
 
 interface PluginDocsOptions {
   package: string;

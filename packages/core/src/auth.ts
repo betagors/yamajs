@@ -1,11 +1,11 @@
-import {
+﻿import {
   type AuthProvider,
   type AuthConfig,
   type EndpointAuth,
   type AuthContext,
 } from "./schemas.js";
 import { getAuthProvider } from "./auth/registry.js";
-import { ErrorCodes } from "@betagors/yama-errors";
+import { ErrorCodes } from "@yamajs/errors";
 
 // Import built-in providers to trigger registration
 import "./auth/providers/index.js";

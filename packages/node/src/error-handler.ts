@@ -1,11 +1,11 @@
-/**
+﻿/**
  * Central error handler for YAMA Node Runtime
  * 
  * This module provides standardized error handling for HTTP requests,
  * converting all errors to the standardized API error format.
  */
 
-import type { HttpRequest, HttpResponse, HandlerContext } from "@betagors/yama-core";
+import type { HttpRequest, HttpResponse, HandlerContext } from "@yamajs/core";
 import {
   YamaError,
   ValidationError,
@@ -19,7 +19,7 @@ import {
   formatRestError,
   getRestErrorHeaders,
   getErrorLogLevel,
-} from "@betagors/yama-errors";
+} from "@yamajs/errors";
 
 /**
  * Options for handling errors
@@ -216,4 +216,4 @@ export {
   isYamaError,
   normalizeError,
   formatRestError,
-} from "@betagors/yama-errors";
+} from "@yamajs/errors";

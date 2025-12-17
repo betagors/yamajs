@@ -63,20 +63,20 @@ export function shouldAudit(
   if (!config.enabled) {
     return false;
   }
-  
+
   if (!config.track) {
     return true; // Track everything if no specific config
   }
-  
+
   const entityConfig = config.track.find((t) => t.entity === entity);
   if (!entityConfig) {
     return false; // Entity not in tracking list
   }
-  
+
   if (entityConfig.operations.includes("all")) {
     return true;
   }
-  
+
   return entityConfig.operations.includes(operation);
 }
 
@@ -97,7 +97,7 @@ export function createAuditEntry(
   }
 ): AuditLogEntry {
   const { randomUUID } = require("crypto");
-  
+
   return {
     id: randomUUID(),
     timestamp: new Date().toISOString(),
@@ -121,10 +121,10 @@ export function parseRetentionPeriod(retention: string): number {
   if (!match) {
     return 90; // Default to 90 days
   }
-  
+
   const value = parseInt(match[1], 10);
   const unit = match[2];
-  
+
   switch (unit) {
     case "d":
       return value;
@@ -149,7 +149,7 @@ export function isAuditEntryExpired(
   const entryDate = new Date(entry.timestamp);
   const expirationDate = new Date(entryDate);
   expirationDate.setDate(expirationDate.getDate() + retentionDays);
-  
+
   return new Date() > expirationDate;
 }
 
@@ -171,7 +171,319 @@ export function toAuditOperation(
   }
 }
 
+/**
+ * Audit cleanup options
+ */
+export interface AuditCleanupOptions {
+  /** Only show what would be done */
+  dryRun?: boolean;
+  /** Override retention from config (e.g., "90d") */
+  retention?: string;
+  /** Archive entries to file before deleting */
+  archivePath?: string;
+}
 
+/**
+ * Audit cleanup result
+ */
+export interface AuditCleanupResult {
+  /** Number of entries deleted */
+  deletedCount: number;
+  /** Path to archive file if created */
+  archivedPath?: string;
+  /** Number of entries archived */
+  archivedCount?: number;
+  /** Whether this was a dry run */
+  dryRun: boolean;
+}
+
+/**
+ * Audit log statistics
+ */
+export interface AuditStats {
+  /** Total number of entries */
+  totalEntries: number;
+  /** Oldest entry timestamp */
+  oldestEntry: string | null;
+  /** Newest entry timestamp */
+  newestEntry: string | null;
+  /** Entries grouped by table */
+  entriesByTable: Record<string, number>;
+  /** Entries grouped by operation */
+  entriesByOperation: Record<string, number>;
+  /** Number of entries that would be deleted by retention */
+  expiredCount: number;
+}
+
+/**
+ * SQL to get audit log statistics
+ */
+const AUDIT_STATS_QUERY = `
+  SELECT
+    COUNT(*) as total_entries,
+    MIN(timestamp) as oldest_entry,
+    MAX(timestamp) as newest_entry
+  FROM _yama_audit_log
+`;
+
+/**
+ * SQL to get entries by table
+ */
+const AUDIT_BY_TABLE_QUERY = `
+  SELECT table_name, COUNT(*) as count
+  FROM _yama_audit_log
+  GROUP BY table_name
+  ORDER BY count DESC
+`;
+
+/**
+ * SQL to get entries by operation
+ */
+const AUDIT_BY_OPERATION_QUERY = `
+  SELECT operation, COUNT(*) as count
+  FROM _yama_audit_log
+  GROUP BY operation
+`;
+
+/**
+ * SQL to count expired entries
+ */
+const AUDIT_EXPIRED_COUNT_QUERY = `
+  SELECT COUNT(*) as count
+  FROM _yama_audit_log
+  WHERE timestamp < $1
+`;
+
+/**
+ * SQL to delete expired entries
+ */
+const AUDIT_DELETE_EXPIRED_QUERY = `
+  DELETE FROM _yama_audit_log
+  WHERE timestamp < $1
+  RETURNING id
+`;
+
+/**
+ * SQL to get entries for archival
+ */
+const AUDIT_GET_EXPIRED_QUERY = `
+  SELECT *
+  FROM _yama_audit_log
+  WHERE timestamp < $1
+  ORDER BY timestamp ASC
+`;
+
+/**
+ * Get audit log statistics
+ */
+export async function getAuditStats(
+  sql: any,
+  config?: AuditConfig
+): Promise<AuditStats> {
+  try {
+    // Get basic stats
+    const basicStats = await sql.unsafe(AUDIT_STATS_QUERY);
+    const byTable = await sql.unsafe(AUDIT_BY_TABLE_QUERY);
+    const byOperation = await sql.unsafe(AUDIT_BY_OPERATION_QUERY);
+
+    // Calculate expired count if retention is configured
+    let expiredCount = 0;
+    if (config?.retention) {
+      const retentionDays = parseRetentionPeriod(config.retention);
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
+
+      const expiredResult = await sql.unsafe(AUDIT_EXPIRED_COUNT_QUERY, [cutoffDate.toISOString()]);
+      expiredCount = parseInt(expiredResult[0]?.count || "0", 10);
+    }
+
+    // Build result
+    const entriesByTable: Record<string, number> = {};
+    for (const row of byTable) {
+      entriesByTable[row.table_name] = parseInt(row.count, 10);
+    }
+
+    const entriesByOperation: Record<string, number> = {};
+    for (const row of byOperation) {
+      entriesByOperation[row.operation] = parseInt(row.count, 10);
+    }
+
+    return {
+      totalEntries: parseInt(basicStats[0]?.total_entries || "0", 10),
+      oldestEntry: basicStats[0]?.oldest_entry || null,
+      newestEntry: basicStats[0]?.newest_entry || null,
+      entriesByTable,
+      entriesByOperation,
+      expiredCount,
+    };
+  } catch (error) {
+    // Table might not exist
+    return {
+      totalEntries: 0,
+      oldestEntry: null,
+      newestEntry: null,
+      entriesByTable: {},
+      entriesByOperation: {},
+      expiredCount: 0,
+    };
+  }
+}
+
+/**
+ * Archive audit entries to a JSON file
+ */
+export async function archiveAuditEntries(
+  sql: any,
+  cutoffDate: Date,
+  archivePath: string
+): Promise<number> {
+  const { writeFileSync, mkdirSync, existsSync } = await import("fs");
+  const { dirname } = await import("path");
+
+  // Get entries to archive
+  const entries = await sql.unsafe(AUDIT_GET_EXPIRED_QUERY, [cutoffDate.toISOString()]);
+
+  if (entries.length === 0) {
+    return 0;
+  }
+
+  // Ensure directory exists
+  const dir = dirname(archivePath);
+  if (!existsSync(dir)) {
+    mkdirSync(dir, { recursive: true });
+  }
+
+  // Write entries to file
+  const archiveData = {
+    archivedAt: new Date().toISOString(),
+    cutoffDate: cutoffDate.toISOString(),
+    entryCount: entries.length,
+    entries: entries,
+  };
+
+  writeFileSync(archivePath, JSON.stringify(archiveData, null, 2));
+
+  return entries.length;
+}
+
+/**
+ * Cleanup expired audit entries
+ */
+export async function cleanupExpiredAuditEntries(
+  sql: any,
+  config: AuditConfig,
+  options: AuditCleanupOptions = {}
+): Promise<AuditCleanupResult> {
+  const result: AuditCleanupResult = {
+    deletedCount: 0,
+    dryRun: options.dryRun ?? false,
+  };
+
+  // Calculate cutoff date
+  const retention = options.retention || config.retention || "90d";
+  const retentionDays = parseRetentionPeriod(retention);
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
+
+  // Get count of entries to delete
+  const countResult = await sql.unsafe(AUDIT_EXPIRED_COUNT_QUERY, [cutoffDate.toISOString()]);
+  const expiredCount = parseInt(countResult[0]?.count || "0", 10);
+
+  if (expiredCount === 0) {
+    return result;
+  }
+
+  if (options.dryRun) {
+    result.deletedCount = expiredCount;
+    return result;
+  }
+
+  // Archive before deleting if requested
+  if (options.archivePath) {
+    result.archivedCount = await archiveAuditEntries(sql, cutoffDate, options.archivePath);
+    result.archivedPath = options.archivePath;
+  }
+
+  // Delete expired entries
+  const deleteResult = await sql.unsafe(AUDIT_DELETE_EXPIRED_QUERY, [cutoffDate.toISOString()]);
+  result.deletedCount = deleteResult.length;
+
+  return result;
+}
+
+/**
+ * Format audit statistics for CLI display
+ */
+export function formatAuditStats(stats: AuditStats): string {
+  const lines: string[] = [];
+
+  lines.push("📊 Audit Log Statistics\n");
+  lines.push(`   Total entries: ${stats.totalEntries.toLocaleString()}`);
+
+  if (stats.oldestEntry) {
+    lines.push(`   Oldest: ${stats.oldestEntry}`);
+  }
+  if (stats.newestEntry) {
+    lines.push(`   Newest: ${stats.newestEntry}`);
+  }
+
+  if (stats.expiredCount > 0) {
+    lines.push(`   ⚠️ Expired: ${stats.expiredCount.toLocaleString()}`);
+  }
+
+  lines.push("");
+
+  // By table
+  const tables = Object.entries(stats.entriesByTable);
+  if (tables.length > 0) {
+    lines.push("   By table:");
+    for (const [table, count] of tables.slice(0, 10)) {
+      lines.push(`     ${table}: ${count.toLocaleString()}`);
+    }
+    if (tables.length > 10) {
+      lines.push(`     ... and ${tables.length - 10} more`);
+    }
+    lines.push("");
+  }
+
+  // By operation
+  const ops = Object.entries(stats.entriesByOperation);
+  if (ops.length > 0) {
+    lines.push("   By operation:");
+    for (const [op, count] of ops) {
+      lines.push(`     ${op}: ${count.toLocaleString()}`);
+    }
+  }
+
+  return lines.join("\n");
+}
+
+/**
+ * Format cleanup result for CLI display
+ */
+export function formatAuditCleanupResult(result: AuditCleanupResult): string {
+  const lines: string[] = [];
+
+  if (result.dryRun) {
+    lines.push("🔍 DRY RUN - No actual changes made\n");
+  }
+
+  if (result.archivedPath && result.archivedCount) {
+    const verb = result.dryRun ? "Would archive" : "Archived";
+    lines.push(`📦 ${verb} ${result.archivedCount.toLocaleString()} entries to:`);
+    lines.push(`   ${result.archivedPath}`);
+    lines.push("");
+  }
+
+  if (result.deletedCount > 0) {
+    const verb = result.dryRun ? "Would delete" : "Deleted";
+    lines.push(`✅ ${verb} ${result.deletedCount.toLocaleString()} expired audit entries`);
+  } else {
+    lines.push("✅ No expired audit entries to cleanup");
+  }
+
+  return lines.join("\n");
+}
 
 
 

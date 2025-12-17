@@ -1,6 +1,6 @@
-#!/usr/bin/env node
+﻿#!/usr/bin/env node
 import { Command } from "commander";
-import type { PluginCLICommand } from "@betagors/yama-core";
+import type { PluginCLICommand } from "@yamajs/core";
 import { createCommand } from "./commands/create.ts";
 import { devCommand } from "./commands/dev.ts";
 import { generateCommand } from "./commands/generate.ts";

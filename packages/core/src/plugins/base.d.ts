@@ -317,3 +317,4 @@ export interface PluginContext {
      */
     once(event: string, handler: Function): void;
 }
+//# sourceMappingURL=base.d.ts.map

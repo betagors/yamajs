@@ -1,25 +1,26 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
-import { join } from "path";
-import { createHash } from "crypto";
+import { getFileSystem, getPathModule } from "../platform/fs.js";
+import { sha256Hex } from "../platform/hash.js";
+const fs = () => getFileSystem();
+const path = () => getPathModule();
 /**
  * Get transitions directory path
  */
 export function getTransitionsDir(configDir) {
-    return join(configDir, ".yama", "transitions");
+    return path().join(configDir, ".yama", "transitions");
 }
 /**
  * Get transition file path
  */
 export function getTransitionPath(configDir, hash) {
-    return join(getTransitionsDir(configDir), `${hash}.json`);
+    return path().join(getTransitionsDir(configDir), `${hash}.json`);
 }
 /**
  * Ensure transitions directory exists
  */
 export function ensureTransitionsDir(configDir) {
     const transitionsDir = getTransitionsDir(configDir);
-    if (!existsSync(transitionsDir)) {
-        mkdirSync(transitionsDir, { recursive: true });
+    if (!fs().existsSync(transitionsDir)) {
+        fs().mkdirSync(transitionsDir, { recursive: true });
     }
 }
 /**
@@ -32,7 +33,7 @@ export function createTransition(fromHash, toHash, steps, metadata) {
         toHash,
         steps,
     });
-    const hash = createHash("sha256").update(transitionData).digest("hex");
+    const hash = sha256Hex(transitionData);
     return {
         hash,
         fromHash,
@@ -47,7 +48,7 @@ export function createTransition(fromHash, toHash, steps, metadata) {
 export function saveTransition(configDir, transition) {
     ensureTransitionsDir(configDir);
     const transitionPath = getTransitionPath(configDir, transition.hash);
-    writeFileSync(transitionPath, JSON.stringify(transition, null, 2), "utf-8");
+    fs().writeFileSync(transitionPath, JSON.stringify(transition, null, 2), "utf-8");
 }
 /**
  * Load transition from disk

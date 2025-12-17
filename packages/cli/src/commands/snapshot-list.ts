@@ -1,11 +1,11 @@
-import { existsSync } from "fs";
+﻿import { existsSync } from "fs";
 import { findYamaConfig } from "../utils/project-detection.ts";
 import { getConfigDir } from "../utils/file-utils.ts";
 import {
   getAllSnapshots,
   getCurrentSnapshot,
   getAllStates,
-} from "@betagors/yama-core";
+} from "@yamajs/core";
 import { info, error, dim, fmt, printTable } from "../utils/cli-utils.ts";
 
 interface SnapshotListOptions {
@@ -46,7 +46,7 @@ export async function snapshotListCommand(options: SnapshotListOptions): Promise
 
     console.log("");
     console.log(fmt.bold("Snapshots"));
-    console.log(dim("─".repeat(50)));
+    console.log(dim("â”€".repeat(50)));
 
     const tableData: unknown[][] = [["Hash", "Created", "Description", "Env"]];
 

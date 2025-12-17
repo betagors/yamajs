@@ -361,7 +361,66 @@ export {
   generatePluginDocs,
   generateMarkdownDocs,
   generateHTMLDocs,
+  // NEW: Plugin directive types and definePlugin helper
+  type PluginDirectiveTarget,
+  type PluginDirectiveArgs,
+  type PluginDirectiveDefinition,
+  type PluginSchemaOptionsSchema,
+  type SchemaWithPluginOptions,
+  type PluginDefinition,
+  type PluginAPI,
+  definePlugin,
+  validatePluginDefinition,
 } from "./plugins/index.js";
+
+// Export directives system (NEW)
+export {
+  // Types
+  type ParsedDirective,
+  type DirectiveArgs,
+  type DirectiveTarget,
+  type DirectiveDefinition,
+  type DirectiveFieldContext,
+  type DirectiveSchemaContext,
+  type DirectiveTransformContext,
+  type DirectiveValidateContext,
+  type DirectiveValidationResult,
+  type DirectiveExecutionOptions,
+  type PluginSchemaConfig,
+  type SchemaWithPluginConfig,
+  type FieldWithDirectives,
+  // Parser
+  extractDirectives,
+  parseDirectiveArgs,
+  isValidDirectiveName,
+  extractPluginFromDirective,
+  // Registry
+  DirectiveRegistry,
+  directiveRegistry,
+  registerDirective,
+  getDirective,
+  // Core directives
+  registerCoreDirectives,
+  getCoreDirectiveNames,
+  // Executor
+  executeFieldDirectives,
+  executeSchemaDirectives,
+  executeTransformDirectives,
+  executeValidateDirectives,
+  createTransformPipeline,
+  createValidationFunction,
+} from "./directives/index.js";
+
+// Export enhanced schema parsing with directives (NEW)
+export {
+  type EnhancedSchemaField,
+  type EnhancedSchemaDefinition,
+  parseFieldWithDirectives,
+  normalizeEnhancedSchema,
+  normalizeAllSchemas,
+  getPluginSchemaConfigs,
+  extractAllDirectives,
+} from "./schema-directives.js";
 
 // Export migration types and functions
 export {
@@ -624,6 +683,85 @@ export {
   createStepAuditEntry,
   generateSafetyAwareSQL,
 } from "./migrations/safety-ops.js";
+
+// Export Phase 2: Shadow cleanup
+export {
+  type ShadowCleanupOptions,
+  type ShadowCleanupResult,
+  type ShadowColumnStatus,
+  generateShadowDropSQL,
+  generateShadowRestoreSQL,
+  generateShadowCleanupSQL,
+  listShadowsWithStatus,
+  getCleanupCandidates,
+  cleanupExpiredShadows,
+  restoreShadowColumn,
+  formatShadowList,
+  formatCleanupResult as formatShadowCleanupResult,
+} from "./migrations/shadows.js";
+
+// Export Phase 2: Graph pruning
+export {
+  type GraphPruneOptions,
+  type GraphPruneResult,
+  type GraphStats,
+  getGraphStats,
+  getPrunableSnapshots,
+  getOrphanedTransitions,
+  pruneGraph,
+  formatGraphStats,
+  formatPruneResult,
+} from "./migrations/graph.js";
+
+// Export Phase 2: Audit cleanup
+export {
+  type AuditCleanupOptions,
+  type AuditCleanupResult,
+  type AuditStats,
+  getAuditStats,
+  archiveAuditEntries,
+  cleanupExpiredAuditEntries,
+  formatAuditStats,
+  formatAuditCleanupResult,
+} from "./migrations/audit.js";
+
+// Export Phase 2: Index recovery
+export {
+  type InvalidIndex,
+  type IndexRecoveryOptions,
+  type IndexRecoveryResult,
+  type IndexHealthCheckResult,
+  getInvalidIndexes,
+  checkTableIndexHealth,
+  dropInvalidIndexes,
+  recreateIndex,
+  recoverInvalidIndexes,
+  formatIndexRecoveryResult,
+  formatIndexHealthCheck,
+} from "./migrations/index-recovery.js";
+
+// Export Phase 2: Table sandbox (via plugins)
+export {
+  type PluginTablePolicy,
+  type SandboxViolation,
+  type SandboxValidationResult,
+  extractTablesFromSQL,
+  validateTableAccess,
+  inferPolicyFromPluginName,
+  formatSandboxViolations,
+  analyzePluginTableAccess,
+} from "./plugins/table-sandbox.js";
+
+// Export Phase 2: Dependency resolver (via plugins)
+export {
+  type MigrationDependency,
+  type MissingDependency,
+  type DependencyResolutionResult as PluginDependencyResolutionResult,
+  resolveDependencies as resolvePluginMigrationDependencies,
+  validateDependencyChain as validatePluginDependencyChain,
+  formatDependencyResult,
+  canMigrationRun,
+} from "./plugins/dependency-resolver.js";
 
 // Export pagination types and utilities
 export {

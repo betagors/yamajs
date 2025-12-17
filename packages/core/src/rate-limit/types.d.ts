@@ -81,3 +81,4 @@ export interface RateLimitStore {
      */
     cleanup?(): Promise<void> | void;
 }
+//# sourceMappingURL=types.d.ts.map

@@ -1,4 +1,4 @@
-# Contributing to Yama
+﻿# Contributing to Yama
 
 Thank you for your interest in contributing to Yama! This document provides guidelines and instructions for contributing to the project.
 
@@ -92,16 +92,16 @@ Yama is a monorepo managed with pnpm workspaces and Turborepo:
 
 ```
 yama/
-├── packages/          # Core packages
-│   ├── cli/          # CLI tool
-│   ├── core/         # Core runtime and types
-│   ├── pglite/       # PGLite adapter
-│   ├── postgres/     # PostgreSQL adapter
-│   └── ...
-├── apps/             # Applications
-│   └── docs/         # Documentation site
-├── examples/         # Example projects
-└── test-app/         # Test application
+â”œâ”€â”€ packages/          # Core packages
+â”‚   â”œâ”€â”€ cli/          # CLI tool
+â”‚   â”œâ”€â”€ core/         # Core runtime and types
+â”‚   â”œâ”€â”€ pglite/       # PGLite adapter
+â”‚   â”œâ”€â”€ postgres/     # PostgreSQL adapter
+â”‚   â””â”€â”€ ...
+â”œâ”€â”€ apps/             # Applications
+â”‚   â””â”€â”€ docs/         # Documentation site
+â”œâ”€â”€ examples/         # Example projects
+â””â”€â”€ test-app/         # Test application
 ```
 
 ## Making Changes
@@ -118,7 +118,7 @@ yama/
 
 When creating new packages, follow our [Naming Conventions](docs/NAMING_CONVENTIONS.md). Key rules:
 
-- All packages use the format `@betagors/yama-{descriptor}`
+- All packages use the format `@yamajs/{descriptor}`
 - Use single words or compound words (no hyphens after `yama-`)
 - For vendor services with generic names, use abbreviated prefixes (e.g., `yama-supaauth`)
 
@@ -225,5 +225,5 @@ Please read and follow our [Code of Conduct](CODE_OF_CONDUCT.md). We're committe
 
 By contributing to Yama, you agree that your contributions will be licensed under the Mozilla Public License 2.0 (MPL-2.0).
 
-Thank you for contributing to Yama! 🎉
+Thank you for contributing to Yama! ðŸŽ‰
 

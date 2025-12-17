@@ -47,3 +47,4 @@ export declare function registerDatabaseAdapter(dialect: string, factory: Databa
  * Create a database adapter for the given dialect
  */
 export declare function createDatabaseAdapter(dialect: string, config: DatabaseConfig): DatabaseAdapter;
+//# sourceMappingURL=database.d.ts.map

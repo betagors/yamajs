@@ -1,5 +1,5 @@
-{
-  "name": "@betagors/yama-security",
+﻿{
+  "name": "@yamajs/security",
   "version": "0.1.0-alpha.0",
   "type": "module",
   "description": "Yama security plugin with CORS, CSRF protection, security headers, and input sanitization",
@@ -43,7 +43,7 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
-    "@betagors/yama-core": "workspace:*"
+    "@yamajs/core": "workspace:*"
   },
   "devDependencies": {
     "rimraf": "^5.0.0",

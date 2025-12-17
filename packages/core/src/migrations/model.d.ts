@@ -64,3 +64,4 @@ export interface MigrationDiff {
     hasChanges: boolean;
 }
 export declare function compareModels(from: Model, to: Model): MigrationDiff;
+//# sourceMappingURL=model.d.ts.map

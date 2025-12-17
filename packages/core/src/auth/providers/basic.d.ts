@@ -4,3 +4,4 @@ import type { AuthProviderHandler } from "../types.js";
  */
 declare const basicHandler: AuthProviderHandler;
 export default basicHandler;
+//# sourceMappingURL=basic.d.ts.map

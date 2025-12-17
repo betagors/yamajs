@@ -1,5 +1,5 @@
-import { z } from "zod";
-import type { PluginMCPTool, MCPToolResult } from "@betagors/yama-core";
+﻿import { z } from "zod";
+import type { PluginMCPTool, MCPToolResult } from "@yamajs/core";
 import type { CIPluginAPI } from "./plugin.js";
 
 /**
@@ -20,27 +20,27 @@ export function createCIMCPTools(api: CIPluginAPI, pluginName: string): PluginMC
       handler: async (args: { overwrite?: boolean; testOnly?: boolean; buildOnly?: boolean; deployOnly?: boolean }): Promise<MCPToolResult> => {
         try {
           const workflows = api.generateAllWorkflows();
-          let output = "✅ Workflow files generated successfully!\n\n";
+          let output = "âœ… Workflow files generated successfully!\n\n";
           
           if (args.testOnly || (!args.buildOnly && !args.deployOnly)) {
             if (workflows.test) {
-              output += `📄 .github/workflows/test.yml:\n\`\`\`yaml\n${workflows.test}\n\`\`\`\n\n`;
+              output += `ðŸ“„ .github/workflows/test.yml:\n\`\`\`yaml\n${workflows.test}\n\`\`\`\n\n`;
             }
           }
           
           if (args.buildOnly || (!args.testOnly && !args.deployOnly)) {
             if (workflows.build) {
-              output += `📄 .github/workflows/build.yml:\n\`\`\`yaml\n${workflows.build}\n\`\`\`\n\n`;
+              output += `ðŸ“„ .github/workflows/build.yml:\n\`\`\`yaml\n${workflows.build}\n\`\`\`\n\n`;
             }
           }
           
           if (args.deployOnly || (!args.testOnly && !args.buildOnly)) {
             if (workflows.deploy) {
-              output += `📄 .github/workflows/deploy.yml:\n\`\`\`yaml\n${workflows.deploy}\n\`\`\`\n\n`;
+              output += `ðŸ“„ .github/workflows/deploy.yml:\n\`\`\`yaml\n${workflows.deploy}\n\`\`\`\n\n`;
             }
           }
           
-          output += "💡 Use 'yama ci write' to write these files to your project.";
+          output += "ðŸ’¡ Use 'yama ci write' to write these files to your project.";
           
           return {
             content: [
@@ -55,7 +55,7 @@ export function createCIMCPTools(api: CIPluginAPI, pluginName: string): PluginMC
             content: [
               {
                 type: "text",
-                text: `❌ Failed to generate workflow files: ${error instanceof Error ? error.message : String(error)}`,
+                text: `âŒ Failed to generate workflow files: ${error instanceof Error ? error.message : String(error)}`,
               },
             ],
             isError: true,
@@ -121,7 +121,7 @@ export function createCIMCPTools(api: CIPluginAPI, pluginName: string): PluginMC
             content: [
               {
                 type: "text",
-                text: `✅ All workflow files written successfully!\n\n` +
+                text: `âœ… All workflow files written successfully!\n\n` +
                       `Written files:\n` +
                       written.map(f => `- .github/workflows/${f}`).join("\n"),
               },
@@ -132,7 +132,7 @@ export function createCIMCPTools(api: CIPluginAPI, pluginName: string): PluginMC
             content: [
               {
                 type: "text",
-                text: `❌ Failed to write workflow files: ${error instanceof Error ? error.message : String(error)}`,
+                text: `âŒ Failed to write workflow files: ${error instanceof Error ? error.message : String(error)}`,
               },
             ],
             isError: true,

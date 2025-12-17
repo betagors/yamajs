@@ -1,6 +1,6 @@
-import type { HttpRequest } from "@betagors/yama-core";
-// Note: These types are exported from @betagors/yama-core but may need to be imported
-// from source during development. Once core is built, use: import type { MiddlewareHandler, MiddlewareContext } from "@betagors/yama-core";
+﻿import type { HttpRequest } from "@yamajs/core";
+// Note: These types are exported from @yamajs/core but may need to be imported
+// from source during development. Once core is built, use: import type { MiddlewareHandler, MiddlewareContext } from "@yamajs/core";
 import type { 
   MiddlewareHandler, 
   MiddlewareContext

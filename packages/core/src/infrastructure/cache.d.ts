@@ -53,3 +53,4 @@ export interface CacheAdapter {
         latency?: number;
     }>;
 }
+//# sourceMappingURL=cache.d.ts.map

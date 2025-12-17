@@ -1,23 +1,32 @@
-import { readFileSync } from "fs";
-import { extname, resolve } from "path";
-import { pathToFileURL } from "url";
+﻿import { pathToFileURL } from "url";
+import { MiddlewareError, ErrorCodes } from "@yamajs/errors";
+import { getFileSystem, getPathModule } from "../platform/fs.js";
 /**
  * Load middleware handler from a file
  * Supports both TypeScript and JavaScript files
  * Supports default export or named export
  */
 export async function loadMiddlewareFromFile(filePath, projectDir) {
+    const fs = getFileSystem();
+    const path = getPathModule();
     // Resolve file path
-    const resolvedPath = resolve(projectDir, filePath);
+    const resolvedPath = path.resolve(projectDir, filePath);
     // Check if file exists
     try {
-        readFileSync(resolvedPath, "utf-8");
+        fs.readFileSync(resolvedPath, "utf-8");
     }
     catch (error) {
-        throw new Error(`Middleware file not found: ${filePath} (resolved to: ${resolvedPath})`);
+        throw new MiddlewareError(`Middleware file not found: ${filePath}`, {
+            code: ErrorCodes.MIDDLEWARE_NOT_FOUND,
+            context: { filePath, resolvedPath },
+            suggestions: [
+                `Check that the middleware file exists at: ${resolvedPath}`,
+                `Verify the path in your yama.yaml configuration`,
+            ],
+        });
     }
     // Determine if it's TypeScript or JavaScript
-    const ext = extname(resolvedPath);
+    const ext = path.extname(resolvedPath);
     const isTypeScript = ext === ".ts" || ext === ".tsx";
     // For TypeScript files, we need to use the compiled output
     // In development, this might be in a dist/ folder
@@ -27,7 +36,7 @@ export async function loadMiddlewareFromFile(filePath, projectDir) {
         // Try to find compiled version in dist/ folder
         const distPath = resolvedPath.replace(/src\//, "dist/").replace(/\.tsx?$/, ".js");
         try {
-            readFileSync(distPath, "utf-8");
+            fs.readFileSync(distPath, "utf-8");
             importPath = distPath;
         }
         catch {
@@ -54,13 +63,25 @@ export async function loadMiddlewareFromFile(filePath, projectDir) {
         if (module[camelCaseName] && typeof module[camelCaseName] === "function") {
             return module[camelCaseName];
         }
-        throw new Error(`Middleware file ${filePath} must export a default function or a named export "middleware" or "${camelCaseName}"`);
+        throw new MiddlewareError(`Middleware file ${filePath} does not export a valid handler`, {
+            code: ErrorCodes.MIDDLEWARE_NOT_FOUND,
+            context: { filePath },
+            suggestions: [
+                `Export a default function or a named export "middleware" or "${camelCaseName}"`,
+                `Example: export default async (context, next) => { await next(); }`,
+            ],
+        });
     }
     catch (error) {
-        if (error instanceof Error) {
-            throw new Error(`Failed to load middleware from ${filePath}: ${error.message}`);
+        // If it's already a MiddlewareError, re-throw
+        if (error instanceof MiddlewareError) {
+            throw error;
         }
-        throw error;
+        throw new MiddlewareError(`Failed to load middleware from ${filePath}`, {
+            code: ErrorCodes.MIDDLEWARE_EXECUTION_FAILED,
+            context: { filePath },
+            cause: error instanceof Error ? error : undefined,
+        });
     }
 }
 //# sourceMappingURL=loader.js.map

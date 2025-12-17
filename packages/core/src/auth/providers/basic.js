@@ -1,4 +1,5 @@
-import { getGlobalDatabaseAdapter } from "../../infrastructure/database-registry.js";
+﻿import { getGlobalDatabaseAdapter } from "../../infrastructure/database-registry.js";
+import { ErrorCodes } from "@yamajs/errors";
 /**
  * Resolve environment variable references in strings
  * Supports ${VAR_NAME} syntax
@@ -112,6 +113,7 @@ const basicHandler = {
                 valid: false,
                 context: { authenticated: false },
                 error: "No Basic Auth credentials provided",
+                errorCode: ErrorCodes.AUTH_REQUIRED,
             };
         }
         const { identifier, password } = credentials;
@@ -135,6 +137,7 @@ const basicHandler = {
                 valid: false,
                 context: { authenticated: false },
                 error: "Invalid credentials",
+                errorCode: ErrorCodes.AUTH_INVALID_CREDENTIALS,
             };
         }
         // Database mode: validate against database
@@ -146,6 +149,7 @@ const basicHandler = {
                         valid: false,
                         context: { authenticated: false },
                         error: "User not found",
+                        errorCode: ErrorCodes.AUTH_INVALID_CREDENTIALS,
                     };
                 }
                 const passwordHash = user[config.passwordField || "passwordHash"];
@@ -154,6 +158,7 @@ const basicHandler = {
                         valid: false,
                         context: { authenticated: false },
                         error: "User has no password set",
+                        errorCode: ErrorCodes.AUTH_INVALID_CREDENTIALS,
                     };
                 }
                 const passwordValid = await comparePassword(password, passwordHash);
@@ -162,6 +167,7 @@ const basicHandler = {
                         valid: false,
                         context: { authenticated: false },
                         error: "Invalid password",
+                        errorCode: ErrorCodes.AUTH_INVALID_CREDENTIALS,
                     };
                 }
                 return {
@@ -183,6 +189,7 @@ const basicHandler = {
                     valid: false,
                     context: { authenticated: false },
                     error: error instanceof Error ? error.message : String(error),
+                    errorCode: ErrorCodes.INTERNAL_ERROR,
                 };
             }
         }
@@ -190,6 +197,7 @@ const basicHandler = {
             valid: false,
             context: { authenticated: false },
             error: "Invalid Basic Auth configuration",
+            errorCode: ErrorCodes.CONFIG_INVALID,
         };
     },
 };

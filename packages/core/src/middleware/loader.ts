@@ -1,6 +1,6 @@
-import { pathToFileURL } from "url";
+﻿import { pathToFileURL } from "url";
 import type { MiddlewareHandler } from "./types.js";
-import { MiddlewareError, ErrorCodes } from "@betagors/yama-errors";
+import { MiddlewareError, ErrorCodes } from "@yamajs/errors";
 import { getFileSystem, getPathModule } from "../platform/fs.js";
 
 /**

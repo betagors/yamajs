@@ -1,5 +1,5 @@
-import inquirer from "inquirer";
-import type { MigrationStepUnion } from "@betagors/yama-core";
+﻿import inquirer from "inquirer";
+import type { MigrationStepUnion } from "@yamajs/core";
 import { colors, printBox, printTable } from "./cli-utils.ts";
 
 /**
@@ -18,6 +18,21 @@ export async function confirm(message: string, defaultValue = false): Promise<bo
 }
 
 /**
+ * Prompt for text input
+ */
+export async function promptInput(message: string, defaultValue?: string): Promise<string> {
+  const { input } = await inquirer.prompt([
+    {
+      type: "input",
+      name: "input",
+      message,
+      default: defaultValue,
+    },
+  ]);
+  return input;
+}
+
+/**
  * Prompt for migration confirmation with diff preview
  */
 export async function confirmMigration(
@@ -28,13 +43,13 @@ export async function confirmMigration(
   console.log("\n");
   printBox(
     `Migration: ${migrationName}\n\n` +
-      `Steps: ${steps.length}\n` +
-      `Destructive operations: ${hasDestructive ? "Yes" : "No"}`,
+    `Steps: ${steps.length}\n` +
+    `Destructive operations: ${hasDestructive ? "Yes" : "No"}`,
     hasDestructive ? { borderColor: "yellow" } : undefined
   );
 
   if (hasDestructive) {
-    console.log(colors.warning("⚠️  This migration contains destructive operations!"));
+    console.log(colors.warning("âš ï¸  This migration contains destructive operations!"));
   }
 
   // Show step summary
@@ -42,7 +57,7 @@ export async function confirmMigration(
     `${index + 1}`,
     step.type,
     step.table,
-    hasDestructiveOperation(step) ? "⚠️" : "✓",
+    hasDestructiveOperation(step) ? "âš ï¸" : "âœ“",
   ]);
 
   printTable([["#", "Type", "Table", "Safe"], ...stepSummary]);

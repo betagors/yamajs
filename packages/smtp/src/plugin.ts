@@ -1,4 +1,4 @@
-import type { YamaPlugin, PluginContext } from "@betagors/yama-core";
+﻿import type { YamaPlugin, PluginContext } from "@yamajs/core";
 import { createSMTPTransport, verifySMTPConnection, type SMTPConfig } from "./client.js";
 import { createEmailService, type EmailService } from "./service.js";
 
@@ -6,7 +6,7 @@ import { createEmailService, type EmailService } from "./service.js";
  * SMTP email plugin for Yama
  */
 const plugin: YamaPlugin = {
-  name: "@betagors/yama-smtp",
+  name: "@yamajs/smtp",
   category: "email",
   pluginApi: "1.0",
   yamaCore: "^0.1.0",
@@ -50,7 +50,7 @@ const plugin: YamaPlugin = {
     
     // Register email service in context
     context.registerService("email", emailService);
-    context.logger.info(`Registered email service for @betagors/yama-smtp`);
+    context.logger.info(`Registered email service for @yamajs/smtp`);
     
     // Return plugin API
     const pluginApi = {

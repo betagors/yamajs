@@ -1,41 +1,59 @@
+import { TypeParser } from "./types/index.js";
+import { normalizeConfig } from "./config-normalizer.js";
 /**
- * Parse shorthand field syntax (e.g., "string!", "string?", "enum[user, admin]")
- * Also supports inline relations (e.g., "User!", "Post[]", "Tag[] through:post_tags")
- * and inline constraints (e.g., "string! unique", "string! indexed")
- * Optimized parser - assumes shorthand syntax by default
+ * Parse field definition using new type system
+ * Supports inline relations (e.g., "User!", "Post[]", "Tag[] through:post_tags")
+ * Uses TypeParser for all type parsing
  */
 export function parseFieldDefinition(fieldName, fieldDef, availableEntities) {
     // Fast path: already parsed
     if (typeof fieldDef !== "string") {
+        // Handle inline nested type (object with fields property)
+        if (typeof fieldDef === "object" && fieldDef !== null && !Array.isArray(fieldDef) && "fields" in fieldDef) {
+            // This is an inline nested type - mark it as such
+            return {
+                type: "object",
+                _isInlineNestedType: true,
+                _inlineNestedFields: fieldDef.fields,
+            };
+        }
+        // If it's an object, convert using TypeParser
+        if (typeof fieldDef === "object" && fieldDef !== null && !Array.isArray(fieldDef)) {
+            const parsedType = TypeParser.parseExpanded(fieldDef);
+            return {
+                type: parsedType.type,
+                required: !parsedType.nullable,
+                nullable: parsedType.nullable,
+                unique: parsedType.unique,
+                index: parsedType.indexed,
+                generated: parsedType.generated,
+                default: parsedType.default || (parsedType.defaultFn ? parsedType.defaultFn + "()" : undefined),
+                minLength: parsedType.minLength,
+                maxLength: parsedType.maxLength,
+                min: typeof parsedType.min === 'number' ? parsedType.min : undefined,
+                max: typeof parsedType.max === 'number' ? parsedType.max : undefined,
+                pattern: parsedType.pattern,
+                enum: parsedType.enumValues,
+                precision: parsedType.precision,
+                scale: parsedType.scale,
+                currency: parsedType.currency,
+                length: parsedType.length,
+                readonly: parsedType.readonly,
+                writeOnly: parsedType.writeOnly,
+                sensitive: parsedType.sensitive,
+                autoUpdate: parsedType.autoUpdate,
+            };
+        }
         return fieldDef;
     }
-    const field = { type: "string" };
     const str = fieldDef.trim();
-    // Parse enum syntax: enum[value1, value2, ...]
-    const enumMatch = str.match(/^enum\[(.+)\]$/);
-    if (enumMatch) {
-        const enumValues = enumMatch[1]
-            .split(",")
-            .map((v) => v.trim().replace(/^["']|["']$/g, ""));
-        field.type = "string";
-        field.enum = enumValues;
-        return field;
-    }
-    // Check for inline constraints and relation config
-    const parts = str.split(/\s+/);
-    let baseTypeStr = parts[0];
-    const constraints = [];
+    // Extract relation config (through:, cascade, timestamps)
     const relationConfig = {};
-    // Parse constraints and config from remaining parts
+    const parts = str.split(/\s+/);
+    let typeStr = parts[0];
     for (let i = 1; i < parts.length; i++) {
         const part = parts[i];
-        if (part === "unique") {
-            constraints.push("unique");
-        }
-        else if (part === "indexed" || part === "index") {
-            constraints.push("indexed");
-        }
-        else if (part === "cascade") {
+        if (part === "cascade") {
             relationConfig.cascade = true;
         }
         else if (part.startsWith("through:")) {
@@ -45,98 +63,78 @@ export function parseFieldDefinition(fieldName, fieldDef, availableEntities) {
             relationConfig.timestamps = true;
         }
     }
-    // Apply constraints
-    if (constraints.includes("unique")) {
-        field.unique = true;
-    }
-    if (constraints.includes("indexed")) {
-        field.index = true;
-    }
-    // Parse type with modifiers: type! (required), type? (nullable)
-    let typeStr = baseTypeStr;
-    let required = false;
-    let nullable = false;
-    let isArray = false;
-    // Check for array syntax: Entity[]
-    if (typeStr.endsWith("[]")) {
-        isArray = true;
-        typeStr = typeStr.slice(0, -2);
-    }
-    if (typeStr.endsWith("!")) {
-        required = true;
-        nullable = false;
-        typeStr = typeStr.slice(0, -1);
-    }
-    else if (typeStr.endsWith("?")) {
-        required = false;
-        nullable = true;
-        typeStr = typeStr.slice(0, -1);
-    }
     // Check if this is an entity reference (capitalized name)
-    // Entity names typically start with uppercase letter
-    const isEntityReference = /^[A-Z][a-zA-Z0-9]*$/.test(typeStr) &&
-        (availableEntities?.has(typeStr) ?? true); // If we have entity list, check it; otherwise assume it's an entity
+    // Remove array and required/optional markers for entity check
+    let entityCheckStr = typeStr;
+    if (entityCheckStr.endsWith("[]")) {
+        entityCheckStr = entityCheckStr.slice(0, -2);
+    }
+    if (entityCheckStr.endsWith("!") || entityCheckStr.endsWith("?")) {
+        entityCheckStr = entityCheckStr.slice(0, -1);
+    }
+    const isEntityReference = /^[A-Z][a-zA-Z0-9]*$/.test(entityCheckStr) &&
+        (availableEntities?.has(entityCheckStr) ?? true);
     if (isEntityReference) {
-        // This is an inline relation
-        field._isInlineRelation = true;
+        // This is an inline relation - extract relation info from string
+        // Parse just enough to get array/nullable info
+        const hasArray = str.includes("[]");
+        const isRequired = str.endsWith("!") || (!str.endsWith("?") && !str.includes("?"));
+        const isNullable = str.endsWith("?") || (!isRequired);
+        const field = {
+            type: "string",
+            _isInlineRelation: true,
+        };
         // Determine relation type based on syntax
         let relationType;
-        if (isArray) {
-            // Could be hasMany or manyToMany - default to manyToMany if through is specified, otherwise hasMany
+        if (hasArray) {
             relationType = relationConfig.through ? "manyToMany" : "hasMany";
         }
-        else if (nullable && !required) {
-            // Single nullable entity reference - likely hasOne
+        else if (isNullable && !isRequired) {
             relationType = "hasOne";
         }
         else {
-            // Single required entity reference - belongsTo
             relationType = "belongsTo";
         }
         field._inlineRelation = {
-            entity: typeStr,
+            entity: entityCheckStr,
             relationType,
             ...(relationConfig.cascade && { cascade: true }),
             ...(relationConfig.through && { through: relationConfig.through }),
             ...(relationConfig.timestamps && { timestamps: true }),
         };
-        // Return early - this is a relation, not a field
         return field;
     }
-    // Parse default value: type = value
-    const defaultMatch = typeStr.match(/^(.+?)\s*=\s*(.+)$/);
-    if (defaultMatch) {
-        typeStr = defaultMatch[1].trim();
-        const defaultValue = defaultMatch[2].trim();
-        // Try to parse default value
-        if (defaultValue === "true" || defaultValue === "false") {
-            field.default = defaultValue === "true";
-        }
-        else if (defaultValue === "now" || defaultValue === "now()") {
-            field.default = "now()";
-        }
-        else if (!isNaN(Number(defaultValue)) && defaultValue !== "") {
-            field.default = Number(defaultValue);
-        }
-        else {
-            // Remove quotes if present
-            field.default = defaultValue.replace(/^["']|["']$/g, "");
-        }
-    }
-    // Map type string to EntityFieldType
-    const typeMap = {
-        string: "string",
-        text: "text",
-        uuid: "uuid",
-        number: "number",
-        integer: "integer",
-        boolean: "boolean",
-        timestamp: "timestamp",
-        jsonb: "jsonb",
+    // Use TypeParser for all type parsing
+    const parsedType = TypeParser.parse(str);
+    // Convert FieldType to EntityField
+    const field = {
+        type: parsedType.type,
+        required: !parsedType.nullable,
+        nullable: parsedType.nullable,
+        unique: parsedType.unique,
+        index: parsedType.indexed,
+        generated: parsedType.generated,
+        default: parsedType.default || (parsedType.defaultFn ? parsedType.defaultFn + "()" : undefined),
+        minLength: parsedType.minLength,
+        maxLength: parsedType.maxLength,
+        min: typeof parsedType.min === 'number' ? parsedType.min : undefined,
+        max: typeof parsedType.max === 'number' ? parsedType.max : undefined,
+        pattern: parsedType.pattern,
+        enum: parsedType.enumValues,
     };
-    field.type = typeMap[typeStr.toLowerCase()] || "string";
-    field.required = required;
-    field.nullable = nullable;
+    // Copy precision/scale for decimal types
+    if (parsedType.precision !== undefined) {
+        field.precision = parsedType.precision;
+    }
+    if (parsedType.scale !== undefined) {
+        field.scale = parsedType.scale;
+    }
+    if (parsedType.currency) {
+        field.currency = parsedType.currency;
+    }
+    if (parsedType.length) {
+        field.length = parsedType.length;
+    }
     return field;
 }
 /**
@@ -161,29 +159,67 @@ export function parseRelationDefinition(relationDef) {
  * Normalize entity definition - optimized parser for shorthand-first syntax
  * Parses fields and relations on-demand, caching results
  * Extracts inline relations from fields and auto-generates foreign keys
+ * Handles source inheritance and include filtering
  */
 export function normalizeEntityDefinition(entityName, entityDef, allEntities) {
+    // Handle database shorthand (string)
+    const dbConfig = typeof entityDef.database === "string"
+        ? { table: entityDef.database }
+        : entityDef.database;
     // Build normalized structure - only copy what we need
     const normalized = {
-        table: entityDef.table,
-        indexes: entityDef.indexes,
+        table: dbConfig?.table || entityDef.table || entityName.toLowerCase() + 's',
+        indexes: entityDef.indexes || dbConfig?.indexes,
         apiSchema: entityDef.apiSchema,
         crud: entityDef.crud,
         validations: entityDef.validations,
         computed: entityDef.computed,
+        variants: entityDef.variants,
         hooks: entityDef.hooks,
         softDelete: entityDef.softDelete,
+        source: entityDef.source,
+        include: entityDef.include,
         fields: {},
     };
     // Build set of available entity names for validation
     const availableEntities = allEntities && typeof allEntities === 'object' && allEntities !== null
         ? new Set(Object.keys(allEntities))
         : undefined;
+    // Handle source inheritance
+    let baseFields = {};
+    if (entityDef.source && allEntities) {
+        const sourceEntity = allEntities[entityDef.source];
+        if (sourceEntity) {
+            // Normalize source entity to get its fields
+            const normalizedSource = normalizeEntityDefinition(entityDef.source, sourceEntity, allEntities);
+            // If include is specified, only include those fields
+            if (entityDef.include && Array.isArray(entityDef.include)) {
+                for (const fieldName of entityDef.include) {
+                    if (normalizedSource.fields[fieldName]) {
+                        // Convert EntityField back to EntityFieldDefinition for merging
+                        // This is a simplified conversion - in practice, we'd need to preserve the original definition
+                        baseFields[fieldName] = normalizedSource.fields[fieldName];
+                    }
+                }
+            }
+            else {
+                // Include all fields from source
+                for (const [fieldName, field] of Object.entries(normalizedSource.fields)) {
+                    baseFields[fieldName] = field;
+                }
+            }
+        }
+    }
+    // Merge base fields with entity's own fields (entity fields override source fields)
+    const mergedFields = {
+        ...baseFields,
+        ...(entityDef.fields || {}),
+    };
     // Parse fields and extract inline relations
-    if (!entityDef.fields || typeof entityDef.fields !== 'object' || entityDef.fields === null) {
+    if (Object.keys(mergedFields).length === 0) {
         return normalized;
     }
-    const fieldEntries = Object.entries(entityDef.fields);
+    const fieldEntries = Object.entries(mergedFields);
     const inlineRelations = {};
     for (let i = 0; i < fieldEntries.length; i++) {
         const [fieldName, fieldDef] = fieldEntries[i];
@@ -208,7 +244,7 @@ export function normalizeEntityDefinition(entityName, entityDef, allEntities) {
             if (inlineRel.relationType === "belongsTo") {
                 const foreignKeyName = `${fieldName}Id`;
                 // Only auto-generate if foreign key doesn't already exist
-                if (!entityDef.fields[foreignKeyName]) {
+                if (!entityDef.fields || !entityDef.fields[foreignKeyName]) {
                     normalized.fields[foreignKeyName] = {
                         type: "uuid",
                         required: !parsedField.nullable,
@@ -266,23 +302,41 @@ function camelToSnake(str) {
  * Convert entity field type to schema field type
  */
 function entityTypeToSchemaType(entityType) {
-    switch (entityType) {
-        case "uuid":
-        case "string":
-        case "text":
-            return "string";
-        case "number":
-        case "integer":
-            return "number";
-        case "boolean":
-            return "boolean";
-        case "timestamp":
-            return "string";
-        case "jsonb":
-            return "object";
-        default:
-            return "string";
+    // Map all new types to JSON Schema types
+    if (entityType === "uuid" || entityType === "string" || entityType === "text" ||
+        entityType === "email" || entityType === "url" || entityType === "phone" ||
+        entityType === "slug" || entityType === "base64") {
+        return "string";
     }
+    if (entityType === "number" || entityType === "decimal" || entityType === "money" ||
+        entityType === "float" || entityType === "double") {
+        return "number";
+    }
+    if (entityType === "integer" || entityType === "int" || entityType === "int8" ||
+        entityType === "int16" || entityType === "int32" || entityType === "int64" ||
+        entityType === "bigint" || entityType === "uint") {
+        return "integer";
+    }
+    if (entityType === "boolean") {
+        return "boolean";
+    }
+    if (entityType === "timestamp" || entityType === "timestamptz" ||
+        entityType === "timestamplocal" || entityType === "datetime" ||
+        entityType === "datetimetz" || entityType === "datetimelocal" ||
+        entityType === "date" || entityType === "time" || entityType === "interval" ||
+        entityType === "duration") {
+        return "string";
+    }
+    if (entityType === "json" || entityType === "jsonb") {
+        return "object";
+    }
+    if (entityType === "enum") {
+        return "string";
+    }
+    if (entityType === "binary") {
+        return "string"; // Base64 encoded
+    }
+    return "string";
 }
 /**
  * Convert entity field to schema field
@@ -304,16 +358,30 @@ function entityFieldToSchemaField(fieldName, entityField) {
         type: schemaType,
         required: entityField.required,
     };
-    // Add format for timestamps
-    if (entityField.type === "timestamp") {
+    // Add format for date/time types
+    if (entityField.type === "timestamp" || entityField.type === "timestamptz" ||
+        entityField.type === "timestamplocal" || entityField.type === "datetime" ||
+        entityField.type === "datetimetz" || entityField.type === "datetimelocal") {
         schemaField.format = entityField.apiFormat || "date-time";
+    }
+    else if (entityField.type === "date") {
+        schemaField.format = "date";
+    }
+    else if (entityField.type === "time") {
+        schemaField.format = "time";
+    }
+    else if (entityField.type === "email") {
+        schemaField.format = "email";
+    }
+    else if (entityField.type === "url") {
+        schemaField.format = "uri";
     }
     // Add validation rules
     if (entityField.minLength !== undefined) {
-        schemaField.min = entityField.minLength;
+        schemaField.minLength = entityField.minLength;
     }
     if (entityField.maxLength !== undefined) {
-        schemaField.max = entityField.maxLength;
+        schemaField.maxLength = entityField.maxLength;
     }
     if (entityField.min !== undefined) {
         schemaField.min = entityField.min;
@@ -348,6 +416,10 @@ export function entityToSchema(entityName, entityDef, entities) {
     // Process fields - optimized loop
     for (let i = 0; i < fieldEntries.length; i++) {
         const [fieldName, entityField] = fieldEntries[i];
+        // Skip inline relations - they're handled via foreign keys, not as direct fields
+        if (entityField._isInlineRelation) {
+            continue;
+        }
         const result = entityFieldToSchemaField(fieldName, entityField);
         if (result) {
             schemaFields[result.apiFieldName] = result.schemaField;
@@ -358,7 +430,16 @@ export function entityToSchema(entityName, entityDef, entities) {
     return { fields: schemaFields };
 }
 /**
- * Convert all entities to schemas - optimized batch processing
+ * Normalize config to use schemas (unified entities/schemas)
+ * Uses config-normalizer for unified handling
+ */
+export function normalizeSchemas(config) {
+    const normalized = normalizeConfig(config);
+    return normalized.schemas;
+}
+/**
+ * Convert entities to API schemas (SchemaDefinition format for validation)
+ * This converts EntityDefinition to SchemaDefinition format
  */
 export function entitiesToSchemas(entities) {
     const schemas = {};

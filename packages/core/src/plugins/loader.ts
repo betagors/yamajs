@@ -1,6 +1,6 @@
-import { pathToFileURL } from "url";
+﻿import { pathToFileURL } from "url";
 import type { PluginManifest, YamaPlugin } from "./base.js";
-import { PluginError, ErrorCodes } from "@betagors/yama-errors";
+import { PluginError, ErrorCodes } from "@yamajs/errors";
 import { getFileSystem, getPathModule } from "../platform/fs.js";
 import { getEnvProvider } from "../platform/env.js";
 

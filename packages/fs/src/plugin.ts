@@ -1,12 +1,12 @@
-import type { YamaPlugin } from "@betagors/yama-core";
-import { registerStorageAdapter } from "@betagors/yama-core";
+﻿import type { YamaPlugin } from "@yamajs/core";
+import { registerStorageAdapter } from "@yamajs/core";
 import { createFSBucket, type FSAdapterConfig } from "./adapter";
 
 /**
  * Filesystem storage plugin
  */
 const plugin: YamaPlugin = {
-  name: "@betagors/yama-fs",
+  name: "@yamajs/fs",
   category: "storage",
   pluginApi: "1.0",
   yamaCore: "^0.1.0",

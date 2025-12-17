@@ -1,9 +1,9 @@
-import { existsSync } from "fs";
+﻿import { existsSync } from "fs";
 import { findYamaConfig } from "../utils/project-detection.ts";
 import { readYamaConfig } from "../utils/file-utils.ts";
-import { loadEnvFile, resolveEnvVars } from "@betagors/yama-core";
+import { loadEnvFile, resolveEnvVars } from "@yamajs/core";
 import { success, error, info, printTable, colors } from "../utils/cli-utils.ts";
-import type { DatabaseConfig } from "@betagors/yama-core";
+import type { DatabaseConfig } from "@yamajs/core";
 
 interface SchemaEnvOptions {
   config?: string;
@@ -33,14 +33,14 @@ export async function schemaEnvCommand(
       if (config.database) {
         const url = config.database.url || "not configured";
         const status = url.includes("localhost") || url.includes("127.0.0.1")
-          ? colors.success("✅ Connected")
-          : colors.warning("⚠️  Not configured");
+          ? colors.success("âœ… Connected")
+          : colors.warning("âš ï¸  Not configured");
         tableData.push(["local", status, url.substring(0, 50) + "..."]);
       } else {
-        tableData.push(["local", colors.error("❌ Not configured"), "-"]);
+        tableData.push(["local", colors.error("âŒ Not configured"), "-"]);
       }
 
-      console.log("\n🌍 Environments:\n");
+      console.log("\nðŸŒ Environments:\n");
       printTable(tableData);
     } else if (action && options.env) {
       // Set default environment (would be stored in config)

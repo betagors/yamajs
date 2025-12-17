@@ -1,4 +1,4 @@
-import type { YamaIR } from "@betagors/yama-core";
+﻿import type { YamaIR } from "@yamajs/core";
 
 export interface YamaClientOptions {
   /** IR object (preferred for build-time or local use) */

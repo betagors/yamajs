@@ -1,5 +1,5 @@
-/**
- * @betagors/yama-errors
+﻿/**
+ * @yamajs/errors
  * 
  * Standardized error handling for YAMA applications.
  * 
@@ -11,7 +11,7 @@
  *   ErrorCodes,
  *   formatRestError,
  *   isYamaError
- * } from '@betagors/yama-errors';
+ * } from '@yamajs/errors';
  * 
  * // Throw a validation error
  * throw new ValidationError('Invalid email', {

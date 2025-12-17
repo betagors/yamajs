@@ -49,8 +49,8 @@ export function validateSecurityPolicy(
   if (!security) {
     // No security policy - warn if not an official plugin
     const isOfficial = manifest.category && 
-      (manifest.category.startsWith("@betagors/") || 
-       manifest.category.startsWith("@yama/"));
+      (manifest.category.startsWith("@yamajs/") || 
+       manifest.category.startsWith("@yamajs/"));
     
     if (!isOfficial) {
       warnings.push("Plugin has no security policy defined");
@@ -63,8 +63,8 @@ export function validateSecurityPolicy(
     // In a real implementation, verify code signature
     // For now, just check if it's an official plugin
     const isOfficial = manifest.category &&
-      (manifest.category.startsWith("@betagors/") ||
-       manifest.category.startsWith("@yama/"));
+      (manifest.category.startsWith("@yamajs/") ||
+       manifest.category.startsWith("@yamajs/"));
     
     if (!isOfficial && !security.trustedPublisher) {
       warnings.push("Plugin requires code signing but no trusted publisher specified");
@@ -109,8 +109,8 @@ export function isPluginTrusted(manifest: PluginManifest): boolean {
   
   // Official plugins are always trusted
   const isOfficial = manifest.category &&
-    (manifest.category.startsWith("@betagors/") ||
-     manifest.category.startsWith("@yama/"));
+    (manifest.category.startsWith("@yamajs/") ||
+     manifest.category.startsWith("@yamajs/"));
   
   if (isOfficial) {
     return true;

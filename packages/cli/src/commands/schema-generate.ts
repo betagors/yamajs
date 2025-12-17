@@ -1,8 +1,8 @@
-import { existsSync } from "fs";
+﻿import { existsSync } from "fs";
 import { findYamaConfig } from "../utils/project-detection.ts";
 import { readYamaConfig, getConfigDir } from "../utils/file-utils.ts";
-import { loadEnvFile, resolveEnvVars } from "@betagors/yama-core";
-import type { DatabaseConfig, YamaSchemas, YamaEntities } from "@betagors/yama-core";
+import { loadEnvFile, resolveEnvVars } from "@yamajs/core";
+import type { DatabaseConfig, YamaSchemas, YamaEntities } from "@yamajs/core";
 import {
   entitiesToModel,
   computeDiff,
@@ -17,7 +17,7 @@ import {
   type Model,
   type TableModel,
   type ColumnModel,
-} from "@betagors/yama-core";
+} from "@yamajs/core";
 import { success, error, info, warning, dim, fmt } from "../utils/cli-utils.ts";
 import { promptMigrationName, confirm, hasDestructiveOperation } from "../utils/interactive.ts";
 import { getDatabasePlugin, getDatabasePluginAndConfig } from "../utils/db-plugin.ts";
@@ -353,7 +353,7 @@ export async function schemaGenerateCommand(options: SchemaGenerateOptions): Pro
     // Show changes
     console.log("");
     console.log(fmt.bold("Schema Changes"));
-    console.log(dim("─".repeat(40)));
+    console.log(dim("â”€".repeat(40)));
     
     for (const step of steps) {
       if (step.type === "add_table") {

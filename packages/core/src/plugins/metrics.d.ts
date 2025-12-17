@@ -185,3 +185,4 @@ export declare function recordPluginAPICall(pluginName: string): void;
  */
 export declare function recordPluginError(pluginName: string, error: Error): void;
 export {};
+//# sourceMappingURL=metrics.d.ts.map

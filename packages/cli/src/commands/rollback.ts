@@ -1,4 +1,4 @@
-import { existsSync } from "fs";
+﻿import { existsSync } from "fs";
 import { findYamaConfig } from "../utils/project-detection.ts";
 import { getConfigDir, readYamaConfig } from "../utils/file-utils.ts";
 import {
@@ -7,7 +7,7 @@ import {
   updateState,
   loadEnvFile,
   resolveEnvVars,
-} from "@betagors/yama-core";
+} from "@yamajs/core";
 import { info, error, success, warning, dim, fmt, createSpinner, formatDuration } from "../utils/cli-utils.ts";
 import { confirm } from "../utils/interactive.ts";
 import { getDatabasePluginAndConfig } from "../utils/db-plugin.ts";
@@ -81,7 +81,7 @@ export async function rollbackCommand(options: RollbackOptions): Promise<void> {
     // Show plan
     console.log("");
     console.log(fmt.bold(`Rollback ${options.env}`));
-    console.log(dim("─".repeat(35)));
+    console.log(dim("â”€".repeat(35)));
     console.log(`Current: ${fmt.cyan(currentSnapshot.substring(0, 8))}`);
     console.log(`Target:  ${targetSnapshot.substring(0, 8)}`);
     console.log(`Steps:   ${path.transitions.length}`);
@@ -151,7 +151,7 @@ export async function rollbackCommand(options: RollbackOptions): Promise<void> {
       const duration = Date.now() - startTime;
       spinner.succeed(`Rolled back in ${formatDuration(duration)}`);
       console.log("");
-      success(`${options.env} → ${targetSnapshot.substring(0, 8)}`);
+      success(`${options.env} â†’ ${targetSnapshot.substring(0, 8)}`);
 
     } catch (err) {
       spinner.fail("Rollback failed");

@@ -1,8 +1,8 @@
-import { existsSync } from "fs";
+﻿import { existsSync } from "fs";
 import { findYamaConfig } from "./project-detection.ts";
 import { getConfigDir, readYamaConfig } from "./file-utils.ts";
-import { resolveEnvVars, loadEnvFile, setPluginRegistryConfig, loadPlugin, getAllCLICommands } from "@betagors/yama-core";
-import type { PluginCLICommand } from "@betagors/yama-core";
+import { resolveEnvVars, loadEnvFile, setPluginRegistryConfig, loadPlugin, getAllCLICommands } from "@yamajs/core";
+import type { PluginCLICommand } from "@yamajs/core";
 
 /**
  * Load plugins from yama.yaml and return their CLI commands
@@ -35,10 +35,10 @@ export async function loadPluginCommands(configPath?: string): Promise<PluginCLI
 
       for (const pluginItem of config.plugins) {
         if (typeof pluginItem === "string") {
-          // String shorthand: "@betagors/yama-pglite"
+          // String shorthand: "@yamajs/pglite"
           pluginEntries.push({ name: pluginItem, config: {} });
         } else if (pluginItem && typeof pluginItem === "object") {
-          // Object format: { "@betagors/yama-redis": { config: {...} } }
+          // Object format: { "@yamajs/redis": { config: {...} } }
           const keys = Object.keys(pluginItem);
           if (keys.length !== 1) {
             throw new Error(`Plugin object must have exactly one key (plugin name), got: ${keys.join(", ")}`);

@@ -70,7 +70,7 @@ endpoints:
 
 ```typescript
 // src/handlers/login.ts
-import { HandlerContext } from '@betagors/yama-core';
+import { HandlerContext } from '@yamajs/core';
 import { sign } from 'jsonwebtoken';
 
 export async function login(context: HandlerContext) {
@@ -102,7 +102,7 @@ export async function login(context: HandlerContext) {
 
 ```typescript
 // src/handlers/register.ts
-import { HandlerContext } from '@betagors/yama-core';
+import { HandlerContext } from '@yamajs/core';
 import { hash } from 'bcrypt';
 
 export async function register(context: HandlerContext) {

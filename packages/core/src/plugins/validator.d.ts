@@ -26,3 +26,4 @@ export declare function validatePluginConfig(config: Record<string, unknown>, ma
  * Validate migration definitions in manifest
  */
 export declare function validateMigrations(manifest: PluginManifest, pluginDir?: string): ValidationResult;
+//# sourceMappingURL=validator.d.ts.map

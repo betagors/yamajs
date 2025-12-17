@@ -77,3 +77,4 @@ export interface PaginatedResponse<T> {
     data: T[];
     pagination: PaginationMetadata;
 }
+//# sourceMappingURL=types.d.ts.map

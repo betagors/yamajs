@@ -1,12 +1,12 @@
-/**
+﻿/**
  * Query mapping utilities for YAMA Node Runtime
  * 
  * This module handles mapping query parameters to repository findAll options,
  * including pagination, sorting, searching, and field filtering.
  */
 
-import type { EntityDefinition, CrudConfig, HandlerContext } from "@betagors/yama-core";
-import { parseFieldDefinition, detectPaginationFromQuery } from "@betagors/yama-core";
+import type { EntityDefinition, CrudConfig, HandlerContext } from "@yamajs/core";
+import { parseFieldDefinition, detectPaginationFromQuery } from "@yamajs/core";
 import { getApiFieldNameFromEntity } from "./entity-utils.js";
 
 /**

@@ -832,6 +832,377 @@
         ]
       }
     },
+    "providers": {
+      "type": "object",
+      "description": "v1.0 Provider System configuration. Built-in, zero-dependency core services for every Yama application.",
+      "properties": {
+        "config": {
+          "type": "object",
+          "description": "Configuration provider (env variables, .env files)",
+          "properties": {
+            "adapter": {
+              "type": "string",
+              "enum": [
+                "env"
+              ],
+              "default": "env",
+              "description": "Configuration adapter"
+            },
+            "paths": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Additional .env file paths to load"
+            }
+          }
+        },
+        "logging": {
+          "type": "object",
+          "description": "Logging provider (structured logging)",
+          "properties": {
+            "adapter": {
+              "type": "string",
+              "enum": [
+                "console"
+              ],
+              "default": "console",
+              "description": "Logging adapter"
+            },
+            "level": {
+              "type": "string",
+              "enum": [
+                "debug",
+                "info",
+                "warn",
+                "error"
+              ],
+              "default": "info",
+              "description": "Minimum log level"
+            },
+            "format": {
+              "type": "string",
+              "enum": [
+                "pretty",
+                "json"
+              ],
+              "description": "Log format (auto-detected based on environment)"
+            },
+            "timestamp": {
+              "type": "boolean",
+              "default": true,
+              "description": "Include timestamps in logs"
+            },
+            "colors": {
+              "type": "boolean",
+              "description": "Enable colors in pretty format (auto-detected)"
+            },
+            "redact": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Paths to redact from logs (e.g., 'password', 'secret')"
+            }
+          }
+        },
+        "database": {
+          "type": "object",
+          "description": "Database provider (SQL database)",
+          "properties": {
+            "adapter": {
+              "type": "string",
+              "enum": [
+                "pglite",
+                "postgres"
+              ],
+              "default": "pglite",
+              "description": "Database adapter"
+            },
+            "path": {
+              "type": "string",
+              "description": "PGLite: storage directory path"
+            },
+            "memory": {
+              "type": "boolean",
+              "description": "PGLite: use in-memory mode"
+            },
+            "url": {
+              "type": "string",
+              "description": "Postgres: connection URL"
+            },
+            "pool": {
+              "type": "object",
+              "properties": {
+                "min": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "max": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "debug": {
+              "type": "boolean",
+              "description": "Enable SQL query logging"
+            }
+          }
+        },
+        "cache": {
+          "type": "object",
+          "description": "Cache provider (in-memory or external cache)",
+          "properties": {
+            "adapter": {
+              "type": "string",
+              "enum": [
+                "memory",
+                "redis"
+              ],
+              "default": "memory",
+              "description": "Cache adapter"
+            },
+            "maxSize": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Maximum number of items (memory adapter)"
+            },
+            "ttl": {
+              "type": "string",
+              "description": "Default TTL (e.g., '5m', '1h', '1d')"
+            },
+            "url": {
+              "type": "string",
+              "description": "Redis: connection URL (redis adapter)"
+            }
+          }
+        },
+        "email": {
+          "type": "object",
+          "description": "Email provider (send emails)",
+          "properties": {
+            "adapter": {
+              "type": "string",
+              "enum": [
+                "smtp"
+              ],
+              "default": "smtp",
+              "description": "Email adapter"
+            },
+            "from": {
+              "type": "string",
+              "description": "Default from address"
+            },
+            "smtp": {
+              "type": "object",
+              "description": "SMTP server configuration",
+              "properties": {
+                "host": {
+                  "type": "string"
+                },
+                "port": {
+                  "type": "integer"
+                },
+                "secure": {
+                  "type": "boolean"
+                },
+                "auth": {
+                  "type": "object",
+                  "properties": {
+                    "user": {
+                      "type": "string"
+                    },
+                    "pass": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "templates": {
+              "type": "string",
+              "description": "Path to custom email templates directory"
+            },
+            "dev": {
+              "type": "object",
+              "description": "Development mode options",
+              "properties": {
+                "capture": {
+                  "type": "boolean",
+                  "description": "Capture emails to .yama/emails/ instead of sending"
+                }
+              }
+            }
+          }
+        },
+        "auth": {
+          "type": "object",
+          "description": "Authentication provider (JWT, passwords, sessions)",
+          "properties": {
+            "adapter": {
+              "type": "string",
+              "enum": [
+                "jwt-password"
+              ],
+              "default": "jwt-password",
+              "description": "Auth adapter"
+            },
+            "jwt": {
+              "type": "object",
+              "description": "JWT configuration",
+              "properties": {
+                "secret": {
+                  "type": "string",
+                  "description": "JWT secret"
+                },
+                "accessTokenExpiry": {
+                  "type": "string",
+                  "default": "15m",
+                  "description": "Access token expiry"
+                },
+                "refreshTokenExpiry": {
+                  "type": "string",
+                  "default": "30d",
+                  "description": "Refresh token expiry"
+                }
+              }
+            },
+            "password": {
+              "type": "object",
+              "description": "Password validation configuration",
+              "properties": {
+                "minLength": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "default": 8
+                },
+                "maxLength": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "default": 128
+                },
+                "requireUppercase": {
+                  "type": "boolean",
+                  "default": true
+                },
+                "requireLowercase": {
+                  "type": "boolean",
+                  "default": true
+                },
+                "requireNumber": {
+                  "type": "boolean",
+                  "default": true
+                },
+                "requireSpecial": {
+                  "type": "boolean",
+                  "default": false
+                },
+                "denyCommon": {
+                  "type": "boolean",
+                  "default": true
+                },
+                "checkBreached": {
+                  "type": "boolean",
+                  "default": false
+                }
+              }
+            },
+            "rateLimit": {
+              "type": "object",
+              "description": "Rate limiting for auth actions",
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "default": true
+                },
+                "login": {
+                  "type": "object",
+                  "properties": {
+                    "maxAttempts": {
+                      "type": "integer",
+                      "default": 5
+                    },
+                    "window": {
+                      "type": "string",
+                      "default": "15m"
+                    },
+                    "blockDuration": {
+                      "type": "string",
+                      "default": "15m"
+                    }
+                  }
+                }
+              }
+            },
+            "lockout": {
+              "type": "object",
+              "description": "Account lockout configuration",
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "default": true
+                },
+                "maxAttempts": {
+                  "type": "integer",
+                  "default": 5
+                },
+                "duration": {
+                  "type": "string",
+                  "default": "30m"
+                }
+              }
+            }
+          }
+        },
+        "storage": {
+          "type": "object",
+          "description": "Storage provider (file uploads)",
+          "properties": {
+            "adapter": {
+              "type": "string",
+              "enum": [
+                "local",
+                "s3"
+              ],
+              "default": "local",
+              "description": "Storage adapter"
+            },
+            "path": {
+              "type": "string",
+              "default": "uploads",
+              "description": "Local: storage directory path"
+            },
+            "maxFileSize": {
+              "type": "string",
+              "default": "10MB",
+              "description": "Maximum file size"
+            },
+            "allowedTypes": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Allowed MIME types"
+            },
+            "serve": {
+              "type": "object",
+              "description": "Static file serving configuration",
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "default": true
+                },
+                "path": {
+                  "type": "string",
+                  "default": "/uploads"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "enums": {
       "type": "object",
       "description": "Named enum definitions (reusable across entities)",

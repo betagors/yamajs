@@ -12,3 +12,4 @@ export declare function loadPluginFromPackage(packageName: string, projectDir?: 
  * @param projectDir - Optional project directory to resolve packages from (defaults to process.cwd())
  */
 export declare function importPlugin(manifest: PluginManifest, packageName: string, projectDir?: string): Promise<YamaPlugin>;
+//# sourceMappingURL=loader.d.ts.map

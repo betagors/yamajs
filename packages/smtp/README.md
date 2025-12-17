@@ -1,13 +1,13 @@
-# @betagors/yama-smtp
+﻿# @yamajs/smtp
 
 SMTP email plugin for Yama with Mailpit support for local development.
 
 ## Installation
 
 ```bash
-npm install @betagors/yama-smtp nodemailer
+npm install @yamajs/smtp nodemailer
 # or
-pnpm add @betagors/yama-smtp nodemailer
+pnpm add @yamajs/smtp nodemailer
 ```
 
 ## Configuration
@@ -16,7 +16,7 @@ pnpm add @betagors/yama-smtp nodemailer
 
 ```yaml
 plugins:
-  "@betagors/yama-smtp":
+  "@yamajs/smtp":
     host: localhost
     port: 1025  # Mailpit default SMTP port
     from: noreply@example.com
@@ -28,7 +28,7 @@ Mailpit is automatically detected when using `localhost:1025`. No authentication
 
 ```yaml
 plugins:
-  "@betagors/yama-smtp":
+  "@yamajs/smtp":
     host: smtp.example.com
     port: 587
     secure: false
@@ -43,7 +43,7 @@ plugins:
 Access email service in your handlers:
 
 ```typescript
-import { HandlerContext } from '@betagors/yama-core';
+import { HandlerContext } from '@yamajs/core';
 
 export async function sendWelcomeEmail(context: HandlerContext) {
   await context.email?.send({
@@ -82,13 +82,13 @@ await context.email?.sendBatch([
 
 ## Features
 
-- ✅ SMTP email sending
-- ✅ HTML and plain text support
-- ✅ Attachments
-- ✅ Batch sending
-- ✅ Mailpit auto-detection for local development
-- ✅ TLS/SSL support
-- ✅ Multiple recipients (to, cc, bcc)
+- âœ… SMTP email sending
+- âœ… HTML and plain text support
+- âœ… Attachments
+- âœ… Batch sending
+- âœ… Mailpit auto-detection for local development
+- âœ… TLS/SSL support
+- âœ… Multiple recipients (to, cc, bcc)
 
 
 

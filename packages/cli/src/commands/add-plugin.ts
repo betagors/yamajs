@@ -1,11 +1,11 @@
-import { existsSync } from "fs";
+﻿import { existsSync } from "fs";
 import { execSync } from "child_process";
 import { join } from "path";
 import { findYamaConfig } from "../utils/project-detection.ts";
 import { getConfigDir, readYamaConfig, writeYamaConfig, readPackageJson } from "../utils/file-utils.ts";
 import { success, error } from "../utils/cli-utils.ts";
 import { detectPackageManager } from "../utils/project-detection.ts";
-import { loadPlugin } from "@betagors/yama-core";
+import { loadPlugin } from "@yamajs/core";
 
 interface AddPluginOptions {
   config?: string;
@@ -57,7 +57,7 @@ export async function addPluginCommand(options: AddPluginOptions): Promise<void>
 
     // Install the package if not config-only
     if (!options.configOnly) {
-      console.log(`📦 Installing plugin: ${pluginName}`);
+      console.log(`ðŸ“¦ Installing plugin: ${pluginName}`);
       const packageManager = detectPackageManager();
       const configDir = getConfigDir(configPath);
       
@@ -66,7 +66,7 @@ export async function addPluginCommand(options: AddPluginOptions): Promise<void>
           cwd: configDir, 
           stdio: "inherit" 
         });
-        console.log(`✅ Package installed`);
+        console.log(`âœ… Package installed`);
         
         // Install peerDependencies if they exist
         try {
@@ -77,7 +77,7 @@ export async function addPluginCommand(options: AddPluginOptions): Promise<void>
             const peerDeps = pluginPackage.peerDependencies as Record<string, string> | undefined;
             
             if (peerDeps && Object.keys(peerDeps).length > 0) {
-              console.log(`📦 Installing peer dependencies...`);
+              console.log(`ðŸ“¦ Installing peer dependencies...`);
               const peerDepList = Object.entries(peerDeps)
                 .map(([name, version]) => `${name}@${version}`)
                 .join(" ");
@@ -87,9 +87,9 @@ export async function addPluginCommand(options: AddPluginOptions): Promise<void>
                   cwd: configDir,
                   stdio: "inherit"
                 });
-                console.log(`✅ Peer dependencies installed`);
+                console.log(`âœ… Peer dependencies installed`);
               } catch (peerErr) {
-                console.warn(`⚠️  Failed to install some peer dependencies: ${peerErr instanceof Error ? peerErr.message : String(peerErr)}`);
+                console.warn(`âš ï¸  Failed to install some peer dependencies: ${peerErr instanceof Error ? peerErr.message : String(peerErr)}`);
                 console.log(`   You may need to install them manually: ${peerDepList}`);
               }
             }
@@ -105,11 +105,11 @@ export async function addPluginCommand(options: AddPluginOptions): Promise<void>
 
       // Validate the plugin
       try {
-        console.log(`🔍 Validating plugin...`);
+        console.log(`ðŸ” Validating plugin...`);
         await loadPlugin(pluginName, configDir);
-        console.log(`✅ Plugin validated`);
+        console.log(`âœ… Plugin validated`);
       } catch (err) {
-        console.warn(`⚠️  Plugin validation failed: ${err instanceof Error ? err.message : String(err)}`);
+        console.warn(`âš ï¸  Plugin validation failed: ${err instanceof Error ? err.message : String(err)}`);
         console.log(`   Continuing anyway - plugin may still work`);
       }
     }
@@ -143,7 +143,7 @@ export async function addPluginCommand(options: AddPluginOptions): Promise<void>
     writeYamaConfig(configPath, config);
     success(`Plugin "${pluginName}" added to yama.yaml`);
 
-    console.log("\n💡 Next steps:");
+    console.log("\nðŸ’¡ Next steps:");
     if (options.configOnly) {
       console.log(`   1. Install the package: ${detectPackageManager()} add ${pluginName}`);
     }

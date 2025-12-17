@@ -1,8 +1,8 @@
-import { existsSync } from "fs";
+﻿import { existsSync } from "fs";
 import { findYamaConfig } from "../utils/project-detection.ts";
 import { getConfigDir, readYamaConfig, writeYamaConfig } from "../utils/file-utils.ts";
 import { success, error, info } from "../utils/cli-utils.ts";
-import { loadPluginFromPackage } from "@betagors/yama-core";
+import { loadPluginFromPackage } from "@yamajs/core";
 
 interface PluginConfigureOptions {
   config?: string;

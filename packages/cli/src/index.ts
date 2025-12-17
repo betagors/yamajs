@@ -1,4 +1,4 @@
-// Main entry point for @betagors/yama-cli
+﻿// Main entry point for @yamajs/cli
 // This file exports the CLI for programmatic use if needed
 
 export { initCommand } from "./commands/init";

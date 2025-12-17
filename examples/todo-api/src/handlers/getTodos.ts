@@ -1,4 +1,4 @@
-import type { GetTodosHandlerContext, TodoList } from "@yama/gen";
+import type { GetTodosHandlerContext, TodoList } from "@yamajs/gen";
 
 export async function getTodos(
   context: GetTodosHandlerContext

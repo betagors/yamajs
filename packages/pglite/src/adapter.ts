@@ -1,9 +1,9 @@
-import { drizzle } from "drizzle-orm/pglite";
+﻿import { drizzle } from "drizzle-orm/pglite";
 import type {
   DatabaseAdapter,
   DatabaseConnection,
-} from "@betagors/yama-core";
-import type { DatabaseConfig, YamaEntities } from "@betagors/yama-core";
+} from "@yamajs/core";
+import type { DatabaseConfig, YamaEntities } from "@yamajs/core";
 import { generateDrizzleSchema } from "./drizzle-schema.ts";
 import { generateMigrationSQL } from "./migrations.ts";
 import { join } from "path";

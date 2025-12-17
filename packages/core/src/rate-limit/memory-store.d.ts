@@ -35,3 +35,4 @@ export declare class MemoryRateLimitStore implements RateLimitStore {
  * Create a new in-memory rate limit store
  */
 export declare function createMemoryRateLimitStore(cleanupIntervalMs?: number): MemoryRateLimitStore;
+//# sourceMappingURL=memory-store.d.ts.map

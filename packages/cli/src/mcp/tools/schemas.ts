@@ -1,10 +1,10 @@
-import { z } from "zod";
+﻿import { z } from "zod";
 import { schemasCommand } from "../../commands/schemas.ts";
 import { executeCommand } from "../utils/output-capture.ts";
 import { readYamaConfig } from "../../utils/file-utils.ts";
 import { findYamaConfig } from "../../utils/project-detection.ts";
 import { existsSync } from "fs";
-import type { YamaSchemas } from "@betagors/yama-core";
+import type { YamaSchemas } from "@yamajs/core";
 
 const inputSchema = z.object({
   config: z.string().optional().describe("Path to yama.yaml configuration file"),
@@ -22,7 +22,7 @@ export const yamaSchemasTool = {
         content: [
           {
             type: "text" as const,
-            text: `❌ Config file not found: ${configPath}`,
+            text: `âŒ Config file not found: ${configPath}`,
           },
         ],
       };
@@ -49,7 +49,7 @@ export const yamaSchemasTool = {
         content: [
           {
             type: "text" as const,
-            text: `📦 Schemas (${Object.keys(config.schemas).length}):\n\n${schemasJson}`,
+            text: `ðŸ“¦ Schemas (${Object.keys(config.schemas).length}):\n\n${schemasJson}`,
           },
         ],
       };
@@ -58,7 +58,7 @@ export const yamaSchemasTool = {
         content: [
           {
             type: "text" as const,
-            text: `❌ Failed to read schemas: ${error instanceof Error ? error.message : String(error)}`,
+            text: `âŒ Failed to read schemas: ${error instanceof Error ? error.message : String(error)}`,
           },
         ],
       };

@@ -1,4 +1,4 @@
-import type {
+﻿import type {
   LogEntry,
   Transport,
   LogLevel,
@@ -357,7 +357,7 @@ export async function createTransports(
 
         // Try to get fs plugin API
         if (context?.getPluginAPI) {
-          const fsApi = context.getPluginAPI("@betagors/yama-fs");
+          const fsApi = context.getPluginAPI("@yamajs/fs");
           if (fsApi?.bucket) {
             bucket = fsApi.bucket;
           }
@@ -371,7 +371,7 @@ export async function createTransports(
 
         // Try to get s3 plugin API
         if (context?.getPluginAPI) {
-          const s3Api = context.getPluginAPI("@betagors/yama-s3");
+          const s3Api = context.getPluginAPI("@yamajs/s3");
           if (s3Api?.buckets && s3Config.bucket) {
             bucket = s3Api.buckets[s3Config.bucket];
           }

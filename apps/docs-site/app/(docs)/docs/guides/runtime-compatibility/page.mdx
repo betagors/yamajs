@@ -46,15 +46,15 @@ This document codifies how Yama JS stays portable across runtimes today and as n
 
 ## Publishing & imports
 
-- npm/pnpm/Yarn/Bun: `@betagors/yama-*`
-- Deno (npm mode): `npm:@betagors/yama-*`
-- Deno (JSR): `jsr:@betagors/yama-*` (after JSR publish)
+- npm/pnpm/Yarn/Bun: `@yamajs/*`
+- Deno (npm mode): `npm:@yamajs/*`
+- Deno (JSR): `jsr:@yamajs/*` (after JSR publish)
 - `deno.json` example:
 
 ```json
 {
   "imports": {
-    "@betagors/yama-core": "npm:@betagors/yama-core"
+    "@yamajs/core": "npm:@yamajs/core"
   }
 }
 ```

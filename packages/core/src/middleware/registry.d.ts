@@ -38,3 +38,4 @@ export declare class MiddlewareRegistry {
      */
     getEndpointMiddleware(): Map<string, Middleware[]>;
 }
+//# sourceMappingURL=registry.d.ts.map

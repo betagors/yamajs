@@ -1,15 +1,16 @@
-import { readFileSync, existsSync } from "fs";
 import { getPendingPluginMigrations, getInstalledPluginVersion, getPluginMigrationHistory, } from "./migrations.js";
+import { getFileSystem } from "../platform/fs.js";
+const fs = () => getFileSystem();
 /**
  * Validate migration SQL file syntax (basic check)
  * This is a simple validation - full SQL parsing would require a SQL parser
  */
 export async function validateMigrationFile(path) {
-    if (!existsSync(path)) {
+    if (!fs().existsSync(path)) {
         return false;
     }
     try {
-        const content = readFileSync(path, "utf-8");
+        const content = fs().readFileSync(path, "utf-8");
         // Basic validation: check if it's not empty and contains SQL-like content
         if (!content.trim()) {
             return false;

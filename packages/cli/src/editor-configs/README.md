@@ -1,4 +1,4 @@
-# Editor Configuration for Yama YAML Files
+﻿# Editor Configuration for Yama YAML Files
 
 This directory contains editor configuration files to enable autocomplete and validation for Yama YAML configuration files.
 
@@ -7,18 +7,18 @@ This directory contains editor configuration files to enable autocomplete and va
 **The easiest way** - Add a schema reference comment at the top of any Yama YAML file:
 
 ```yaml
-# yaml-language-server: $schema=node_modules/@betagors/yama-cli/dist/cli/src/yama.schema.json
+# yaml-language-server: $schema=node_modules/@yamajs/cli/dist/cli/src/yama.schema.json
 name: my-app
 version: 1.0.0
 # ... rest of config
 ```
 
 This works with **any editor** that supports YAML Language Server (yamlls), including:
-- ✅ VS Code (with Red Hat YAML extension)
-- ✅ Vim/Neovim (with coc-yaml or nvim-lspconfig)
-- ✅ Emacs (with lsp-mode)
-- ✅ Sublime Text (with LSP package)
-- ✅ Any editor with LSP support
+- âœ… VS Code (with Red Hat YAML extension)
+- âœ… Vim/Neovim (with coc-yaml or nvim-lspconfig)
+- âœ… Emacs (with lsp-mode)
+- âœ… Sublime Text (with LSP package)
+- âœ… Any editor with LSP support
 
 ## Supported File Patterns
 
@@ -38,7 +38,7 @@ Add this to your workspace `.vscode/settings.json`:
 ```json
 {
   "yaml.schemas": {
-    "node_modules/@betagors/yama-cli/dist/cli/src/yama.schema.json": [
+    "node_modules/@yamajs/cli/dist/cli/src/yama.schema.json": [
       "yama.yaml",
       "yama.yml",
       "*.yama.yaml",
@@ -65,7 +65,7 @@ Add to your `coc-settings.json` (in project root or `~/.config/nvim/coc-settings
 ```json
 {
   "yaml.schemas": {
-    "node_modules/@betagors/yama-cli/dist/cli/src/yama.schema.json": [
+    "node_modules/@yamajs/cli/dist/cli/src/yama.schema.json": [
       "yama.yaml",
       "yama.yml",
       "*.yama.yaml",
@@ -84,7 +84,7 @@ require('lspconfig').yamlls.setup({
   settings = {
     yaml = {
       schemas = {
-        ["node_modules/@betagors/yama-cli/dist/cli/src/yama.schema.json"] = {
+        ["node_modules/@yamajs/cli/dist/cli/src/yama.schema.json"] = {
           "yama.yaml",
           "yama.yml",
           "*.yama.yaml",
@@ -102,7 +102,7 @@ Add to your `.dir-locals.el` or `lsp-yaml` configuration:
 
 ```elisp
 (setq lsp-yaml-schemas
-      '(("node_modules/@betagors/yama-cli/dist/cli/src/yama.schema.json"
+      '(("node_modules/@yamajs/cli/dist/cli/src/yama.schema.json"
          "yama.yaml"
          "yama.yml"
          "*.yama.yaml"
@@ -119,7 +119,7 @@ Add to your LSP settings:
     "yamlls": {
       "settings": {
         "yaml.schemas": {
-          "node_modules/@betagors/yama-cli/dist/cli/src/yama.schema.json": [
+          "node_modules/@yamajs/cli/dist/cli/src/yama.schema.json": [
             "yama.yaml",
             "yama.yml",
             "*.yama.yaml",
@@ -140,7 +140,7 @@ Alternatively, create a `.yamlls-config.json` file in your project root (works w
 {
   "yaml": {
     "schemas": {
-      "node_modules/@betagors/yama-cli/dist/cli/src/yama.schema.json": [
+      "node_modules/@yamajs/cli/dist/cli/src/yama.schema.json": [
         "yama.yaml",
         "yama.yml",
         "*.yama.yaml",
@@ -154,9 +154,9 @@ Alternatively, create a `.yamlls-config.json` file in your project root (works w
 ## Summary
 
 **Best approach for maximum compatibility:**
-1. ✅ **Schema reference comment** (works everywhere) - automatically added by `yama create`
-2. ✅ **VS Code settings** - automatically configured by `yama create`
-3. ✅ **YAML Language Server config** - automatically created by `yama create`
+1. âœ… **Schema reference comment** (works everywhere) - automatically added by `yama create`
+2. âœ… **VS Code settings** - automatically configured by `yama create`
+3. âœ… **YAML Language Server config** - automatically created by `yama create`
 
 All three methods are set up automatically when you run `yama create`!
 

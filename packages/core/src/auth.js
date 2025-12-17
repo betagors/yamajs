@@ -1,4 +1,5 @@
-import { getAuthProvider } from "./auth/registry.js";
+﻿import { getAuthProvider } from "./auth/registry.js";
+import { ErrorCodes } from "@yamajs/errors";
 // Import built-in providers to trigger registration
 import "./auth/providers/index.js";
 /**
@@ -25,6 +26,7 @@ export async function authenticateRequest(headers, authConfig) {
     return {
         context: { authenticated: false },
         error: "Authentication failed: no valid credentials provided",
+        errorCode: ErrorCodes.AUTH_REQUIRED,
     };
 }
 /**
@@ -84,6 +86,7 @@ export async function authorizeRequest(authContext, endpointAuth, rolePermission
                     return {
                         authorized: false,
                         error: "Custom authorization handler denied access",
+                        errorCode: ErrorCodes.AUTHZ_HANDLER_DENIED,
                     };
                 }
                 return { authorized: true };
@@ -92,6 +95,7 @@ export async function authorizeRequest(authContext, endpointAuth, rolePermission
                 return {
                     authorized: false,
                     error: "Custom authorization handler denied access",
+                    errorCode: ErrorCodes.AUTHZ_HANDLER_DENIED,
                 };
             }
             return { authorized: true };
@@ -100,6 +104,7 @@ export async function authorizeRequest(authContext, endpointAuth, rolePermission
             return {
                 authorized: false,
                 error: error instanceof Error ? error.message : "Custom authorization handler failed",
+                errorCode: ErrorCodes.AUTHZ_HANDLER_DENIED,
             };
         }
     }
@@ -109,6 +114,7 @@ export async function authorizeRequest(authContext, endpointAuth, rolePermission
             return {
                 authorized: false,
                 error: "Authentication required",
+                errorCode: ErrorCodes.AUTH_REQUIRED,
             };
         }
         const userRoles = authContext.user?.roles || [];
@@ -118,6 +124,7 @@ export async function authorizeRequest(authContext, endpointAuth, rolePermission
             return {
                 authorized: false,
                 error: `Insufficient permissions. Required: ${endpointAuth.permissions.join(", ")}`,
+                errorCode: ErrorCodes.AUTHZ_INSUFFICIENT_PERMISSION,
             };
         }
         return { authorized: true };
@@ -128,6 +135,7 @@ export async function authorizeRequest(authContext, endpointAuth, rolePermission
             return {
                 authorized: false,
                 error: "Authentication required",
+                errorCode: ErrorCodes.AUTH_REQUIRED,
             };
         }
         const userRoles = authContext.user?.roles || [];
@@ -136,6 +144,7 @@ export async function authorizeRequest(authContext, endpointAuth, rolePermission
             return {
                 authorized: false,
                 error: `Insufficient permissions. Required roles: ${endpointAuth.roles.join(", ")}`,
+                errorCode: ErrorCodes.AUTHZ_INSUFFICIENT_ROLE,
             };
         }
         return { authorized: true };
@@ -146,6 +155,7 @@ export async function authorizeRequest(authContext, endpointAuth, rolePermission
             return {
                 authorized: false,
                 error: "Authentication required",
+                errorCode: ErrorCodes.AUTH_REQUIRED,
             };
         }
         return { authorized: true };
@@ -185,6 +195,7 @@ export async function authenticateAndAuthorize(headers, authConfig, endpointAuth
             context: { authenticated: false },
             authorized: false,
             error: "Authentication required but no auth configuration provided",
+            errorCode: ErrorCodes.CONFIG_MISSING,
         };
     }
     // Authenticate
@@ -202,6 +213,7 @@ export async function authenticateAndAuthorize(headers, authConfig, endpointAuth
             context: authContext,
             authorized: false,
             error: authResult.error || "Authentication failed",
+            errorCode: authResult.errorCode || ErrorCodes.AUTH_REQUIRED,
         };
     }
     // Authorize
@@ -211,6 +223,7 @@ export async function authenticateAndAuthorize(headers, authConfig, endpointAuth
             context: authContext,
             authorized: authzResult.authorized,
             error: authzResult.error,
+            errorCode: authzResult.errorCode,
         };
     }
     return {

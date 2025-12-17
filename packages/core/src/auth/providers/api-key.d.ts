@@ -4,3 +4,4 @@ import type { AuthProviderHandler } from "../types.js";
  */
 declare const apiKeyHandler: AuthProviderHandler;
 export default apiKeyHandler;
+//# sourceMappingURL=api-key.d.ts.map

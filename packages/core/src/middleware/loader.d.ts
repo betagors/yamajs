@@ -5,3 +5,4 @@ import type { MiddlewareHandler } from "./types.js";
  * Supports default export or named export
  */
 export declare function loadMiddlewareFromFile(filePath: string, projectDir: string): Promise<MiddlewareHandler>;
+//# sourceMappingURL=loader.d.ts.map

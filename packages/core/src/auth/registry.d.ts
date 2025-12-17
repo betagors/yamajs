@@ -33,3 +33,4 @@ export declare function getAllOAuthProviders(): Map<string, OAuthProviderMetadat
  * @returns Array of provider types
  */
 export declare function getRegisteredProviderTypes(): string[];
+//# sourceMappingURL=registry.d.ts.map

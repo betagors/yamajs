@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, writeFileSync } from "fs";
+﻿import { existsSync, readFileSync, writeFileSync } from "fs";
 import { join, resolve } from "path";
 import { readPackageJson, writePackageJson, ensureDir } from "../utils/file-utils.ts";
 import { getYamaSchemaPath } from "../utils/paths.ts";
@@ -67,7 +67,7 @@ function setupVSCodeSettings(cwd: string, schemaPath: string): void {
   // Yama YAML autocomplete configuration
   // Works with VS Code and Cursor (both use .vscode folder)
   // 
-  // 📦 Required Extension: Install "YAML" by Red Hat (redhat.vscode-yaml)
+  // ðŸ“¦ Required Extension: Install "YAML" by Red Hat (redhat.vscode-yaml)
   //    - Open Extensions (Ctrl+Shift+X) and search for "YAML"
   //    - Or install via command:
   //      VS Code: code --install-extension redhat.vscode-yaml
@@ -197,10 +197,10 @@ export async function setupCommand(options: SetupOptions): Promise<void> {
   const cwd = process.cwd();
   const packageJsonPath = join(cwd, "package.json");
 
-  console.log("🔧 Setting up Yama in existing project...\n");
+  console.log("ðŸ”§ Setting up Yama in existing project...\n");
 
   if (!existsSync(packageJsonPath)) {
-    console.error("❌ package.json not found. Run 'npm init' first.");
+    console.error("âŒ package.json not found. Run 'npm init' first.");
     process.exit(1);
   }
 
@@ -219,28 +219,28 @@ export async function setupCommand(options: SetupOptions): Promise<void> {
       scripts["yama:validate"] = "yama validate";
       
       writePackageJson(packageJsonPath, pkg);
-      console.log("✅ Added scripts to package.json");
+      console.log("âœ… Added scripts to package.json");
     }
 
     // Check for yama.yaml
     const yamaPath = join(cwd, "yama.yaml");
     if (!existsSync(yamaPath)) {
-      console.log("⚠️  yama.yaml not found. Run 'yama init' to create one.");
+      console.log("âš ï¸  yama.yaml not found. Run 'yama init' to create one.");
     } else {
-      console.log("✅ Found yama.yaml");
+      console.log("âœ… Found yama.yaml");
     }
 
     // Check for dependencies
     const deps = (pkg.dependencies || {}) as Record<string, string>;
     const devDeps = (pkg.devDependencies || {}) as Record<string, string>;
     
-    const hasRuntime = "@betagors/yama-node" in deps || "@betagors/yama-node" in devDeps;
+    const hasRuntime = "@yamajs/node" in deps || "@yamajs/node" in devDeps;
     
     if (!hasRuntime) {
-      console.log("\n⚠️  @betagors/yama-node not found in dependencies.");
-      console.log("   Install it with: npm install @betagors/yama-node");
+      console.log("\nâš ï¸  @yamajs/node not found in dependencies.");
+      console.log("   Install it with: npm install @yamajs/node");
     } else {
-      console.log("✅ Found @betagors/yama-node");
+      console.log("âœ… Found @yamajs/node");
     }
 
     // Setup editor configuration (only for supported IDEs)
@@ -256,27 +256,27 @@ export async function setupCommand(options: SetupOptions): Promise<void> {
           // VS Code and Cursor both use .vscode folder
           if (detectedIDE === "vscode" || detectedIDE === "cursor") {
             setupVSCodeSettings(cwd, schemaPath);
-            console.log(`✅ Configured ${getIDEName(detectedIDE)} settings for Yama YAML autocomplete`);
+            console.log(`âœ… Configured ${getIDEName(detectedIDE)} settings for Yama YAML autocomplete`);
           }
           
           // WebStorm/JetBrains uses .idea folder
           if (detectedIDE === "webstorm") {
             setupWebStormConfig(cwd, schemaPath);
-            console.log(`✅ Configured ${getIDEName(detectedIDE)} JSON Schema mapping for Yama YAML autocomplete`);
+            console.log(`âœ… Configured ${getIDEName(detectedIDE)} JSON Schema mapping for Yama YAML autocomplete`);
           }
           
           // Setup YAML Language Server config (works for all IDEs)
           setupYamlLSConfig(cwd, schemaPath);
-          console.log("✅ Created .yamlls-config.json for YAML Language Server");
+          console.log("âœ… Created .yamlls-config.json for YAML Language Server");
           
-          console.log("\n💡 Editor autocomplete is now configured for:");
+          console.log("\nðŸ’¡ Editor autocomplete is now configured for:");
           console.log("   - yama.yaml");
           console.log("   - yama.yml");
           console.log("   - *.yama.yaml");
           console.log("   - *.yama.yml");
           
           if (detectedIDE === "vscode" || detectedIDE === "cursor") {
-            console.log(`\n📦 To enable autocomplete, install the YAML extension in ${getIDEName(detectedIDE)}:`);
+            console.log(`\nðŸ“¦ To enable autocomplete, install the YAML extension in ${getIDEName(detectedIDE)}:`);
             console.log("   1. Open Extensions (Ctrl+Shift+X)");
             console.log("   2. Search for 'YAML' by Red Hat");
             console.log(`   3. Install and reload ${getIDEName(detectedIDE)}`);
@@ -285,30 +285,30 @@ export async function setupCommand(options: SetupOptions): Promise<void> {
               : "code --install-extension redhat.vscode-yaml";
             console.log(`   Or run: ${installCmd}`);
           } else if (detectedIDE === "webstorm") {
-            console.log(`\n✅ WebStorm has built-in YAML support!`);
+            console.log(`\nâœ… WebStorm has built-in YAML support!`);
             console.log(`   The schema is configured in .idea/jsonSchemas.xml`);
             console.log(`   You may need to restart WebStorm for changes to take effect.`);
           }
         } catch (error) {
-          console.warn("⚠️  Failed to setup editor configuration:", error instanceof Error ? error.message : String(error));
-          console.log("   You can manually configure it - see docs in node_modules/@betagors/yama-cli/src/editor-configs/");
+          console.warn("âš ï¸  Failed to setup editor configuration:", error instanceof Error ? error.message : String(error));
+          console.log("   You can manually configure it - see docs in node_modules/@yamajs/cli/src/editor-configs/");
         }
       } else {
-        console.log("\n⚠️  No supported IDE detected (VS Code, Cursor, Zed, or WebStorm).");
+        console.log("\nâš ï¸  No supported IDE detected (VS Code, Cursor, Zed, or WebStorm).");
         console.log("   Editor-specific configuration was skipped.");
         console.log("   Autocomplete will still work via the schema comment in yama.yaml");
         console.log("   if you have a YAML Language Server extension installed.");
       }
     }
 
-    console.log("\n✨ Setup complete!");
+    console.log("\nâœ¨ Setup complete!");
     console.log("\nAvailable commands:");
     console.log("  npm run yama:dev       - Start dev server");
     console.log("  npm run yama:generate  - Generate SDK/types");
     console.log("  npm run yama:validate  - Validate yama.yaml");
     
   } catch (error) {
-    console.error("❌ Setup failed:", error instanceof Error ? error.message : String(error));
+    console.error("âŒ Setup failed:", error instanceof Error ? error.message : String(error));
     process.exit(1);
   }
 }

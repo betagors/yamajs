@@ -1,12 +1,12 @@
-/**
+﻿/**
  * Validation utilities for YAMA Node Runtime
  * 
  * This module provides validation and type coercion utilities for
  * query parameters, path parameters, and request bodies.
  */
 
-import type { SchemaField, YamaSchemas } from "@betagors/yama-core";
-import { fieldToJsonSchema } from "@betagors/yama-core";
+import type { SchemaField, YamaSchemas } from "@yamajs/core";
+import { fieldToJsonSchema } from "@yamajs/core";
 
 /**
  * Build a JSON schema for query/path parameter validation
@@ -70,8 +70,8 @@ export function buildQuerySchema(
  * @remarks
  * - Unknown parameters are passed through as-is
  * - Empty/null values use defaults if available
- * - Handles boolean conversion ("true"/"false" strings → boolean)
- * - Handles number conversion (string → number)
+ * - Handles boolean conversion ("true"/"false" strings â†’ boolean)
+ * - Handles number conversion (string â†’ number)
  * 
  * @example
  * ```typescript

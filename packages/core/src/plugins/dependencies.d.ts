@@ -52,3 +52,4 @@ export declare function validateDependencies(pluginName: string, manifest: Plugi
     missing: string[];
 };
 export {};
+//# sourceMappingURL=dependencies.d.ts.map

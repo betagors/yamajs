@@ -1,15 +1,15 @@
-# @betagors/yama-fs
+﻿# @yamajs/fs
 
 Filesystem storage adapter for Yama.
 
 ## Installation
 
 ```bash
-npm install @betagors/yama-fs
+npm install @yamajs/fs
 # or
-pnpm add @betagors/yama-fs
+pnpm add @yamajs/fs
 # or
-yarn add @betagors/yama-fs
+yarn add @yamajs/fs
 ```
 
 ## Configuration
@@ -18,7 +18,7 @@ Add the plugin to your `yama.yaml`:
 
 ```yaml
 plugins:
-  "@betagors/yama-fs":
+  "@yamajs/fs":
     basePath: "./uploads"
     baseUrl: "https://example.com/uploads"  # Optional: for generating HTTP URLs
 ```

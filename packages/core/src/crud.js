@@ -3,7 +3,36 @@ import { entityToSchema, normalizeEntityDefinition } from "./entities.js";
  * Pluralize a word (simple implementation)
  */
 function pluralize(word) {
-    // Simple pluralization rules
+    // Check if word is already plural (ends with 's' or 'es' but not singular words that end in 's')
+    // Words that are already plural typically end with 's' (but not 'ss', 'us', 'is', 'as', 'os')
+    // or 'es' (but not 'ies', 'ches', 'shes', 'xes', 'zes')
+    if (word.length > 1) {
+        // Already ends with 's' - check if it's likely already plural
+        if (word.endsWith("s")) {
+            // Exceptions: words ending in 'ss', 'us', 'is', 'as', 'os' might be singular
+            // But for entity names, if it ends with 's', it's likely already plural
+            // Check if it ends with 'es' (likely already plural)
+            if (word.endsWith("es")) {
+                // Check if it's a plural form (not 'ies', 'ches', 'shes', 'xes', 'zes')
+                if (!word.endsWith("ies") && !word.endsWith("ches") && !word.endsWith("shes") &&
+                    !word.endsWith("xes") && !word.endsWith("zes")) {
+                    // Already plural (e.g., "posts", "authors", "publishedposts")
+                    return word;
+                }
+            }
+            else {
+                // Ends with 's' but not 'es' - likely already plural (e.g., "posts", "authors")
+                // But check for singular words ending in 's' (like "class", "bus")
+                // For entity names, if it ends with 's' and is not a known singular exception, assume plural
+                const singularExceptions = ["class", "bus", "gas", "plus", "minus", "status", "focus", "virus"];
+                if (!singularExceptions.includes(word.toLowerCase())) {
+                    // Likely already plural
+                    return word;
+                }
+            }
+        }
+    }
+    // Apply pluralization rules for singular words
     if (word.endsWith("y")) {
         return word.slice(0, -1) + "ies";
     }
@@ -13,15 +42,49 @@ function pluralize(word) {
     return word + "s";
 }
 /**
- * Convert entity name to path (e.g., "Example" -> "/examples")
+ * Convert camelCase/PascalCase to kebab-case
+ * Examples: "PublishedPosts" -> "published-posts", "AuthorPosts" -> "author-posts"
+ */
+function toKebabCase(str) {
+    return str
+        .replace(/([a-z])([A-Z])/g, '$1-$2') // Insert hyphen between lowercase and uppercase
+        .replace(/([A-Z])([A-Z][a-z])/g, '$1-$2') // Insert hyphen between consecutive capitals followed by lowercase
+        .toLowerCase();
+}
+/**
+ * Check if a word is already plural by checking the last segment
+ */
+function isLastWordPlural(words) {
+    if (words.length === 0)
+        return false;
+    const lastWord = words[words.length - 1];
+    // Check if last word ends with 's' (and not in exceptions)
+    if (lastWord.endsWith('s') && !lastWord.endsWith('ss')) {
+        const singularExceptions = ["class", "bus", "gas", "plus", "minus", "status", "focus", "virus"];
+        return !singularExceptions.includes(lastWord.toLowerCase());
+    }
+    return false;
+}
+/**
+ * Convert entity name to path (e.g., "Example" -> "/examples", "PublishedPosts" -> "/published-posts")
  */
 function entityNameToPath(entityName, customPath) {
     if (customPath) {
         return customPath.startsWith("/") ? customPath : `/${customPath}`;
     }
-    const lower = entityName.toLowerCase();
-    const plural = pluralize(lower);
-    return `/${plural}`;
+    // Convert to kebab-case and split into words
+    const kebab = toKebabCase(entityName);
+    const words = kebab.split('-');
+    // Check if the last word is already plural
+    if (isLastWordPlural(words)) {
+        // Already plural, return as-is
+        return `/${kebab}`;
+    }
+    // Pluralize the last word only
+    const lastWord = words[words.length - 1];
+    const pluralizedLast = pluralize(lastWord);
+    words[words.length - 1] = pluralizedLast;
+    return `/${words.join('-')}`;
 }
 /**
  * Get primary key field name - optimized with early return
@@ -450,14 +513,91 @@ export function generateCrudInputSchemas(entityName, entityDef) {
     const updateInputName = generateInputSchemaName(schemaName, "Update");
     // Get the base schema
     const baseSchema = entityToSchema(entityName, entityDef);
+    // Check if variants are defined - if so, use them for explicit control
+    // Variants allow you to explicitly include/exclude fields like id, createdAt, updatedAt
+    if (entityDef.variants && (entityDef.variants.create || entityDef.variants.update)) {
+        const { VariantGenerator } = require('./variants/generator.js');
+        const result = {};
+        // Convert baseSchema fields to FieldType format for VariantGenerator
+        const baseFieldsAsFieldType = {};
+        for (const [fieldName, schemaField] of Object.entries(baseSchema.fields)) {
+            baseFieldsAsFieldType[fieldName] = {
+                type: schemaField.type,
+                nullable: !schemaField.required,
+                default: schemaField.default,
+            };
+        }
+        // Use create variant if defined
+        if (entityDef.variants.create) {
+            const createVariant = VariantGenerator.generate({ fields: baseFieldsAsFieldType, computed: entityDef.computed }, entityDef.variants.create);
+            // Convert FieldType back to SchemaField
+            const createFields = {};
+            for (const [fieldName, fieldType] of Object.entries(createVariant.fields)) {
+                const ft = fieldType; // FieldType from VariantGenerator
+                createFields[fieldName] = {
+                    type: ft.type,
+                    required: !ft.nullable,
+                    default: ft.default,
+                    format: (ft.type === 'timestamp' || ft.type === 'timestamptz' || ft.type === 'datetime') ? 'date-time' : undefined,
+                };
+            }
+            result[createInputName] = { fields: createFields };
+        }
+        // Use update variant if defined
+        if (entityDef.variants.update) {
+            const updateVariant = VariantGenerator.generate({ fields: baseFieldsAsFieldType, computed: entityDef.computed }, entityDef.variants.update);
+            // Convert FieldType back to SchemaField
+            const updateFields = {};
+            for (const [fieldName, fieldType] of Object.entries(updateVariant.fields)) {
+                const ft = fieldType; // FieldType from VariantGenerator
+                updateFields[fieldName] = {
+                    type: ft.type,
+                    required: false, // Update fields are always optional (partial: true is implied)
+                    default: ft.default,
+                    format: (ft.type === 'timestamp' || ft.type === 'timestamptz' || ft.type === 'datetime') ? 'date-time' : undefined,
+                };
+            }
+            result[updateInputName] = { fields: updateFields };
+        }
+        // Fill in missing variants with auto-generated ones
+        if (!result[createInputName] || !result[updateInputName]) {
+            // Continue to auto-generation for missing variants
+        }
+        else {
+            // Both variants defined, return early
+            return result;
+        }
+    }
     // Normalize entity definition to handle shorthand syntax
     const normalized = normalizeEntityDefinition(entityName, entityDef, undefined);
-    // Create input: exclude primary key and generated fields
+    // Create input: exclude primary key, generated fields, readonly fields, and auto-updated fields
     // Use the base schema fields directly (they already have correct API field names)
     const createFields = {};
+    // Common timestamp field names that should be excluded from create input
+    const timestampFieldNames = ['createdAt', 'updatedAt', 'deletedAt', 'created_at', 'updated_at', 'deleted_at'];
     for (const [fieldName, field] of Object.entries(normalized.fields)) {
         // Skip primary key and generated fields for create
         if (field.primary || field.generated) {
+            continue;
+        }
+        // Skip readonly fields (e.g., createdAt, updatedAt with readonly modifier)
+        if (field.readonly) {
+            continue;
+        }
+        // Skip auto-updated fields (e.g., updatedAt with autoUpdate modifier)
+        if (field.autoUpdate) {
+            continue;
+        }
+        // Skip fields with default functions like now() - these are auto-generated
+        // Check if default is a function name (string) that suggests auto-generation
+        if (field.default && typeof field.default === 'string' &&
+            (field.default === 'now()' || field.default === 'now' ||
+                field.default.includes('()') && (field.default.includes('now') || field.default.includes('uuid')))) {
+            continue;
+        }
+        // Skip common timestamp fields that are conventionally auto-generated
+        // (createdAt, updatedAt, deletedAt, etc.) - these should not be in create input
+        if (timestampFieldNames.includes(fieldName) && (field.type === 'timestamp' || field.type === 'timestamptz' || field.type === 'datetimelocal' || field.type === 'datetime')) {
             continue;
         }
         // Skip if api is false
@@ -471,16 +611,48 @@ export function generateCrudInputSchemas(entityName, entityDef) {
             : field.dbColumn
                 ? field.dbColumn.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase())
                 : fieldName;
+        // Double-check: if this field was excluded above, don't add it even if it exists in baseSchema
+        // (baseSchema might have it for response schemas, but we don't want it in input schemas)
+        if (timestampFieldNames.includes(apiFieldName) || timestampFieldNames.includes(fieldName)) {
+            continue; // Skip timestamp fields even if they exist in baseSchema
+        }
+        // Also skip 'id' field - it's always auto-generated for create operations
+        if (apiFieldName === 'id' || fieldName === 'id') {
+            continue;
+        }
         const schemaField = baseSchema.fields[apiFieldName];
         if (schemaField) {
             createFields[apiFieldName] = { ...schemaField };
         }
     }
-    // Update input: all fields optional except primary key
+    // Update input: exclude primary key (in path), generated fields, readonly fields, auto-updated fields, and timestamps
     const updateFields = {};
     for (const [fieldName, field] of Object.entries(normalized.fields)) {
         // Skip primary key for update (it's in the path)
         if (field.primary) {
+            continue;
+        }
+        // Skip generated fields
+        if (field.generated) {
+            continue;
+        }
+        // Skip readonly fields (e.g., createdAt, updatedAt with readonly modifier)
+        if (field.readonly) {
+            continue;
+        }
+        // Skip auto-updated fields (e.g., updatedAt with autoUpdate modifier)
+        if (field.autoUpdate) {
+            continue;
+        }
+        // Skip fields with default functions like now() - these are auto-generated
+        if (field.default && typeof field.default === 'string' &&
+            (field.default === 'now()' || field.default === 'now' ||
+                field.default.includes('()') && (field.default.includes('now') || field.default.includes('uuid')))) {
+            continue;
+        }
+        // Skip common timestamp fields that are conventionally auto-generated
+        // (createdAt, updatedAt, deletedAt, etc.) - these should not be in update input
+        if (timestampFieldNames.includes(fieldName) && (field.type === 'timestamp' || field.type === 'timestamptz' || field.type === 'datetimelocal' || field.type === 'datetime')) {
             continue;
         }
         // Skip if api is false
@@ -493,6 +665,13 @@ export function generateCrudInputSchemas(entityName, entityDef) {
             : field.dbColumn
                 ? field.dbColumn.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase())
                 : fieldName;
+        // Double-check: skip timestamp fields and id even if they exist in baseSchema
+        if (timestampFieldNames.includes(apiFieldName) || timestampFieldNames.includes(fieldName)) {
+            continue;
+        }
+        if (apiFieldName === 'id' || fieldName === 'id') {
+            continue;
+        }
         const schemaField = baseSchema.fields[apiFieldName];
         if (schemaField) {
             updateFields[apiFieldName] = { ...schemaField, required: false };

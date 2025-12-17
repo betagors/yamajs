@@ -48,7 +48,7 @@ export interface DiffResult {
 /**
  * Migration step types
  */
-export type MigrationStepType = "add_table" | "drop_table" | "add_column" | "drop_column" | "modify_column" | "add_index" | "drop_index" | "add_foreign_key" | "drop_foreign_key";
+export type MigrationStepType = "add_table" | "drop_table" | "add_column" | "drop_column" | "rename_column" | "modify_column" | "add_index" | "drop_index" | "add_foreign_key" | "drop_foreign_key";
 /**
  * Base migration step
  */
@@ -95,6 +95,14 @@ export interface AddColumnStep extends MigrationStep {
 export interface DropColumnStep extends MigrationStep {
     type: "drop_column";
     column: string;
+}
+/**
+ * Rename column step
+ */
+export interface RenameColumnStep extends MigrationStep {
+    type: "rename_column";
+    column: string;
+    newName: string;
 }
 /**
  * Modify column step
@@ -150,7 +158,7 @@ export interface DropForeignKeyStep extends MigrationStep {
 /**
  * Union of all migration step types
  */
-export type MigrationStepUnion = AddTableStep | DropTableStep | AddColumnStep | DropColumnStep | ModifyColumnStep | AddIndexStep | DropIndexStep | AddForeignKeyStep | DropForeignKeyStep;
+export type MigrationStepUnion = AddTableStep | DropTableStep | AddColumnStep | DropColumnStep | RenameColumnStep | ModifyColumnStep | AddIndexStep | DropIndexStep | AddForeignKeyStep | DropForeignKeyStep;
 /**
  * Compare two models and compute the diff
  */
@@ -159,3 +167,4 @@ export declare function computeDiff(from: Model, to: Model): DiffResult;
  * Convert diff result to migration steps
  */
 export declare function diffToSteps(diff: DiffResult, from: Model, to: Model): MigrationStepUnion[];
+//# sourceMappingURL=diff.d.ts.map

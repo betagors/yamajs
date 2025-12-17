@@ -129,15 +129,27 @@ function mergeEntityFields(entityName, baseEntity, localEntity, remoteEntity, co
                 continue;
             }
             // Non-conflicting changes - prefer local (or merge intelligently)
+            if (!merged.fields) {
+                merged.fields = {};
+            }
             merged.fields[fieldName] = localField;
         }
         else if (localField) {
+            if (!merged.fields) {
+                merged.fields = {};
+            }
             merged.fields[fieldName] = localField;
         }
         else if (remoteField) {
+            if (!merged.fields) {
+                merged.fields = {};
+            }
             merged.fields[fieldName] = remoteField;
         }
         else if (baseField) {
+            if (!merged.fields) {
+                merged.fields = {};
+            }
             merged.fields[fieldName] = baseField;
         }
     }

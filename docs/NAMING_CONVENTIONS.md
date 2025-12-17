@@ -1,4 +1,4 @@
-# Yama Package Naming Conventions
+﻿# Yama Package Naming Conventions
 
 This document defines the naming conventions for all Yama packages to ensure consistency, clarity, and discoverability.
 
@@ -7,7 +7,7 @@ This document defines the naming conventions for all Yama packages to ensure con
 All Yama packages follow the format:
 
 ```
-@betagors/yama-{descriptor}
+@yamajs/{descriptor}
 ```
 
 Where `{descriptor}` is a **single word** or **compound word** (no hyphens after `yama-`).
@@ -136,30 +136,30 @@ Use this flowchart to determine the correct package name:
 
 ```
 Is it a core Yama concept?
-├─ YES → yama-{concept}
-│        Examples: yama-core, yama-session, yama-security
-│
-└─ NO
-   │
+â”œâ”€ YES â†’ yama-{concept}
+â”‚        Examples: yama-core, yama-session, yama-security
+â”‚
+â””â”€ NO
+   â”‚
    Is it a standard protocol?
-   ├─ YES → yama-{protocol}
-   │        Examples: yama-oauth, yama-smtp, yama-saml
-   │
-   └─ NO
-      │
+   â”œâ”€ YES â†’ yama-{protocol}
+   â”‚        Examples: yama-oauth, yama-smtp, yama-saml
+   â”‚
+   â””â”€ NO
+      â”‚
       Is it a specific technology/database?
-      ├─ YES → yama-{technology}
-      │        Examples: yama-postgres, yama-redis, yama-fastify
-      │
-      └─ NO (it's a cloud service)
-         │
+      â”œâ”€ YES â†’ yama-{technology}
+      â”‚        Examples: yama-postgres, yama-redis, yama-fastify
+      â”‚
+      â””â”€ NO (it's a cloud service)
+         â”‚
          Does the service have a globally unique name?
-         ├─ YES → yama-{service}
-         │        Examples: yama-s3, yama-cognito, yama-clerk
-         │
-         └─ NO (generic name like "auth", "storage")
-            │
-            └─ yama-{vendor-abbrev}{service}
+         â”œâ”€ YES â†’ yama-{service}
+         â”‚        Examples: yama-s3, yama-cognito, yama-clerk
+         â”‚
+         â””â”€ NO (generic name like "auth", "storage")
+            â”‚
+            â””â”€ yama-{vendor-abbrev}{service}
                Examples: yama-supaauth, yama-fireauth, yama-supastorage
 ```
 
@@ -178,7 +178,7 @@ When a vendor prefix is needed, use these standard abbreviations:
 
 ## Examples
 
-### Good Names ✅
+### Good Names âœ…
 
 ```
 yama-postgres       # Technology
@@ -190,7 +190,7 @@ yama-firestore      # Unique Firebase service name
 yama-mfa            # Feature
 ```
 
-### Bad Names ❌
+### Bad Names âŒ
 
 ```
 yama-supabase       # Too vague - which Supabase service?
@@ -208,42 +208,42 @@ Following these conventions, a typical Yama configuration looks clean and consis
 ```yaml
 plugins:
   # Databases
-  "@betagors/yama-postgres":
+  "@yamajs/postgres":
     connectionString: ${DATABASE_URL}
   
   # Caching
-  "@betagors/yama-redis":
+  "@yamajs/redis":
     url: ${REDIS_URL}
   
   # Authentication
-  "@betagors/yama-oauth":
+  "@yamajs/oauth":
     providers:
       google: { clientId: ${GOOGLE_ID}, clientSecret: ${GOOGLE_SECRET} }
       github: { clientId: ${GITHUB_ID}, clientSecret: ${GITHUB_SECRET} }
   
-  "@betagors/yama-session":
+  "@yamajs/session":
     store: redis
     cookie: { secure: true, httpOnly: true }
   
-  "@betagors/yama-mfa":
+  "@yamajs/mfa":
     methods: [totp, sms]
   
   # Vendor services
-  "@betagors/yama-supaauth":
+  "@yamajs/supaauth":
     url: ${SUPABASE_URL}
     anonKey: ${SUPABASE_ANON_KEY}
   
   # Storage
-  "@betagors/yama-s3":
+  "@yamajs/s3":
     bucket: my-bucket
     region: us-east-1
   
   # Observability
-  "@betagors/yama-logging":
+  "@yamajs/logging":
     level: info
     format: json
   
-  "@betagors/yama-metrics":
+  "@yamajs/metrics":
     endpoint: /metrics
 ```
 

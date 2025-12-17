@@ -34,7 +34,7 @@
 - Workspace detection should only be used for development convenience, never required for functionality
 - When generating code or solutions:
   - Use standard npm/pnpm/yarn package installation patterns
-  - Reference packages by their published names (e.g., `@yama/core`, `cli`)
+  - Reference packages by their published names (e.g., `@yamajs/core`, `cli`)
   - Never hardcode paths to `packages/` folder
   - Never assume workspace structure exists
   - Keep solutions generic and portable across different project structures

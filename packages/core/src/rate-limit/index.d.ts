@@ -35,3 +35,4 @@ export type { RateLimitConfig, RateLimitResult, RateLimitStore, RateLimitKeyStra
 export { createMemoryRateLimitStore, MemoryRateLimitStore } from "./memory-store.js";
 export { createCacheRateLimitStore, CacheRateLimitStore } from "./cache-store.js";
 export { createRedisOptimizedRateLimitStore, RedisOptimizedRateLimitStore } from "./redis-optimized-store.js";
+//# sourceMappingURL=index.d.ts.map

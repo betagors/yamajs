@@ -1,4 +1,4 @@
-import { table } from "table";
+﻿import { table } from "table";
 import { info, error } from "../utils/cli-utils.ts";
 
 interface PluginSearchOptions {
@@ -54,11 +54,11 @@ export async function pluginSearchCommand(
       return;
     }
 
-    // Filter for Yama plugins (name starts with @betagors/yama- or @yama/)
+    // Filter for Yama plugins (name starts with @yamajs/ or @yamajs/)
     const yamaPlugins = results.filter(
       (result) =>
-        result.package.name.startsWith("@betagors/yama-") ||
-        result.package.name.startsWith("@yama/")
+        result.package.name.startsWith("@yamajs/") ||
+        result.package.name.startsWith("@yamajs/")
     );
 
     if (yamaPlugins.length === 0) {

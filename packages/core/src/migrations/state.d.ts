@@ -54,3 +54,4 @@ export declare function listEnvironments(configDir: string): string[];
  * Get all states
  */
 export declare function getAllStates(configDir: string): EnvironmentState[];
+//# sourceMappingURL=state.d.ts.map

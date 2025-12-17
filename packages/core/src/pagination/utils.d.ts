@@ -32,3 +32,4 @@ export declare function wrapPaginatedResponse<T>(results: T[], metadata: Paginat
  * Detects pagination type based on available query parameters
  */
 export declare function detectPaginationFromQuery(query: Record<string, unknown>, defaultLimit?: number): NormalizedPaginationConfig | undefined;
+//# sourceMappingURL=utils.d.ts.map

@@ -1,4 +1,4 @@
-# @betagors/yama-metrics
+﻿# @yamajs/metrics
 
 Yama metrics and telemetry plugin for collecting and exporting plugin metrics.
 
@@ -14,14 +14,14 @@ Yama metrics and telemetry plugin for collecting and exporting plugin metrics.
 ## Installation
 
 ```bash
-npm install @betagors/yama-metrics
+npm install @yamajs/metrics
 ```
 
 ## Configuration
 
 ```yaml
 plugins:
-  "@betagors/yama-metrics":
+  "@yamajs/metrics":
     enabled: true
     retention:
       enabled: true

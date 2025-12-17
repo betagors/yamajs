@@ -47,3 +47,4 @@ export interface MonitoringService extends MonitoringHooks {
      */
     readonly name: string;
 }
+//# sourceMappingURL=monitoring.d.ts.map

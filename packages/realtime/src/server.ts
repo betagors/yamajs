@@ -1,7 +1,7 @@
-import type { FastifyInstance, FastifyRequest } from "fastify";
+﻿import type { FastifyInstance, FastifyRequest } from "fastify";
 import type { WebSocket } from "@fastify/websocket";
 import websocket from "@fastify/websocket";
-import type { AuthContext } from "@betagors/yama-core";
+import type { AuthContext } from "@yamajs/core";
 import { RealtimeAdapter, type WebSocketConnection } from "./adapter";
 import { ChannelRegistry } from "./channel";
 import { authenticateWebSocket, authorizeChannel } from "./auth";

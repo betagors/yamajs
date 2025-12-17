@@ -1,4 +1,4 @@
-import type { PublishPostHandlerContext, Post } from "@yama/gen";
+import type { PublishPostHandlerContext, Post } from "@yamajs/gen";
 
 export async function publishPost(
   context: PublishPostHandlerContext

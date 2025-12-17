@@ -29,3 +29,4 @@ export declare class CacheRateLimitStore implements RateLimitStore {
  * Create a cache-based rate limit store
  */
 export declare function createCacheRateLimitStore(cache: CacheAdapter, keyPrefix?: string, failClosed?: boolean): CacheRateLimitStore;
+//# sourceMappingURL=cache-store.d.ts.map

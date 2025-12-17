@@ -1,4 +1,4 @@
-# Yama CLI Usage
+﻿# Yama CLI Usage
 
 There are several ways to run the Yama CLI, similar to how Maven uses `mvn`:
 
@@ -51,7 +51,7 @@ node ../../packages/cli/dist/cli/src/cli.js <command>
 
 Once published, you can install globally:
 ```bash
-npm install -g @betagors/yama-cli
+npm install -g @yamajs/cli
 yama <command>
 ```
 

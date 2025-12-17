@@ -36,11 +36,11 @@ export function getGraphPath(configDir: string): string {
  */
 export function loadGraph(configDir: string): TransitionGraph {
   const graphPath = getGraphPath(configDir);
-  
+
   if (!fs().existsSync(graphPath)) {
     return buildGraph(configDir);
   }
-  
+
   try {
     const content = fs().readFileSync(graphPath, "utf-8");
     const data = JSON.parse(content) as {
@@ -48,18 +48,18 @@ export function loadGraph(configDir: string): TransitionGraph {
       edges: Record<string, string[]>;
       transitionHashes: string[];
     };
-    
+
     const graph: TransitionGraph = {
       nodes: new Set(data.nodes),
       edges: new Map(),
       transitions: new Map(),
     };
-    
+
     // Restore edges
     for (const [from, tos] of Object.entries(data.edges)) {
       graph.edges.set(from, new Set(tos));
     }
-    
+
     // Load transitions
     for (const hash of data.transitionHashes) {
       try {
@@ -71,7 +71,7 @@ export function loadGraph(configDir: string): TransitionGraph {
         // Transition file might be missing, skip it
       }
     }
-    
+
     return graph;
   } catch {
     // If loading fails, rebuild
@@ -88,30 +88,30 @@ export function buildGraph(configDir: string): TransitionGraph {
     edges: new Map(),
     transitions: new Map(),
   };
-  
+
   // Add all snapshots as nodes
   const snapshotHashes = getAllSnapshotHashes(configDir);
   for (const hash of snapshotHashes) {
     graph.nodes.add(hash);
   }
-  
+
   // Add transitions as edges
   const transitions = getAllTransitions(configDir);
   for (const transition of transitions) {
     graph.nodes.add(transition.fromHash);
     graph.nodes.add(transition.toHash);
-    
+
     if (!graph.edges.has(transition.fromHash)) {
       graph.edges.set(transition.fromHash, new Set());
     }
     graph.edges.get(transition.fromHash)!.add(transition.toHash);
-    
+
     graph.transitions.set(transition.hash, transition);
   }
-  
+
   // Save graph for future use
   saveGraph(configDir, graph);
-  
+
   return graph;
 }
 
@@ -121,7 +121,7 @@ export function buildGraph(configDir: string): TransitionGraph {
 export function saveGraph(configDir: string, graph: TransitionGraph): void {
   ensureTransitionsDir(configDir);
   const graphPath = getGraphPath(configDir);
-  
+
   const data = {
     nodes: Array.from(graph.nodes),
     edges: Object.fromEntries(
@@ -132,7 +132,7 @@ export function saveGraph(configDir: string, graph: TransitionGraph): void {
     ),
     transitionHashes: Array.from(graph.transitions.keys()),
   };
-  
+
   fs().writeFileSync(graphPath, JSON.stringify(data, null, 2), "utf-8");
 }
 
@@ -145,11 +145,11 @@ export function findPath(
   toHash: string
 ): PathResult | null {
   const graph = loadGraph(configDir);
-  
+
   if (!graph.nodes.has(fromHash) || !graph.nodes.has(toHash)) {
     return null;
   }
-  
+
   if (fromHash === toHash) {
     return {
       path: [fromHash],
@@ -157,21 +157,21 @@ export function findPath(
       totalSteps: 0,
     };
   }
-  
+
   // BFS to find shortest path
   const queue: Array<{ hash: string; path: string[]; transitions: Transition[] }> = [
     { hash: fromHash, path: [fromHash], transitions: [] },
   ];
   const visited = new Set<string>([fromHash]);
-  
+
   while (queue.length > 0) {
     const current = queue.shift()!;
-    
+
     const neighbors = graph.edges.get(current.hash);
     if (!neighbors) {
       continue;
     }
-    
+
     for (const neighborHash of neighbors) {
       if (neighborHash === toHash) {
         // Found target! Find the transition
@@ -188,7 +188,7 @@ export function findPath(
           };
         }
       }
-      
+
       if (!visited.has(neighborHash)) {
         visited.add(neighborHash);
         const transition = findTransitionBetween(
@@ -206,7 +206,7 @@ export function findPath(
       }
     }
   }
-  
+
   return null; // No path found
 }
 
@@ -219,11 +219,11 @@ export function findReversePath(
   toHash: string
 ): PathResult | null {
   const graph = loadGraph(configDir);
-  
+
   if (!graph.nodes.has(fromHash) || !graph.nodes.has(toHash)) {
     return null;
   }
-  
+
   if (fromHash === toHash) {
     return {
       path: [fromHash],
@@ -231,7 +231,7 @@ export function findReversePath(
       totalSteps: 0,
     };
   }
-  
+
   // Build reverse edges map
   const reverseEdges = new Map<string, Set<string>>();
   for (const [from, tos] of graph.edges.entries()) {
@@ -242,21 +242,21 @@ export function findReversePath(
       reverseEdges.get(to)!.add(from);
     }
   }
-  
+
   // BFS on reverse graph
   const queue: Array<{ hash: string; path: string[]; transitions: Transition[] }> = [
     { hash: fromHash, path: [fromHash], transitions: [] },
   ];
   const visited = new Set<string>([fromHash]);
-  
+
   while (queue.length > 0) {
     const current = queue.shift()!;
-    
+
     const neighbors = reverseEdges.get(current.hash);
     if (!neighbors) {
       continue;
     }
-    
+
     for (const neighborHash of neighbors) {
       if (neighborHash === toHash) {
         // Found target! Find the transition (reversed)
@@ -273,7 +273,7 @@ export function findReversePath(
           };
         }
       }
-      
+
       if (!visited.has(neighborHash)) {
         visited.add(neighborHash);
         const transition = findTransitionBetween(
@@ -291,7 +291,7 @@ export function findReversePath(
       }
     }
   }
-  
+
   return null; // No path found
 }
 
@@ -305,11 +305,11 @@ export function findAllPaths(
 ): PathResult[] {
   const graph = loadGraph(configDir);
   const paths: PathResult[] = [];
-  
+
   if (!graph.nodes.has(fromHash) || !graph.nodes.has(toHash)) {
     return paths;
   }
-  
+
   if (fromHash === toHash) {
     return [
       {
@@ -319,7 +319,7 @@ export function findAllPaths(
       },
     ];
   }
-  
+
   // DFS to find all paths
   function dfs(
     current: string,
@@ -336,12 +336,12 @@ export function findAllPaths(
       });
       return;
     }
-    
+
     const neighbors = graph.edges.get(current);
     if (!neighbors) {
       return;
     }
-    
+
     for (const neighborHash of neighbors) {
       if (!visited.has(neighborHash)) {
         visited.add(neighborHash);
@@ -359,9 +359,9 @@ export function findAllPaths(
       }
     }
   }
-  
+
   dfs(fromHash, toHash, [fromHash], [], new Set([fromHash]));
-  
+
   return paths;
 }
 
@@ -412,22 +412,22 @@ export function getReachableSnapshots(
 ): string[] {
   const graph = loadGraph(configDir);
   const reachable = new Set<string>();
-  
+
   if (!graph.nodes.has(fromHash)) {
     return [];
   }
-  
+
   // BFS to find all reachable nodes
   const queue = [fromHash];
   reachable.add(fromHash);
-  
+
   while (queue.length > 0) {
     const current = queue.shift()!;
     const neighbors = graph.edges.get(current);
     if (!neighbors) {
       continue;
     }
-    
+
     for (const neighborHash of neighbors) {
       if (!reachable.has(neighborHash)) {
         reachable.add(neighborHash);
@@ -435,7 +435,7 @@ export function getReachableSnapshots(
       }
     }
   }
-  
+
   return Array.from(reachable);
 }
 
@@ -448,11 +448,11 @@ export function getPredecessorSnapshots(
 ): string[] {
   const graph = loadGraph(configDir);
   const predecessors = new Set<string>();
-  
+
   if (!graph.nodes.has(toHash)) {
     return [];
   }
-  
+
   // Build reverse edges map
   const reverseEdges = new Map<string, Set<string>>();
   for (const [from, tos] of graph.edges.entries()) {
@@ -463,18 +463,18 @@ export function getPredecessorSnapshots(
       reverseEdges.get(to)!.add(from);
     }
   }
-  
+
   // BFS on reverse graph
   const queue = [toHash];
   predecessors.add(toHash);
-  
+
   while (queue.length > 0) {
     const current = queue.shift()!;
     const neighbors = reverseEdges.get(current);
     if (!neighbors) {
       continue;
     }
-    
+
     for (const neighborHash of neighbors) {
       if (!predecessors.has(neighborHash)) {
         predecessors.add(neighborHash);
@@ -482,11 +482,327 @@ export function getPredecessorSnapshots(
       }
     }
   }
-  
+
   return Array.from(predecessors);
 }
 
+/**
+ * Graph pruning options
+ */
+export interface GraphPruneOptions {
+  /** Remove snapshots older than this (e.g., "90d") */
+  olderThan?: string;
+  /** Snapshot hashes to always keep */
+  keepSnapshots?: string[];
+  /** Tags to protect (e.g., ["production", "staging"]) */
+  keepTags?: string[];
+  /** Only show what would be done */
+  dryRun?: boolean;
+}
 
+/**
+ * Graph pruning result
+ */
+export interface GraphPruneResult {
+  /** Snapshots that were removed */
+  removedSnapshots: string[];
+  /** Transitions that were removed */
+  removedTransitions: string[];
+  /** Snapshots that were kept */
+  keptSnapshots: string[];
+  /** Whether this was a dry run */
+  dryRun: boolean;
+}
+
+/**
+ * Graph statistics
+ */
+export interface GraphStats {
+  /** Total number of snapshots */
+  snapshotCount: number;
+  /** Total number of transitions */
+  transitionCount: number;
+  /** Oldest snapshot timestamp */
+  oldestSnapshot: string | null;
+  /** Newest snapshot timestamp */
+  newestSnapshot: string | null;
+  /** Number of orphaned transitions (referencing non-existent snapshots) */
+  orphanedTransitions: number;
+  /** Number of root nodes (nodes with no predecessors) */
+  rootNodes: number;
+  /** Number of leaf nodes (nodes with no successors) */
+  leafNodes: number;
+  /** Estimated graph size in bytes */
+  estimatedSize: number;
+}
+
+/**
+ * Parse duration string to milliseconds
+ */
+function parseDurationToMs(duration: string): number {
+  const match = duration.match(/^(\d+)([dwmy])$/i);
+  if (!match) return 90 * 24 * 60 * 60 * 1000; // Default 90 days
+
+  const value = parseInt(match[1], 10);
+  const unit = match[2].toLowerCase();
+  const dayMs = 24 * 60 * 60 * 1000;
+
+  switch (unit) {
+    case "d": return value * dayMs;
+    case "w": return value * 7 * dayMs;
+    case "m": return value * 30 * dayMs;
+    case "y": return value * 365 * dayMs;
+    default: return value * dayMs;
+  }
+}
+
+/**
+ * Get graph statistics
+ */
+export function getGraphStats(configDir: string): GraphStats {
+  const graph = loadGraph(configDir);
+  const transitions = getAllTransitions(configDir);
+
+  // Find orphaned transitions
+  let orphanedCount = 0;
+  for (const transition of transitions) {
+    if (!graph.nodes.has(transition.fromHash) || !graph.nodes.has(transition.toHash)) {
+      orphanedCount++;
+    }
+  }
+
+  // Find root nodes (no incoming edges)
+  const hasIncoming = new Set<string>();
+  for (const targets of graph.edges.values()) {
+    for (const target of targets) {
+      hasIncoming.add(target);
+    }
+  }
+  const rootNodes = Array.from(graph.nodes).filter(n => !hasIncoming.has(n));
+
+  // Find leaf nodes (no outgoing edges)
+  const leafNodes = Array.from(graph.nodes).filter(n => {
+    const edges = graph.edges.get(n);
+    return !edges || edges.size === 0;
+  });
+
+  // Get timestamps from transitions
+  const timestamps = transitions
+    .map(t => t.metadata?.createdAt)
+    .filter((t): t is string => !!t)
+    .sort();
+
+  // Estimate size (rough calculation)
+  const estimatedSize =
+    graph.nodes.size * 100 + // ~100 bytes per node
+    transitions.length * 500; // ~500 bytes per transition
+
+  return {
+    snapshotCount: graph.nodes.size,
+    transitionCount: transitions.length,
+    oldestSnapshot: timestamps[0] || null,
+    newestSnapshot: timestamps[timestamps.length - 1] || null,
+    orphanedTransitions: orphanedCount,
+    rootNodes: rootNodes.length,
+    leafNodes: leafNodes.length,
+    estimatedSize,
+  };
+}
+
+/**
+ * Get snapshots that can be safely pruned
+ */
+export function getPrunableSnapshots(
+  configDir: string,
+  options: GraphPruneOptions = {}
+): string[] {
+  const graph = loadGraph(configDir);
+  const transitions = getAllTransitions(configDir);
+  const now = Date.now();
+
+  // Build timestamp map
+  const snapshotTimestamps = new Map<string, number>();
+  for (const transition of transitions) {
+    const timestamp = transition.metadata?.createdAt
+      ? new Date(transition.metadata.createdAt).getTime()
+      : now;
+
+    // Use earliest appearance
+    if (!snapshotTimestamps.has(transition.toHash) ||
+      snapshotTimestamps.get(transition.toHash)! > timestamp) {
+      snapshotTimestamps.set(transition.toHash, timestamp);
+    }
+  }
+
+  const prunable: string[] = [];
+  const olderThanMs = options.olderThan ? parseDurationToMs(options.olderThan) : null;
+
+  for (const hash of graph.nodes) {
+    // Skip if in keepSnapshots
+    if (options.keepSnapshots?.includes(hash)) {
+      continue;
+    }
+
+    // Skip if matches keepTags pattern (hash starts with tag)
+    if (options.keepTags?.some(tag => hash.startsWith(tag))) {
+      continue;
+    }
+
+    // Check age
+    if (olderThanMs) {
+      const timestamp = snapshotTimestamps.get(hash);
+      if (timestamp && (now - timestamp) > olderThanMs) {
+        prunable.push(hash);
+      }
+    }
+  }
+
+  return prunable;
+}
+
+/**
+ * Get orphaned transitions (referencing non-existent snapshots)
+ */
+export function getOrphanedTransitions(configDir: string): Transition[] {
+  const graph = loadGraph(configDir);
+  const transitions = getAllTransitions(configDir);
+
+  return transitions.filter(t =>
+    !graph.nodes.has(t.fromHash) || !graph.nodes.has(t.toHash)
+  );
+}
+
+/**
+ * Prune old snapshots and orphaned transitions
+ */
+export function pruneGraph(
+  configDir: string,
+  options: GraphPruneOptions = {}
+): GraphPruneResult {
+  const result: GraphPruneResult = {
+    removedSnapshots: [],
+    removedTransitions: [],
+    keptSnapshots: [],
+    dryRun: options.dryRun ?? false,
+  };
+
+  const graph = loadGraph(configDir);
+  const prunable = getPrunableSnapshots(configDir, options);
+
+  // Calculate kept snapshots
+  result.keptSnapshots = Array.from(graph.nodes).filter(h => !prunable.includes(h));
+
+  if (!options.dryRun) {
+    // Remove prunable snapshots
+    for (const hash of prunable) {
+      try {
+        const snapshotPath = path().join(configDir, ".yama", "snapshots", `${hash}.json`);
+        if (fs().existsSync(snapshotPath)) {
+          fs().unlinkSync?.(snapshotPath);
+        }
+        graph.nodes.delete(hash);
+        graph.edges.delete(hash);
+        result.removedSnapshots.push(hash);
+      } catch {
+        // Ignore errors
+      }
+    }
+
+    // Remove orphaned transitions
+    const orphaned = getOrphanedTransitions(configDir);
+    for (const transition of orphaned) {
+      try {
+        const transitionPath = path().join(
+          getTransitionsDir(configDir),
+          `${transition.hash}.json`
+        );
+        if (fs().existsSync(transitionPath)) {
+          fs().unlinkSync?.(transitionPath);
+        }
+        graph.transitions.delete(transition.hash);
+        result.removedTransitions.push(transition.hash);
+      } catch {
+        // Ignore errors
+      }
+    }
+
+    // Save updated graph
+    saveGraph(configDir, graph);
+  } else {
+    // Dry run - just report what would be removed
+    result.removedSnapshots = prunable;
+    result.removedTransitions = getOrphanedTransitions(configDir).map(t => t.hash);
+  }
+
+  return result;
+}
+
+/**
+ * Format graph statistics for CLI display
+ */
+export function formatGraphStats(stats: GraphStats): string {
+  const lines: string[] = [];
+
+  lines.push("📊 Migration Graph Statistics\n");
+  lines.push(`   Snapshots:    ${stats.snapshotCount}`);
+  lines.push(`   Transitions:  ${stats.transitionCount}`);
+  lines.push(`   Root nodes:   ${stats.rootNodes}`);
+  lines.push(`   Leaf nodes:   ${stats.leafNodes}`);
+
+  if (stats.orphanedTransitions > 0) {
+    lines.push(`   ⚠️ Orphaned:   ${stats.orphanedTransitions}`);
+  }
+
+  lines.push("");
+
+  if (stats.oldestSnapshot) {
+    lines.push(`   Oldest: ${stats.oldestSnapshot}`);
+  }
+  if (stats.newestSnapshot) {
+    lines.push(`   Newest: ${stats.newestSnapshot}`);
+  }
+
+  const sizeKB = Math.round(stats.estimatedSize / 1024);
+  lines.push(`   Est. size: ${sizeKB} KB`);
+
+  return lines.join("\n");
+}
+
+/**
+ * Format prune result for CLI display
+ */
+export function formatPruneResult(result: GraphPruneResult): string {
+  const lines: string[] = [];
+
+  if (result.dryRun) {
+    lines.push("🔍 DRY RUN - No actual changes made\n");
+  }
+
+  if (result.removedSnapshots.length > 0) {
+    const verb = result.dryRun ? "Would remove" : "Removed";
+    lines.push(`✅ ${verb} ${result.removedSnapshots.length} snapshot(s)`);
+    if (result.removedSnapshots.length <= 10) {
+      for (const hash of result.removedSnapshots) {
+        lines.push(`   - ${hash.substring(0, 12)}...`);
+      }
+    }
+    lines.push("");
+  }
+
+  if (result.removedTransitions.length > 0) {
+    const verb = result.dryRun ? "Would remove" : "Removed";
+    lines.push(`✅ ${verb} ${result.removedTransitions.length} orphaned transition(s)`);
+    lines.push("");
+  }
+
+  lines.push(`📌 Kept ${result.keptSnapshots.length} snapshot(s)`);
+
+  if (result.removedSnapshots.length === 0 && result.removedTransitions.length === 0) {
+    lines.push("\n✅ Nothing to prune");
+  }
+
+  return lines.join("\n");
+}
 
 
 

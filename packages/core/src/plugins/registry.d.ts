@@ -126,3 +126,4 @@ export declare function getAllCLICommands(): import("./base.js").PluginCLIComman
  * Get all registered MCP tools from all plugins
  */
 export declare function getAllMCPTools(): import("./base.js").PluginMCPTool[];
+//# sourceMappingURL=registry.d.ts.map

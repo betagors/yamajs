@@ -330,7 +330,7 @@ export async function addEndpointCommand(options: AddEndpointOptions): Promise<v
       if (endpoint.response?.type) {
         importedTypes.push(endpoint.response.type);
       }
-      const imports = `import type { ${importedTypes.join(", ")} } from "@yama/gen";`;
+      const imports = `import type { ${importedTypes.join(", ")} } from "@yamajs/gen";`;
 
       const handlerTemplate = `${imports}
 

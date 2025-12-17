@@ -1,8 +1,8 @@
-import { existsSync } from "fs";
+﻿import { existsSync } from "fs";
 import { findYamaConfig } from "../utils/project-detection.ts";
 import { readYamaConfig, getConfigDir } from "../utils/file-utils.ts";
-import { loadEnvFile, resolveEnvVars } from "@betagors/yama-core";
-import type { DatabaseConfig } from "@betagors/yama-core";
+import { loadEnvFile, resolveEnvVars } from "@yamajs/core";
+import type { DatabaseConfig } from "@yamajs/core";
 import {
   getCurrentSnapshot,
   getAllStates,
@@ -10,7 +10,7 @@ import {
   getAllTransitions,
   entitiesToModel,
   snapshotExists,
-} from "@betagors/yama-core";
+} from "@yamajs/core";
 import { getDatabasePluginAndConfig } from "../utils/db-plugin.ts";
 import { success, error, info, dim, fmt, printTable, colors } from "../utils/cli-utils.ts";
 
@@ -67,7 +67,7 @@ export async function schemaStatusCommand(options: SchemaStatusOptions): Promise
     // Full status display
     console.log("");
     console.log(fmt.bold("Schema Status"));
-    console.log(dim("─".repeat(40)));
+    console.log(dim("â”€".repeat(40)));
     console.log("");
 
     // Environment state
@@ -75,19 +75,19 @@ export async function schemaStatusCommand(options: SchemaStatusOptions): Promise
     console.log(fmt.bold("Environment:"), environment);
     console.log(fmt.bold("Current:"), currentSnapshot ? fmt.cyan(currentSnapshot.substring(0, 8)) : dim("none"));
     console.log(fmt.bold("Target:"), targetModel ? fmt.cyan(targetModel.hash.substring(0, 8)) : dim("none"));
-    console.log(fmt.bold("Status:"), inSync ? fmt.green("✓ In sync") : fmt.yellow("○ Changes pending"));
+    console.log(fmt.bold("Status:"), inSync ? fmt.green("âœ“ In sync") : fmt.yellow("â—‹ Changes pending"));
     console.log("");
 
     // All environments
     if (states.length > 0) {
       console.log(fmt.bold("All Environments"));
-      console.log(dim("─".repeat(40)));
+      console.log(dim("â”€".repeat(40)));
       
       const tableData: unknown[][] = [["Env", "Snapshot", "Updated"]];
       for (const state of states) {
         const isTarget = targetModel && state.currentSnapshot === targetModel.hash;
         const snapshotDisplay = state.currentSnapshot 
-          ? `${state.currentSnapshot.substring(0, 8)}${isTarget ? " ✓" : ""}`
+          ? `${state.currentSnapshot.substring(0, 8)}${isTarget ? " âœ“" : ""}`
           : "-";
         tableData.push([
           state.environment,
@@ -102,7 +102,7 @@ export async function schemaStatusCommand(options: SchemaStatusOptions): Promise
     // Snapshots
     if (snapshots.length > 0) {
       console.log(fmt.bold(`Snapshots (${snapshots.length})`));
-      console.log(dim("─".repeat(40)));
+      console.log(dim("â”€".repeat(40)));
       
       const tableData: unknown[][] = [["Hash", "Description", "Created"]];
       for (const snapshot of snapshots.slice(-5)) { // Show last 5
@@ -126,7 +126,7 @@ export async function schemaStatusCommand(options: SchemaStatusOptions): Promise
     // Transitions
     if (transitions.length > 0) {
       console.log(fmt.bold(`Transitions (${transitions.length})`));
-      console.log(dim("─".repeat(40)));
+      console.log(dim("â”€".repeat(40)));
       
       const tableData: unknown[][] = [["From", "To", "Steps"]];
       for (const transition of transitions.slice(-5)) { // Show last 5

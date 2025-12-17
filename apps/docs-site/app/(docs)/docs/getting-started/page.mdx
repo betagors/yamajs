@@ -9,17 +9,17 @@ Learn how to install Yama, create your first project, and run the development se
 Install the Yama CLI globally:
 
 <TabbedCode defaultTab="pnpm">
-  <Tab label="npm" code="npm install -g @betagors/yama-cli" />
-  <Tab label="pnpm" code="pnpm add -g @betagors/yama-cli" />
-  <Tab label="yarn" code="yarn global add @betagors/yama-cli" />
+  <Tab label="npm" code="npm install -g @yamajs/cli" />
+  <Tab label="pnpm" code="pnpm add -g @yamajs/cli" />
+  <Tab label="yarn" code="yarn global add @yamajs/cli" />
 </TabbedCode>
 
 Or run it on demand:
 
 <TabbedCode defaultTab="pnpm">
-  <Tab label="pnpm" code="pnpm dlx @betagors/yama-cli create my-app" />
-  <Tab label="npm" code="npx @betagors/yama-cli create my-app" />
-  <Tab label="yarn" code="yarn dlx @betagors/yama-cli create my-app" />
+  <Tab label="pnpm" code="pnpm dlx @yamajs/cli create my-app" />
+  <Tab label="npm" code="npx @yamajs/cli create my-app" />
+  <Tab label="yarn" code="yarn dlx @yamajs/cli create my-app" />
 </TabbedCode>
 
 ## Create a Project
@@ -113,7 +113,7 @@ Create handler files in `src/handlers/`:
 
 ```typescript
 // src/handlers/listUsers.ts
-import { HandlerContext } from '@betagors/yama-core';
+import { HandlerContext } from '@yamajs/core';
 
 export async function listUsers(context: HandlerContext) {
   // Access database, services, etc. via context
@@ -123,7 +123,7 @@ export async function listUsers(context: HandlerContext) {
 
 ```typescript
 // src/handlers/createUser.ts
-import { HandlerContext } from '@betagors/yama-core';
+import { HandlerContext } from '@yamajs/core';
 
 export async function createUser(context: HandlerContext) {
   const { email, name } = context.request.body;

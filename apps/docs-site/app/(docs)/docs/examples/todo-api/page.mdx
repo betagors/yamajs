@@ -121,7 +121,7 @@ endpoints:
 
 ```typescript
 // src/handlers/listTodos.ts
-import { HandlerContext } from '@betagors/yama-core';
+import { HandlerContext } from '@yamajs/core';
 
 export async function listTodos(context: HandlerContext) {
   const todos = await context.db.query(
@@ -135,7 +135,7 @@ export async function listTodos(context: HandlerContext) {
 
 ```typescript
 // src/handlers/createTodo.ts
-import { HandlerContext } from '@betagors/yama-core';
+import { HandlerContext } from '@yamajs/core';
 
 export async function createTodo(context: HandlerContext) {
   const { title, completed = false } = context.request.body;
@@ -156,7 +156,7 @@ export async function createTodo(context: HandlerContext) {
 
 ```typescript
 // src/handlers/getTodo.ts
-import { HandlerContext } from '@betagors/yama-core';
+import { HandlerContext } from '@yamajs/core';
 
 export async function getTodo(context: HandlerContext) {
   const { id } = context.params;
@@ -179,7 +179,7 @@ export async function getTodo(context: HandlerContext) {
 
 ```typescript
 // src/handlers/updateTodo.ts
-import { HandlerContext } from '@betagors/yama-core';
+import { HandlerContext } from '@yamajs/core';
 
 export async function updateTodo(context: HandlerContext) {
   const { id } = context.params;
@@ -207,7 +207,7 @@ export async function updateTodo(context: HandlerContext) {
 
 ```typescript
 // src/handlers/deleteTodo.ts
-import { HandlerContext } from '@betagors/yama-core';
+import { HandlerContext } from '@yamajs/core';
 
 export async function deleteTodo(context: HandlerContext) {
   const { id } = context.params;
@@ -260,7 +260,7 @@ pnpm test
 
 ```typescript
 import { describe, it, expect } from 'vitest';
-import { createTestClient } from '@betagors/yama-test';
+import { createTestClient } from '@yamajs/test';
 
 describe('Todo API', () => {
   const client = createTestClient();

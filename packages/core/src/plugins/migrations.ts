@@ -66,10 +66,10 @@ export async function getPluginPackageDir(
   const path = getPathModule();
   try {
     const { createRequire } = await import("module");
-    
+
     const projectRoot = projectDir || getEnvProvider().cwd();
     let packagePath: string;
-    
+
     try {
       const projectRequire = createRequire(path.resolve(projectRoot, "package.json"));
       packagePath = projectRequire.resolve(packageName);
@@ -77,7 +77,7 @@ export async function getPluginPackageDir(
       const require = createRequire(import.meta.url);
       packagePath = require.resolve(packageName);
     }
-    
+
     // Get the directory containing the resolved file
     // If packagePath points to a file, get its directory
     // If it points to a directory, use it directly
@@ -91,7 +91,7 @@ export async function getPluginPackageDir(
         packagePath.replace(/\/[^/]+$/, "").replace(/\\[^\\]+$/, "")
       );
     }
-    
+
     // Walk up to find package.json
     let currentPath = packageDir;
     while (currentPath !== path.dirname(currentPath)) {
@@ -101,7 +101,7 @@ export async function getPluginPackageDir(
       }
       currentPath = path.dirname(currentPath);
     }
-    
+
     return packageDir;
   } catch (error) {
     throw new Error(
@@ -184,12 +184,12 @@ export async function getPendingPluginMigrations(
         );
         return false;
       }
-      
+
       if (!installedVersion) {
         // First install - include all migrations up to current version
         return semver.lte(v, currentVersion);
       }
-      
+
       // Update - include migrations between installed and current version
       if (!semver.valid(installedVersion)) {
         console.warn(
@@ -197,7 +197,7 @@ export async function getPendingPluginMigrations(
         );
         return semver.lte(v, currentVersion);
       }
-      
+
       return semver.gt(v, installedVersion) && semver.lte(v, currentVersion);
     })
     .sort((a, b) => semver.compare(a, b));
@@ -223,7 +223,7 @@ async function loadMigrationScript(
   direction: "up" | "down"
 ): Promise<string | (() => Promise<void> | void)> {
   const script = direction === "up" ? migration.up : migration.down;
-  
+
   if (!script) {
     throw new Error(
       `Migration ${direction} script not found`
@@ -232,7 +232,7 @@ async function loadMigrationScript(
 
   if (typeof script === "string") {
     // It's a file path - resolve relative to plugin directory
-    const filePath = path.join(pluginDir, script);
+    const filePath = path().join(pluginDir, script);
     if (!fs().existsSync(filePath)) {
       throw new Error(
         `Migration file not found: ${filePath}`
@@ -268,7 +268,7 @@ export async function executePluginMigration(
   }
 
   // Record migration
-  const checksum = typeof upScript === "string" 
+  const checksum = typeof upScript === "string"
     ? computeChecksum(upScript)
     : "function";
 
@@ -326,7 +326,7 @@ export async function rollbackPluginMigration(
   for (const applied of migrationsToRollback) {
     const version = applied.plugin_version;
     const migrationDef = manifest.migrations[version];
-    
+
     if (!migrationDef) {
       throw new Error(
         `Migration definition not found for version ${version} in plugin ${pluginName}`
@@ -341,7 +341,7 @@ export async function rollbackPluginMigration(
 
     // Load and execute down migration
     const downScript = await loadMigrationScript(migrationDef, pluginDir, "down");
-    
+
     if (typeof downScript === "string") {
       await sql.unsafe(downScript);
     } else {
@@ -408,3 +408,211 @@ export async function getPluginMigrationHistory(
   }
 }
 
+/**
+ * Data migration options
+ */
+export interface DataMigrationOptions {
+  /** Number of rows to process per batch (default: 1000) */
+  batchSize?: number;
+  /** Delay between batches in ms (default: 0) */
+  delayMs?: number;
+  /** Progress callback */
+  onProgress?: (progress: DataMigrationProgress) => void;
+  /** Abort signal */
+  abortSignal?: AbortSignal;
+}
+
+/**
+ * Data migration progress information
+ */
+export interface DataMigrationProgress {
+  /** Total rows processed so far */
+  processed: number;
+  /** Total rows to process (if known) */
+  total: number | null;
+  /** Progress percentage (0-100) */
+  percentage: number | null;
+  /** Current batch number */
+  batchNumber: number;
+  /** Rows in current batch */
+  batchSize: number;
+  /** Estimated time remaining in ms */
+  estimatedTimeRemaining: number | null;
+  /** Time elapsed in ms */
+  elapsed: number;
+}
+
+/**
+ * Data migration result
+ */
+export interface DataMigrationResult {
+  /** Total rows affected */
+  rowsAffected: number;
+  /** Number of batches executed */
+  batchesExecuted: number;
+  /** Total duration in ms */
+  duration: number;
+  /** Whether completed successfully */
+  success: boolean;
+  /** Error if failed */
+  error?: Error;
+  /** Whether aborted */
+  aborted: boolean;
+}
+
+/**
+ * Execute a data migration with batching
+ * 
+ * Use for large UPDATE/INSERT operations that need to be broken into
+ * smaller batches to avoid locking and memory issues.
+ * 
+ * @example
+ * ```typescript
+ * const result = await executeDataMigration(
+ *   sql,
+ *   {
+ *     query: 'UPDATE users SET email_normalized = LOWER(email) WHERE email_normalized IS NULL',
+ *     countQuery: 'SELECT COUNT(*) FROM users WHERE email_normalized IS NULL',
+ *     batchQuery: 'UPDATE users SET email_normalized = LOWER(email) WHERE email_normalized IS NULL AND id IN (SELECT id FROM users WHERE email_normalized IS NULL LIMIT $1)',
+ *   },
+ *   { batchSize: 1000, onProgress: console.log }
+ * );
+ * ```
+ */
+export async function executeDataMigration(
+  sql: any,
+  migration: {
+    /** Query to count total rows (optional but recommended) */
+    countQuery?: string;
+    /** Query to process one batch, should include LIMIT clause or similar */
+    batchQuery: string;
+    /** Parameters for batch query (first param will be batch size) */
+    batchParams?: any[];
+  },
+  options: DataMigrationOptions = {}
+): Promise<DataMigrationResult> {
+  const batchSize = options.batchSize ?? 1000;
+  const delayMs = options.delayMs ?? 0;
+  const startTime = Date.now();
+
+  let total: number | null = null;
+  let processed = 0;
+  let batchNumber = 0;
+  let aborted = false;
+
+  // Get total count if query provided
+  if (migration.countQuery) {
+    try {
+      const countResult = await sql.unsafe(migration.countQuery);
+      total = parseInt(countResult[0]?.count || "0", 10);
+    } catch {
+      // Ignore count errors
+    }
+  }
+
+  try {
+    // Process batches
+    while (true) {
+      // Check abort signal
+      if (options.abortSignal?.aborted) {
+        aborted = true;
+        break;
+      }
+
+      batchNumber++;
+      const batchParams = [batchSize, ...(migration.batchParams || [])];
+
+      // Execute batch
+      const result = await sql.unsafe(migration.batchQuery, batchParams);
+      const rowsInBatch = result.count ?? result.length ?? 0;
+
+      if (rowsInBatch === 0) {
+        break; // No more rows to process
+      }
+
+      processed += rowsInBatch;
+
+      // Report progress
+      if (options.onProgress) {
+        const elapsed = Date.now() - startTime;
+        const rowsPerMs = processed / elapsed;
+        let estimatedRemaining: number | null = null;
+        let percentage: number | null = null;
+
+        if (total !== null && total > 0) {
+          percentage = Math.round((processed / total) * 100);
+          const remaining = total - processed;
+          estimatedRemaining = remaining > 0 ? Math.round(remaining / rowsPerMs) : 0;
+        }
+
+        options.onProgress({
+          processed,
+          total,
+          percentage,
+          batchNumber,
+          batchSize: rowsInBatch,
+          estimatedTimeRemaining: estimatedRemaining,
+          elapsed,
+        });
+      }
+
+      // If we got fewer rows than batch size, we're done
+      if (rowsInBatch < batchSize) {
+        break;
+      }
+
+      // Delay between batches if configured
+      if (delayMs > 0) {
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+      }
+    }
+
+    return {
+      rowsAffected: processed,
+      batchesExecuted: batchNumber,
+      duration: Date.now() - startTime,
+      success: !aborted,
+      aborted,
+    };
+  } catch (error) {
+    return {
+      rowsAffected: processed,
+      batchesExecuted: batchNumber,
+      duration: Date.now() - startTime,
+      success: false,
+      error: error instanceof Error ? error : new Error(String(error)),
+      aborted,
+    };
+  }
+}
+
+/**
+ * Format data migration progress for display
+ */
+export function formatDataMigrationProgress(progress: DataMigrationProgress): string {
+  const parts: string[] = [];
+
+  if (progress.percentage !== null) {
+    parts.push(`${progress.percentage}%`);
+  }
+
+  parts.push(`${progress.processed.toLocaleString()} rows`);
+
+  if (progress.total !== null) {
+    parts.push(`of ${progress.total.toLocaleString()}`);
+  }
+
+  parts.push(`(batch ${progress.batchNumber})`);
+
+  if (progress.estimatedTimeRemaining !== null && progress.estimatedTimeRemaining > 0) {
+    const mins = Math.round(progress.estimatedTimeRemaining / 60000);
+    const secs = Math.round((progress.estimatedTimeRemaining % 60000) / 1000);
+    if (mins > 0) {
+      parts.push(`~${mins}m ${secs}s remaining`);
+    } else {
+      parts.push(`~${secs}s remaining`);
+    }
+  }
+
+  return parts.join(" ");
+}

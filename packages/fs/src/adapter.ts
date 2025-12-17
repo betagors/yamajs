@@ -1,10 +1,10 @@
-import type {
+﻿import type {
   StorageAdapter,
   StorageBucket,
   UploadOptions,
   UploadResult,
   StorageMetadata,
-} from "@betagors/yama-core";
+} from "@yamajs/core";
 import { promises as fs } from "fs";
 import { join, dirname } from "path";
 import { Readable } from "stream";

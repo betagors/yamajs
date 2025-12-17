@@ -52,3 +52,4 @@ export declare function deleteTransition(configDir: string, hash: string): void;
  * Get all transitions
  */
 export declare function getAllTransitions(configDir: string): Transition[];
+//# sourceMappingURL=transitions.d.ts.map

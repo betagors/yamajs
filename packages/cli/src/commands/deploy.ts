@@ -1,4 +1,4 @@
-import { existsSync } from "fs";
+﻿import { existsSync } from "fs";
 import { findYamaConfig } from "../utils/project-detection.ts";
 import { getConfigDir, readYamaConfig } from "../utils/file-utils.ts";
 import {
@@ -20,7 +20,7 @@ import {
   saveTransition,
   computeDiff,
   diffToSteps,
-} from "@betagors/yama-core";
+} from "@yamajs/core";
 import { info, error, success, warning, dim, fmt, createSpinner, formatDuration } from "../utils/cli-utils.ts";
 import { confirm } from "../utils/interactive.ts";
 import { getDatabasePlugin, getDatabasePluginAndConfig } from "../utils/db-plugin.ts";
@@ -155,7 +155,7 @@ export async function deployCommand(options: DeployOptions): Promise<void> {
     // Show deployment plan
     console.log("");
     console.log(fmt.bold(`Deploy to ${options.env}`));
-    console.log(dim("─".repeat(35)));
+    console.log(dim("â”€".repeat(35)));
     console.log(`Current: ${currentSnapshot ? currentSnapshot.substring(0, 8) : dim("none")}`);
     console.log(`Target:  ${fmt.cyan(targetHash.substring(0, 8))}`);
     console.log(`Steps:   ${transitions.reduce((sum, t) => sum + t.steps.length, 0)}`);
@@ -240,7 +240,7 @@ export async function deployCommand(options: DeployOptions): Promise<void> {
       const duration = Date.now() - startTime;
       spinner.succeed(`Deployed in ${formatDuration(duration)}`);
       console.log("");
-      success(`${options.env} → ${targetHash.substring(0, 8)}`);
+      success(`${options.env} â†’ ${targetHash.substring(0, 8)}`);
 
     } catch (err) {
       spinner.fail("Deploy failed");

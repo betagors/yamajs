@@ -1,8 +1,8 @@
-import { readYamaConfig } from "../../utils/file-utils.ts";
+﻿import { readYamaConfig } from "../../utils/file-utils.ts";
 import { findYamaConfig } from "../../utils/project-detection.ts";
 import { existsSync } from "fs";
 import { resolve } from "path";
-import type { YamaSchemas } from "@betagors/yama-core";
+import type { YamaSchemas } from "@yamajs/core";
 import { getMCPWorkingDir } from "../utils/workdir.ts";
 
 export async function getSchemasResource(uri: string): Promise<{

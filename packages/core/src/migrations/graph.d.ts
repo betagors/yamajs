@@ -59,3 +59,4 @@ export declare function getReachableSnapshots(configDir: string, fromHash: strin
  * Get all predecessor snapshots (can reach this snapshot)
  */
 export declare function getPredecessorSnapshots(configDir: string, toHash: string): string[];
+//# sourceMappingURL=graph.d.ts.map

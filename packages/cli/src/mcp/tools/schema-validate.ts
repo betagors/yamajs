@@ -1,4 +1,4 @@
-import { z } from "zod";
+﻿import { z } from "zod";
 import { existsSync, readFileSync, writeFileSync, unlinkSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
@@ -10,7 +10,7 @@ import {
   type YamaEntities,
   entitiesToSchemas,
   mergeSchemas 
-} from "@betagors/yama-core";
+} from "@yamajs/core";
 
 const inputSchema = z.object({
   schema: z.string().optional().describe("Raw YAML schema content to validate (entities section or full yama.yaml content)"),
@@ -132,7 +132,7 @@ async function validateYamlContent(yamlContent: string, strict = false): Promise
     try {
       const entitySchemas = entitiesToSchemas(config.entities);
       allSchemas = mergeSchemas(config.schemas, entitySchemas);
-      outputLines.push(`✅ Found ${Object.keys(config.entities).length} entity/entities (auto-generated ${Object.keys(entitySchemas).length} schema(s))`);
+      outputLines.push(`âœ… Found ${Object.keys(config.entities).length} entity/entities (auto-generated ${Object.keys(entitySchemas).length} schema(s))`);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       errors.push({
@@ -152,7 +152,7 @@ async function validateYamlContent(yamlContent: string, strict = false): Promise
       validator.registerSchemas(allSchemas);
       const explicitSchemaCount = config.schemas ? Object.keys(config.schemas).length : 0;
       if (explicitSchemaCount > 0) {
-        outputLines.push(`✅ Found ${explicitSchemaCount} explicit schema(s)`);
+        outputLines.push(`âœ… Found ${explicitSchemaCount} explicit schema(s)`);
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -204,7 +204,7 @@ async function validateYamlContent(yamlContent: string, strict = false): Promise
       }
       
       if (isValid) {
-        outputLines.push(`✅ All entities have valid structure`);
+        outputLines.push(`âœ… All entities have valid structure`);
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -236,7 +236,7 @@ async function validateYamlContent(yamlContent: string, strict = false): Promise
       });
       isValid = false;
     } else {
-      outputLines.push(`✅ Found ${config.endpoints.length} endpoint(s)`);
+      outputLines.push(`âœ… Found ${config.endpoints.length} endpoint(s)`);
     }
   }
 
@@ -254,7 +254,7 @@ export const yamaSchemaValidateTool = {
         content: [
           {
             type: "text" as const,
-            text: "❌ Error: Either 'schema' (raw YAML content) or 'config' (file path) must be provided",
+            text: "âŒ Error: Either 'schema' (raw YAML content) or 'config' (file path) must be provided",
           },
         ],
       };
@@ -277,7 +277,7 @@ export const yamaSchemaValidateTool = {
             content: [
               {
                 type: "text" as const,
-                text: `❌ Config file not found: ${configPath}`,
+                text: `âŒ Config file not found: ${configPath}`,
               },
             ],
           };
@@ -301,8 +301,8 @@ export const yamaSchemaValidateTool = {
         : "";
 
       const output = result.isValid
-        ? `✅ Validation successful for ${source}\n\n${result.output}`
-        : `❌ Validation failed for ${source}\n\n${result.output}${errorMessages}`;
+        ? `âœ… Validation successful for ${source}\n\n${result.output}`
+        : `âŒ Validation failed for ${source}\n\n${result.output}${errorMessages}`;
 
       return {
         content: [
@@ -317,7 +317,7 @@ export const yamaSchemaValidateTool = {
         content: [
           {
             type: "text" as const,
-            text: `❌ Validation error: ${error instanceof Error ? error.message : String(error)}`,
+            text: `âŒ Validation error: ${error instanceof Error ? error.message : String(error)}`,
           },
         ],
       };

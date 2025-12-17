@@ -1,4 +1,4 @@
-# Yama Philosophy
+﻿# Yama Philosophy
 
 ## The Configuration-First Backend Framework
 
@@ -153,12 +153,12 @@ apis:
 ```
 
 This configuration generates:
-- ✅ Complete REST API with proper routing
-- ✅ Type-safe operations with input/output validation
-- ✅ Reusable access control policies
-- ✅ TypeScript types and SDK
-- ✅ API documentation
-- ✅ Database operations and migrations
+- âœ… Complete REST API with proper routing
+- âœ… Type-safe operations with input/output validation
+- âœ… Reusable access control policies
+- âœ… TypeScript types and SDK
+- âœ… API documentation
+- âœ… Database operations and migrations
 
 ---
 
@@ -281,13 +281,13 @@ Yama prioritizes **developer productivity** with:
 
 Start simple, add complexity as needed:
 
-1. **Level 1**: Define schemas → Data structure foundation
-2. **Level 2**: Define operations → Business logic API
-3. **Level 3**: Add policies → Access control
-4. **Level 4**: Expose via APIs → Multiple interfaces (REST, GraphQL)
-5. **Level 5**: Custom handlers → Complex business logic
-6. **Level 6**: Plugins → Advanced features
-7. **Level 7**: Custom plugins → Domain-specific functionality
+1. **Level 1**: Define schemas â†’ Data structure foundation
+2. **Level 2**: Define operations â†’ Business logic API
+3. **Level 3**: Add policies â†’ Access control
+4. **Level 4**: Expose via APIs â†’ Multiple interfaces (REST, GraphQL)
+5. **Level 5**: Custom handlers â†’ Complex business logic
+6. **Level 6**: Plugins â†’ Advanced features
+7. **Level 7**: Custom plugins â†’ Domain-specific functionality
 
 ### AI-Assisted Development
 
@@ -334,7 +334,7 @@ yama plugin search email
 yama plugin browse --category database
 
 # Install with one command
-yama plugin install @betagors/yama-email-sendgrid
+yama plugin install @yamajs/email-sendgrid
 ```
 
 ### Plugin Development Tools
@@ -492,7 +492,7 @@ Yama promises to **revolutionize backend development** by:
 5. **AI-assisted development** - Predictable patterns that AI tools can reliably generate
 6. **Community ecosystem** - Open platform with thriving plugin community
 
-Yama is more than a framework—it's a **new paradigm for backend development**, where operations become APIs, policies ensure security, and configuration drives capability.
+Yama is more than a frameworkâ€”it's a **new paradigm for backend development**, where operations become APIs, policies ensure security, and configuration drives capability.
 
 ---
 

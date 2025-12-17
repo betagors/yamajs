@@ -1,5 +1,5 @@
-/**
- * @betagors/yama-core - Auth Plugin Types
+﻿/**
+ * @yamajs/core - Auth Plugin Types
  * 
  * This module defines the standard interface for auth plugins.
  * All auth plugins (session, oauth, mfa, passkeys, etc.) implement this interface.
@@ -146,7 +146,7 @@ export interface AuthPluginLogger {
  * @example
  * ```typescript
  * const sessionPlugin: AuthPlugin = {
- *   name: '@betagors/yama-session',
+ *   name: '@yamajs/session',
  *   type: 'session',
  *   version: '1.0.0',
  *   

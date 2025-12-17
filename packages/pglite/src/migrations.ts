@@ -1,5 +1,5 @@
-import type { YamaEntities, EntityDefinition, EntityField, MigrationStepUnion } from "@betagors/yama-core";
-import { parseFieldDefinition, DatabaseTypeMapper } from "@betagors/yama-core";
+﻿import type { YamaEntities, EntityDefinition, EntityField, MigrationStepUnion } from "@yamajs/core";
+import { parseFieldDefinition, DatabaseTypeMapper } from "@yamajs/core";
 import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync } from "fs";
 import { join } from "path";
 import { createHash } from "crypto";
@@ -29,7 +29,7 @@ function generateSQLColumn(fieldName: string, field: EntityField, dbColumnName: 
       enumValues: field.enum as string[],
       pattern: field.pattern,
     };
-    
+
     // Use DatabaseTypeMapper for PostgreSQL (PGlite uses PostgreSQL types)
     sqlType = DatabaseTypeMapper.toPostgreSQL(fieldType);
   }
@@ -66,7 +66,7 @@ function generateSQLColumn(fieldName: string, field: EntityField, dbColumnName: 
 function generateCreateTableSQL(entityDef: EntityDefinition, availableEntities: Set<string>): string {
   const columns: string[] = [];
 
-  for (const [fieldName, fieldDef] of Object.entries(entityDef.fields)) {
+  for (const [fieldName, fieldDef] of Object.entries(entityDef.fields || {})) {
     const field = parseFieldDefinition(fieldName, fieldDef, availableEntities);
     // Skip inline relations
     if (field._isInlineRelation) {
@@ -92,7 +92,7 @@ function generateIndexSQL(entityDef: EntityDefinition, availableEntities: Set<st
     for (const index of entityDef.indexes) {
       const indexName = index.name || `${entityDef.table}_${index.fields.join("_")}_idx`;
       const fields = index.fields.map(f => {
-        const fieldDef = entityDef.fields[f];
+        const fieldDef = entityDef.fields?.[f];
         if (!fieldDef) return f;
         const field = parseFieldDefinition(f, fieldDef, availableEntities);
         return field.dbColumn || f;
@@ -103,7 +103,7 @@ function generateIndexSQL(entityDef: EntityDefinition, availableEntities: Set<st
   }
 
   // Indexes from field index: true
-  for (const [fieldName, fieldDef] of Object.entries(entityDef.fields)) {
+  for (const [fieldName, fieldDef] of Object.entries(entityDef.fields || {})) {
     const field = parseFieldDefinition(fieldName, fieldDef, availableEntities);
     if (field.index) {
       const dbColumnName = field.dbColumn || fieldName;
@@ -292,8 +292,8 @@ export function generateSQLFromSteps(steps: MigrationStepUnion[]): string {
             const defaultVal = step.changes.default === "now()" || step.changes.default === "now"
               ? "NOW()"
               : typeof step.changes.default === "string"
-              ? `'${String(step.changes.default).replace(/'/g, "''")}'`
-              : String(step.changes.default);
+                ? `'${String(step.changes.default).replace(/'/g, "''")}'`
+                : String(step.changes.default);
             statements.push(`ALTER TABLE ${step.table} ALTER COLUMN ${step.column} SET DEFAULT ${defaultVal};`);
           }
         }

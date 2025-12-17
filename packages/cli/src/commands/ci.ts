@@ -1,4 +1,4 @@
-import { existsSync } from "fs";
+﻿import { existsSync } from "fs";
 import { findYamaConfig } from "../utils/project-detection.ts";
 import { getConfigDir, readYamaConfig } from "../utils/file-utils.ts";
 import {
@@ -15,7 +15,7 @@ import {
   createTransition,
   resolveEnvVars,
   loadEnvFile,
-} from "@betagors/yama-core";
+} from "@yamajs/core";
 import { info, error, success, warning } from "../utils/cli-utils.ts";
 
 interface CIAnalyzeOptions {
@@ -128,14 +128,14 @@ export async function ciAnalyzeCommand(options: CIAnalyzeOptions): Promise<void>
         },
       }, null, 2));
     } else {
-      console.log("\n🔍 Schema Change Analysis\n");
+      console.log("\nðŸ” Schema Change Analysis\n");
       console.log(`From: ${fromHash.substring(0, 8)}...`);
       console.log(`To: ${toHash.substring(0, 8)}...`);
       console.log(`Steps: ${steps.length}\n`);
 
       console.log("Safety Assessment:");
-      const safetyEmoji = assessment.level === SafetyLevel.SAFE ? "✅" :
-                          assessment.level === SafetyLevel.REVIEW ? "⚠️" : "🚨";
+      const safetyEmoji = assessment.level === SafetyLevel.SAFE ? "âœ…" :
+                          assessment.level === SafetyLevel.REVIEW ? "âš ï¸" : "ðŸš¨";
       console.log(`  ${safetyEmoji} Level: ${assessment.level}`);
       if (assessment.reasons.length > 0) {
         console.log("  Reasons:");

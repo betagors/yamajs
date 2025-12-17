@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { deleteTodo } from "./deleteTodo";
-import type { DeleteTodoHandlerContext } from "@yama/gen";
+import type { DeleteTodoHandlerContext } from "@yamajs/gen";
 
 describe("deleteTodo Handler", () => {
   let mockContext: Partial<DeleteTodoHandlerContext>;

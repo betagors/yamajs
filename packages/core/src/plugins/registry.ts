@@ -5,8 +5,6 @@ import {
   ensurePluginMigrationTables,
   getInstalledPluginVersion,
   getPendingPluginMigrations,
-  executePluginMigration,
-  updatePluginVersion,
   getPluginPackageDir,
 } from "./migrations.js";
 import { PluginContextImpl } from "./context.js";
@@ -198,13 +196,13 @@ export class PluginRegistry {
       const { validateSecurityPolicy, getSecurityWarnings } = await import("./security.js");
       const securityValidation = validateSecurityPolicy(manifest);
       const warnings = getSecurityWarnings(manifest);
-      
+
       if (securityValidation.warnings.length > 0 || warnings.length > 0) {
         for (const warning of [...securityValidation.warnings, ...warnings]) {
           console.warn(`⚠️  Security warning for ${packageName}: ${warning}`);
         }
       }
-      
+
       if (securityValidation.errors.length > 0) {
         throw new Error(
           `Security validation failed for plugin ${packageName}: ${securityValidation.errors.join(", ")}`
@@ -229,7 +227,7 @@ export class PluginRegistry {
 
     // Create context
     const pluginContext = this.createContext();
-    
+
     // Store context for later access to commands and tools
     this.pluginContexts.set(packageName, pluginContext);
 
@@ -239,22 +237,48 @@ export class PluginRegistry {
       trackPluginInit(packageName);
       let pluginApi = await plugin.init(pluginConfig, pluginContext);
       recordPluginInitialized(packageName);
-      
+
       // Auto-instrument plugin API if metrics service is available
       const metricsService = pluginContext.getService("metrics");
       if (metricsService && typeof metricsService.autoInstrument === "function") {
         pluginApi = metricsService.autoInstrument(packageName, pluginApi);
       }
-      
+
       this.pluginAPIs.set(packageName, pluginApi);
-      
+
+      // Register plugin's directives with the global directive registry
+      if (plugin.directives && typeof plugin.directives === "object") {
+        const { directiveRegistry } = await import("../directives/registry.js");
+
+        for (const [directiveName, directiveConfig] of Object.entries(plugin.directives)) {
+          try {
+            directiveRegistry.register({
+              name: directiveName,
+              pluginName: packageName,
+              targets: directiveConfig.targets,
+              argsSchema: directiveConfig.argsSchema,
+              description: directiveConfig.description,
+              onField: directiveConfig.onField as any,
+              onSchema: directiveConfig.onSchema as any,
+              transform: directiveConfig.transform as any,
+              validate: directiveConfig.validate as any,
+            });
+            console.log(`  📌 Registered directive ${directiveName} from ${packageName}`);
+          } catch (error) {
+            const msg = error instanceof Error ? error.message : String(error);
+            console.error(`  ❌ Failed to register directive ${directiveName}: ${msg}`);
+            // Don't throw - directive registration failures shouldn't stop plugin loading
+          }
+        }
+      }
+
       // Emit plugin loaded event
       pluginContext.emit("plugin:loaded", { name: packageName, plugin, api: pluginApi });
     } catch (error) {
       // Record error
       const err = error instanceof Error ? error : new Error(String(error));
       recordPluginError(packageName, err);
-      
+
       // If init fails, still keep plugin registered but mark API as null
       this.pluginAPIs.set(packageName, null);
       pluginContext.emit("plugin:error", { name: packageName, error: err });
@@ -267,19 +291,19 @@ export class PluginRegistry {
         const dbConnection = await this.getDatabaseConnection();
         if (dbConnection) {
           const { sql } = dbConnection;
-          
+
           // Ensure migration tables exist
           await ensurePluginMigrationTables(sql);
-          
+
           // Get current installed version
           const installedVersion = await getInstalledPluginVersion(
             packageName,
             sql
           );
-          
+
           // Get plugin version
           const currentVersion = plugin.version || "0.0.0";
-          
+
           // Get pending migrations
           const pending = await getPendingPluginMigrations(
             plugin,
@@ -287,8 +311,8 @@ export class PluginRegistry {
             installedVersion,
             currentVersion
           );
-          
-          // Execute migrations
+
+          // Execute migrations using the new runner (Phase 1 safety)
           if (pending.length > 0) {
             const packageDir = this.packageDirs.get(packageName);
             if (!packageDir) {
@@ -296,61 +320,42 @@ export class PluginRegistry {
                 `Cannot run migrations for ${packageName}: package directory not found`
               );
             } else {
-              console.log(
-                `🔄 Running ${pending.length} migration(s) for ${packageName}...`
-              );
-              
-              for (const migration of pending) {
-                try {
-                  // Call onBeforeMigrate hook if present
-                  if (plugin.onBeforeMigrate) {
-                    await plugin.onBeforeMigrate(
-                      migration.fromVersion,
-                      migration.toVersion
-                    );
-                  }
-                  
-                  // Execute migration
-                  await executePluginMigration(migration, sql, packageDir);
-                  
-                  console.log(
-                    `  ✅ Migrated ${packageName} from ${migration.fromVersion} to ${migration.toVersion}`
-                  );
-                  
-                  // Call onAfterMigrate hook if present
-                  if (plugin.onAfterMigrate) {
-                    await plugin.onAfterMigrate(
-                      migration.fromVersion,
-                      migration.toVersion
-                    );
-                  }
-                } catch (error) {
-                  const err = error instanceof Error ? error : new Error(String(error));
-                  
-                  // Call onMigrationError hook if present
-                  if (plugin.onMigrationError) {
-                    await plugin.onMigrationError(
-                      err,
-                      migration.fromVersion,
-                      migration.toVersion
-                    );
-                  }
-                  
-                  console.error(
-                    `  ❌ Migration failed for ${packageName} from ${migration.fromVersion} to ${migration.toVersion}: ${err.message}`
-                  );
-                  // Don't throw - allow plugin to load even if migration fails
-                  // This allows manual intervention
+              // Import and use the migration runner
+              const { MigrationRunner } = await import("./migration-runner.js");
+
+              const runner = new MigrationRunner(sql, {
+                transactional: true,  // Use transactions
+                force: true,          // Auto-approve during plugin load (CLI prompts separately)
+                logger: {
+                  info: (msg: string) => console.log(`[${packageName}] ${msg}`),
+                  warn: (msg: string) => console.warn(`[${packageName}] ⚠️  ${msg}`),
+                  error: (msg: string) => console.error(`[${packageName}] ❌ ${msg}`),
+                },
+              });
+
+              console.log(`🔄 Running ${pending.length} migration(s) for ${packageName}...`);
+
+              const result = await runner.run(plugin, manifest, pending, packageDir);
+
+              if (result.success) {
+                console.log(
+                  `  ✅ Successfully ran ${result.migrationsRun} migration(s) for ${packageName} (${result.duration}ms)`
+                );
+              } else if (result.failedMigration) {
+                console.error(
+                  `  ❌ Migration failed for ${packageName} at version ${result.failedMigration.version}: ${result.failedMigration.error.message}`
+                );
+                if (result.rolledBack) {
+                  console.log(`  ↩️  All migrations rolled back`);
                 }
               }
-              
-              // Update version record if at least one migration succeeded
-              try {
-                await updatePluginVersion(packageName, currentVersion, sql);
-              } catch (error) {
-                console.warn(
-                  `Failed to update version record for ${packageName}: ${error instanceof Error ? error.message : String(error)}`
-                );
+
+              // Log safety analysis if there were warnings
+              if (!result.safetyAnalysis.safe) {
+                console.warn(`  ⚠️  Safety warnings detected:`);
+                for (const warning of result.safetyAnalysis.warnings) {
+                  console.warn(`     ${warning}`);
+                }
               }
             }
           }

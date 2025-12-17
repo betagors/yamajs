@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "fs";
+﻿import { existsSync, readFileSync } from "fs";
 import { readYamaConfig, type YAMLError } from "../utils/file-utils.ts";
 import { findYamaConfig } from "../utils/project-detection.ts";
 import { 
@@ -7,7 +7,7 @@ import {
   type YamaEntities,
   entitiesToSchemas,
   mergeSchemas 
-} from "@betagors/yama-core";
+} from "@yamajs/core";
 
 interface ValidateOptions {
   config?: string;
@@ -24,11 +24,11 @@ export async function validateCommand(options: ValidateOptions): Promise<void> {
   const configPath = options.config || findYamaConfig() || "yama.yaml";
 
   if (!existsSync(configPath)) {
-    console.error(`❌ Config file not found: ${configPath}`);
+    console.error(`âŒ Config file not found: ${configPath}`);
     process.exit(1);
   }
 
-  console.log(`🔍 Validating ${configPath}...\n`);
+  console.log(`ðŸ” Validating ${configPath}...\n`);
 
   try {
     let config: {
@@ -55,7 +55,7 @@ export async function validateCommand(options: ValidateOptions): Promise<void> {
       config = readYamaConfig(configPath) as typeof config;
     } catch (error) {
       const yamlError = error as YAMLError;
-      let errorMessage = `❌ Failed to parse YAML: ${yamlError.message || String(error)}`;
+      let errorMessage = `âŒ Failed to parse YAML: ${yamlError.message || String(error)}`;
       
       if (yamlError.mark) {
         errorMessage += `\n   at line ${yamlError.mark.line + 1}, column ${yamlError.mark.column + 1}`;
@@ -98,7 +98,7 @@ export async function validateCommand(options: ValidateOptions): Promise<void> {
     if (!projectName) {
       const line = findFieldLine("name") || findFieldLine("project");
       errors.push({
-        message: "❌ Missing 'name' field (use 'name:' or 'project.name:')",
+        message: "âŒ Missing 'name' field (use 'name:' or 'project.name:')",
         line,
       });
       isValid = false;
@@ -107,7 +107,7 @@ export async function validateCommand(options: ValidateOptions): Promise<void> {
     if (!projectVersion) {
       const line = findFieldLine("version") || findFieldLine("project");
       errors.push({
-        message: "❌ Missing 'version' field (use 'version:' or 'project.version:')",
+        message: "âŒ Missing 'version' field (use 'version:' or 'project.version:')",
         line,
       });
       isValid = false;
@@ -159,7 +159,7 @@ export async function validateCommand(options: ValidateOptions): Promise<void> {
       const entitySchemas = entitiesToSchemas(config.entities);
       const convertedSchemas = config.schemas ? convertSchemaFormat(config.schemas) : undefined;
       allSchemas = mergeSchemas(convertedSchemas, entitySchemas);
-      console.log(`✅ Found ${Object.keys(config.entities).length} entity/entities (auto-generated ${Object.keys(entitySchemas).length} schema(s))`);
+      console.log(`âœ… Found ${Object.keys(config.entities).length} entity/entities (auto-generated ${Object.keys(entitySchemas).length} schema(s))`);
     } else if (config.schemas) {
       // Convert JSON Schema format (type: object, properties) to internal format (fields) if needed
       allSchemas = convertSchemaFormat(config.schemas);
@@ -174,7 +174,7 @@ export async function validateCommand(options: ValidateOptions): Promise<void> {
         const explicitSchemaCount = config.schemas ? Object.keys(config.schemas).length : 0;
         const entitySchemaCount = config.entities ? Object.keys(entitiesToSchemas(config.entities)).length : 0;
         if (explicitSchemaCount > 0) {
-          console.log(`✅ Found ${explicitSchemaCount} explicit schema(s)`);
+          console.log(`âœ… Found ${explicitSchemaCount} explicit schema(s)`);
         }
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
@@ -198,12 +198,12 @@ export async function validateCommand(options: ValidateOptions): Promise<void> {
           const isEntity = config.entities && refName in config.entities;
           if (isEntity) {
             errors.push({
-              message: `❌ Schema reference "${refName}" not found, but entity "${refName}" exists. Consider using the entity name directly or ensure the entity has an apiSchema defined.`,
+              message: `âŒ Schema reference "${refName}" not found, but entity "${refName}" exists. Consider using the entity name directly or ensure the entity has an apiSchema defined.`,
               line: refLine,
             });
           } else {
             errors.push({
-              message: `❌ ${errorMessage}`,
+              message: `âŒ ${errorMessage}`,
               line: refLine,
             });
           }
@@ -211,7 +211,7 @@ export async function validateCommand(options: ValidateOptions): Promise<void> {
         } else {
           // Other schema validation errors
           errors.push({
-            message: `❌ Schema validation error: ${errorMessage}`,
+            message: `âŒ Schema validation error: ${errorMessage}`,
           });
           isValid = false;
         }
@@ -234,7 +234,7 @@ export async function validateCommand(options: ValidateOptions): Promise<void> {
             }
           }
           errors.push({
-            message: `❌ Schema '${schemaName}' has no fields or properties`,
+            message: `âŒ Schema '${schemaName}' has no fields or properties`,
             line: schemaLine,
           });
           isValid = false;
@@ -257,7 +257,7 @@ export async function validateCommand(options: ValidateOptions): Promise<void> {
                     }
                     const isEntity = config.entities && refName in config.entities;
                     errors.push({
-                      message: `❌ Schema '${schemaName}' field '${fieldName}' uses deprecated $ref syntax. Use type: "${refName}" instead.${isEntity ? " (entity exists)" : ""}`,
+                      message: `âŒ Schema '${schemaName}' field '${fieldName}' uses deprecated $ref syntax. Use type: "${refName}" instead.${isEntity ? " (entity exists)" : ""}`,
                       line: refLine,
                     });
                     isValid = false;
@@ -284,12 +284,12 @@ export async function validateCommand(options: ValidateOptions): Promise<void> {
                         const isEntity = config.entities && baseType in config.entities;
                         if (isEntity) {
                           errors.push({
-                            message: `❌ Schema '${schemaName}' field '${fieldName}' references "${baseType}" which is an entity but not available as a schema. The entity should be auto-converted to a schema.`,
+                            message: `âŒ Schema '${schemaName}' field '${fieldName}' references "${baseType}" which is an entity but not available as a schema. The entity should be auto-converted to a schema.`,
                             line: refLine,
                           });
                         } else {
                           errors.push({
-                            message: `❌ Schema '${schemaName}' field '${fieldName}' references unknown schema: ${baseType} (in array type ${typeValue})`,
+                            message: `âŒ Schema '${schemaName}' field '${fieldName}' references unknown schema: ${baseType} (in array type ${typeValue})`,
                             line: refLine,
                           });
                         }
@@ -310,12 +310,12 @@ export async function validateCommand(options: ValidateOptions): Promise<void> {
                         const isEntity = config.entities && typeValue in config.entities;
                         if (isEntity) {
                           errors.push({
-                            message: `❌ Schema '${schemaName}' field '${fieldName}' references "${typeValue}" which is an entity but not available as a schema. The entity should be auto-converted to a schema.`,
+                            message: `âŒ Schema '${schemaName}' field '${fieldName}' references "${typeValue}" which is an entity but not available as a schema. The entity should be auto-converted to a schema.`,
                             line: refLine,
                           });
                         } else {
                           errors.push({
-                            message: `❌ Schema '${schemaName}' field '${fieldName}' references unknown schema: ${typeValue}`,
+                            message: `âŒ Schema '${schemaName}' field '${fieldName}' references unknown schema: ${typeValue}`,
                             line: refLine,
                           });
                         }
@@ -352,12 +352,12 @@ export async function validateCommand(options: ValidateOptions): Promise<void> {
         }
       }
     } else {
-      console.log("⚠️  No schemas defined");
+      console.log("âš ï¸  No schemas defined");
     }
 
     // Validate endpoints
     if (config.endpoints) {
-      console.log(`✅ Found ${config.endpoints.length} endpoint(s)`);
+      console.log(`âœ… Found ${config.endpoints.length} endpoint(s)`);
 
       for (let idx = 0; idx < config.endpoints.length; idx++) {
         const endpoint = config.endpoints[idx];
@@ -391,7 +391,7 @@ export async function validateCommand(options: ValidateOptions): Promise<void> {
 
         if (!endpoint.path) {
           errors.push({
-            message: `❌ Endpoint missing 'path' field`,
+            message: `âŒ Endpoint missing 'path' field`,
             line: endpointLine,
           });
           isValid = false;
@@ -399,7 +399,7 @@ export async function validateCommand(options: ValidateOptions): Promise<void> {
 
         if (!endpoint.method) {
           errors.push({
-            message: `❌ Endpoint ${endpoint.path || "unknown"} missing 'method' field`,
+            message: `âŒ Endpoint ${endpoint.path || "unknown"} missing 'method' field`,
             line: endpointLine,
           });
           isValid = false;
@@ -407,7 +407,7 @@ export async function validateCommand(options: ValidateOptions): Promise<void> {
 
         if (!endpoint.handler) {
           errors.push({
-            message: `❌ Endpoint ${endpoint.method} ${endpoint.path} missing 'handler' field`,
+            message: `âŒ Endpoint ${endpoint.method} ${endpoint.path} missing 'handler' field`,
             line: endpointLine,
           });
           isValid = false;
@@ -432,7 +432,7 @@ export async function validateCommand(options: ValidateOptions): Promise<void> {
               return true; // Entity will be auto-converted to schema
             }
             errors.push({
-              message: `❌ ${context} references unknown schema: ${baseType} (in array type ${type})`,
+              message: `âŒ ${context} references unknown schema: ${baseType} (in array type ${type})`,
               line: endpointLine,
             });
             return false;
@@ -449,7 +449,7 @@ export async function validateCommand(options: ValidateOptions): Promise<void> {
           }
           
           errors.push({
-            message: `❌ ${context} references unknown schema: ${type}`,
+            message: `âŒ ${context} references unknown schema: ${type}`,
             line: endpointLine,
           });
           return false;
@@ -469,12 +469,12 @@ export async function validateCommand(options: ValidateOptions): Promise<void> {
         }
       }
     } else {
-      console.log("⚠️  No endpoints defined");
+      console.log("âš ï¸  No endpoints defined");
     }
 
     // Display results
     if (errors.length > 0) {
-      console.log("\n❌ Validation errors:\n");
+      console.log("\nâŒ Validation errors:\n");
       errors.forEach(error => {
         const lineInfo = error.line ? ` (line ${error.line})` : "";
         console.log(`   ${error.message}${lineInfo}`);
@@ -483,14 +483,14 @@ export async function validateCommand(options: ValidateOptions): Promise<void> {
     }
 
     if (isValid) {
-      console.log("\n✅ Configuration is valid!");
+      console.log("\nâœ… Configuration is valid!");
       process.exit(0);
     } else {
-      console.log("\n❌ Configuration has errors");
+      console.log("\nâŒ Configuration has errors");
       process.exit(1);
     }
   } catch (error) {
-    console.error("❌ Validation failed:", error instanceof Error ? error.message : String(error));
+    console.error("âŒ Validation failed:", error instanceof Error ? error.message : String(error));
     process.exit(1);
   }
 }

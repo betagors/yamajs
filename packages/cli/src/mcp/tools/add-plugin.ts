@@ -1,10 +1,10 @@
-import { z } from "zod";
+﻿import { z } from "zod";
 import { addPluginCommand } from "../../commands/add-plugin.ts";
 import { executeCommand } from "../utils/output-capture.ts";
 
 const inputSchema = z.object({
   config: z.string().optional().describe("Path to yama.yaml configuration file"),
-  name: z.string().describe("Plugin package name (e.g., @betagors/yama-postgres)"),
+  name: z.string().describe("Plugin package name (e.g., @yamajs/postgres)"),
   configOnly: z.boolean().optional().describe("Only add to yama.yaml, don't install the package"),
 });
 
@@ -27,8 +27,8 @@ export const yamaAddPluginTool = {
         {
           type: "text" as const,
           text: result.success
-            ? `✅ Plugin added successfully\n\n${result.output}`
-            : `❌ Failed to add plugin\n\n${result.output}\n${result.error || ""}`,
+            ? `âœ… Plugin added successfully\n\n${result.output}`
+            : `âŒ Failed to add plugin\n\n${result.output}\n${result.error || ""}`,
         },
       ],
     };

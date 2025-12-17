@@ -10,3 +10,5 @@ export { createMockLogger, createTestPluginContext, mockPlugin, testPluginIntegr
 export { type PluginSecurityPolicy, type SecurityValidationResult, validateSecurityPolicy, isPluginTrusted, getSecurityWarnings, } from "./security.js";
 export { type PluginMetrics, type SummaryStats, type MetricsConfig, pluginMetricsCollector, trackPluginLoad, trackPluginInit, recordPluginLoaded, recordPluginInitialized, recordPluginAPICall, recordPluginError, } from "./metrics.js";
 export { type PluginDocumentation, generatePluginDocs, generateMarkdownDocs, generateHTMLDocs, } from "./docs-generator.js";
+export { PluginState, type PluginLifecycleEntry, type LifecycleManagerOptions, PluginLifecycleManager, createLifecycleManager, } from "./lifecycle.js";
+//# sourceMappingURL=index.d.ts.map

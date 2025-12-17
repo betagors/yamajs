@@ -20,4 +20,6 @@ export { validateSecurityPolicy, isPluginTrusted, getSecurityWarnings, } from ".
 export { pluginMetricsCollector, trackPluginLoad, trackPluginInit, recordPluginLoaded, recordPluginInitialized, recordPluginAPICall, recordPluginError, } from "./metrics.js";
 // Export documentation generator
 export { generatePluginDocs, generateMarkdownDocs, generateHTMLDocs, } from "./docs-generator.js";
+// Export plugin lifecycle manager
+export { PluginState, PluginLifecycleManager, createLifecycleManager, } from "./lifecycle.js";
 //# sourceMappingURL=index.js.map

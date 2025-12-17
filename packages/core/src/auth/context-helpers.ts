@@ -1,5 +1,5 @@
-/**
- * @betagors/yama-core - Auth Context Helpers
+﻿/**
+ * @yamajs/core - Auth Context Helpers
  * 
  * Factory functions to enhance AuthContext with permission helpers.
  */

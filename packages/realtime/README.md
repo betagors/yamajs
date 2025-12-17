@@ -1,11 +1,11 @@
-# @betagors/yama-realtime
+﻿# @yamajs/realtime
 
 Yama realtime/WebSocket plugin for enabling realtime features in your YAMA applications.
 
 ## Installation
 
 ```bash
-npm install @betagors/yama-realtime @fastify/websocket
+npm install @yamajs/realtime @fastify/websocket
 ```
 
 ## Configuration
@@ -14,7 +14,7 @@ Add the plugin to your `yama.yaml`:
 
 ```yaml
 plugins:
-  "@betagors/yama-realtime":
+  "@yamajs/realtime":
     path: /ws  # WebSocket endpoint path (default: /ws)
     redis: true  # Use Redis for pub/sub (optional, uses cache if available)
     dev:
@@ -53,7 +53,7 @@ realtime:
 In your handlers, use `context.realtime`:
 
 ```typescript
-import type { HandlerContext } from '@betagors/yama-core';
+import type { HandlerContext } from '@yamajs/core';
 
 export async function createProduct(context: HandlerContext) {
   const product = await context.entities.Product.create(context.body);
@@ -86,10 +86,10 @@ When `realtime.enabled: true` is set on an entity, events are automatically publ
 
 ## Client SDK
 
-Use `@betagors/yama-realtime-client` for client-side connections:
+Use `@yamajs/realtime-client` for client-side connections:
 
 ```typescript
-import { createYamaRealtimeClient } from '@betagors/yama-realtime-client';
+import { createYamaRealtimeClient } from '@yamajs/realtime-client';
 
 const client = createYamaRealtimeClient('ws://localhost:3000/ws', {
   token: 'your-jwt-token',

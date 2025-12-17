@@ -1,5 +1,5 @@
-/**
- * @betagors/yama-core - Plugin Lifecycle Manager
+﻿/**
+ * @yamajs/core - Plugin Lifecycle Manager
  * 
  * Standardized plugin lifecycle management with proper
  * initialization, validation, and error handling.
@@ -7,7 +7,7 @@
 
 import type { YamaPlugin, PluginContext, PluginManifest } from "./base.js";
 import { validateYamaPlugin, validatePluginConfig, validatePluginVersion } from "./validator.js";
-import { ErrorCodes } from "@betagors/yama-errors";
+import { ErrorCodes } from "@yamajs/errors";
 
 /**
  * Plugin state in lifecycle
@@ -23,6 +23,8 @@ export enum PluginState {
   Starting = "starting",
   /** Plugin is running */
   Running = "running",
+  /** [NEW] Plugin is ready (all plugins initialized, onReady complete) */
+  Ready = "ready",
   /** Plugin is stopping */
   Stopping = "stopping",
   /** Plugin is stopped */
@@ -69,7 +71,7 @@ export class PluginLifecycleManager {
   private plugins: Map<string, PluginLifecycleEntry> = new Map();
   private initOrder: string[] = [];
   private options: Required<LifecycleManagerOptions>;
-  
+
   constructor(options: LifecycleManagerOptions) {
     this.options = {
       failFast: false,
@@ -78,12 +80,12 @@ export class PluginLifecycleManager {
         info: console.log,
         warn: console.warn,
         error: console.error,
-        debug: () => {},
+        debug: () => { },
       },
       ...options,
     };
   }
-  
+
   /**
    * Register a plugin
    */
@@ -95,14 +97,14 @@ export class PluginLifecycleManager {
       (error as any).code = ErrorCodes.PLUGIN_CONFIG_INVALID;
       throw error;
     }
-    
+
     // Check if already registered
     if (this.plugins.has(plugin.name)) {
       const error = new Error(`Plugin ${plugin.name} is already registered`);
       (error as any).code = ErrorCodes.CONFLICT_EXISTS;
       throw error;
     }
-    
+
     // Validate version compatibility
     const versionResult = validatePluginVersion(plugin, this.options.coreVersion);
     if (!versionResult.valid) {
@@ -110,16 +112,16 @@ export class PluginLifecycleManager {
       (error as any).code = ErrorCodes.PLUGIN_VERSION_INCOMPATIBLE;
       throw error;
     }
-    
+
     // Register
     this.plugins.set(plugin.name, {
       plugin,
       state: PluginState.Registered,
     });
-    
+
     this.options.logger.debug(`Registered plugin: ${plugin.name}`);
   }
-  
+
   /**
    * Initialize a single plugin
    */
@@ -134,13 +136,13 @@ export class PluginLifecycleManager {
       (error as any).code = ErrorCodes.PLUGIN_NOT_FOUND;
       throw error;
     }
-    
+
     if (entry.state !== PluginState.Registered) {
       throw new Error(`Plugin ${name} is already ${entry.state}`);
     }
-    
+
     const { plugin } = entry;
-    
+
     // Validate config against manifest schema
     if (plugin.manifest) {
       const configValidation = validatePluginConfig(config, plugin.manifest);
@@ -151,10 +153,10 @@ export class PluginLifecycleManager {
         throw entry.error;
       }
     }
-    
+
     entry.state = PluginState.Initializing;
     const startTime = Date.now();
-    
+
     try {
       // Call onInit if defined
       if (plugin.onInit) {
@@ -163,25 +165,25 @@ export class PluginLifecycleManager {
           this.timeout(`Plugin ${name} onInit timeout`),
         ]);
       }
-      
+
       // Call init
       const api = await Promise.race([
         plugin.init(config, context),
         this.timeout(`Plugin ${name} init timeout`),
       ]);
-      
+
       entry.api = api;
       entry.state = PluginState.Initialized;
       entry.initTime = Date.now() - startTime;
-      
+
       this.initOrder.push(name);
       this.options.logger.info(`Initialized plugin: ${name} (${entry.initTime}ms)`);
-      
+
       return api;
     } catch (error) {
       entry.state = PluginState.Error;
       entry.error = error instanceof Error ? error : new Error(String(error));
-      
+
       // Call onError if defined
       if (plugin.onError) {
         try {
@@ -190,17 +192,17 @@ export class PluginLifecycleManager {
           // Ignore errors in error handler
         }
       }
-      
+
       this.options.logger.error(`Failed to initialize plugin ${name}:`, entry.error);
-      
+
       if (this.options.failFast) {
         throw entry.error;
       }
-      
+
       return null;
     }
   }
-  
+
   /**
    * Initialize all registered plugins
    */
@@ -209,10 +211,10 @@ export class PluginLifecycleManager {
     context: PluginContext
   ): Promise<Map<string, unknown>> {
     const apis = new Map<string, unknown>();
-    
+
     // Sort by dependencies if available
     const sorted = this.sortByDependencies();
-    
+
     for (const name of sorted) {
       const config = configs[name] || {};
       try {
@@ -226,10 +228,10 @@ export class PluginLifecycleManager {
         }
       }
     }
-    
+
     return apis;
   }
-  
+
   /**
    * Start a plugin
    */
@@ -238,14 +240,14 @@ export class PluginLifecycleManager {
     if (!entry) {
       throw new Error(`Plugin ${name} not found`);
     }
-    
+
     if (entry.state !== PluginState.Initialized) {
       throw new Error(`Plugin ${name} must be initialized before starting (current: ${entry.state})`);
     }
-    
+
     entry.state = PluginState.Starting;
     const startTime = Date.now();
-    
+
     try {
       if (entry.plugin.onStart) {
         await Promise.race([
@@ -253,15 +255,15 @@ export class PluginLifecycleManager {
           this.timeout(`Plugin ${name} onStart timeout`),
         ]);
       }
-      
+
       entry.state = PluginState.Running;
       entry.startTime = Date.now() - startTime;
-      
+
       this.options.logger.debug(`Started plugin: ${name} (${entry.startTime}ms)`);
     } catch (error) {
       entry.state = PluginState.Error;
       entry.error = error instanceof Error ? error : new Error(String(error));
-      
+
       if (entry.plugin.onError) {
         try {
           entry.plugin.onError(entry.error);
@@ -269,11 +271,11 @@ export class PluginLifecycleManager {
           // Ignore
         }
       }
-      
+
       throw entry.error;
     }
   }
-  
+
   /**
    * Start all initialized plugins
    */
@@ -285,7 +287,69 @@ export class PluginLifecycleManager {
       }
     }
   }
-  
+
+  /**
+   * [NEW] Call onReady on all plugins after ALL are initialized
+   * 
+   * This is the safe point to interact with other plugins.
+   * Runs in dependency order (dependencies ready before dependents).
+   * 
+   * @param context - Plugin context to pass to onReady hooks
+   */
+  async readyAll(context: PluginContext): Promise<{
+    success: boolean;
+    errors: Array<{ plugin: string; error: Error }>;
+  }> {
+    const errors: Array<{ plugin: string; error: Error }> = [];
+
+    for (const name of this.initOrder) {
+      const entry = this.plugins.get(name);
+      if (!entry) continue;
+
+      // Only call onReady on initialized/running plugins
+      if (entry.state !== PluginState.Initialized &&
+        entry.state !== PluginState.Running) {
+        continue;
+      }
+
+      if (entry.plugin.onReady) {
+        try {
+          await Promise.race([
+            entry.plugin.onReady(context),
+            this.timeout(`Plugin ${name} onReady timeout`),
+          ]);
+          entry.state = PluginState.Ready;
+          this.options.logger.debug(`Plugin ready: ${name}`);
+        } catch (error) {
+          const err = error instanceof Error ? error : new Error(String(error));
+          errors.push({ plugin: name, error: err });
+
+          if (entry.plugin.onError) {
+            try {
+              entry.plugin.onError(err);
+            } catch {
+              // Ignore
+            }
+          }
+
+          this.options.logger.warn(`Plugin ${name} onReady failed:`, err.message);
+
+          if (this.options.failFast) {
+            throw err;
+          }
+        }
+      } else {
+        // No onReady hook, mark as ready anyway
+        entry.state = PluginState.Ready;
+      }
+    }
+
+    return {
+      success: errors.length === 0,
+      errors,
+    };
+  }
+
   /**
    * Stop a plugin
    */
@@ -294,62 +358,122 @@ export class PluginLifecycleManager {
     if (!entry) {
       return; // Plugin not registered, nothing to stop
     }
-    
-    if (entry.state !== PluginState.Running && entry.state !== PluginState.Initialized) {
+
+    if (entry.state !== PluginState.Running &&
+      entry.state !== PluginState.Initialized &&
+      entry.state !== PluginState.Ready) {
       return; // Plugin not running
     }
-    
+
     entry.state = PluginState.Stopping;
-    
+
     try {
-      if (entry.plugin.onStop) {
+      // Try new onShutdown first, fall back to legacy onStop
+      if (entry.plugin.onShutdown) {
+        const context = this.createMinimalContext(name);
+        await Promise.race([
+          entry.plugin.onShutdown(context),
+          this.timeout(`Plugin ${name} onShutdown timeout`),
+        ]);
+      } else if (entry.plugin.onStop) {
         await Promise.race([
           entry.plugin.onStop(),
           this.timeout(`Plugin ${name} onStop timeout`),
         ]);
       }
-      
+
       entry.state = PluginState.Stopped;
       this.options.logger.debug(`Stopped plugin: ${name}`);
     } catch (error) {
       entry.state = PluginState.Error;
       entry.error = error instanceof Error ? error : new Error(String(error));
-      
+
       // Still mark as stopped even on error
       this.options.logger.warn(`Error stopping plugin ${name}:`, entry.error);
     }
   }
-  
+
   /**
    * Stop all plugins (in reverse init order)
+   * 
+   * [ENHANCED] Dependents shut down before their dependencies.
+   * Supports new onShutdown hook for graceful cleanup.
    */
-  async stopAll(): Promise<void> {
+  async stopAll(): Promise<{
+    success: boolean;
+    errors: Array<{ plugin: string; error: Error }>;
+  }> {
+    const errors: Array<{ plugin: string; error: Error }> = [];
     const reversed = [...this.initOrder].reverse();
+
     for (const name of reversed) {
-      await this.stopPlugin(name);
+      try {
+        await this.stopPlugin(name);
+      } catch (error) {
+        const err = error instanceof Error ? error : new Error(String(error));
+        errors.push({ plugin: name, error: err });
+      }
     }
+
+    return {
+      success: errors.length === 0,
+      errors,
+    };
   }
-  
+
+  /**
+   * Create minimal context for shutdown (doesn't need full context)
+   */
+  private createMinimalContext(pluginName: string): PluginContext {
+    return {
+      config: {},
+      projectDir: process.cwd(),
+      logger: this.options.logger,
+      getPlugin: (name: string) => this.plugins.get(name)?.plugin ?? null,
+      getPluginAPI: (name: string) => this.plugins.get(name)?.api ?? null,
+      getPluginsByCategory: () => [],
+      registerService: () => { },
+      getService: () => null,
+      hasService: () => false,
+      getMiddlewareRegistry: () => { throw new Error("Middleware not available during shutdown"); },
+      registerCLICommand: () => { },
+      registerMCPTool: () => { },
+      emit: () => { },
+      on: () => { },
+      off: () => { },
+      once: () => { },
+    };
+  }
+
+
   /**
    * Health check all plugins
+   * 
+   * [ENHANCED] Now includes latency tracking for Kubernetes probes
    */
   async healthCheck(): Promise<Map<string, {
     healthy: boolean;
     state: PluginState;
+    latency?: number;
     details?: Record<string, unknown>;
     error?: string;
   }>> {
     const results = new Map();
-    
+
     for (const [name, entry] of this.plugins) {
-      let healthy = entry.state === PluginState.Running || entry.state === PluginState.Initialized;
+      let healthy = entry.state === PluginState.Running ||
+        entry.state === PluginState.Initialized ||
+        entry.state === PluginState.Ready;
       let details: Record<string, unknown> | undefined;
       let error: string | undefined;
-      
+      let latency: number | undefined;
+
       // Call plugin health check if available
       if (entry.plugin.onHealthCheck && healthy) {
         try {
+          const start = Date.now();
           const result = await entry.plugin.onHealthCheck();
+          latency = result.latency ?? (Date.now() - start);
           healthy = result.healthy;
           details = result.details;
           error = result.error;
@@ -358,39 +482,40 @@ export class PluginLifecycleManager {
           error = e instanceof Error ? e.message : String(e);
         }
       }
-      
+
       results.set(name, {
         healthy,
         state: entry.state,
+        latency,
         details,
         error: error || entry.error?.message,
       });
     }
-    
+
     return results;
   }
-  
+
   /**
    * Get plugin state
    */
   getState(name: string): PluginState | null {
     return this.plugins.get(name)?.state ?? null;
   }
-  
+
   /**
    * Get plugin API
    */
   getAPI(name: string): unknown | null {
     return this.plugins.get(name)?.api ?? null;
   }
-  
+
   /**
    * Get all plugin entries
    */
   getAll(): Map<string, PluginLifecycleEntry> {
     return new Map(this.plugins);
   }
-  
+
   /**
    * Sort plugins by dependencies (topological sort)
    */
@@ -398,15 +523,15 @@ export class PluginLifecycleManager {
     const result: string[] = [];
     const visited = new Set<string>();
     const visiting = new Set<string>();
-    
+
     const visit = (name: string) => {
       if (visited.has(name)) return;
       if (visiting.has(name)) {
         throw new Error(`Circular dependency detected: ${name}`);
       }
-      
+
       visiting.add(name);
-      
+
       const entry = this.plugins.get(name);
       if (entry?.plugin.manifest?.dependencies?.plugins) {
         for (const dep of entry.plugin.manifest.dependencies.plugins) {
@@ -415,19 +540,19 @@ export class PluginLifecycleManager {
           }
         }
       }
-      
+
       visiting.delete(name);
       visited.add(name);
       result.push(name);
     };
-    
+
     for (const name of this.plugins.keys()) {
       visit(name);
     }
-    
+
     return result;
   }
-  
+
   /**
    * Create timeout promise
    */
@@ -449,4 +574,124 @@ export function createLifecycleManager(
   options: LifecycleManagerOptions
 ): PluginLifecycleManager {
   return new PluginLifecycleManager(options);
+}
+
+/**
+ * [NEW] Register graceful shutdown handlers
+ * 
+ * Automatically calls stopAll on SIGTERM/SIGINT for clean shutdown.
+ * Essential for Kubernetes/Docker deployments.
+ * 
+ * @param manager - The lifecycle manager
+ * @param options - Shutdown options
+ */
+export function registerGracefulShutdown(
+  manager: PluginLifecycleManager,
+  options: {
+    timeout?: number;
+    logger?: {
+      log(message: string, ...args: unknown[]): void;
+      error(message: string, ...args: unknown[]): void;
+    };
+  } = {}
+): void {
+  const { timeout = 30000, logger = console } = options;
+  let isShuttingDown = false;
+
+  const shutdown = async (signal: string) => {
+    if (isShuttingDown) return;
+    isShuttingDown = true;
+
+    logger.log(`\n[Lifecycle] Received ${signal}, starting graceful shutdown...`);
+
+    const shutdownTimeout = setTimeout(() => {
+      logger.error("[Lifecycle] Shutdown timeout exceeded, forcing exit");
+      process.exit(1);
+    }, timeout);
+
+    try {
+      const result = await manager.stopAll();
+
+      if (result.success) {
+        logger.log("[Lifecycle] ✅ Graceful shutdown completed");
+      } else {
+        logger.error("[Lifecycle] ⚠️ Shutdown completed with errors:");
+        for (const { plugin, error } of result.errors) {
+          logger.error(`  - ${plugin}: ${error.message}`);
+        }
+      }
+    } catch (error) {
+      logger.error("[Lifecycle] ❌ Shutdown failed:", error);
+    } finally {
+      clearTimeout(shutdownTimeout);
+      process.exit(0);
+    }
+  };
+
+  process.on("SIGTERM", () => shutdown("SIGTERM"));
+  process.on("SIGINT", () => shutdown("SIGINT"));
+}
+
+/**
+ * [NEW] Aggregate health check result
+ * 
+ * Useful for /health endpoint responses
+ */
+export interface AggregatedHealthResult {
+  healthy: boolean;
+  timestamp: string;
+  plugins: Record<string, {
+    healthy: boolean;
+    state: PluginState;
+    latency?: number;
+    error?: string;
+  }>;
+  summary: {
+    total: number;
+    healthy: number;
+    unhealthy: number;
+  };
+}
+
+/**
+ * [NEW] Convert health check map to aggregated result
+ */
+export function aggregateHealthCheck(
+  healthMap: Map<string, {
+    healthy: boolean;
+    state: PluginState;
+    latency?: number;
+    details?: Record<string, unknown>;
+    error?: string;
+  }>
+): AggregatedHealthResult {
+  const plugins: AggregatedHealthResult["plugins"] = {};
+  let healthyCount = 0;
+  let unhealthyCount = 0;
+
+  for (const [name, result] of healthMap) {
+    plugins[name] = {
+      healthy: result.healthy,
+      state: result.state,
+      latency: result.latency,
+      error: result.error,
+    };
+
+    if (result.healthy) {
+      healthyCount++;
+    } else {
+      unhealthyCount++;
+    }
+  }
+
+  return {
+    healthy: unhealthyCount === 0,
+    timestamp: new Date().toISOString(),
+    plugins,
+    summary: {
+      total: healthMap.size,
+      healthy: healthyCount,
+      unhealthy: unhealthyCount,
+    },
+  };
 }

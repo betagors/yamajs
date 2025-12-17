@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, writeFileSync } from "fs";
+﻿import { existsSync, readFileSync, writeFileSync } from "fs";
 import { join, dirname, resolve, relative } from "path";
 
 /**
@@ -58,13 +58,13 @@ export function updateTypeScriptPaths(configDir: string): void {
       "@gen/db": [".yama/gen/db"],
       "@gen/sdk": [".yama/gen/sdk"],
       "@gen/types": [".yama/gen/types.ts"],
-      "@yama/gen": [".yama/gen/index.ts"],
+      "@yamajs/gen": [".yama/gen/index.ts"],
     };
 
-    // Add @betagors/yama-core path if we're in a monorepo
+    // Add @yamajs/core path if we're in a monorepo
     // Otherwise, it should resolve from node_modules automatically
     if (yamaCorePath) {
-      yamaPaths["@betagors/yama-core"] = [yamaCorePath];
+      yamaPaths["@yamajs/core"] = [yamaCorePath];
     }
 
     tsconfig.compilerOptions.paths = {
@@ -76,7 +76,7 @@ export function updateTypeScriptPaths(configDir: string): void {
     writeFileSync(tsconfigPath, JSON.stringify(tsconfig, null, 2) + "\n", "utf-8");
   } catch (error) {
     // Silently fail if tsconfig.json is invalid or can't be updated
-    console.warn(`⚠️  Could not update tsconfig.json: ${error instanceof Error ? error.message : String(error)}`);
+    console.warn(`âš ï¸  Could not update tsconfig.json: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 

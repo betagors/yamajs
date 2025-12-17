@@ -45,3 +45,4 @@ export declare function createMergeSnapshot(configDir: string, baseHash: string,
     createdBy: string;
     description?: string;
 }): Snapshot;
+//# sourceMappingURL=merge.d.ts.map

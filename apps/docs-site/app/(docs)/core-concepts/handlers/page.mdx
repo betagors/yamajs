@@ -5,7 +5,7 @@ Handlers contain your business logic. They're TypeScript functions that receive 
 ## Basic Handler
 
 ```typescript
-import { HandlerContext } from '@betagors/yama-core';
+import { HandlerContext } from '@yamajs/core';
 
 export async function listTodos(context: HandlerContext) {
   const todos = await context.entities.Todo.findAll();
