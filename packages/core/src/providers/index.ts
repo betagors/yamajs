@@ -137,3 +137,11 @@ export {
 } from './handler-context.js';
 
 export type { HandlerContextProviders } from './handler-context.js';
+
+// Email UI for development
+export {
+    createEmailUIHandlers,
+    registerEmailUIRoutes,
+} from './email-ui.js';
+
+export type { EmailUIRouteHandlers } from './email-ui.js';

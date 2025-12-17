@@ -44,8 +44,18 @@ import {
   setEnvProvider,
   setCryptoProvider,
   setPasswordHasher,
+  // Provider system (v1.0)
+  initializeProvidersFromConfig,
+  shutdownProvidersSystem,
+  getProviders,
+  createRequestContext,
+  createProviderHealthHandler,
+  registerEmailUIRoutes,
+  type RawProvidersConfig,
+  type ProviderAPIs,
 } from "@yamajs/core";
 import { createFastifyAdapter } from "@yamajs/fastify";
+
 import yaml from "js-yaml";
 import { readFileSync, existsSync } from "fs";
 import { join, dirname } from "path";
@@ -183,11 +193,24 @@ export async function startYamaNodeRuntime(
       // Resolve environment variables in config
       config = resolveEnvVars(config as Record<string, unknown>) as YamaConfig;
 
-      console.log("âœ… Loaded YAML config");
+      console.log("✅ Loaded YAML config");
 
       // Set registry configuration
       configDir = dirname(yamlConfigPath || process.cwd());
       setPluginRegistryConfig(config as Record<string, unknown>, configDir);
+
+      // ===== Initialize Provider System (v1.0) =====
+      // The provider system provides built-in services: config, logging, database, cache, email, auth, storage
+      if ((config as any).providers) {
+        try {
+          const providersConfig = (config as any).providers as RawProvidersConfig;
+          await initializeProvidersFromConfig(providersConfig, configDir);
+          console.log("✅ Provider system initialized");
+        } catch (error) {
+          console.warn("⚠️  Failed to initialize provider system:", error instanceof Error ? error.message : String(error));
+          // Continue - plugins can still provide these services
+        }
+      }
 
       // ===== Load plugins =====
       if (config.plugins) {
@@ -676,7 +699,36 @@ export async function startYamaNodeRuntime(
     return { config };
   });
 
+  // Provider system health endpoint (v1.0)
+  serverAdapter.registerRoute(server, "GET", "/__yama/health", async (request: HttpRequest, reply: HttpResponse) => {
+    try {
+      const health = await createProviderHealthHandler();
+      const isHealthy = health.status !== 'error';
+      reply.status(isHealthy ? 200 : 503).send(health);
+    } catch (error) {
+      reply.status(503).send({
+        status: 'error',
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  });
+
   const nodeEnv = process.env.NODE_ENV || "development";
+
+  // Email preview UI (dev mode only)
+  const isDevMode = nodeEnv === "development" || environment === "development";
+  const emailDevConfig = (config as any)?.providers?.email?.dev;
+  if (isDevMode && emailDevConfig?.capture !== false) {
+    const emailUIPath = emailDevConfig?.uiPath || "/__yama/emails";
+    try {
+      registerEmailUIRoutes(serverAdapter, server, emailUIPath);
+      console.log(`✅ Email preview UI: GET ${emailUIPath}`);
+    } catch (error) {
+      console.warn("⚠️  Failed to register email UI routes:", error instanceof Error ? error.message : String(error));
+    }
+  }
+
+
   const exposeIr = nodeEnv !== "production" || process.env.YAMA_EXPOSE_IR === "true";
   if (exposeIr) {
     serverAdapter.registerRoute(server, "GET", "/yama/ir", async (request: HttpRequest, reply: HttpResponse) => {
@@ -1032,14 +1084,25 @@ export async function startYamaNodeRuntime(
           try {
             await plugin.onStop();
           } catch (error) {
-            console.warn(`âš ï¸  Plugin ${plugin.name} onStop hook failed:`, error instanceof Error ? error.message : String(error));
+            console.warn(`⚠️  Plugin ${plugin.name} onStop hook failed:`, error instanceof Error ? error.message : String(error));
           }
         }
       }
 
+      // Stop HTTP server
       await serverAdapter?.stop(server);
+
+      // Close database adapter (legacy)
       if (dbAdapter) {
         await dbAdapter.close();
+      }
+
+      // Shutdown provider system (v1.0)
+      try {
+        await shutdownProvidersSystem();
+        console.log("✅ Provider system stopped");
+      } catch (error) {
+        console.warn("⚠️  Provider shutdown error:", error instanceof Error ? error.message : String(error));
       }
     },
     port
