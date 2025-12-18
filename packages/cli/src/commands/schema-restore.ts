@@ -1,8 +1,8 @@
 ﻿import { existsSync } from "fs";
 import { findYamaConfig } from "../utils/project-detection.ts";
 import { readYamaConfig, getConfigDir } from "../utils/file-utils.ts";
-import { loadEnvFile, resolveEnvVars } from "@yamajs/core";
-import type { DatabaseConfig } from "@yamajs/core";
+import { loadEnvFile, resolveEnvVars } from "@yamajs/kernel";
+import type { DatabaseConfig } from "@yamajs/kernel";
 import { getDatabasePluginAndConfig } from "../utils/db-plugin.ts";
 import { success, error, info, printTable } from "../utils/cli-utils.ts";
 import { confirm } from "../utils/interactive.ts";

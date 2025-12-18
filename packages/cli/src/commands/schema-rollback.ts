@@ -5,8 +5,8 @@ import { findYamaConfig } from "../utils/project-detection.ts";
 import { getConfigDir, readYamaConfig } from "../utils/file-utils.ts";
 import { success, error, info, warning, printBox, printTable, formatDuration, createSpinner } from "../utils/cli-utils.ts";
 import { confirm } from "../utils/interactive.ts";
-import type { DatabaseConfig, MigrationStepUnion } from "@yamajs/core";
-import { resolveEnvVars, loadEnvFile } from "@yamajs/core";
+import type { DatabaseConfig, MigrationStepUnion } from "@yamajs/kernel";
+import { resolveEnvVars, loadEnvFile } from "@yamajs/kernel";
 import { getDatabasePluginAndConfig } from "../utils/db-plugin.ts";
 
 interface SchemaRollbackOptions {

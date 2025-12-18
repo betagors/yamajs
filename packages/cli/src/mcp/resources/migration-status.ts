@@ -2,8 +2,8 @@
 import { join, resolve } from "path";
 import { findYamaConfig } from "../../utils/project-detection.ts";
 import { readYamaConfig, getConfigDir } from "../../utils/file-utils.ts";
-import { loadEnvFile, resolveEnvVars } from "@yamajs/core";
-import type { DatabaseConfig } from "@yamajs/core";
+import { loadEnvFile, resolveEnvVars } from "@yamajs/kernel";
+import type { DatabaseConfig } from "@yamajs/kernel";
 import { getDatabasePlugin } from "../../utils/db-plugin.ts";
 import { getMCPWorkingDir } from "../utils/workdir.ts";
 

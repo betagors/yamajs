@@ -10,7 +10,7 @@ import {
   loadBackupMetadata,
   getSnapshotsBackupDir,
   getBackupManifestsDir,
-} from "@yamajs/core";
+} from "@yamajs/kernel";
 import { info, error, success, warning } from "../utils/cli-utils.ts";
 import { table } from "table";
 import { confirm } from "../utils/interactive.ts";

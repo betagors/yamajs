@@ -1,13 +1,13 @@
-﻿# @yamajs/smtp
+﻿# @yamajs/email-smtp
 
 SMTP email plugin for Yama with Mailpit support for local development.
 
 ## Installation
 
 ```bash
-npm install @yamajs/smtp nodemailer
+npm install @yamajs/email-smtp nodemailer
 # or
-pnpm add @yamajs/smtp nodemailer
+pnpm add @yamajs/email-smtp nodemailer
 ```
 
 ## Configuration
@@ -16,7 +16,7 @@ pnpm add @yamajs/smtp nodemailer
 
 ```yaml
 plugins:
-  "@yamajs/smtp":
+  "@yamajs/email-smtp":
     host: localhost
     port: 1025  # Mailpit default SMTP port
     from: noreply@example.com
@@ -28,7 +28,7 @@ Mailpit is automatically detected when using `localhost:1025`. No authentication
 
 ```yaml
 plugins:
-  "@yamajs/smtp":
+  "@yamajs/email-smtp":
     host: smtp.example.com
     port: 587
     secure: false

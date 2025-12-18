@@ -1,12 +1,12 @@
 ﻿import { existsSync } from "fs";
 import { findYamaConfig } from "../utils/project-detection.ts";
 import { getConfigDir, readYamaConfig } from "../utils/file-utils.ts";
-import { resolveEnvVars, loadEnvFile } from "@yamajs/core";
+import { resolveEnvVars, loadEnvFile } from "@yamajs/kernel";
 import { success, error, info } from "../utils/cli-utils.ts";
-import { loadPlugin, setPluginRegistryConfig, pluginRegistry } from "@yamajs/core";
+import { loadPlugin, setPluginRegistryConfig, pluginRegistry } from "@yamajs/kernel";
 import {
   pluginMetricsCollector,
-} from "@yamajs/core";
+} from "@yamajs/kernel";
 import { table } from "table";
 
 interface PluginMetricsOptions {

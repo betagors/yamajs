@@ -1,6 +1,6 @@
 ﻿import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { pgliteAdapter } from "./adapter.js";
-import type { DatabaseConfig } from "@yamajs/core";
+import type { DatabaseConfig } from "@yamajs/kernel";
 
 // Mock PGlite
 vi.mock("@electric-sql/pglite", () => {

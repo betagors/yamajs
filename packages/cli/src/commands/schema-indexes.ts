@@ -9,7 +9,7 @@ import {
     checkTableIndexHealth,
     loadEnvFile,
     resolveEnvVars,
-} from "@yamajs/core";
+} from "@yamajs/kernel";
 import { info, error, success, warning } from "../utils/cli-utils.ts";
 import { confirm } from "../utils/interactive.ts";
 import { getDatabasePlugin } from "../utils/db-plugin.ts";

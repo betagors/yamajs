@@ -19,4 +19,3 @@ import { YamaError, YamaErrorOptions } from '../base.js';
 export declare class ConfigurationError extends YamaError {
     constructor(message: string, options?: Omit<YamaErrorOptions, 'statusCode'>);
 }
-//# sourceMappingURL=config.d.ts.map

@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "@yamajs/ci",
   "version": "0.1.0-alpha.0",
   "type": "module",
@@ -43,9 +43,9 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
-    "@yamajs/core": "workspace:*",
     "js-yaml": "^4.1.0",
-    "zod": "^3.22.4"
+    "zod": "^3.22.4",
+    "@yamajs/kernel": "workspace:*"
   },
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",

@@ -16,7 +16,7 @@ A unified, extensible cache abstraction layer for Yama applications.
 ```bash
 pnpm add @yamajs/cache
 # Optional: add specific adapters
-# pnpm add @yamajs/redis
+# pnpm add @yamajs/cache-redis
 ```
 
 ## Quick Start
@@ -24,7 +24,7 @@ pnpm add @yamajs/cache
 ```typescript
 import { Cache, createMemoryAdapter } from '@yamajs/cache';
 
-// Create adapter (or use createRedisAdapter from @yamajs/redis)
+// Create adapter (or use createRedisAdapter from @yamajs/cache-redis)
 const adapter = createMemoryAdapter();
 
 // Create cache instance
@@ -61,7 +61,7 @@ Then register the provider and use it:
 
 ```typescript
 import { registerCacheProvider, createCacheFromConfig } from '@yamajs/cache';
-import { createRedisAdapter } from '@yamajs/redis'; // hypothetical package
+import { createRedisAdapter } from '@yamajs/cache-redis'; // hypothetical package
 
 // Register provider (usually done by plugin)
 registerCacheProvider('redis', createRedisAdapter);

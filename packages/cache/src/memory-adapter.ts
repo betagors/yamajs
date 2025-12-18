@@ -1,4 +1,4 @@
-import type { CacheAdapter } from '@yamajs/core';
+import type { CacheAdapter } from '@yamajs/kernel';
 
 interface MemoryCacheEntry<T> {
     value: T;

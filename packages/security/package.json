@@ -1,5 +1,5 @@
-﻿{
-  "name": "@yamajs/security",
+{
+  "name": "@yamajs/plugin-security",
   "version": "0.1.0-alpha.0",
   "type": "module",
   "description": "Yama security plugin with CORS, CSRF protection, security headers, and input sanitization",
@@ -43,7 +43,7 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
-    "@yamajs/core": "workspace:*"
+    "@yamajs/kernel": "workspace:*"
   },
   "devDependencies": {
     "rimraf": "^5.0.0",
@@ -55,12 +55,3 @@
     "node": ">=18"
   }
 }
-
-
-
-
-
-
-
-
-

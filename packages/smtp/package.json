@@ -1,5 +1,5 @@
-﻿{
-  "name": "@yamajs/smtp",
+{
+  "name": "@yamajs/email-smtp",
   "version": "0.1.0-alpha.0",
   "type": "module",
   "description": "Yama SMTP email plugin with Mailpit support",
@@ -44,7 +44,7 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
-    "@yamajs/core": "workspace:*"
+    "@yamajs/kernel": "workspace:*"
   },
   "peerDependencies": {
     "nodemailer": "^6.9.0"
@@ -66,12 +66,3 @@
     "node": ">=18"
   }
 }
-
-
-
-
-
-
-
-
-

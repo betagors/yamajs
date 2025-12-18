@@ -1,8 +1,8 @@
-﻿# @yamajs/postgres
+﻿# @yamajs/db-postgres
 
 > PostgreSQL database adapter for Yama
 
-[![npm version](https://img.shields.io/npm/v/@yamajs/postgres.svg)](https://www.npmjs.com/package/@yamajs/postgres)
+[![npm version](https://img.shields.io/npm/v/@yamajs/db-postgres.svg)](https://www.npmjs.com/package/@yamajs/db-postgres)
 [![License: MPL-2.0](https://img.shields.io/badge/License-MPL_2.0-brightgreen.svg)](https://opensource.org/licenses/MPL-2.0)
 
 PostgreSQL database adapter for Yama that provides database connectivity, migrations, schema generation, and data snapshots using [Drizzle ORM](https://orm.drizzle.team/) and the [postgres](https://github.com/porsager/postgres) driver.
@@ -10,7 +10,7 @@ PostgreSQL database adapter for Yama that provides database connectivity, migrat
 ## Installation
 
 ```bash
-npm install @yamajs/postgres drizzle-orm postgres
+npm install @yamajs/db-postgres drizzle-orm postgres
 ```
 
 ## Usage
@@ -22,18 +22,18 @@ The recommended way to use this adapter is as a Yama plugin in your `yama.yaml`:
 ```yaml
 # yama.yaml
 plugins:
-  - @yamajs/postgres
+  - @yamajs/db-postgres
 
 # Or with configuration:
 plugins:
-  @yamajs/postgres:
+  @yamajs/db-postgres:
     url: ${DATABASE_URL}
 ```
 
 ### Programmatic Usage
 
 ```typescript
-import plugin from '@yamajs/postgres';
+import plugin from '@yamajs/db-postgres';
 
 // Initialize the plugin
 const pluginApi = await plugin.init({
@@ -50,7 +50,7 @@ const result = await adapter.query('SELECT * FROM users');
 ### Direct Adapter Usage
 
 ```typescript
-import { postgresqlAdapter } from '@yamajs/postgres';
+import { postgresqlAdapter } from '@yamajs/db-postgres';
 import { createDatabaseAdapter } from '@yamajs/core';
 
 // Register the adapter
@@ -71,7 +71,7 @@ await adapter.init({
 ### Database Client
 
 ```typescript
-import { initDatabase, getDatabase, closeDatabase } from '@yamajs/postgres';
+import { initDatabase, getDatabase, closeDatabase } from '@yamajs/db-postgres';
 
 await initDatabase({
   url: process.env.DATABASE_URL!
@@ -86,7 +86,7 @@ await closeDatabase();
 ### Drizzle Schema Generation
 
 ```typescript
-import { generateDrizzleSchema } from '@yamajs/postgres';
+import { generateDrizzleSchema } from '@yamajs/db-postgres';
 
 const schema = generateDrizzleSchema(entities);
 // Returns Drizzle schema definitions
@@ -99,7 +99,7 @@ import {
   generateMigrationSQL,
   generateMigrationFile,
   generateSQLFromSteps
-} from '@yamajs/postgres';
+} from '@yamajs/db-postgres';
 
 // Generate SQL from migration steps
 const sql = generateSQLFromSteps(steps, 'postgresql');
@@ -116,7 +116,7 @@ import {
   restoreFromSnapshot,
   listSnapshots,
   deleteSnapshot
-} from '@yamajs/postgres';
+} from '@yamajs/db-postgres';
 
 // Create a snapshot
 const snapshotId = await createDataSnapshot('users', {

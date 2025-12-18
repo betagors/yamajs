@@ -1,4 +1,4 @@
-﻿import { getPluginByCategory, loadPlugin, getPluginAPI, resolveEnvVars, type DatabaseConfig } from "@yamajs/core";
+﻿import { getPluginByCategory, loadPlugin, getPluginAPI, resolveEnvVars, type DatabaseConfig } from "@yamajs/kernel";
 import { getConfigDir } from "./file-utils.ts";
 
 /**

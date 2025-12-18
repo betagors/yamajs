@@ -2,7 +2,7 @@
 import { createSMTPTransport, isMailpitConfig, type SMTPConfig } from "./client.js";
 import { createEmailService, type EmailOptions } from "./service.js";
 import plugin from "./plugin.js";
-import type { PluginContext } from "@yamajs/core";
+import type { PluginContext } from "@yamajs/kernel";
 
 // Mock nodemailer
 vi.mock("nodemailer", () => {

@@ -9,8 +9,8 @@ import {
 import { existsSync } from "fs";
 import { findYamaConfig } from "../utils/project-detection.ts";
 import { getConfigDir, readYamaConfig } from "../utils/file-utils.ts";
-import { resolveEnvVars, loadEnvFile, setPluginRegistryConfig, loadPlugin, getAllMCPTools } from "@yamajs/core";
-import type { PluginMCPTool } from "@yamajs/core";
+import { resolveEnvVars, loadEnvFile, setPluginRegistryConfig, loadPlugin, getAllMCPTools } from "@yamajs/kernel";
+import type { PluginMCPTool } from "@yamajs/kernel";
 import { zodToJsonSchema } from "zod-to-json-schema";
 
 // Import tools

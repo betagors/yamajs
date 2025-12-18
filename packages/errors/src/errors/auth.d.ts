@@ -37,4 +37,3 @@ export declare class AuthenticationError extends YamaError {
 export declare class AuthorizationError extends YamaError {
     constructor(message: string, options?: Omit<YamaErrorOptions, 'statusCode'>);
 }
-//# sourceMappingURL=auth.d.ts.map

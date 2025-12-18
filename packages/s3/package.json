@@ -1,5 +1,5 @@
-﻿{
-  "name": "@yamajs/s3",
+{
+  "name": "@yamajs/storage-s3",
   "version": "0.1.0-alpha.0",
   "type": "module",
   "description": "Yama S3-compatible object storage adapter",
@@ -43,9 +43,9 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
-    "@yamajs/core": "workspace:*",
     "@aws-sdk/client-s3": "^3.490.0",
-    "@aws-sdk/s3-request-presigner": "^3.490.0"
+    "@aws-sdk/s3-request-presigner": "^3.490.0",
+    "@yamajs/kernel": "workspace:*"
   },
   "devDependencies": {
     "rimraf": "^5.0.0",
@@ -57,4 +57,3 @@
     "node": ">=18"
   }
 }
-

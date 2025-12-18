@@ -3,12 +3,12 @@ import { join } from "path";
 import { findYamaConfig } from "../utils/project-detection.ts";
 import { getConfigDir } from "../utils/file-utils.ts";
 import { success, error, info } from "../utils/cli-utils.ts";
-import { loadPlugin, loadPluginFromPackage } from "@yamajs/core";
+import { loadPlugin, loadPluginFromPackage } from "@yamajs/kernel";
 import {
   generatePluginDocs,
   generateMarkdownDocs,
   generateHTMLDocs,
-} from "@yamajs/core";
+} from "@yamajs/kernel";
 
 interface PluginDocsOptions {
   package: string;

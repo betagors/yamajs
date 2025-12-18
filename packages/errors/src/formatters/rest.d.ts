@@ -73,4 +73,3 @@ export declare function formatRestError(error: YamaError, options?: FormatRestEr
  * Get HTTP headers for a REST error response
  */
 export declare function getRestErrorHeaders(error: YamaError, requestId?: string): Record<string, string>;
-//# sourceMappingURL=rest.d.ts.map

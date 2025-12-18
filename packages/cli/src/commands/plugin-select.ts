@@ -1,7 +1,7 @@
 ﻿import { existsSync } from "fs";
 import { findYamaConfig } from "../utils/project-detection.ts";
 import { getConfigDir } from "../utils/file-utils.ts";
-import { loadPluginFromPackage } from "@yamajs/core";
+import { loadPluginFromPackage } from "@yamajs/kernel";
 
 interface PluginSelectionOptions {
   category?: string; // e.g., "database", "email", "storage"

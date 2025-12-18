@@ -1,4 +1,4 @@
-﻿import type { YamaPlugin } from "@yamajs/core";
+﻿import type { YamaPlugin } from "@yamajs/kernel";
 import { resolveAdminXConfig } from "./config.js";
 import { registerAdminXRoutes } from "./routes.js";
 import type { AdminXPluginAPI, AdminXPluginConfig } from "./types.js";

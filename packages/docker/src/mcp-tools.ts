@@ -1,5 +1,5 @@
 ﻿import { z } from "zod";
-import type { PluginMCPTool, MCPToolResult } from "@yamajs/core";
+import type { PluginMCPTool, MCPToolResult } from "@yamajs/kernel";
 import type { DockerPluginAPI } from "./plugin.js";
 
 /**

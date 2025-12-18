@@ -4,7 +4,7 @@
   UploadOptions,
   UploadResult,
   StorageMetadata,
-} from "@yamajs/core";
+} from "@yamajs/kernel";
 import {
   GetObjectCommand,
   PutObjectCommand,

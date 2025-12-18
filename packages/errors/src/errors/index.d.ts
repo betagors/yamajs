@@ -7,4 +7,3 @@ export { ConfigurationError } from './config.js';
 export { PluginError } from './plugin.js';
 export { ExternalServiceError, TimeoutError } from './external.js';
 export { MiddlewareError } from './middleware.js';
-//# sourceMappingURL=index.d.ts.map

@@ -1,5 +1,5 @@
 ﻿import inquirer from "inquirer";
-import type { MigrationStepUnion } from "@yamajs/core";
+import type { MigrationStepUnion } from "@yamajs/kernel";
 import { colors, printBox, printTable } from "./cli-utils.ts";
 
 /**

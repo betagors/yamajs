@@ -1,4 +1,4 @@
-﻿import type { YamaPlugin } from "@yamajs/core";
+﻿import type { YamaPlugin } from "@yamajs/kernel";
 import { RedisAdapter } from "./adapter";
 import { initRedis, getRedisClient, closeRedis, type RedisClient, type RedisConfig } from "./client";
 

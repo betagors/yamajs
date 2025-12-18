@@ -1,5 +1,5 @@
 ﻿import type { CorsConfig } from "./types.js";
-import type { HttpRequest } from "@yamajs/core";
+import type { HttpRequest } from "@yamajs/kernel";
 
 /**
  * Response-like object for collecting headers

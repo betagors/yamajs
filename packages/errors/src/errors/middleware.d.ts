@@ -19,4 +19,3 @@ import { YamaError, YamaErrorOptions } from '../base.js';
 export declare class MiddlewareError extends YamaError {
     constructor(message: string, options?: Omit<YamaErrorOptions, 'statusCode'>);
 }
-//# sourceMappingURL=middleware.d.ts.map

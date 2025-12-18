@@ -8,12 +8,12 @@
   HttpResponse,
   HandlerContext,
   ErrorContext,
-} from "@yamajs/core";
+} from "@yamajs/kernel";
 import {
   pluginMetricsCollector,
   recordPluginAPICall,
   recordPluginError,
-} from "@yamajs/core";
+} from "@yamajs/kernel";
 import {
   Counter,
   Gauge,

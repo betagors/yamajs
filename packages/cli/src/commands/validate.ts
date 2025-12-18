@@ -7,7 +7,7 @@ import {
   type YamaEntities,
   entitiesToSchemas,
   mergeSchemas 
-} from "@yamajs/core";
+} from "@yamajs/kernel";
 
 interface ValidateOptions {
   config?: string;

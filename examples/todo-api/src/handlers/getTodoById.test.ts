@@ -1,6 +1,6 @@
 ﻿import { describe, it, expect, beforeEach, vi } from "vitest";
 import { getTodoById } from "./getTodoById.ts";
-import type { HandlerContext } from "@yamajs/core";
+import type { HandlerContext } from "@yamajs/kernel";
 
 describe("getTodoById Handler", () => {
   let mockContext: Partial<HandlerContext>;

@@ -39,4 +39,3 @@ export declare class RateLimitError extends YamaError {
     constructor(message: string, options?: RateLimitErrorOptions);
     toJSON(): Record<string, unknown>;
 }
-//# sourceMappingURL=rate-limit.d.ts.map

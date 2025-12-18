@@ -1,6 +1,6 @@
 ﻿import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Storage } from './storage';
-import type { StorageAdapter, UploadResult, StorageMetadata } from '@yamajs/core';
+import type { StorageAdapter, UploadResult, StorageMetadata } from '@yamajs/kernel';
 
 // Mock adapter for testing
 function createMockAdapter(): StorageAdapter {

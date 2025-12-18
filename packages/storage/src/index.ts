@@ -40,4 +40,4 @@ export type {
     UploadOptions,
     UploadResult,
     StorageMetadata,
-} from '@yamajs/core';
+} from '@yamajs/kernel';

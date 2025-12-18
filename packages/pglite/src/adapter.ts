@@ -2,8 +2,8 @@
 import type {
   DatabaseAdapter,
   DatabaseConnection,
-} from "@yamajs/core";
-import type { DatabaseConfig, YamaEntities } from "@yamajs/core";
+} from "@yamajs/kernel";
+import type { DatabaseConfig, YamaEntities } from "@yamajs/kernel";
 import { generateDrizzleSchema } from "./drizzle-schema.ts";
 import { generateMigrationSQL } from "./migrations.ts";
 import { join } from "path";

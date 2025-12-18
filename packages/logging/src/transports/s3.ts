@@ -1,5 +1,5 @@
 ﻿import type { LogEntry, Transport, S3TransportConfig, LogFormat } from "../types.js";
-import type { StorageBucket } from "@yamajs/core";
+import type { StorageBucket } from "@yamajs/kernel";
 import { formatLogEntry } from "../formatters.js";
 
 /**

@@ -1,4 +1,4 @@
-﻿import type { YamaPlugin, PluginContext } from "@yamajs/core";
+﻿import type { YamaPlugin, PluginContext } from "@yamajs/kernel";
 import { createSMTPTransport, verifySMTPConnection, type SMTPConfig } from "./client.js";
 import { createEmailService, type EmailService } from "./service.js";
 

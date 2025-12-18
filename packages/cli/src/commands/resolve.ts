@@ -14,7 +14,7 @@ import {
   diffToSteps,
   resolveEnvVars,
   loadEnvFile,
-} from "@yamajs/core";
+} from "@yamajs/kernel";
 import { info, error, success, warning } from "../utils/cli-utils.ts";
 import { confirm } from "../utils/interactive.ts";
 

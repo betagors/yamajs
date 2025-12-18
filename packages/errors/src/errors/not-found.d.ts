@@ -15,4 +15,3 @@ import { YamaError, YamaErrorOptions } from '../base.js';
 export declare class NotFoundError extends YamaError {
     constructor(message: string, options?: Omit<YamaErrorOptions, 'statusCode'>);
 }
-//# sourceMappingURL=not-found.d.ts.map

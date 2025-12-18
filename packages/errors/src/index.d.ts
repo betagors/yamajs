@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @yamajs/errors
  *
  * Standardized error handling for YAMA applications.
@@ -28,4 +28,3 @@ export { ValidationError, type ValidationErrorOptions, AuthenticationError, Auth
 export { ErrorCodes, ErrorCodeToStatus, getStatusForCode, type ErrorCode, } from './codes.js';
 export { formatRestError, getRestErrorHeaders, type RestErrorResponse, type FormatRestErrorOptions, formatGraphQLError, formatGraphQLErrors, type GraphQLFormattedError, type GraphQLErrorLocation, type GraphQLErrorExtensions, type FormatGraphQLErrorOptions, formatMCPError, createMCPTextResult, createMCPJsonResult, type MCPToolResult, type MCPToolResultContent, type FormatMCPErrorOptions, } from './formatters/index.js';
 export { isYamaError, normalizeError, createError, wrapError, withSuggestions, getSafeErrorMessage, shouldLogError, getErrorLogLevel, } from './utils.js';
-//# sourceMappingURL=index.d.ts.map

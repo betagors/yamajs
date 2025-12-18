@@ -3,7 +3,7 @@ import { findYamaConfig } from "../../utils/project-detection.ts";
 import { existsSync } from "fs";
 import { resolve } from "path";
 import { getMCPWorkingDir } from "../utils/workdir.ts";
-import { normalizeApisConfig } from "@yamajs/core";
+import { normalizeApisConfig } from "@yamajs/kernel";
 
 export async function getEndpointsResource(uri: string): Promise<{
   contents: Array<{ uri: string; mimeType: string; text: string }>;

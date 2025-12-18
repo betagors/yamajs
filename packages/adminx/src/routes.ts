@@ -1,6 +1,6 @@
 ﻿import { escapeHtml, layout, renderKeyValueTable } from "./templates.js";
 import type { AdminXResolvedConfig, AdminXRouteArgs } from "./types.js";
-import type { EntityDefinition, EntityFieldDefinition, YamaEntities, YamaSchemas } from "@yamajs/core";
+import type { EntityDefinition, EntityFieldDefinition, YamaEntities, YamaSchemas } from "@yamajs/kernel";
 import { existsSync, readFileSync } from "fs";
 import { join } from "path";
 

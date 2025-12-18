@@ -35,4 +35,3 @@ export declare class DatabaseError extends YamaError {
 export declare class ConflictError extends YamaError {
     constructor(message: string, options?: Omit<YamaErrorOptions, 'statusCode'>);
 }
-//# sourceMappingURL=database.d.ts.map

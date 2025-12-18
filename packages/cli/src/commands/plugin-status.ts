@@ -1,17 +1,17 @@
 ﻿import { existsSync } from "fs";
 import { findYamaConfig } from "../utils/project-detection.ts";
 import { getConfigDir, readYamaConfig } from "../utils/file-utils.ts";
-import { resolveEnvVars, loadEnvFile } from "@yamajs/core";
+import { resolveEnvVars, loadEnvFile } from "@yamajs/kernel";
 import { success, error, info, warning } from "../utils/cli-utils.ts";
 import { getDatabasePlugin } from "../utils/db-plugin.ts";
-import { loadPlugin, getAllPlugins } from "@yamajs/core";
+import { loadPlugin, getAllPlugins } from "@yamajs/kernel";
 import {
   ensurePluginMigrationTables,
   getPluginMigrationHistory,
-} from "@yamajs/core";
+} from "@yamajs/kernel";
 import {
   getPluginMigrationStatus,
-} from "@yamajs/core";
+} from "@yamajs/kernel";
 import { table } from "table";
 
 interface PluginStatusOptions {

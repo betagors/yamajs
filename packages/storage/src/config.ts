@@ -1,5 +1,5 @@
 ﻿import { Storage } from './storage';
-import type { StorageAdapter } from '@yamajs/core';
+import type { StorageAdapter } from '@yamajs/kernel';
 
 /**
  * Storage configuration from yama.yaml

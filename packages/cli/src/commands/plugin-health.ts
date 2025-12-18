@@ -1,9 +1,9 @@
 ﻿import { existsSync } from "fs";
 import { findYamaConfig } from "../utils/project-detection.ts";
 import { getConfigDir, readYamaConfig } from "../utils/file-utils.ts";
-import { resolveEnvVars, loadEnvFile } from "@yamajs/core";
+import { resolveEnvVars, loadEnvFile } from "@yamajs/kernel";
 import { success, error, info, warning } from "../utils/cli-utils.ts";
-import { loadPlugin } from "@yamajs/core";
+import { loadPlugin } from "@yamajs/kernel";
 import { table } from "table";
 
 interface PluginHealthOptions {

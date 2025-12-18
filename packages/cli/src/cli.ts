@@ -1,6 +1,6 @@
 ﻿#!/usr/bin/env node
 import { Command } from "commander";
-import type { PluginCLICommand } from "@yamajs/core";
+import type { PluginCLICommand } from "@yamajs/kernel";
 import { createCommand } from "./commands/create.ts";
 import { devCommand } from "./commands/dev.ts";
 import { generateCommand } from "./commands/generate.ts";
@@ -43,6 +43,7 @@ import { shadowsListCommand, shadowsRestoreCommand, shadowsCleanupCommand } from
 import { backupsListCommand, backupsStatusCommand, backupsCleanupCommand } from "./commands/backups.ts";
 import { deployCommand } from "./commands/deploy.ts";
 import { rollbackCommand } from "./commands/rollback.ts";
+import { typegenCommand } from "./commands/typegen.ts";
 
 const program = new Command();
 
@@ -81,8 +82,16 @@ program
   .option("-o, --output <path>", "Output path")
   .option("--types-only", "Types only")
   .option("--sdk-only", "SDK only")
-   .option("--ir <path>", "Emit IR JSON to file")
+  .option("--ir <path>", "Emit IR JSON to file")
   .action(generateCommand);
+
+program
+  .command("typegen")
+  .description("Generate TypeScript types from yama.yaml schemas")
+  .option("-c, --config <path>", "Path to yama.yaml config file", "yama.yaml")
+  .option("-o, --output <path>", "Output path for generated types", "src/types/generated.ts")
+  .option("-w, --watch", "Watch for changes and regenerate", false)
+  .action(typegenCommand);
 
 // ============================================================================
 // SCHEMA & MIGRATIONS (Snapshot/Transition based)
@@ -521,9 +530,9 @@ program
 async function registerPluginCommands() {
   const { loadPluginCommands } = await import("./utils/plugin-commands.ts");
   const commands = await loadPluginCommands();
-  
+
   const commandGroups = new Map<string, PluginCLICommand[]>();
-  
+
   for (const command of commands) {
     const parts = command.name.split(" ");
     const groupName = parts[0];
@@ -532,16 +541,16 @@ async function registerPluginCommands() {
     }
     commandGroups.get(groupName)!.push(command);
   }
-  
+
   for (const [groupName, groupCommands] of commandGroups.entries()) {
     const groupCommand = program.command(groupName).description(`${groupName} plugin`);
-    
+
     for (const cmd of groupCommands) {
       const parts = cmd.name.split(" ");
       const subcommandName = parts.slice(1).join(" ") || groupName;
-      
+
       const subcommand = groupCommand.command(subcommandName).description(cmd.description);
-      
+
       if (cmd.options) {
         for (const option of cmd.options) {
           if (option.required) {
@@ -551,7 +560,7 @@ async function registerPluginCommands() {
           }
         }
       }
-      
+
       subcommand.action(async (options) => {
         try {
           await cmd.action(options);

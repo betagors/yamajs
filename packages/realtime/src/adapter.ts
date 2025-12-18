@@ -1,5 +1,5 @@
 ﻿import type { WebSocket } from "@fastify/websocket";
-import type { AuthContext } from "@yamajs/core";
+import type { AuthContext } from "@yamajs/kernel";
 
 /**
  * WebSocket connection with metadata

@@ -1,6 +1,6 @@
 ﻿import { existsSync, writeFileSync, readFileSync } from "fs";
 import { join, dirname, relative } from "path";
-import { generateTypes, generateHandlerContexts, generateIR, type YamaEntities, type HandlerContextConfig, type AvailableServices, type YamaSchemas, type SchemaDefinition } from "@yamajs/core";
+import { generateTypes, generateHandlerContexts, generateIR, type YamaEntities, type HandlerContextConfig, type AvailableServices, type YamaSchemas, type SchemaDefinition } from "@yamajs/kernel";
 import { getDatabasePlugin } from "../utils/db-plugin.ts";
 import { readYamaConfig, ensureDir, getConfigDir } from "../utils/file-utils.ts";
 import { findYamaConfig, detectProjectType, inferOutputPath } from "../utils/project-detection.ts";
@@ -421,7 +421,7 @@ async function generateHandlerContextsFile(
 
     // Calculate HandlerContext import path - use package name by default
     // This should resolve from node_modules
-    const handlerContextImportPath = "@yamajs/core";
+    const handlerContextImportPath = "@yamajs/kernel";
     
     // Calculate repository types import path (from .yama/gen/handler-contexts.ts to .yama/gen/db/repository-types.ts)
     const repositoryTypesPath = join(configDir, ".yama", "gen", "db", "repository-types.ts");

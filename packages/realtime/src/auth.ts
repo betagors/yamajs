@@ -1,6 +1,6 @@
 ﻿import type { FastifyRequest } from "fastify";
-import type { AuthContext, AuthConfig } from "@yamajs/core";
-import { authenticateAndAuthorize } from "@yamajs/core";
+import type { AuthContext, AuthConfig } from "@yamajs/kernel";
+import { authenticateAndAuthorize } from "@yamajs/kernel";
 import type { RealtimeChannelConfig } from "./types";
 
 /**

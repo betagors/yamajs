@@ -10,7 +10,7 @@ import {
     extractTablesFromSQL,
     loadPluginFromPackage,
     type PluginTablePolicy,
-} from "@yamajs/core";
+} from "@yamajs/kernel";
 import { info, error, success, warning } from "../utils/cli-utils.ts";
 import { table } from "table";
 

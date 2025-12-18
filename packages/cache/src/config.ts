@@ -1,5 +1,5 @@
 import { Cache } from './cache';
-import type { CacheAdapter } from '@yamajs/core';
+import type { CacheAdapter } from '@yamajs/kernel';
 
 /**
  * Cache configuration from yama.yaml

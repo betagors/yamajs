@@ -1,5 +1,5 @@
-﻿import type { YamaEntities, EntityDefinition, EntityField, MigrationStepUnion } from "@yamajs/core";
-import { parseFieldDefinition, DatabaseTypeMapper } from "@yamajs/core";
+﻿import type { YamaEntities, EntityDefinition, EntityField, MigrationStepUnion } from "@yamajs/kernel";
+import { parseFieldDefinition, DatabaseTypeMapper } from "@yamajs/kernel";
 import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync } from "fs";
 import { join } from "path";
 import { createHash } from "crypto";

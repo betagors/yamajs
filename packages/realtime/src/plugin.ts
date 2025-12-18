@@ -1,4 +1,4 @@
-﻿import type { YamaPlugin } from "@yamajs/core";
+﻿import type { YamaPlugin } from "@yamajs/kernel";
 import { RealtimeAdapter } from "./adapter";
 import { ChannelRegistry } from "./channel";
 import { setupWebSocketServer } from "./server";

@@ -1,5 +1,5 @@
 {
-  "name": "@yamajs/redis",
+  "name": "@yamajs/cache-redis",
   "version": "0.1.0-alpha.0",
   "type": "module",
   "description": "Yama Redis cache adapter plugin",
@@ -42,7 +42,7 @@
   },
   "dependencies": {
     "@yamajs/cache": "workspace:0.1.0-alpha.0",
-    "@yamajs/core": "workspace:*"
+    "@yamajs/kernel": "workspace:*"
   },
   "peerDependencies": {
     "ioredis": "^5.0.0 || ^4.0.0",

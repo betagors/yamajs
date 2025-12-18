@@ -2,7 +2,7 @@
 import { findYamaConfig } from "../../utils/project-detection.ts";
 import { existsSync } from "fs";
 import { resolve } from "path";
-import type { YamaSchemas } from "@yamajs/core";
+import type { YamaSchemas } from "@yamajs/kernel";
 import { getMCPWorkingDir } from "../utils/workdir.ts";
 
 export async function getSchemasResource(uri: string): Promise<{

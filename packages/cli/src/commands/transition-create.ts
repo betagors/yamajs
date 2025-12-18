@@ -14,7 +14,7 @@ import {
   computeDiff,
   diffToSteps,
   getCurrentSnapshot,
-} from "@yamajs/core";
+} from "@yamajs/kernel";
 import { info, error, success } from "../utils/cli-utils.ts";
 import { confirm } from "../utils/interactive.ts";
 

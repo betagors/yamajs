@@ -1,5 +1,5 @@
-﻿import type { YamaPlugin } from "@yamajs/core";
-import { registerStorageAdapter } from "@yamajs/core";
+﻿import type { YamaPlugin } from "@yamajs/kernel";
+import { registerStorageAdapter } from "@yamajs/kernel";
 import { createS3Bucket, type S3AdapterConfig } from "./adapter";
 import { initS3Client, getS3Client, closeS3Client } from "./client";
 

@@ -1,6 +1,6 @@
 ﻿import { describe, it, expect, vi, beforeEach } from "vitest";
 import { collectHealthStatus } from "./health-checker.js";
-import type { PluginContext, YamaPlugin } from "@yamajs/core";
+import type { PluginContext, YamaPlugin } from "@yamajs/kernel";
 import type { HealthPluginConfig, ComponentHealth } from "./types.js";
 
 describe("Health Checker", () => {

@@ -181,4 +181,3 @@ export declare const ErrorCodeToStatus: Record<ErrorCode, number>;
  * Get the HTTP status code for an error code
  */
 export declare function getStatusForCode(code: string): number;
-//# sourceMappingURL=codes.d.ts.map

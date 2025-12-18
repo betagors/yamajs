@@ -19,7 +19,7 @@ import {
   createTransition,
   saveTransition,
   snapshotExists,
-} from "@yamajs/core";
+} from "@yamajs/kernel";
 import { readYamaConfig, getConfigDir } from "../utils/file-utils.ts";
 import { info } from "../utils/cli-utils.ts";
 

@@ -1,4 +1,4 @@
-﻿import type { PluginMetrics } from "@yamajs/core";
+﻿import type { PluginMetrics } from "@yamajs/kernel";
 
 /**
  * Auto-instrument a plugin API to track method calls

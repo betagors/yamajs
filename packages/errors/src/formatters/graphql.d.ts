@@ -85,4 +85,3 @@ export declare function formatGraphQLError(error: YamaError, options?: FormatGra
 export declare function formatGraphQLErrors(errors: YamaError[], options?: Omit<FormatGraphQLErrorOptions, 'path' | 'locations'>): {
     errors: GraphQLFormattedError[];
 };
-//# sourceMappingURL=graphql.d.ts.map

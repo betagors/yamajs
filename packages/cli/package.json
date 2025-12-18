@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "@yamajs/cli",
   "version": "0.1.0-alpha.0",
   "type": "module",
@@ -41,11 +41,7 @@
     "start": "ts-node src/cli.ts"
   },
   "dependencies": {
-    "@yamajs/core": "workspace:*",
     "@yamajs/errors": "workspace:*",
-    "@yamajs/openapi": "workspace:*",
-    "@yamajs/postgres": "workspace:*",
-    "@yamajs/node": "workspace:*",
     "@yamajs/sdk": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.0.4",
     "boxen": "^8.0.1",
@@ -59,7 +55,11 @@
     "semver": "^7.7.3",
     "table": "^6.8.1",
     "zod": "^3.23.8",
-    "zod-to-json-schema": "^3.25.0"
+    "zod-to-json-schema": "^3.25.0",
+    "@yamajs/plugin-openapi": "workspace:*",
+    "@yamajs/db-postgres": "workspace:*",
+    "@yamajs/kernel": "workspace:*",
+    "@yamajs/runtime-node": "workspace:*"
   },
   "devDependencies": {
     "@types/inquirer": "^9.0.7",

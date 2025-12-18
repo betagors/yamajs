@@ -64,7 +64,7 @@ export function updateTypeScriptPaths(configDir: string): void {
     // Add @yamajs/core path if we're in a monorepo
     // Otherwise, it should resolve from node_modules automatically
     if (yamaCorePath) {
-      yamaPaths["@yamajs/core"] = [yamaCorePath];
+      yamaPaths["@yamajs/kernel"] = [yamaCorePath];
     }
 
     tsconfig.compilerOptions.paths = {

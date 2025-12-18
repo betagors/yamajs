@@ -76,4 +76,3 @@ export declare class YamaError extends Error {
      */
     toString(): string;
 }
-//# sourceMappingURL=base.d.ts.map

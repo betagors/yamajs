@@ -1,8 +1,8 @@
-﻿# @yamajs/openapi
+﻿# @yamajs/plugin-openapi
 
 > OpenAPI documentation generator for Yama (internal tool)
 
-[![npm version](https://img.shields.io/npm/v/@yamajs/openapi.svg)](https://www.npmjs.com/package/@yamajs/openapi)
+[![npm version](https://img.shields.io/npm/v/@yamajs/plugin-openapi.svg)](https://www.npmjs.com/package/@yamajs/plugin-openapi)
 [![License: MPL-2.0](https://img.shields.io/badge/License-MPL_2.0-brightgreen.svg)](https://opensource.org/licenses/MPL-2.0)
 
 Internal tool used by the Yama runtime to generate OpenAPI 3.0 specifications from `yama.yaml` configurations. This package is typically used indirectly through the runtime, but can also be used programmatically.
@@ -10,7 +10,7 @@ Internal tool used by the Yama runtime to generate OpenAPI 3.0 specifications fr
 ## Installation
 
 ```bash
-npm install @yamajs/openapi
+npm install @yamajs/plugin-openapi
 ```
 
 ## Usage
@@ -18,7 +18,7 @@ npm install @yamajs/openapi
 ### Programmatic Usage
 
 ```typescript
-import { generateOpenAPI, type YamaConfig } from '@yamajs/openapi';
+import { generateOpenAPI, type YamaConfig } from '@yamajs/plugin-openapi';
 
 const config: YamaConfig = {
   name: 'my-api',

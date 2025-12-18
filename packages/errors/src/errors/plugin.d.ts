@@ -1,4 +1,4 @@
-﻿import { YamaError, YamaErrorOptions } from '../base.js';
+import { YamaError, YamaErrorOptions } from '../base.js';
 /**
  * Error thrown when a plugin operation fails.
  *
@@ -20,4 +20,3 @@
 export declare class PluginError extends YamaError {
     constructor(message: string, options?: Omit<YamaErrorOptions, 'statusCode'>);
 }
-//# sourceMappingURL=plugin.d.ts.map

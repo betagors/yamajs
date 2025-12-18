@@ -1,7 +1,7 @@
 ﻿import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync, renameSync, unlinkSync, statSync } from "fs";
 import { join, basename } from "path";
-import type { TrashEntry } from "@yamajs/core";
-import { calculateExpirationDate, isExpired, DEFAULT_RETENTION_DAYS } from "@yamajs/core";
+import type { TrashEntry } from "@yamajs/kernel";
+import { calculateExpirationDate, isExpired, DEFAULT_RETENTION_DAYS } from "@yamajs/kernel";
 
 /**
  * Trash manager for migrations and data snapshots

@@ -1,4 +1,4 @@
-﻿# @yamajs/metrics
+﻿# @yamajs/plugin-metrics
 
 Yama metrics and telemetry plugin for collecting and exporting plugin metrics.
 
@@ -14,14 +14,14 @@ Yama metrics and telemetry plugin for collecting and exporting plugin metrics.
 ## Installation
 
 ```bash
-npm install @yamajs/metrics
+npm install @yamajs/plugin-metrics
 ```
 
 ## Configuration
 
 ```yaml
 plugins:
-  "@yamajs/metrics":
+  "@yamajs/plugin-metrics":
     enabled: true
     retention:
       enabled: true

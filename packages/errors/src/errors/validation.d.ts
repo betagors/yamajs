@@ -25,4 +25,3 @@ export interface ValidationErrorOptions extends Omit<YamaErrorOptions, 'statusCo
 export declare class ValidationError extends YamaError {
     constructor(message: string, options?: ValidationErrorOptions);
 }
-//# sourceMappingURL=validation.d.ts.map

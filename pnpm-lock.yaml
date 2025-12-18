@@ -141,18 +141,18 @@ importers:
 
   examples/blog-api:
     dependencies:
-      '@yamajs/core':
-        specifier: file:../../packages/core
-        version: file:packages/core(bcryptjs@2.4.3)(jsonwebtoken@9.0.2)
-      '@yamajs/node':
-        specifier: file:../../packages/node
-        version: file:packages/node
-      '@yamajs/pglite':
+      '@yamajs/db-pglite':
         specifier: file:../../packages/pglite
         version: file:packages/pglite(drizzle-orm@0.30.10(@electric-sql/pglite@0.2.17)(@types/react@19.2.7)(better-sqlite3@9.2.2)(postgres@3.4.7)(react@19.2.1))
-      '@yamajs/postgres':
+      '@yamajs/db-postgres':
         specifier: file:../../packages/postgres
         version: file:packages/postgres(@electric-sql/pglite@0.2.17)(@types/react@19.2.7)(better-sqlite3@9.2.2)(react@19.2.1)
+      '@yamajs/kernel':
+        specifier: file:../../packages/kernel
+        version: file:packages/kernel(bcryptjs@2.4.3)(jsonwebtoken@9.0.2)
+      '@yamajs/runtime-node':
+        specifier: file:../../packages/runtime-node
+        version: file:packages/runtime-node
       drizzle-orm:
         specifier: ^0.30.0
         version: 0.30.10(@electric-sql/pglite@0.2.17)(@types/react@19.2.7)(better-sqlite3@9.2.2)(postgres@3.4.7)(react@19.2.1)
@@ -166,7 +166,7 @@ importers:
 
   examples/todo-api:
     dependencies:
-      '@yamajs/pglite':
+      '@yamajs/db-pglite':
         specifier: workspace:*
         version: link:../../packages/pglite
     devDependencies:
@@ -182,9 +182,9 @@ importers:
 
   packages/adminx:
     dependencies:
-      '@yamajs/core':
+      '@yamajs/kernel':
         specifier: workspace:*
-        version: link:../core
+        version: link:../kernel
     devDependencies:
       '@types/node':
         specifier: ^20.0.0
@@ -198,9 +198,9 @@ importers:
 
   packages/cache:
     dependencies:
-      '@yamajs/core':
+      '@yamajs/kernel':
         specifier: workspace:*
-        version: link:../core
+        version: link:../kernel
     devDependencies:
       '@types/node':
         specifier: ^20.0.0
@@ -217,9 +217,9 @@ importers:
 
   packages/ci:
     dependencies:
-      '@yamajs/core':
+      '@yamajs/kernel':
         specifier: workspace:*
-        version: link:../core
+        version: link:../kernel
       js-yaml:
         specifier: ^4.1.0
         version: 4.1.1
@@ -248,21 +248,21 @@ importers:
       '@modelcontextprotocol/sdk':
         specifier: ^1.0.4
         version: 1.23.0(zod@3.25.76)
-      '@yamajs/core':
+      '@yamajs/db-postgres':
         specifier: workspace:*
-        version: link:../core
+        version: link:../postgres
       '@yamajs/errors':
         specifier: workspace:*
         version: link:../errors
-      '@yamajs/node':
+      '@yamajs/kernel':
         specifier: workspace:*
-        version: link:../node
-      '@yamajs/openapi':
+        version: link:../kernel
+      '@yamajs/plugin-openapi':
         specifier: workspace:*
         version: link:../openapi
-      '@yamajs/postgres':
+      '@yamajs/runtime-node':
         specifier: workspace:*
-        version: link:../postgres
+        version: link:../runtime-node
       '@yamajs/sdk':
         specifier: workspace:*
         version: link:../sdk
@@ -328,8 +328,98 @@ importers:
         specifier: ^5.9.2
         version: 5.9.2
 
-  packages/core:
+  packages/docker:
     dependencies:
+      '@yamajs/kernel':
+        specifier: workspace:*
+        version: link:../kernel
+      inquirer:
+        specifier: ^10.2.2
+        version: 10.2.2
+      js-yaml:
+        specifier: ^4.1.0
+        version: 4.1.1
+      zod:
+        specifier: ^3.22.4
+        version: 3.25.76
+    devDependencies:
+      '@types/inquirer':
+        specifier: ^9.0.7
+        version: 9.0.9
+      '@types/js-yaml':
+        specifier: ^4.0.9
+        version: 4.0.9
+      '@types/node':
+        specifier: ^20.0.0
+        version: 20.19.25
+      '@vitest/coverage-v8':
+        specifier: ^1.0.0
+        version: 1.6.1(vitest@1.6.1(@types/node@20.19.25)(lightningcss@1.30.2))
+      rimraf:
+        specifier: ^5.0.0
+        version: 5.0.10
+      vitest:
+        specifier: ^1.0.0
+        version: 1.6.1(@types/node@20.19.25)(lightningcss@1.30.2)
+
+  packages/errors:
+    devDependencies:
+      '@types/node':
+        specifier: ^20.0.0
+        version: 20.19.25
+      '@vitest/coverage-v8':
+        specifier: ^1.0.0
+        version: 1.6.1(vitest@1.6.1(@types/node@20.19.25)(lightningcss@1.30.2))
+      rimraf:
+        specifier: ^5.0.0
+        version: 5.0.10
+      vitest:
+        specifier: ^1.0.0
+        version: 1.6.1(@types/node@20.19.25)(lightningcss@1.30.2)
+
+  packages/fs:
+    dependencies:
+      '@yamajs/kernel':
+        specifier: workspace:*
+        version: link:../kernel
+    devDependencies:
+      '@types/node':
+        specifier: ^20.0.0
+        version: 20.19.25
+      '@vitest/coverage-v8':
+        specifier: ^1.0.0
+        version: 1.6.1(vitest@1.6.1(@types/node@20.19.25)(lightningcss@1.30.2))
+      rimraf:
+        specifier: ^5.0.0
+        version: 5.0.10
+      vitest:
+        specifier: ^1.0.0
+        version: 1.6.1(@types/node@20.19.25)(lightningcss@1.30.2)
+
+  packages/health:
+    dependencies:
+      '@yamajs/kernel':
+        specifier: workspace:*
+        version: link:../kernel
+    devDependencies:
+      '@types/node':
+        specifier: ^20.0.0
+        version: 20.19.25
+      '@vitest/coverage-v8':
+        specifier: ^1.0.0
+        version: 1.6.1(vitest@1.6.1(@types/node@20.19.25)(lightningcss@1.30.2))
+      rimraf:
+        specifier: ^5.0.0
+        version: 5.0.10
+      vitest:
+        specifier: ^1.0.0
+        version: 1.6.1(@types/node@20.19.25)(lightningcss@1.30.2)
+
+  packages/kernel:
+    dependencies:
+      '@noble/hashes':
+        specifier: ^2.0.1
+        version: 2.0.1
       '@yamajs/errors':
         specifier: workspace:*
         version: link:../errors
@@ -377,120 +467,11 @@ importers:
         specifier: ^1.0.0
         version: 1.6.1(@types/node@20.19.25)(lightningcss@1.30.2)
 
-  packages/docker:
-    dependencies:
-      '@yamajs/core':
-        specifier: workspace:*
-        version: link:../core
-      inquirer:
-        specifier: ^10.2.2
-        version: 10.2.2
-      js-yaml:
-        specifier: ^4.1.0
-        version: 4.1.1
-      zod:
-        specifier: ^3.22.4
-        version: 3.25.76
-    devDependencies:
-      '@types/inquirer':
-        specifier: ^9.0.7
-        version: 9.0.9
-      '@types/js-yaml':
-        specifier: ^4.0.9
-        version: 4.0.9
-      '@types/node':
-        specifier: ^20.0.0
-        version: 20.19.25
-      '@vitest/coverage-v8':
-        specifier: ^1.0.0
-        version: 1.6.1(vitest@1.6.1(@types/node@20.19.25)(lightningcss@1.30.2))
-      rimraf:
-        specifier: ^5.0.0
-        version: 5.0.10
-      vitest:
-        specifier: ^1.0.0
-        version: 1.6.1(@types/node@20.19.25)(lightningcss@1.30.2)
-
-  packages/errors:
-    devDependencies:
-      '@types/node':
-        specifier: ^20.0.0
-        version: 20.19.25
-      '@vitest/coverage-v8':
-        specifier: ^1.0.0
-        version: 1.6.1(vitest@1.6.1(@types/node@20.19.25)(lightningcss@1.30.2))
-      rimraf:
-        specifier: ^5.0.0
-        version: 5.0.10
-      vitest:
-        specifier: ^1.0.0
-        version: 1.6.1(@types/node@20.19.25)(lightningcss@1.30.2)
-
-  packages/fastify:
-    dependencies:
-      '@yamajs/core':
-        specifier: workspace:*
-        version: link:../core
-      fastify:
-        specifier: ^5.0.0
-        version: 5.6.2
-    devDependencies:
-      '@types/node':
-        specifier: ^20.0.0
-        version: 20.19.25
-      '@vitest/coverage-v8':
-        specifier: ^1.0.0
-        version: 1.6.1(vitest@1.6.1(@types/node@20.19.25)(lightningcss@1.30.2))
-      rimraf:
-        specifier: ^5.0.0
-        version: 5.0.10
-      vitest:
-        specifier: ^1.0.0
-        version: 1.6.1(@types/node@20.19.25)(lightningcss@1.30.2)
-
-  packages/fs:
-    dependencies:
-      '@yamajs/core':
-        specifier: workspace:*
-        version: link:../core
-    devDependencies:
-      '@types/node':
-        specifier: ^20.0.0
-        version: 20.19.25
-      '@vitest/coverage-v8':
-        specifier: ^1.0.0
-        version: 1.6.1(vitest@1.6.1(@types/node@20.19.25)(lightningcss@1.30.2))
-      rimraf:
-        specifier: ^5.0.0
-        version: 5.0.10
-      vitest:
-        specifier: ^1.0.0
-        version: 1.6.1(@types/node@20.19.25)(lightningcss@1.30.2)
-
-  packages/health:
-    dependencies:
-      '@yamajs/core':
-        specifier: workspace:*
-        version: link:../core
-    devDependencies:
-      '@types/node':
-        specifier: ^20.0.0
-        version: 20.19.25
-      '@vitest/coverage-v8':
-        specifier: ^1.0.0
-        version: 1.6.1(vitest@1.6.1(@types/node@20.19.25)(lightningcss@1.30.2))
-      rimraf:
-        specifier: ^5.0.0
-        version: 5.0.10
-      vitest:
-        specifier: ^1.0.0
-        version: 1.6.1(@types/node@20.19.25)(lightningcss@1.30.2)
-
   packages/logging:
     dependencies:
-      '@yamajs/core':
+      '@yamajs/kernel':
         specifier: workspace:*
-        version: link:../core
+        version: link:../kernel
     devDependencies:
       '@types/node':
         specifier: ^20.0.0
@@ -507,53 +488,10 @@ importers:
 
   packages/metrics:
     dependencies:
-      '@yamajs/core':
+      '@yamajs/kernel':
         specifier: workspace:*
-        version: link:../core
+        version: link:../kernel
     devDependencies:
-      '@types/node':
-        specifier: ^20.0.0
-        version: 20.19.25
-      '@vitest/coverage-v8':
-        specifier: ^1.0.0
-        version: 1.6.1(vitest@1.6.1(@types/node@20.19.25)(lightningcss@1.30.2))
-      rimraf:
-        specifier: ^5.0.0
-        version: 5.0.10
-      vitest:
-        specifier: ^1.0.0
-        version: 1.6.1(@types/node@20.19.25)(lightningcss@1.30.2)
-
-  packages/node:
-    dependencies:
-      '@yamajs/core':
-        specifier: workspace:*
-        version: link:../core
-      '@yamajs/errors':
-        specifier: workspace:*
-        version: link:../errors
-      '@yamajs/fastify':
-        specifier: workspace:*
-        version: link:../fastify
-      '@yamajs/openapi':
-        specifier: workspace:*
-        version: link:../openapi
-      '@yamajs/postgres':
-        specifier: workspace:*
-        version: link:../postgres
-      bcryptjs:
-        specifier: ^2.4.3
-        version: 2.4.3
-      dotenv:
-        specifier: ^16.4.5
-        version: 16.6.1
-      js-yaml:
-        specifier: ^4.1.1
-        version: 4.1.1
-    devDependencies:
-      '@types/js-yaml':
-        specifier: ^4.0.9
-        version: 4.0.9
       '@types/node':
         specifier: ^20.0.0
         version: 20.19.25
@@ -569,9 +507,9 @@ importers:
 
   packages/openapi:
     dependencies:
-      '@yamajs/core':
+      '@yamajs/kernel':
         specifier: workspace:*
-        version: link:../core
+        version: link:../kernel
     devDependencies:
       '@types/node':
         specifier: ^20.0.0
@@ -585,9 +523,9 @@ importers:
       '@electric-sql/pglite':
         specifier: ^0.2.0
         version: 0.2.17
-      '@yamajs/core':
+      '@yamajs/kernel':
         specifier: workspace:*
-        version: link:../core
+        version: link:../kernel
       drizzle-orm:
         specifier: ^0.30.0
         version: 0.30.10(@electric-sql/pglite@0.2.17)(@types/react@19.2.7)(better-sqlite3@9.2.2)(postgres@3.4.7)(react@19.2.1)
@@ -610,9 +548,9 @@ importers:
 
   packages/postgres:
     dependencies:
-      '@yamajs/core':
+      '@yamajs/kernel':
         specifier: workspace:*
-        version: link:../core
+        version: link:../kernel
       drizzle-orm:
         specifier: ^0.30.0
         version: 0.30.10(@electric-sql/pglite@0.2.17)(@types/react@19.2.7)(better-sqlite3@9.2.2)(postgres@3.4.7)(react@19.2.1)
@@ -638,9 +576,9 @@ importers:
       '@fastify/websocket':
         specifier: ^11.0.0
         version: 11.2.0
-      '@yamajs/core':
+      '@yamajs/kernel':
         specifier: workspace:*
-        version: link:../core
+        version: link:../kernel
       fastify:
         specifier: ^5.0.0
         version: 5.6.2
@@ -678,9 +616,9 @@ importers:
       '@yamajs/cache':
         specifier: workspace:0.1.0-alpha.0
         version: link:../cache
-      '@yamajs/core':
+      '@yamajs/kernel':
         specifier: workspace:*
-        version: link:../core
+        version: link:../kernel
       ioredis:
         specifier: ^5.0.0 || ^4.0.0
         version: 5.8.2
@@ -688,6 +626,49 @@ importers:
         specifier: ^4.0.0 || ^5.0.0
         version: 5.10.0
     devDependencies:
+      '@types/node':
+        specifier: ^20.0.0
+        version: 20.19.25
+      '@vitest/coverage-v8':
+        specifier: ^1.0.0
+        version: 1.6.1(vitest@1.6.1(@types/node@20.19.25)(lightningcss@1.30.2))
+      rimraf:
+        specifier: ^5.0.0
+        version: 5.0.10
+      vitest:
+        specifier: ^1.0.0
+        version: 1.6.1(@types/node@20.19.25)(lightningcss@1.30.2)
+
+  packages/runtime-node:
+    dependencies:
+      '@yamajs/db-postgres':
+        specifier: workspace:*
+        version: link:../postgres
+      '@yamajs/errors':
+        specifier: workspace:*
+        version: link:../errors
+      '@yamajs/kernel':
+        specifier: workspace:*
+        version: link:../kernel
+      '@yamajs/plugin-openapi':
+        specifier: workspace:*
+        version: link:../openapi
+      '@yamajs/server-fastify':
+        specifier: workspace:*
+        version: link:../server-fastify
+      bcryptjs:
+        specifier: ^2.4.3
+        version: 2.4.3
+      dotenv:
+        specifier: ^16.4.5
+        version: 16.6.1
+      js-yaml:
+        specifier: ^4.1.1
+        version: 4.1.1
+    devDependencies:
+      '@types/js-yaml':
+        specifier: ^4.0.9
+        version: 4.0.9
       '@types/node':
         specifier: ^20.0.0
         version: 20.19.25
@@ -709,9 +690,9 @@ importers:
       '@aws-sdk/s3-request-presigner':
         specifier: ^3.490.0
         version: 3.940.0
-      '@yamajs/core':
+      '@yamajs/kernel':
         specifier: workspace:*
-        version: link:../core
+        version: link:../kernel
     devDependencies:
       '@types/node':
         specifier: ^20.0.0
@@ -728,9 +709,9 @@ importers:
 
   packages/sdk:
     dependencies:
-      '@yamajs/core':
+      '@yamajs/kernel':
         specifier: workspace:*
-        version: link:../core
+        version: link:../kernel
     devDependencies:
       '@types/node':
         specifier: ^20.0.0
@@ -741,9 +722,31 @@ importers:
 
   packages/security:
     dependencies:
-      '@yamajs/core':
+      '@yamajs/kernel':
         specifier: workspace:*
-        version: link:../core
+        version: link:../kernel
+    devDependencies:
+      '@types/node':
+        specifier: ^20.0.0
+        version: 20.19.25
+      '@vitest/coverage-v8':
+        specifier: ^1.0.0
+        version: 1.6.1(vitest@1.6.1(@types/node@20.19.25)(lightningcss@1.30.2))
+      rimraf:
+        specifier: ^5.0.0
+        version: 5.0.10
+      vitest:
+        specifier: ^1.0.0
+        version: 1.6.1(@types/node@20.19.25)(lightningcss@1.30.2)
+
+  packages/server-fastify:
+    dependencies:
+      '@yamajs/kernel':
+        specifier: workspace:*
+        version: link:../kernel
+      fastify:
+        specifier: ^5.0.0
+        version: 5.6.2
     devDependencies:
       '@types/node':
         specifier: ^20.0.0
@@ -760,9 +763,9 @@ importers:
 
   packages/smtp:
     dependencies:
-      '@yamajs/core':
+      '@yamajs/kernel':
         specifier: workspace:*
-        version: link:../core
+        version: link:../kernel
     devDependencies:
       '@types/node':
         specifier: ^20.0.0
@@ -785,9 +788,9 @@ importers:
 
   packages/storage:
     dependencies:
-      '@yamajs/core':
+      '@yamajs/kernel':
         specifier: workspace:*
-        version: link:../core
+        version: link:../kernel
     devDependencies:
       '@types/node':
         specifier: ^20.0.0
@@ -802,11 +805,24 @@ importers:
         specifier: ^1.0.0
         version: 1.6.1(@types/node@20.19.25)(lightningcss@1.30.2)
 
+  packages/transporter-rest:
+    dependencies:
+      '@yamajs/kernel':
+        specifier: workspace:*
+        version: link:../kernel
+    devDependencies:
+      rimraf:
+        specifier: ^5.0.0
+        version: 5.0.10
+      typescript:
+        specifier: ^5.0.0
+        version: 5.9.2
+
   packages/yama:
     dependencies:
-      '@yamajs/core':
+      '@yamajs/kernel':
         specifier: workspace:*
-        version: link:../core
+        version: link:../kernel
     devDependencies:
       '@types/node':
         specifier: ^20.0.0
@@ -2042,6 +2058,10 @@ packages:
     cpu: [x64]
     os: [win32]
 
+  '@noble/hashes@2.0.1':
+    resolution: {integrity: sha512-XlOlEbQcE9fmuXxrVTXCTlG2nlRXa9Rj3rr5Ue/+tX+nmkgbX720YHh0VR3hBF9xDvwnb8D2shVGOwNx+ulArw==}
+    engines: {node: '>= 20.19.0'}
+
   '@nodelib/fs.scandir@2.1.5':
     resolution: {integrity: sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==}
     engines: {node: '>= 8'}
@@ -3112,10 +3132,19 @@ packages:
     engines: {node: '>=18'}
     hasBin: true
 
-  '@yamajs/core@file:packages/core':
-    resolution: {directory: packages/core, type: directory}
+  '@yamajs/db-pglite@file:packages/pglite':
+    resolution: {directory: packages/pglite, type: directory}
     engines: {node: '>=18'}
-    hasBin: true
+    peerDependencies:
+      drizzle-orm: ^0.30.0
+
+  '@yamajs/db-postgres@file:packages/postgres':
+    resolution: {directory: packages/postgres, type: directory}
+    engines: {node: '>=18'}
+
+  '@yamajs/kernel@file:packages/kernel':
+    resolution: {directory: packages/kernel, type: directory}
+    engines: {node: '>=18'}
     peerDependencies:
       bcryptjs: ^2.4.3
       jsonwebtoken: ^9.0.2
@@ -3125,18 +3154,8 @@ packages:
       jsonwebtoken:
         optional: true
 
-  '@yamajs/node@file:packages/node':
-    resolution: {directory: packages/node, type: directory}
-    engines: {node: '>=18'}
-
-  '@yamajs/pglite@file:packages/pglite':
-    resolution: {directory: packages/pglite, type: directory}
-    engines: {node: '>=18'}
-    peerDependencies:
-      drizzle-orm: ^0.30.0
-
-  '@yamajs/postgres@file:packages/postgres':
-    resolution: {directory: packages/postgres, type: directory}
+  '@yamajs/runtime-node@file:packages/runtime-node':
+    resolution: {directory: packages/runtime-node, type: directory}
     engines: {node: '>=18'}
 
   abstract-logging@2.0.1:
@@ -8011,6 +8030,8 @@ snapshots:
   '@next/swc-win32-x64-msvc@16.0.8':
     optional: true
 
+  '@noble/hashes@2.0.1': {}
+
   '@nodelib/fs.scandir@2.1.5':
     dependencies:
       '@nodelib/fs.stat': 2.0.5
@@ -9182,11 +9203,11 @@ snapshots:
   '@yamajs/cli@file:packages/cli':
     dependencies:
       '@modelcontextprotocol/sdk': 1.23.0(zod@3.25.76)
-      '@yamajs/core': link:packages/core
+      '@yamajs/db-postgres': link:packages/postgres
       '@yamajs/errors': link:packages/errors
-      '@yamajs/node': link:packages/node
-      '@yamajs/openapi': link:packages/openapi
-      '@yamajs/postgres': link:packages/postgres
+      '@yamajs/kernel': link:packages/kernel
+      '@yamajs/plugin-openapi': link:packages/openapi
+      '@yamajs/runtime-node': link:packages/runtime-node
       '@yamajs/sdk': link:packages/sdk
       boxen: 8.0.1
       chalk: 5.6.2
@@ -9204,37 +9225,15 @@ snapshots:
       - '@cfworker/json-schema'
       - supports-color
 
-  '@yamajs/core@file:packages/core(bcryptjs@2.4.3)(jsonwebtoken@9.0.2)':
-    dependencies:
-      '@yamajs/errors': link:packages/errors
-      ajv: 8.17.1
-      ajv-formats: 2.1.1(ajv@8.17.1)
-      js-yaml: 4.1.1
-      semver: 7.7.3
-    optionalDependencies:
-      bcryptjs: 2.4.3
-      jsonwebtoken: 9.0.2
-
-  '@yamajs/node@file:packages/node':
-    dependencies:
-      '@yamajs/core': link:packages/core
-      '@yamajs/errors': link:packages/errors
-      '@yamajs/fastify': link:packages/fastify
-      '@yamajs/openapi': link:packages/openapi
-      '@yamajs/postgres': link:packages/postgres
-      bcryptjs: 2.4.3
-      dotenv: 16.6.1
-      js-yaml: 4.1.1
-
-  '@yamajs/pglite@file:packages/pglite(drizzle-orm@0.30.10(@electric-sql/pglite@0.2.17)(@types/react@19.2.7)(better-sqlite3@9.2.2)(postgres@3.4.7)(react@19.2.1))':
+  '@yamajs/db-pglite@file:packages/pglite(drizzle-orm@0.30.10(@electric-sql/pglite@0.2.17)(@types/react@19.2.7)(better-sqlite3@9.2.2)(postgres@3.4.7)(react@19.2.1))':
     dependencies:
       '@electric-sql/pglite': 0.2.17
-      '@yamajs/core': link:packages/core
+      '@yamajs/kernel': link:packages/kernel
       drizzle-orm: 0.30.10(@electric-sql/pglite@0.2.17)(@types/react@19.2.7)(better-sqlite3@9.2.2)(postgres@3.4.7)(react@19.2.1)
 
-  '@yamajs/postgres@file:packages/postgres(@electric-sql/pglite@0.2.17)(@types/react@19.2.7)(better-sqlite3@9.2.2)(react@19.2.1)':
+  '@yamajs/db-postgres@file:packages/postgres(@electric-sql/pglite@0.2.17)(@types/react@19.2.7)(better-sqlite3@9.2.2)(react@19.2.1)':
     dependencies:
-      '@yamajs/core': link:packages/core
+      '@yamajs/kernel': link:packages/kernel
       drizzle-orm: 0.30.10(@electric-sql/pglite@0.2.17)(@types/react@19.2.7)(better-sqlite3@9.2.2)(postgres@3.4.7)(react@19.2.1)
       postgres: 3.4.7
     transitivePeerDependencies:
@@ -9262,6 +9261,29 @@ snapshots:
       - react
       - sql.js
       - sqlite3
+
+  '@yamajs/kernel@file:packages/kernel(bcryptjs@2.4.3)(jsonwebtoken@9.0.2)':
+    dependencies:
+      '@noble/hashes': 2.0.1
+      '@yamajs/errors': link:packages/errors
+      ajv: 8.17.1
+      ajv-formats: 2.1.1(ajv@8.17.1)
+      js-yaml: 4.1.1
+      semver: 7.7.3
+    optionalDependencies:
+      bcryptjs: 2.4.3
+      jsonwebtoken: 9.0.2
+
+  '@yamajs/runtime-node@file:packages/runtime-node':
+    dependencies:
+      '@yamajs/db-postgres': link:packages/postgres
+      '@yamajs/errors': link:packages/errors
+      '@yamajs/kernel': link:packages/kernel
+      '@yamajs/plugin-openapi': link:packages/openapi
+      '@yamajs/server-fastify': link:packages/server-fastify
+      bcryptjs: 2.4.3
+      dotenv: 16.6.1
+      js-yaml: 4.1.1
 
   abstract-logging@2.0.1: {}
 

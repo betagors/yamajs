@@ -1,5 +1,5 @@
-﻿{
-  "name": "@yamajs/metrics",
+{
+  "name": "@yamajs/plugin-metrics",
   "version": "0.1.0-alpha.0",
   "type": "module",
   "description": "Yama metrics and telemetry plugin",
@@ -42,7 +42,7 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
-    "@yamajs/core": "workspace:*"
+    "@yamajs/kernel": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
@@ -54,12 +54,3 @@
     "node": ">=18"
   }
 }
-
-
-
-
-
-
-
-
-

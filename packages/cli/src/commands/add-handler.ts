@@ -4,8 +4,8 @@ import { findYamaConfig } from "../utils/project-detection.ts";
 import { getConfigDir, readYamaConfig } from "../utils/file-utils.ts";
 import { success, error } from "../utils/cli-utils.ts";
 import { generateOnce } from "./generate.ts";
-import type { YamaSchemas, YamaEntities } from "@yamajs/core";
-import type { SchemaField } from "@yamajs/core";
+import type { YamaSchemas, YamaEntities } from "@yamajs/kernel";
+import type { SchemaField } from "@yamajs/kernel";
 
 // Local type definition matching HandlerContextConfig
 interface HandlerContextConfig {
@@ -105,7 +105,7 @@ export async function addHandlerCommand(options: AddHandlerOptions): Promise<voi
       }
       imports = `import type { ${importedTypes.join(", ")} } from "@yamajs/gen";`;
     } else {
-      imports = `import type { HandlerContext } from "@yamajs/core";`;
+      imports = `import type { HandlerContext } from "@yamajs/kernel";`;
     }
 
     // Determine return type from endpoint response

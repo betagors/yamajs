@@ -1,7 +1,7 @@
 ﻿import { existsSync } from "fs";
 import { findYamaConfig } from "../utils/project-detection.ts";
 import { getConfigDir, readYamaConfig } from "../utils/file-utils.ts";
-import { resolveEnvVars, loadEnvFile } from "@yamajs/core";
+import { resolveEnvVars, loadEnvFile } from "@yamajs/kernel";
 import { success, error, info, warning, printBox } from "../utils/cli-utils.ts";
 import { getDatabasePlugin } from "../utils/db-plugin.ts";
 import { confirm, promptInput } from "../utils/interactive.ts";
@@ -9,7 +9,7 @@ import {
   loadPlugin,
   getAllPlugins,
   getPluginByCategory,
-} from "@yamajs/core";
+} from "@yamajs/kernel";
 import {
   ensurePluginMigrationTables,
   getInstalledPluginVersion,
@@ -22,12 +22,12 @@ import {
   formatSafetyAnalysis,
   getConfirmationPrompt,
   validateConfirmation,
-} from "@yamajs/core";
+} from "@yamajs/kernel";
 import {
   getMigrationPlan,
   formatMigrationPlan,
-} from "@yamajs/core";
-import type { MigrationSafetyAnalysis } from "@yamajs/core";
+} from "@yamajs/kernel";
+import type { MigrationSafetyAnalysis } from "@yamajs/kernel";
 
 interface PluginMigrateOptions {
   plugin?: string;

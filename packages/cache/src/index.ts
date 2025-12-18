@@ -41,4 +41,4 @@ export type { CacheYamlConfig } from './config';
 export { MemoryAdapter, createMemoryAdapter } from './memory-adapter';
 
 // Re-export core types for convenience
-export type { CacheAdapter } from '@yamajs/core';
+export type { CacheAdapter } from '@yamajs/kernel';

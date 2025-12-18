@@ -1,14 +1,14 @@
 ﻿import { existsSync } from "fs";
 import { findYamaConfig } from "../utils/project-detection.ts";
 import { readYamaConfig, getConfigDir } from "../utils/file-utils.ts";
-import { loadEnvFile, resolveEnvVars } from "@yamajs/core";
-import type { DatabaseConfig } from "@yamajs/core";
+import { loadEnvFile, resolveEnvVars } from "@yamajs/kernel";
+import type { DatabaseConfig } from "@yamajs/kernel";
 import {
   getAllSnapshots,
   getAllTransitions,
   getCurrentSnapshot,
   getAllStates,
-} from "@yamajs/core";
+} from "@yamajs/kernel";
 import { getDatabasePluginAndConfig } from "../utils/db-plugin.ts";
 import { error, info, dim, fmt, printTable } from "../utils/cli-utils.ts";
 

@@ -1,5 +1,5 @@
-﻿import type { YamaEntities, EntityDefinition, EntityField } from "@yamajs/core";
-import { parseFieldDefinition } from "@yamajs/core";
+﻿import type { YamaEntities, EntityDefinition, EntityField } from "@yamajs/kernel";
+import { parseFieldDefinition } from "@yamajs/kernel";
 
 /**
  * Convert snake_case to camelCase

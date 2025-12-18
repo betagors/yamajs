@@ -1,4 +1,4 @@
-﻿import type { StorageAdapter, UploadOptions, UploadResult, StorageMetadata } from '@yamajs/core';
+﻿import type { StorageAdapter, UploadOptions, UploadResult, StorageMetadata } from '@yamajs/kernel';
 
 /**
  * Storage configuration options

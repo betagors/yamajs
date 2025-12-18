@@ -1,4 +1,4 @@
-﻿import type { YamaPlugin, PluginContext } from "@yamajs/core";
+﻿import type { YamaPlugin, PluginContext } from "@yamajs/kernel";
 import type { LoggingPluginConfig } from "./types.js";
 import { Logger, createTransports } from "./logger.js";
 

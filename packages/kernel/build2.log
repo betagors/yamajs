@@ -1,0 +1,95 @@
+
+> @yamajs/kernel@0.1.0-alpha.0 build C:\Users\USER\Code\yama\packages\kernel
+> tsup --config tsup.config.ts && tsc -p tsconfig.declarations.json
+
+[34mCLI[39m Building entry: src/index.ts
+[34mCLI[39m Using tsconfig: tsconfig.json
+[34mCLI[39m tsup v8.5.1
+[34mCLI[39m Using tsup config: C:\Users\USER\Code\yama\packages\kernel\tsup.config.ts
+[34mCLI[39m Target: es2022
+[34mCLI[39m Cleaning output folder
+[34mESM[39m Build start
+[32mESM[39m [1mdist\index.js     [22m[32m478.18 KB[39m
+[32mESM[39m [1mdist\index.js.map [22m[32m1.30 MB[39m
+[32mESM[39m ÔÜí´©Å Build success in 1176ms
+src/config/validator.ts(125,73): error TS2339: Property 'getEnv' does not exist on type 'RuntimeAdapter'.
+src/migrations/graph.ts(40,13): error TS2339: Property 'existsSync' does not exist on type 'FileSystemAdapter'.
+src/migrations/graph.ts(45,26): error TS2551: Property 'readFileSync' does not exist on type 'FileSystemAdapter'. Did you mean 'readFile'?
+src/migrations/graph.ts(136,8): error TS2551: Property 'writeFileSync' does not exist on type 'FileSystemAdapter'. Did you mean 'writeFile'?
+src/migrations/graph.ts(700,18): error TS2339: Property 'existsSync' does not exist on type 'FileSystemAdapter'.
+src/migrations/graph.ts(701,16): error TS2339: Property 'unlinkSync' does not exist on type 'FileSystemAdapter'.
+src/migrations/graph.ts(719,18): error TS2339: Property 'existsSync' does not exist on type 'FileSystemAdapter'.
+src/migrations/graph.ts(720,16): error TS2339: Property 'unlinkSync' does not exist on type 'FileSystemAdapter'.
+src/migrations/shadows.ts(52,13): error TS2339: Property 'existsSync' does not exist on type 'FileSystemAdapter'.
+src/migrations/shadows.ts(53,10): error TS2339: Property 'mkdirSync' does not exist on type 'FileSystemAdapter'.
+src/migrations/shadows.ts(74,13): error TS2339: Property 'existsSync' does not exist on type 'FileSystemAdapter'.
+src/migrations/shadows.ts(79,26): error TS2551: Property 'readFileSync' does not exist on type 'FileSystemAdapter'. Did you mean 'readFile'?
+src/migrations/shadows.ts(92,8): error TS2551: Property 'writeFileSync' does not exist on type 'FileSystemAdapter'. Did you mean 'writeFile'?
+src/migrations/snapshots.ts(53,13): error TS2339: Property 'existsSync' does not exist on type 'FileSystemAdapter'.
+src/migrations/snapshots.ts(54,10): error TS2339: Property 'mkdirSync' does not exist on type 'FileSystemAdapter'.
+src/migrations/snapshots.ts(74,13): error TS2339: Property 'existsSync' does not exist on type 'FileSystemAdapter'.
+src/migrations/snapshots.ts(79,26): error TS2551: Property 'readFileSync' does not exist on type 'FileSystemAdapter'. Did you mean 'readFile'?
+src/migrations/snapshots.ts(92,8): error TS2551: Property 'writeFileSync' does not exist on type 'FileSystemAdapter'. Did you mean 'writeFile'?
+src/migrations/snapshots.ts(118,8): error TS2551: Property 'writeFileSync' does not exist on type 'FileSystemAdapter'. Did you mean 'writeFile'?
+src/migrations/snapshots.ts(144,13): error TS2339: Property 'existsSync' does not exist on type 'FileSystemAdapter'.
+src/migrations/snapshots.ts(148,24): error TS2551: Property 'readFileSync' does not exist on type 'FileSystemAdapter'. Did you mean 'readFile'?
+src/migrations/snapshots.ts(157,15): error TS2339: Property 'existsSync' does not exist on type 'FileSystemAdapter'.
+src/migrations/snapshots.ts(191,12): error TS2339: Property 'existsSync' does not exist on type 'FileSystemAdapter'.
+src/migrations/snapshots.ts(191,45): error TS2339: Property 'unlinkSync' does not exist on type 'FileSystemAdapter'.
+src/migrations/snapshots.ts(192,10): error TS2339: Property 'unlinkSync' does not exist on type 'FileSystemAdapter'.
+src/migrations/state.ts(34,13): error TS2339: Property 'existsSync' does not exist on type 'FileSystemAdapter'.
+src/migrations/state.ts(35,10): error TS2339: Property 'mkdirSync' does not exist on type 'FileSystemAdapter'.
+src/migrations/state.ts(44,13): error TS2339: Property 'existsSync' does not exist on type 'FileSystemAdapter'.
+src/migrations/state.ts(49,26): error TS2551: Property 'readFileSync' does not exist on type 'FileSystemAdapter'. Did you mean 'readFile'?
+src/migrations/state.ts(62,8): error TS2551: Property 'writeFileSync' does not exist on type 'FileSystemAdapter'. Did you mean 'writeFile'?
+src/migrations/state.ts(106,15): error TS2339: Property 'existsSync' does not exist on type 'FileSystemAdapter'.
+src/migrations/state.ts(114,12): error TS2339: Property 'existsSync' does not exist on type 'FileSystemAdapter'.
+src/migrations/state.ts(114,42): error TS2339: Property 'unlinkSync' does not exist on type 'FileSystemAdapter'.
+src/migrations/state.ts(115,10): error TS2339: Property 'unlinkSync' does not exist on type 'FileSystemAdapter'.
+src/migrations/state.ts(124,13): error TS2339: Property 'existsSync' does not exist on type 'FileSystemAdapter'.
+src/migrations/state.ts(128,22): error TS2339: Property 'readdirSync' does not exist on type 'FileSystemAdapter'.
+src/migrations/state.ts(128,41): error TS2339: Property 'readdirSync' does not exist on type 'FileSystemAdapter'.
+src/migrations/transitions.ts(46,13): error TS2339: Property 'existsSync' does not exist on type 'FileSystemAdapter'.
+src/migrations/transitions.ts(47,10): error TS2339: Property 'mkdirSync' does not exist on type 'FileSystemAdapter'.
+src/migrations/transitions.ts(83,8): error TS2551: Property 'writeFileSync' does not exist on type 'FileSystemAdapter'. Did you mean 'writeFile'?
+src/migrations/transitions.ts(91,13): error TS2339: Property 'existsSync' does not exist on type 'FileSystemAdapter'.
+src/migrations/transitions.ts(95,24): error TS2551: Property 'readFileSync' does not exist on type 'FileSystemAdapter'. Did you mean 'readFile'?
+src/migrations/transitions.ts(104,15): error TS2339: Property 'existsSync' does not exist on type 'FileSystemAdapter'.
+src/migrations/transitions.ts(112,12): error TS2339: Property 'existsSync' does not exist on type 'FileSystemAdapter'.
+src/migrations/transitions.ts(112,47): error TS2339: Property 'unlinkSync' does not exist on type 'FileSystemAdapter'.
+src/migrations/transitions.ts(113,10): error TS2339: Property 'unlinkSync' does not exist on type 'FileSystemAdapter'.
+src/migrations/transitions.ts(122,13): error TS2339: Property 'existsSync' does not exist on type 'FileSystemAdapter'.
+src/migrations/transitions.ts(126,22): error TS2339: Property 'readdirSync' does not exist on type 'FileSystemAdapter'.
+src/migrations/transitions.ts(132,30): error TS2551: Property 'readFileSync' does not exist on type 'FileSystemAdapter'. Did you mean 'readFile'?
+src/migrations/versioning.ts(68,13): error TS2339: Property 'existsSync' does not exist on type 'FileSystemAdapter'.
+src/migrations/versioning.ts(69,10): error TS2339: Property 'mkdirSync' does not exist on type 'FileSystemAdapter'.
+src/migrations/versioning.ts(85,13): error TS2339: Property 'existsSync' does not exist on type 'FileSystemAdapter'.
+src/migrations/versioning.ts(90,26): error TS2551: Property 'readFileSync' does not exist on type 'FileSystemAdapter'. Did you mean 'readFile'?
+src/migrations/versioning.ts(103,8): error TS2551: Property 'writeFileSync' does not exist on type 'FileSystemAdapter'. Did you mean 'writeFile'?
+src/migrations/versioning.ts(249,13): error TS2339: Property 'existsSync' does not exist on type 'FileSystemAdapter'.
+src/migrations/versioning.ts(250,10): error TS2339: Property 'mkdirSync' does not exist on type 'FileSystemAdapter'.
+src/migrations/versioning.ts(254,8): error TS2551: Property 'writeFileSync' does not exist on type 'FileSystemAdapter'. Did you mean 'writeFile'?
+src/migrations/versioning.ts(270,13): error TS2339: Property 'existsSync' does not exist on type 'FileSystemAdapter'.
+src/migrations/versioning.ts(275,26): error TS2551: Property 'readFileSync' does not exist on type 'FileSystemAdapter'. Did you mean 'readFile'?
+src/operations/generator.ts(59,31): error TS2339: Property 'handler' does not exist on type 'OperationConfig'.
+src/plugins/loader.ts(23,52): error TS2339: Property 'cwd' does not exist on type 'RuntimeAdapter'.
+src/plugins/loader.ts(63,12): error TS2339: Property 'existsSync' does not exist on type 'FileSystemAdapter'.
+src/plugins/loader.ts(82,37): error TS2551: Property 'readFileSync' does not exist on type 'FileSystemAdapter'. Did you mean 'readFile'?
+src/plugins/loader.ts(134,52): error TS2339: Property 'cwd' does not exist on type 'RuntimeAdapter'.
+src/plugins/loader.ts(152,12): error TS2339: Property 'existsSync' does not exist on type 'FileSystemAdapter'.
+src/plugins/loader.ts(153,35): error TS2551: Property 'readFileSync' does not exist on type 'FileSystemAdapter'. Did you mean 'readFile'?
+src/plugins/migration-runner.ts(437,23): error TS2339: Property 'existsSync' does not exist on type 'FileSystemAdapter'.
+src/plugins/migration-runner.ts(440,25): error TS2551: Property 'readFileSync' does not exist on type 'FileSystemAdapter'. Did you mean 'readFile'?
+src/plugins/migration-utils.ts(29,13): error TS2339: Property 'existsSync' does not exist on type 'FileSystemAdapter'.
+src/plugins/migration-utils.ts(34,26): error TS2551: Property 'readFileSync' does not exist on type 'FileSystemAdapter'. Did you mean 'readFile'?
+src/plugins/migrations.ts(69,52): error TS2339: Property 'cwd' does not exist on type 'RuntimeAdapter'.
+src/plugins/migrations.ts(84,12): error TS2339: Property 'existsSync' does not exist on type 'FileSystemAdapter'.
+src/plugins/migrations.ts(84,43): error TS2339: Property 'existsSync' does not exist on type 'FileSystemAdapter'.
+src/plugins/migrations.ts(98,14): error TS2339: Property 'existsSync' does not exist on type 'FileSystemAdapter'.
+src/plugins/migrations.ts(235,15): error TS2339: Property 'existsSync' does not exist on type 'FileSystemAdapter'.
+src/plugins/migrations.ts(240,17): error TS2551: Property 'readFileSync' does not exist on type 'FileSystemAdapter'. Did you mean 'readFile'?
+src/plugins/validator.ts(186,15): error TS2339: Property 'existsSync' does not exist on type 'FileSystemAdapter'.
+src/plugins/validator.ts(196,15): error TS2339: Property 'existsSync' does not exist on type 'FileSystemAdapter'.
+src/providers/email/adapters/smtp.ts(14,28): error TS2307: Cannot find module '../../../../platform/index.js' or its corresponding type declarations.
+src/providers/storage/adapters/local.ts(9,28): error TS2307: Cannot find module '../../../../platform/index.js' or its corresponding type declarations.
+ÔÇëELIFECYCLEÔÇë Command failed with exit code 2.

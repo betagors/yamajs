@@ -16,14 +16,14 @@
 ## Installation
 
 ```bash
-pnpm add @yamajs/storage @yamajs/s3
+pnpm add @yamajs/storage @yamajs/storage-s3
 ```
 
 ## Quick Start
 
 ```typescript
 import { Storage } from '@yamajs/storage';
-import { createS3Adapter } from '@yamajs/s3';
+import { createS3Adapter } from '@yamajs/storage-s3';
 
 // Create adapter
 const s3Adapter = createS3Adapter({
@@ -85,7 +85,7 @@ Then register the provider and use it:
 
 ```typescript
 import { registerStorageProvider, createStorageFromConfig } from '@yamajs/storage';
-import { createS3Adapter } from '@yamajs/s3';
+import { createS3Adapter } from '@yamajs/storage-s3';
 
 // Register provider (usually done by plugin)
 registerStorageProvider('s3', createS3Adapter);
@@ -279,7 +279,7 @@ await storage.url('file.jpg', { expires: 3600 });
 ```typescript
 import { Yama } from '@yamajs/core';
 import { Storage } from '@yamajs/storage';
-import { createS3Adapter } from '@yamajs/s3';
+import { createS3Adapter } from '@yamajs/storage-s3';
 
 const app = new Yama();
 
@@ -322,7 +322,7 @@ All of these can be added without changing the core API you use today!
 
 Storage works with any adapter that implements the `StorageAdapter` interface:
 
-- **[@yamajs/s3](../s3)** - S3-compatible storage (S3, MinIO, etc.)
+- **[@yamajs/storage-s3](../s3)** - S3-compatible storage (S3, MinIO, etc.)
 - **@yamajs/storage-local** _(coming soon)_ - Local filesystem
 - **@yamajs/storage-gcs** _(coming soon)_ - Google Cloud Storage
 - **@yamajs/storage-azure** _(coming soon)_ - Azure Blob Storage

@@ -1,5 +1,5 @@
-﻿{
-  "name": "@yamajs/pglite",
+{
+  "name": "@yamajs/db-pglite",
   "version": "0.1.0-alpha.0",
   "type": "module",
   "description": "Yama PGLite database adapter",
@@ -40,8 +40,8 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
-    "@yamajs/core": "workspace:*",
-    "@electric-sql/pglite": "^0.2.0"
+    "@electric-sql/pglite": "^0.2.0",
+    "@yamajs/kernel": "workspace:*"
   },
   "peerDependencies": {
     "drizzle-orm": "^0.30.0"

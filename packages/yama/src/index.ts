@@ -3,5 +3,5 @@
  * Re-exports everything from @yamajs/core
  */
 
-export * from "@yamajs/core";
+export * from "@yamajs/kernel";
 

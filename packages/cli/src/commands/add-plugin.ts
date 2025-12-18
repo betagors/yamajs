@@ -5,7 +5,7 @@ import { findYamaConfig } from "../utils/project-detection.ts";
 import { getConfigDir, readYamaConfig, writeYamaConfig, readPackageJson } from "../utils/file-utils.ts";
 import { success, error } from "../utils/cli-utils.ts";
 import { detectPackageManager } from "../utils/project-detection.ts";
-import { loadPlugin } from "@yamajs/core";
+import { loadPlugin } from "@yamajs/kernel";
 
 interface AddPluginOptions {
   config?: string;

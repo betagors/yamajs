@@ -1,15 +1,15 @@
-﻿# @yamajs/s3
+﻿# @yamajs/storage-s3
 
 S3-compatible object storage adapter for Yama.
 
 ## Installation
 
 ```bash
-npm install @yamajs/s3
+npm install @yamajs/storage-s3
 # or
-pnpm add @yamajs/s3
+pnpm add @yamajs/storage-s3
 # or
-yarn add @yamajs/s3
+yarn add @yamajs/storage-s3
 ```
 
 ## Configuration
@@ -18,7 +18,7 @@ Add the plugin to your `yama.yaml`:
 
 ```yaml
 plugins:
-  "@yamajs/s3":
+  "@yamajs/storage-s3":
     region: "us-east-1"
     accessKeyId: "${AWS_ACCESS_KEY_ID}"
     secretAccessKey: "${AWS_SECRET_ACCESS_KEY}"

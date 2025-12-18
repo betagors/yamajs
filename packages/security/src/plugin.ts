@@ -1,8 +1,8 @@
-﻿import type { YamaPlugin, PluginContext } from "@yamajs/core";
+﻿import type { YamaPlugin, PluginContext } from "@yamajs/kernel";
 import type { SecurityPluginConfig } from "./types.js";
 import { createSecurityMiddleware } from "./middleware.js";
 // Note: This type is exported from @yamajs/core but may need to be imported
-// from source during development. Once core is built, use: import type { MiddlewareDefinition } from "@yamajs/core";
+// from source during development. Once core is built, use: import type { MiddlewareDefinition } from "@yamajs/kernel";
 import type { MiddlewareDefinition } from "../../core/src/middleware/index.js";
 
 /**

@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "@yamajs/yama",
   "version": "0.1.0-alpha.0",
   "type": "module",
@@ -34,7 +34,7 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
-    "@yamajs/core": "workspace:*"
+    "@yamajs/kernel": "workspace:*"
   },
   "devDependencies": {
     "rimraf": "^5.0.0",
@@ -45,4 +45,3 @@
     "node": ">=18"
   }
 }
-

@@ -7,7 +7,7 @@ import {
   updateState,
   loadEnvFile,
   resolveEnvVars,
-} from "@yamajs/core";
+} from "@yamajs/kernel";
 import { info, error, success, warning, dim, fmt, createSpinner, formatDuration } from "../utils/cli-utils.ts";
 import { confirm } from "../utils/interactive.ts";
 import { getDatabasePluginAndConfig } from "../utils/db-plugin.ts";

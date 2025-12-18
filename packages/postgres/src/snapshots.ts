@@ -1,4 +1,4 @@
-﻿import type { DatabaseConfig } from "@yamajs/core";
+﻿import type { DatabaseConfig } from "@yamajs/kernel";
 import { initDatabase, getSQL, closeDatabase } from "./client";
 
 /**

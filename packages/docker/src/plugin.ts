@@ -1,6 +1,6 @@
 ﻿import { writeFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
-import type { YamaPlugin, PluginContext } from "@yamajs/core";
+import type { YamaPlugin, PluginContext } from "@yamajs/kernel";
 import type { DockerPluginConfig } from "./types.js";
 import {
   getProjectInfo,

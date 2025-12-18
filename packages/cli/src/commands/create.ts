@@ -437,11 +437,11 @@ export async function createCommand(projectName?: string, options: CreateOptions
     // Core dependencies
     if (isInWorkspace && workspaceRootForProject) {
       // Use file: protocol for workspace packages
-      dependencies["@yamajs/core"] = `file:${relative(projectPath, join(workspaceRootForProject, "packages", "core")).replace(/\\/g, "/")}`;
+      dependencies["@yamajs/kernel"] = `file:${relative(projectPath, join(workspaceRootForProject, "packages", "core")).replace(/\\/g, "/")}`;
       dependencies["@yamajs/node"] = `file:${relative(projectPath, join(workspaceRootForProject, "packages", "node")).replace(/\\/g, "/")}`;
       devDependencies["@yamajs/cli"] = `file:${relative(projectPath, join(workspaceRootForProject, "packages", "cli")).replace(/\\/g, "/")}`;
     } else {
-      dependencies["@yamajs/core"] = "latest";
+      dependencies["@yamajs/kernel"] = "latest";
       dependencies["@yamajs/node"] = "latest";
       // Note: @yamajs/cli should be installed globally, not as a project dependency
       // Users should run: npm install -g @yamajs/cli (once published)

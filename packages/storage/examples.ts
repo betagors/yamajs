@@ -281,7 +281,7 @@ async function multiStorage() {
 
 // In your Yama app
 async function yamaIntegration() {
-    const { Yama } = await import('@yamajs/core');
+    const { Yama } = await import('@yamajs/kernel');
 
     const app = new Yama();
 

@@ -1,6 +1,6 @@
 ﻿import { describe, it, expect, beforeEach, vi } from "vitest";
 import { updateTodo } from "./updateTodo.ts";
-import type { HandlerContext } from "@yamajs/core";
+import type { HandlerContext } from "@yamajs/kernel";
 import type { UpdateTodoInput } from "@yamajs/types";
 
 describe("updateTodo Handler", () => {

@@ -1,6 +1,6 @@
 ﻿import { writeFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
-import type { YamaPlugin, PluginContext } from "@yamajs/core";
+import type { YamaPlugin, PluginContext } from "@yamajs/kernel";
 import type { CIPluginConfig } from "./types.js";
 import {
   getCIProjectInfo,

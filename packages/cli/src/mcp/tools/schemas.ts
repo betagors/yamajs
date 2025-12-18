@@ -4,7 +4,7 @@ import { executeCommand } from "../utils/output-capture.ts";
 import { readYamaConfig } from "../../utils/file-utils.ts";
 import { findYamaConfig } from "../../utils/project-detection.ts";
 import { existsSync } from "fs";
-import type { YamaSchemas } from "@yamajs/core";
+import type { YamaSchemas } from "@yamajs/kernel";
 
 const inputSchema = z.object({
   config: z.string().optional().describe("Path to yama.yaml configuration file"),

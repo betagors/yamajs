@@ -1,15 +1,15 @@
-﻿# @yamajs/logging
+﻿# @yamajs/plugin-logging
 
 Structured logging plugin for Yama with support for console, file, and S3 transports.
 
 ## Installation
 
 ```bash
-npm install @yamajs/logging
+npm install @yamajs/plugin-logging
 # or
-pnpm add @yamajs/logging
+pnpm add @yamajs/plugin-logging
 # or
-yarn add @yamajs/logging
+yarn add @yamajs/plugin-logging
 ```
 
 ## Configuration
@@ -18,7 +18,7 @@ Add the plugin to your `yama.yaml`:
 
 ```yaml
 plugins:
-  "@yamajs/logging":
+  "@yamajs/plugin-logging":
     level: "info"  # debug, info, warn, error
     transports:
       - type: "console"
@@ -48,7 +48,7 @@ Always available, no dependencies required.
 ```
 
 #### File Transport
-Requires `@yamajs/fs` plugin to be installed and configured.
+Requires `@yamajs/storage-fs` plugin to be installed and configured.
 
 ```yaml
 - type: "file"
@@ -61,7 +61,7 @@ Requires `@yamajs/fs` plugin to be installed and configured.
 ```
 
 #### S3 Transport
-Requires `@yamajs/s3` plugin to be installed and configured.
+Requires `@yamajs/storage-s3` plugin to be installed and configured.
 
 ```yaml
 - type: "s3"
@@ -139,8 +139,8 @@ Structured JSON format:
 ## Notes
 
 - Console transport is always available
-- File transport requires `@yamajs/fs` plugin
-- S3 transport requires `@yamajs/s3` plugin
+- File transport requires `@yamajs/storage-fs` plugin
+- S3 transport requires `@yamajs/storage-s3` plugin
 - If optional plugins are not available, those transports are skipped gracefully
 - Logger is registered as a service and accessible via `context.getService('logger')`
 - Logs are buffered/batched for performance in file and S3 transports

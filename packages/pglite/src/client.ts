@@ -1,5 +1,5 @@
 ﻿import { drizzle } from "drizzle-orm/pglite";
-import type { DatabaseConfig } from "@yamajs/core";
+import type { DatabaseConfig } from "@yamajs/kernel";
 import { join } from "path";
 import { existsSync, mkdirSync } from "fs";
 import { fileURLToPath } from "url";

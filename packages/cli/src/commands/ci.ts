@@ -15,7 +15,7 @@ import {
   createTransition,
   resolveEnvVars,
   loadEnvFile,
-} from "@yamajs/core";
+} from "@yamajs/kernel";
 import { info, error, success, warning } from "../utils/cli-utils.ts";
 
 interface CIAnalyzeOptions {

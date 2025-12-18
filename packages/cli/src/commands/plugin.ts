@@ -1,6 +1,6 @@
 ﻿import { execSync } from "child_process";
 import { readPackageJson } from "../utils/file-utils.ts";
-import { loadPluginFromPackage } from "@yamajs/core";
+import { loadPluginFromPackage } from "@yamajs/kernel";
 
 interface PluginOptions {
   package?: string;

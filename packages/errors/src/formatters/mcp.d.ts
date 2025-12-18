@@ -53,4 +53,3 @@ export declare function createMCPTextResult(text: string): MCPToolResult;
  * Create a successful MCP tool result with JSON content
  */
 export declare function createMCPJsonResult(data: unknown): MCPToolResult;
-//# sourceMappingURL=mcp.d.ts.map

@@ -10,8 +10,8 @@ export function generateSDK(): string {
  * Generates TypeScript SDK client from yama.yaml endpoint definitions
  */
 
-import type { SchemaField } from "@yamajs/core";
-import { normalizeQueryOrParams, normalizeApisConfig } from "@yamajs/core";
+import type { SchemaField } from "@yamajs/kernel";
+import { normalizeQueryOrParams, normalizeApisConfig } from "@yamajs/kernel";
 
 export interface EndpointDefinition {
   path: string;
@@ -400,7 +400,7 @@ export function generateSDK(
   }
   
   if (needsPaginatedResponse) {
-    imports += `import type { PaginatedResponse } from "@yamajs/core";\n`;
+    imports += `import type { PaginatedResponse } from "@yamajs/kernel";\n`;
   }
   
   imports += "\n";

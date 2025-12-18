@@ -2,7 +2,7 @@
 import { findYamaConfig } from "../utils/project-detection.ts";
 import { getConfigDir } from "../utils/file-utils.ts";
 import { success, error, info } from "../utils/cli-utils.ts";
-import { loadPluginFromPackage } from "@yamajs/core";
+import { loadPluginFromPackage } from "@yamajs/kernel";
 import { table } from "table";
 
 interface PluginInfoOptions {

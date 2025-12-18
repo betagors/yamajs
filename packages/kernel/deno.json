@@ -1,0 +1,6 @@
+{
+  "imports": {
+    "@yamajs/core": "npm:@yamajs/core"
+  }
+}
+

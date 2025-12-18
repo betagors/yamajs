@@ -1,6 +1,6 @@
-﻿import type { YamaPlugin } from "@yamajs/core";
-import { registerStorageAdapter } from "@yamajs/core";
-import { createFSBucket, type FSAdapterConfig } from "./adapter";
+﻿import { type YamaPlugin } from "@yamajs/kernel";
+// Importing the adapter registers it in the core provider registry
+import './adapter.js';
 
 /**
  * Filesystem storage plugin
@@ -11,41 +11,11 @@ const plugin: YamaPlugin = {
   pluginApi: "1.0",
   yamaCore: "^0.1.0",
 
-  async init(opts?: Record<string, unknown>) {
-    const config = opts as {
-      basePath: string;
-      baseUrl?: string;
-    };
-
-    if (!config.basePath) {
-      throw new Error("FS plugin requires basePath");
-    }
-
-    // Register storage adapter factory
-    registerStorageAdapter("fs", (storageConfig) => {
-      const fsConfig = storageConfig as unknown as FSAdapterConfig;
-      if (!fsConfig.basePath) {
-        throw new Error("FS adapter requires basePath in config");
-      }
-      return createFSBucket(fsConfig);
-    });
-
-    // Create single bucket (simplified - no multiple buckets for FS)
-    const bucket = createFSBucket({
-      basePath: config.basePath,
-      baseUrl: config.baseUrl,
-    });
-
-    // Return plugin API
-    return {
-      bucket,
-      // For consistency with S3 plugin, also expose as "default"
-      buckets: {
-        default: bucket,
-      },
-    };
+  async init() {
+    // The adapter is already registered by the import side-effect.
+    // The core provider system will instantiate it when 'storage' provider is initialized.
+    return {};
   },
 };
 
 export default plugin;
-

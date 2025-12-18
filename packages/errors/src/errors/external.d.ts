@@ -38,4 +38,3 @@ export declare class ExternalServiceError extends YamaError {
 export declare class TimeoutError extends YamaError {
     constructor(message: string, options?: Omit<YamaErrorOptions, 'statusCode'>);
 }
-//# sourceMappingURL=external.d.ts.map

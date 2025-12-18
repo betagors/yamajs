@@ -10,7 +10,7 @@ import {
   type YamaEntities,
   entitiesToSchemas,
   mergeSchemas 
-} from "@yamajs/core";
+} from "@yamajs/kernel";
 
 const inputSchema = z.object({
   schema: z.string().optional().describe("Raw YAML schema content to validate (entities section or full yama.yaml content)"),

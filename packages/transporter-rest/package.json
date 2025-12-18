@@ -1,0 +1,29 @@
+{
+    "name": "@yamajs/transporter-rest",
+    "version": "0.1.0-alpha.0",
+    "type": "module",
+    "description": "Yama REST API Transporter - Projections for REST endpoints",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "files": [
+        "dist"
+    ],
+    "publishConfig": {
+        "access": "public"
+    },
+    "scripts": {
+        "build": "tsc -p tsconfig.build.json",
+        "dev": "tsc -w -p tsconfig.build.json",
+        "clean": "rimraf dist"
+    },
+    "dependencies": {
+        "@yamajs/kernel": "workspace:*"
+    },
+    "devDependencies": {
+        "rimraf": "^5.0.0",
+        "typescript": "^5.0.0"
+    },
+    "engines": {
+        "node": ">=18"
+    }
+}

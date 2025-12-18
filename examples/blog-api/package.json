@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "examples/blog-api",
   "version": "0.1.0",
   "type": "module",
@@ -18,12 +18,12 @@
     "deploy:prod": "yama deploy --env production --plan"
   },
   "dependencies": {
-    "@yamajs/core": "file:../../packages/core",
-    "@yamajs/pglite": "file:../../packages/pglite",
-    "@yamajs/postgres": "file:../../packages/postgres",
-    "@yamajs/node": "file:../../packages/node",
     "drizzle-orm": "^0.30.0",
-    "postgres": "^3.4.3"
+    "postgres": "^3.4.3",
+    "@yamajs/db-pglite": "file:../../packages/pglite",
+    "@yamajs/db-postgres": "file:../../packages/postgres",
+    "@yamajs/kernel": "file:../../packages/kernel",
+    "@yamajs/runtime-node": "file:../../packages/runtime-node"
   },
   "devDependencies": {
     "@yamajs/cli": "file:../../packages/cli"

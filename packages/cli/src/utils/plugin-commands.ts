@@ -1,8 +1,8 @@
 ﻿import { existsSync } from "fs";
 import { findYamaConfig } from "./project-detection.ts";
 import { getConfigDir, readYamaConfig } from "./file-utils.ts";
-import { resolveEnvVars, loadEnvFile, setPluginRegistryConfig, loadPlugin, getAllCLICommands } from "@yamajs/core";
-import type { PluginCLICommand } from "@yamajs/core";
+import { resolveEnvVars, loadEnvFile, setPluginRegistryConfig, loadPlugin, getAllCLICommands } from "@yamajs/kernel";
+import type { PluginCLICommand } from "@yamajs/kernel";
 
 /**
  * Load plugins from yama.yaml and return their CLI commands

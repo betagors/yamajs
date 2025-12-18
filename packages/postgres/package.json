@@ -1,5 +1,5 @@
-﻿{
-  "name": "@yamajs/postgres",
+{
+  "name": "@yamajs/db-postgres",
   "version": "0.1.0-alpha.0",
   "type": "module",
   "description": "Yama PostgreSQL database adapter",
@@ -41,9 +41,9 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
-    "@yamajs/core": "workspace:*",
     "drizzle-orm": "^0.30.0",
-    "postgres": "^3.4.3"
+    "postgres": "^3.4.3",
+    "@yamajs/kernel": "workspace:*"
   },
   "devDependencies": {
     "rimraf": "^5.0.0",

@@ -1,4 +1,4 @@
-﻿# @yamajs/security
+﻿# @yamajs/plugin-security
 
 Security plugin for Yama framework providing CORS, CSRF protection, security headers, and input sanitization.
 
@@ -12,11 +12,11 @@ Security plugin for Yama framework providing CORS, CSRF protection, security hea
 ## Installation
 
 ```bash
-pnpm add @yamajs/security
+pnpm add @yamajs/plugin-security
 # or
-npm install @yamajs/security
+npm install @yamajs/plugin-security
 # or
-yarn add @yamajs/security
+yarn add @yamajs/plugin-security
 ```
 
 ## Usage
@@ -27,7 +27,7 @@ Add the security plugin to your `yama.yaml`:
 
 ```yaml
 plugins:
-  - name: "@yamajs/security"
+  - name: "@yamajs/plugin-security"
     config:
       cors:
         origins: ["https://example.com"]
@@ -109,10 +109,10 @@ sanitization:
 The plugin exposes the following API:
 
 ```typescript
-import type { SecurityPluginConfig } from "@yamajs/security";
+import type { SecurityPluginConfig } from "@yamajs/plugin-security";
 
 // Get plugin API
-const securityAPI = getPluginAPI("@yamajs/security");
+const securityAPI = getPluginAPI("@yamajs/plugin-security");
 
 // Update configuration
 securityAPI.updateConfig({
@@ -133,7 +133,7 @@ import {
   validateCsrfToken,
   applySecurityHeaders,
   sanitizeRequestData,
-} from "@yamajs/security";
+} from "@yamajs/plugin-security";
 
 // Apply CORS headers
 applyCorsHeaders(request, response, corsConfig);
@@ -165,7 +165,7 @@ You can disable individual features by setting them to `false`:
 
 ```yaml
 plugins:
-  - name: "@yamajs/security"
+  - name: "@yamajs/plugin-security"
     config:
       cors: false  # Disable CORS
       csrf: false  # Disable CSRF

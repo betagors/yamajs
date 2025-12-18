@@ -5,7 +5,7 @@ import {
   getAllSnapshots,
   getCurrentSnapshot,
   getAllStates,
-} from "@yamajs/core";
+} from "@yamajs/kernel";
 import { info, error, dim, fmt, printTable } from "../utils/cli-utils.ts";
 
 interface SnapshotListOptions {

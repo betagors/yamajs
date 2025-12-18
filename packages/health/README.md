@@ -1,4 +1,4 @@
-﻿# @yamajs/health
+﻿# @yamajs/plugin-health
 
 Yama health check plugin with comprehensive health monitoring and aggregation.
 
@@ -13,11 +13,11 @@ Yama health check plugin with comprehensive health monitoring and aggregation.
 ## Installation
 
 ```bash
-npm install @yamajs/health
+npm install @yamajs/plugin-health
 # or
-pnpm add @yamajs/health
+pnpm add @yamajs/plugin-health
 # or
-yarn add @yamajs/health
+yarn add @yamajs/plugin-health
 ```
 
 ## Configuration
@@ -26,15 +26,15 @@ Add the health plugin to your `yama.yaml`:
 
 ```yaml
 plugins:
-  - name: "@yamajs/health"
+  - name: "@yamajs/plugin-health"
     config:
       path: "/health"  # Health endpoint path (default: "/health")
       includeSystemInfo: true  # Include system metrics (default: true)
       includeDetails: true  # Include detailed component info (default: true)
       criticalComponents:  # Components that must be healthy
-        - "@yamajs/postgres"
+        - "@yamajs/db-postgres"
       excludeComponents:  # Components to exclude from checks
-        - "@yamajs/logging"
+        - "@yamajs/plugin-logging"
       customChecks: []  # Custom health checks (see below)
 ```
 
@@ -48,7 +48,7 @@ The health plugin automatically registers a health service that can be accessed 
 import { getPluginAPI } from "@yamajs/core";
 
 // Get health status
-const healthAPI = getPluginAPI("@yamajs/health");
+const healthAPI = getPluginAPI("@yamajs/plugin-health");
 const status = await healthAPI.getHealth();
 
 console.log(status.healthy); // true/false
@@ -59,7 +59,7 @@ console.log(status.summary); // Summary statistics
 ### Register Custom Health Checks
 
 ```typescript
-const healthAPI = getPluginAPI("@yamajs/health");
+const healthAPI = getPluginAPI("@yamajs/plugin-health");
 
 // Register a custom health check
 healthAPI.registerCheck("database", async () => {
@@ -87,8 +87,8 @@ healthAPI.unregisterCheck("database");
 ### Check Specific Component
 
 ```typescript
-const healthAPI = getPluginAPI("@yamajs/health");
-const componentHealth = await healthAPI.getComponentHealth("@yamajs/postgres");
+const healthAPI = getPluginAPI("@yamajs/plugin-health");
+const componentHealth = await healthAPI.getComponentHealth("@yamajs/db-postgres");
 
 if (componentHealth) {
   console.log(componentHealth.healthy);
@@ -99,7 +99,7 @@ if (componentHealth) {
 ### Quick Health Check
 
 ```typescript
-const healthAPI = getPluginAPI("@yamajs/health");
+const healthAPI = getPluginAPI("@yamajs/plugin-health");
 const isHealthy = await healthAPI.isHealthy(); // true/false
 ```
 
@@ -160,7 +160,7 @@ And create a handler:
 import { getPluginAPI } from "@yamajs/core";
 
 export default async function healthHandler(context) {
-  const healthAPI = getPluginAPI("@yamajs/health");
+  const healthAPI = getPluginAPI("@yamajs/plugin-health");
   const status = await healthAPI.getHealth();
   
   return context

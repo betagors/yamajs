@@ -1,4 +1,4 @@
-﻿import type { PluginCLICommand } from "@yamajs/core";
+﻿import type { PluginCLICommand } from "@yamajs/kernel";
 import type { DockerPluginAPI } from "./plugin.js";
 import { interactiveDockerComposeSetup } from "./interactive.js";
 
