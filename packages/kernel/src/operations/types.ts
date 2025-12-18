@@ -194,7 +194,39 @@ export interface OperationConfig {
   auth?: any;
   description?: string;
   handler?: any;
-  // Add other properties inferred from usage in parser.ts
+
+  /**
+   * REST Transporter configuration
+   */
+  rest?: boolean | RestOperationConfig;
+
+  /**
+   * GraphQL Transporter configuration
+   */
+  graphql?: boolean | GraphQLOperationConfig;
+
+  /**
+   * Policy to use for this operation
+   */
+  policy?: string;
+}
+
+export interface RestOperationConfig {
+  /** HTTP Method (GET, POST, etc) */
+  method?: string;
+  /** Custom path (e.g., '/posts/:id/publish') */
+  path?: string;
+  /** Success status code */
+  status?: number;
+  /** Visibility (public, private, internal) */
+  visibility?: string;
+}
+
+export interface GraphQLOperationConfig {
+  /** GraphQL operation name */
+  name?: string;
+  /** GraphQL type (query, mutation, subscription) */
+  type?: 'query' | 'mutation' | 'subscription';
 }
 
 export interface ParsedOperation {

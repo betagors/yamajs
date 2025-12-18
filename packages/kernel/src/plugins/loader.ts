@@ -1,5 +1,4 @@
 import { getRuntime } from "../platform/index.js";
-import { pathToFileURL } from "url";
 import type { PluginManifest, YamaPlugin } from "./base.js";
 import { PluginError, ErrorCodes } from "@yamajs/errors";
 
@@ -19,21 +18,19 @@ export async function loadPluginFromPackage(
 ): Promise<PluginManifest> {
   const fs = getRuntime().fs;
   const path = getRuntime().path;
+  const modules = getRuntime().modules;
+
   // Try to resolve the package
   let packagePath: string;
   try {
-    const { createRequire } = await import("module");
-
-    // Try to resolve from project directory (use process.cwd() if not provided)
+    // Try to resolve from project directory
     const projectRoot = projectDir || getRuntime().env.cwd();
     try {
-      const projectRequire = createRequire(path.resolve(projectRoot, "package.json"));
-      packagePath = projectRequire.resolve(packageName);
+      packagePath = await modules.resolve(packageName, path.join(projectRoot, "package.json"));
     } catch {
       // If that fails, try from current context (for workspace scenarios)
       try {
-        const require = createRequire(import.meta.url);
-        packagePath = require.resolve(packageName);
+        packagePath = await modules.resolve(packageName);
       } catch {
         // Re-throw the original error
         throw new PluginError(`Cannot find module '${packageName}'`, {
@@ -135,23 +132,21 @@ export async function importPlugin(
   projectDir?: string
 ): Promise<YamaPlugin> {
   const fs = getRuntime().fs;
+  const modules = getRuntime().modules;
   const path = getRuntime().path;
+
   // Resolve entry point
   let entryPoint: string;
   let packageJson: { version?: string } = {};
   try {
-    const { createRequire } = await import("module");
-
-    // Try to resolve from project directory (use process.cwd() if not provided)
+    // Try to resolve from project directory
     const projectRoot = projectDir || getRuntime().env.cwd();
     let packagePath: string;
     try {
-      const projectRequire = createRequire(path.resolve(projectRoot, "package.json"));
-      packagePath = projectRequire.resolve(packageName);
+      packagePath = await modules.resolve(packageName, path.join(projectRoot, "package.json"));
     } catch {
       // If that fails, try from current context (for workspace scenarios)
-      const require = createRequire(import.meta.url);
-      packagePath = require.resolve(packageName);
+      packagePath = await modules.resolve(packageName);
     }
 
     const packageDir = path.dirname(
@@ -180,12 +175,9 @@ export async function importPlugin(
     );
   }
 
-  // Convert to file URL for ES module import
-  const fileUrl = pathToFileURL(entryPoint).href;
-
   try {
-    // Dynamic import
-    const pluginModule = await import(fileUrl);
+    // Dynamic import via runtime abstraction
+    const pluginModule = await modules.import(entryPoint);
 
     // Look for default export or named export
     const plugin =

@@ -1,46 +1,57 @@
-export { default as plugin } from "./plugin.js";
-export { Logger, createTransports } from "./logger.js";
+export {
+  Logger,
+  type Transport,
+  type LoggerConfig
+} from "./logger.js";
+
 export {
   LogLevel,
   parseLogLevel,
-  getLogLevelName,
-  type LogFormat,
-  type LogEntry,
-  type Transport,
-  type TransportConfig,
-  type ConsoleTransportConfig,
-  type FileTransportConfig,
-  type FileRotationConfig,
-  type S3TransportConfig,
-  type LoggingPluginConfig,
-  type AnyTransportConfig,
-  type RedactionConfig,
-} from "./types.js";
-export { formatText, formatJSON, formatPretty, formatLogEntry } from "./formatters.js";
-export { createConsoleTransport } from "./transports/console.js";
-export { createFileTransport } from "./transports/file.js";
-export { createS3Transport } from "./transports/s3.js";
+  getLogLevelName
+} from "./levels.js";
+
 export {
-  createLoggingMiddleware,
+  type LogEvent
+} from "./event.js";
+
+export {
+  redact,
+  type RedactionConfig
+} from "./redact.js";
+
+export {
   createContextLogger,
-  type LoggingMiddlewareOptions,
-} from "./middleware.js";
+  type ContextLoggerOptions
+} from "./ctx-log.js";
 
+export {
+  createConsoleTransport,
+  ConsoleTransport,
+  type ConsoleTransportConfig
+} from "./transports/console.js";
 
+export {
+  createFSTransport,
+  FSTransport,
+  type FSTransportConfig
+} from "./transports/fs.js";
 
+export {
+  createS3Transport,
+  S3Transport,
+  type S3TransportConfig,
+  type S3Uploader
+} from "./transports/s3.js";
 
+export {
+  createOTELTransport,
+  OTELTransport
+} from "./transports/otel.js";
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+export {
+  formatLogEntry,
+  formatJSON,
+  formatPretty,
+  formatText,
+  type LogFormat
+} from "./formatters.js";

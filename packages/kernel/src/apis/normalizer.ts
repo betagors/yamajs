@@ -6,12 +6,15 @@ import type { YamaEntities } from '../entities.js';
 import type { YamaOperations } from '../operations/types.js';
 import type { YamaPolicies } from '../policies/types.js';
 
+import type { YamaSchemas } from '../schemas.js';
+
 export function normalizeApisConfig(
   config: {
     apis?: ApisConfig;
     operations?: YamaOperations;
     policies?: YamaPolicies;
-    schemas?: YamaEntities;
+    entities?: YamaEntities;
+    schemas?: YamaSchemas;
   }
 ): NormalizedApisConfig {
   const result: NormalizedApisConfig = {
@@ -39,6 +42,7 @@ export function normalizeApisConfig(
         singleConfig,
         config.operations,
         config.policies,
+        config.entities,
         config.schemas
       ));
     }
@@ -63,6 +67,7 @@ export function normalizeApisConfig(
           restConfigEntry,
           config.operations,
           config.policies,
+          config.entities,
           config.schemas
         ));
       }
@@ -78,13 +83,17 @@ function normalizeRestConfig(
   config: RestApiConfig,
   operations?: YamaOperations,
   policies?: YamaPolicies,
-  allEntities?: YamaEntities
+  entities?: YamaEntities,
+  schemas?: YamaSchemas
 ): NormalizedRestConfig {
   const endpoints: any[] = [];
 
   // Process operations if defined
   if (operations && config.operations) {
-    const availableEntities = allEntities ? new Set(Object.keys(allEntities)) : undefined;
+    const availableEntities = new Set<string>();
+    if (entities) Object.keys(entities).forEach(name => availableEntities.add(name));
+    if (schemas) Object.keys(schemas).forEach(name => availableEntities.add(name));
+
     const parsedOps = parseOperations(operations, availableEntities);
 
     // Determine which operations to include

@@ -91,7 +91,7 @@ export function formatGraphQLError(
     path,
     locations,
     requestId,
-    includeSuggestions = process.env.NODE_ENV !== 'production',
+    includeSuggestions = false,
   } = options;
 
   const formattedError: GraphQLFormattedError = {

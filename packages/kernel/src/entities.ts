@@ -7,7 +7,7 @@ import { normalizeConfig } from "./config-normalizer.js";
  * Entity field types supported by Yama
  * Supports all new type system types
  */
-export type EntityFieldType = 
+export type EntityFieldType =
   | "uuid" | "string" | "text" | "email" | "url" | "phone" | "slug"
   | "number" | "integer" | "int" | "int8" | "int16" | "int32" | "int64" | "bigint" | "uint"
   | "decimal" | "money" | "float" | "double"
@@ -35,11 +35,11 @@ export interface EntityField {
   default?: unknown; // Default value or function name (e.g., "now()")
   index?: boolean; // Create index on this field
   unique?: boolean; // Unique constraint
-  
+
   // API schema mapping
   api?: string | false; // API field name or false to exclude
   apiFormat?: string; // Format hint for API (e.g., "date-time")
-  
+
   // API validation rules
   required?: boolean;
   minLength?: number;
@@ -48,7 +48,7 @@ export interface EntityField {
   max?: number;
   pattern?: string;
   enum?: unknown[];
-  
+
   // New type system properties
   precision?: number;
   scale?: number;
@@ -58,7 +58,7 @@ export interface EntityField {
   writeOnly?: boolean;
   sensitive?: boolean;
   autoUpdate?: boolean;
-  
+
   // Inline relation marker (when field is an entity reference)
   _isInlineRelation?: boolean;
   _inlineRelation?: {
@@ -76,10 +76,10 @@ export interface EntityField {
 /**
  * Relation type definitions
  */
-export type RelationType = 
-  | `hasMany(${string})` 
-  | `belongsTo(${string})` 
-  | `hasOne(${string})` 
+export type RelationType =
+  | `hasMany(${string})`
+  | `belongsTo(${string})`
+  | `hasOne(${string})`
   | `manyToMany(${string})`;
 
 /**
@@ -230,23 +230,22 @@ export interface CrudConfig {
 
 /**
  * Entity definition (unified with schemas)
- * Supports new schema-first syntax with variants, computed fields, etc.
+ * Supports schema-first syntax with computed fields, etc.
  * EntityDefinition and SchemaDefinition are compatible - both represent the same concept
  */
 export interface EntityDefinition {
   // Source schema/entity (for derived schemas)
   source?: string; // Source entity/schema name to inherit from
-  
+
   // Include only specific fields from source
   include?: string[]; // Field names to include (used with source)
-  
+
   // Database config (can be at top level or in database:)
   table?: string; // Database table name
   fields?: Record<string, EntityFieldDefinition>; // Supports new concise type syntax, inline nested types
   relations?: Record<string, RelationDefinition>; // Dedicated relations section
   validations?: Record<string, ValidationRule[]>; // Declarative validations
   computed?: Record<string, ComputedFieldDefinition>; // Computed fields
-  variants?: Record<string, import("./variants/types.js").VariantConfig>; // Schema variants for DTOs
   hooks?: EntityHooks; // Lifecycle hooks
   indexes?: EntityIndex[]; // Database indexes
   softDelete?: boolean; // Enable soft deletes
@@ -261,9 +260,8 @@ export interface EntityDefinition {
 /**
  * Collection of entity definitions
  * 
- * In the schema-first approach, entities and schemas are unified.
- * Use normalizeSchemas() to handle both schemas: and entities: keys in config.
- * Prefer using 'schemas:' in your yama.yaml - 'entities:' is supported for backward compatibility.
+ * Entities represent database tables and their relationships.
+ * Use entities: key in yama.yaml to define persistent models.
  */
 export interface YamaEntities {
   [entityName: string]: EntityDefinition;
@@ -321,7 +319,7 @@ export function parseFieldDefinition(
         _inlineNestedFields: fieldDef.fields as Record<string, EntityFieldDefinition>,
       } as any;
     }
-    
+
     // If it's an object, convert using TypeParser
     if (typeof fieldDef === "object" && fieldDef !== null && !Array.isArray(fieldDef)) {
       const parsedType = TypeParser.parseExpanded(fieldDef as any);
@@ -358,7 +356,7 @@ export function parseFieldDefinition(
   const relationConfig: Record<string, string | boolean> = {};
   const parts = str.split(/\s+/);
   let typeStr = parts[0];
-  
+
   for (let i = 1; i < parts.length; i++) {
     const part = parts[i];
     if (part === "cascade") {
@@ -380,7 +378,7 @@ export function parseFieldDefinition(
     entityCheckStr = entityCheckStr.slice(0, -1);
   }
 
-  const isEntityReference = /^[A-Z][a-zA-Z0-9]*$/.test(entityCheckStr) && 
+  const isEntityReference = /^[A-Z][a-zA-Z0-9]*$/.test(entityCheckStr) &&
     (availableEntities?.has(entityCheckStr) ?? true);
 
   if (isEntityReference) {
@@ -389,7 +387,7 @@ export function parseFieldDefinition(
     const hasArray = str.includes("[]");
     const isRequired = str.endsWith("!") || (!str.endsWith("?") && !str.includes("?"));
     const isNullable = str.endsWith("?") || (!isRequired);
-    
+
     const field: EntityField = {
       type: "string",
       _isInlineRelation: true,
@@ -418,7 +416,7 @@ export function parseFieldDefinition(
 
   // Use TypeParser for all type parsing
   const parsedType = TypeParser.parse(str);
-  
+
   // Convert FieldType to EntityField
   const field: EntityField = {
     type: parsedType.type as EntityFieldType,
@@ -502,7 +500,7 @@ export function normalizeEntityDefinition(
   const dbConfig = typeof entityDef.database === "string"
     ? { table: entityDef.database }
     : entityDef.database;
-  
+
   // Build normalized structure - only copy what we need
   const normalized: Omit<EntityDefinition, "fields" | "relations"> & {
     fields: Record<string, EntityField>;
@@ -514,7 +512,6 @@ export function normalizeEntityDefinition(
     crud: entityDef.crud,
     validations: entityDef.validations,
     computed: entityDef.computed,
-    variants: entityDef.variants,
     hooks: entityDef.hooks,
     softDelete: entityDef.softDelete,
     source: entityDef.source,
@@ -534,7 +531,7 @@ export function normalizeEntityDefinition(
     if (sourceEntity) {
       // Normalize source entity to get its fields
       const normalizedSource = normalizeEntityDefinition(entityDef.source, sourceEntity, allEntities);
-      
+
       // If include is specified, only include those fields
       if (entityDef.include && Array.isArray(entityDef.include)) {
         for (const fieldName of entityDef.include) {
@@ -565,15 +562,15 @@ export function normalizeEntityDefinition(
   }
   const fieldEntries = Object.entries(mergedFields);
   const inlineRelations: Record<string, ReturnType<typeof parseRelationDefinition>> = {};
-  
+
   for (let i = 0; i < fieldEntries.length; i++) {
     const [fieldName, fieldDef] = fieldEntries[i];
     const parsedField = parseFieldDefinition(fieldName, fieldDef, availableEntities);
-    
+
     // Check if this is an inline relation
     if (parsedField._isInlineRelation && parsedField._inlineRelation) {
       const inlineRel = parsedField._inlineRelation;
-      
+
       // Convert inline relation to normalized relation format
       const normalizedRelation: ReturnType<typeof parseRelationDefinition> = {
         type: inlineRel.relationType,
@@ -592,7 +589,7 @@ export function normalizeEntityDefinition(
       // Auto-generate foreign key for belongsTo relations
       if (inlineRel.relationType === "belongsTo") {
         const foreignKeyName = `${fieldName}Id`;
-        
+
         // Only auto-generate if foreign key doesn't already exist
         if (!entityDef.fields || !entityDef.fields[foreignKeyName]) {
           normalized.fields[foreignKeyName] = {
@@ -658,28 +655,28 @@ function camelToSnake(str: string): string {
  */
 function entityTypeToSchemaType(entityType: EntityFieldType): SchemaField["type"] {
   // Map all new types to JSON Schema types
-  if (entityType === "uuid" || entityType === "string" || entityType === "text" || 
-      entityType === "email" || entityType === "url" || entityType === "phone" || 
-      entityType === "slug" || entityType === "base64") {
+  if (entityType === "uuid" || entityType === "string" || entityType === "text" ||
+    entityType === "email" || entityType === "url" || entityType === "phone" ||
+    entityType === "slug" || entityType === "base64") {
     return "string";
   }
-  if (entityType === "number" || entityType === "decimal" || entityType === "money" || 
-      entityType === "float" || entityType === "double") {
+  if (entityType === "number" || entityType === "decimal" || entityType === "money" ||
+    entityType === "float" || entityType === "double") {
     return "number";
   }
-  if (entityType === "integer" || entityType === "int" || entityType === "int8" || 
-      entityType === "int16" || entityType === "int32" || entityType === "int64" || 
-      entityType === "bigint" || entityType === "uint") {
+  if (entityType === "integer" || entityType === "int" || entityType === "int8" ||
+    entityType === "int16" || entityType === "int32" || entityType === "int64" ||
+    entityType === "bigint" || entityType === "uint") {
     return "integer";
   }
   if (entityType === "boolean") {
     return "boolean";
   }
-  if (entityType === "timestamp" || entityType === "timestamptz" || 
-      entityType === "timestamplocal" || entityType === "datetime" || 
-      entityType === "datetimetz" || entityType === "datetimelocal" || 
-      entityType === "date" || entityType === "time" || entityType === "interval" || 
-      entityType === "duration") {
+  if (entityType === "timestamp" || entityType === "timestamptz" ||
+    entityType === "timestamplocal" || entityType === "datetime" ||
+    entityType === "datetimetz" || entityType === "datetimelocal" ||
+    entityType === "date" || entityType === "time" || entityType === "interval" ||
+    entityType === "duration") {
     return "string";
   }
   if (entityType === "json" || entityType === "jsonb") {
@@ -710,8 +707,8 @@ function entityFieldToSchemaField(
   const apiFieldName = entityField.api && typeof entityField.api === "string"
     ? entityField.api
     : entityField.dbColumn
-    ? snakeToCamel(entityField.dbColumn)
-    : fieldName;
+      ? snakeToCamel(entityField.dbColumn)
+      : fieldName;
 
   // Convert entity type to schema type
   const schemaType = entityTypeToSchemaType(entityField.type);
@@ -722,9 +719,9 @@ function entityFieldToSchemaField(
   };
 
   // Add format for date/time types
-  if (entityField.type === "timestamp" || entityField.type === "timestamptz" || 
-      entityField.type === "timestamplocal" || entityField.type === "datetime" || 
-      entityField.type === "datetimetz" || entityField.type === "datetimelocal") {
+  if (entityField.type === "timestamp" || entityField.type === "timestamptz" ||
+    entityField.type === "timestamplocal" || entityField.type === "datetime" ||
+    entityField.type === "datetimetz" || entityField.type === "datetimelocal") {
     schemaField.format = entityField.apiFormat || "date-time";
   } else if (entityField.type === "date") {
     schemaField.format = "date";
@@ -776,11 +773,11 @@ export function entityToSchema(
   // Normalize once - all fields become EntityField objects
   const normalized = normalizeEntityDefinition(entityName, entityDef, entities);
   const schemaFields: Record<string, SchemaField> = {};
-  
+
   if (!normalized.fields || typeof normalized.fields !== 'object' || normalized.fields === null) {
     return { fields: schemaFields };
   }
-  
+
   const fieldEntries = Object.entries(normalized.fields);
 
   // Process fields - optimized loop
@@ -803,12 +800,12 @@ export function entityToSchema(
 }
 
 /**
- * Normalize config to use schemas (unified entities/schemas)
- * Uses config-normalizer for unified handling
+ * Normalize config to use entities
+ * Uses config-normalizer for separate handling
  */
-export function normalizeSchemas(config: { schemas?: YamaEntities | YamaSchemas; entities?: YamaEntities | YamaSchemas }): YamaEntities | undefined {
+export function normalizeSchemas(config: { schemas?: YamaSchemas; entities?: YamaEntities }): YamaEntities {
   const normalized = normalizeConfig(config);
-  return normalized.schemas as YamaEntities | undefined;
+  return normalized.entities;
 }
 
 /**

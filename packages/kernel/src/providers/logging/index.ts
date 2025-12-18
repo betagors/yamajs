@@ -1,19 +1,13 @@
 /**
  * Logging Provider
  * 
- * Provides structured logging with multiple format options.
+ * Logging is now a Core Service, not a Provider.
+ * The core Logger interface is provided by @yamajs/logging.
+ * 
+ * For type compatibility, we re-export the Logger types here.
  */
 
-// Re-export types
-export type { LoggingProviderConfig, LoggerAPI, LogLevel } from '../types.js';
+// Re-export core logging types from @yamajs/logging
+export { Logger, LogLevel } from "@yamajs/logging";
+export type { Transport as LogTransport, LoggerConfig } from "@yamajs/logging";
 
-// Re-export adapter utilities
-export {
-    ConsoleLoggingProvider,
-    ConsoleLogger,
-    formatPretty,
-    formatJSON,
-} from './adapters/console.js';
-
-// Register adapters (side effect)
-import './adapters/console.js';

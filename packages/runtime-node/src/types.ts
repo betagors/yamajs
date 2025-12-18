@@ -12,7 +12,7 @@ import type {
   DatabaseConfig,
   ServerConfig,
   PaginationConfig,
-  RateLimitConfig,
+
   ApisConfig,
   HandlerContext,
   HandlerFunction,
@@ -42,10 +42,10 @@ import type {
 export interface QueryHandlerConfig {
   /** Handler type identifier */
   type: 'query';
-  
+
   /** Entity name to query */
   entity: string;
-  
+
   /** Filter conditions to apply */
   filters?: Array<{
     /** Entity field name */
@@ -57,10 +57,10 @@ export interface QueryHandlerConfig {
     /** Static filter value */
     value?: any;
   }>;
-  
+
   /** Pagination configuration */
   pagination?: PaginationConfig;
-  
+
   /** Ordering configuration */
   orderBy?: string | {
     field: string;
@@ -77,28 +77,28 @@ export interface QueryHandlerConfig {
 export interface EndpointDefinition {
   /** URL path pattern (supports parameters like /users/:id) */
   path: string;
-  
+
   /** HTTP method (GET, POST, PUT, PATCH, DELETE) */
   method: string;
-  
+
   /** Handler function reference (file path or query config) */
   handler?: string | QueryHandlerConfig;
-  
+
   /** Human-readable endpoint description */
   description?: string;
-  
+
   /** Query parameter schema definitions */
   query?: Record<string, any>;
-  
+
   /** Path parameter schema definitions */
   params?: Record<string, any>;
-  
+
   /** Request body schema (schema reference or inline definition) */
   body?: string | { type?: string; fields?: Record<string, any> };
-  
+
   /** Response schema (schema reference or inline definition) */
   response?: string | { type?: string; properties?: Record<string, any> };
-  
+
   /** Authentication and authorization configuration */
   auth?: {
     /** Whether authentication is required */
@@ -110,9 +110,8 @@ export interface EndpointDefinition {
     /** Custom auth handler file path */
     handler?: string;
   };
-  
-  /** Rate limiting configuration */
-  rateLimit?: any;
+
+
 }
 
 /**
@@ -125,31 +124,30 @@ export interface EndpointDefinition {
 export interface YamaConfig {
   /** Project name */
   name?: string;
-  
+
   /** Project version */
   version?: string;
-  
+
   /** Data schemas for validation */
   schemas?: YamaSchemas;
-  
+
   /** Database entity definitions */
   entities?: YamaEntities;
-  
+
   /** HTTP server configuration */
   server?: ServerConfig;
-  
+
   /** Authentication configuration */
   auth?: AuthConfig;
-  
-  /** Global rate limiting configuration */
-  rateLimit?: RateLimitConfig;
-  
+
+
+
   /** Plugin configurations (array format) */
   plugins?: Record<string, Record<string, unknown>> | Array<string | Record<string, any>>;
-  
+
   /** Legacy flat endpoints array (deprecated, use apis.rest instead) */
   endpoints?: EndpointDefinition[];
-  
+
   /** Middleware configuration */
   middleware?: {
     /** Global middleware applied to all endpoints */
@@ -175,7 +173,7 @@ export interface YamaConfig {
       }>;
     }>;
   };
-  
+
   /** Realtime/WebSocket configuration */
   realtime?: {
     /** Entity-level realtime events */
@@ -199,7 +197,7 @@ export interface YamaConfig {
       }>;
     }>;
   };
-  
+
   /** Monitoring and observability configuration */
   monitoring?: {
     /** Log level (debug, info, warn, error) */
@@ -218,7 +216,7 @@ export interface YamaConfig {
       description?: string;
     }>;
   };
-  
+
   /** Protocol-agnostic API definitions (REST, GraphQL, etc.) */
   apis?: ApisConfig;
 }
@@ -231,7 +229,7 @@ export interface YamaConfig {
 export interface YamaServer {
   /** Stop the server and clean up resources */
   stop: () => Promise<void>;
-  
+
   /** Port the server is listening on */
   port: number;
 }

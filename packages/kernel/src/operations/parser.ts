@@ -97,6 +97,22 @@ export function parseOperation(
     config.output = { fields: parsedOutput };
   }
 
+  // Normalize REST config
+  if (config.rest === true) {
+    config.rest = {
+      method,
+      path: path || `/${operationName}`,
+    };
+  }
+
+  // Normalize GraphQL config
+  if (config.graphql === true) {
+    config.graphql = {
+      name: operationName,
+      type: operationType === "subscription" ? "subscription" : (method === "GET" ? "query" : "mutation"),
+    };
+  }
+
   return {
     name: operationName,
     config,

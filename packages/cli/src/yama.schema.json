@@ -1243,7 +1243,7 @@
     },
     "entities": {
       "type": "object",
-      "description": "Entity definitions (legacy - use 'schemas:' instead). This key is supported for backward compatibility. Prefer using 'schemas:' for new projects.",
+      "description": "Entity definitions. Entities represent database tables and their relationships. They automatically generate CRUD operations if enabled.",
       "additionalProperties": {
         "type": "object",
         "properties": {
@@ -2062,7 +2062,7 @@
     },
     "schemas": {
       "type": "object",
-      "description": "Schema definitions (preferred). Supports new concise type syntax (e.g., 'id: uuid! readonly generated', 'email: email(255)! unique', 'price: money(usd, min: 0)!', 'username: slug(3..100)! unique'). Also supports variants for auto-generating DTOs (create, update, response), computed fields, and database configuration via 'database:' section. Use 'schemas:' as the primary way to define your data models. The 'entities:' key is supported as a fallback for backward compatibility.",
+      "description": "Schema definitions. Schemas represent Data Transfer Objects (DTOs), API views, and other non-persistent data structures. They can be derived from entities using 'source:'.",
       "additionalProperties": {
         "type": "object",
         "properties": {

@@ -1,103 +1,47 @@
-import type {
-  LogEntry,
-  Transport,
-  ConsoleTransportConfig,
-  LogFormat,
-} from "../types.js";
-import { formatLogEntry } from "../formatters.js";
-import { LogLevel } from "../types.js";
+import type { Transport } from "../logger.js";
+import type { LogEvent } from "../event.js";
+import { LogLevel } from "../levels.js";
+import { formatLogEntry, type LogFormat } from "../formatters.js";
 
-/**
- * ANSI color codes for console output
- */
-const colors = {
-  reset: "\x1b[0m",
-  bright: "\x1b[1m",
-  dim: "\x1b[2m",
-  red: "\x1b[31m",
-  green: "\x1b[32m",
-  yellow: "\x1b[33m",
-  blue: "\x1b[34m",
-  magenta: "\x1b[35m",
-  cyan: "\x1b[36m",
-};
-
-/**
- * Get color for log level
- */
-function getLevelColor(level: LogLevel): string {
-  switch (level) {
-    case LogLevel.DEBUG:
-      return colors.dim;
-    case LogLevel.INFO:
-      return colors.cyan;
-    case LogLevel.WARN:
-      return colors.yellow;
-    case LogLevel.ERROR:
-      return colors.red;
-  }
+export interface ConsoleTransportConfig {
+  format?: LogFormat;
 }
 
 /**
- * Console transport implementation
+ * Standard Console Transport.
+ * Part of Yama Core Logging.
  */
 export class ConsoleTransport implements Transport {
-  private config: ConsoleTransportConfig;
   private format: LogFormat;
 
-  constructor(config: ConsoleTransportConfig) {
-    this.config = config;
-    this.format = config.format || "text";
+  constructor(config: ConsoleTransportConfig = {}) {
+    this.format = config.format || "pretty";
   }
 
-  write(entry: LogEntry): void {
-    const formatted = formatLogEntry(entry, this.format);
+  write(event: LogEvent): void {
+    const formatted = formatLogEntry(event, this.format);
 
-    // Use appropriate console method based on level
-    switch (entry.level) {
+    switch (event.level) {
+      case LogLevel.TRACE:
       case LogLevel.DEBUG:
-        console.debug(this.formatOutput(formatted, entry));
+        console.debug(formatted);
         break;
       case LogLevel.INFO:
-        console.log(this.formatOutput(formatted, entry));
+        console.log(formatted);
         break;
       case LogLevel.WARN:
-        console.warn(this.formatOutput(formatted, entry));
+        console.warn(formatted);
         break;
       case LogLevel.ERROR:
-        console.error(this.formatOutput(formatted, entry));
+      case LogLevel.FATAL:
+        console.error(formatted);
         break;
+      default:
+        console.log(formatted);
     }
-  }
-
-  /**
-   * Format output with colors if needed
-   * Note: 'pretty' format is already colorized by formatPretty()
-   */
-  private formatOutput(formatted: string, entry: LogEntry): string {
-    // Pretty format is already colorized by formatters.ts
-    if (this.format === "pretty") {
-      return formatted;
-    }
-    // JSON format should not be colorized
-    if (this.format === "json") {
-      return formatted;
-    }
-    // Text format: apply colors if enabled
-    if (this.config.colors !== false) {
-      const color = getLevelColor(entry.level);
-      return `${color}${formatted}${colors.reset}`;
-    }
-    return formatted;
   }
 }
 
-/**
- * Create a console transport
- */
-export function createConsoleTransport(
-  config: ConsoleTransportConfig
-): ConsoleTransport {
+export function createConsoleTransport(config?: ConsoleTransportConfig): ConsoleTransport {
   return new ConsoleTransport(config);
 }
-

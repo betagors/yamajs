@@ -7,13 +7,4 @@
 // Re-export types
 export type { ConfigProviderConfig, ConfigAPI } from '../types.js';
 
-// Re-export adapter utilities
-export {
-    substituteVariables,
-    hasUnresolvedVariables,
-    parseEnvContent,
-    loadEnvFile,
-} from './adapters/env.js';
-
-// Register adapters (side effect)
-import './adapters/env.js';
+// Adapters are now in separate packages (e.g. @yamajs/config-env)

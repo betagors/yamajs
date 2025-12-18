@@ -4,15 +4,15 @@
  * Providers are built-in, zero-dependency core services that form
  * the foundation of every Yama application.
  * 
- * The 7 core providers:
+ * The 6 core providers:
  * 1. config   - Environment variables, .env files
- * 2. logging  - Logging with pretty/json formats
- * 3. database - SQL database (PGLite/Postgres)
- * 4. cache    - In-memory/Redis caching
- * 5. email    - Email sending (SMTP/Resend/etc)
- * 6. auth     - Authentication & authorization
- * 7. storage  - File storage (local/S3)
+ * 2. database - SQL database (PGLite/Postgres)
+ * 3. cache    - In-memory/Redis caching
+ * 4. email    - Email sending (SMTP/Resend/etc)
+ * 5. auth     - Authentication & authorization
+ * 6. storage  - File storage (local/S3)
  */
+import type { Logger } from "@yamajs/logging";
 
 // ============================================================================
 // Core Provider Types
@@ -52,7 +52,6 @@ export interface Provider<TConfig = unknown, TAPI = unknown> {
  */
 export type ProviderType =
     | 'config'
-    | 'logging'
     | 'database'
     | 'cache'
     | 'email'
@@ -64,12 +63,11 @@ export type ProviderType =
  */
 export const PROVIDER_INIT_ORDER: readonly ProviderType[] = [
     'config',   // First - needed for all other configs
-    'logging',  // Second - needed for logging in all providers
-    'database', // Third - needed for auth sessions
-    'cache',    // Fourth - used by auth rate limiting
-    'email',    // Fifth - needed for auth verification
-    'auth',     // Sixth - depends on database, cache, email
-    'storage',  // Seventh - can depend on auth for permissions
+    'database', // Second - needed for auth sessions
+    'cache',    // Third - used by auth rate limiting
+    'email',    // Fourth - needed for auth verification
+    'auth',     // Fifth - depends on database, cache, email
+    'storage',  // Sixth - can depend on auth for permissions
 ] as const;
 
 /**
@@ -94,15 +92,10 @@ export type ProviderFactory<TConfig = unknown, TAPI = unknown> = (
 // ============================================================================
 
 /**
- * Logger interface available to all providers
+ * Logger interface available to all providers.
+ * Now simply re-exports the core Logger.
  */
-export interface ProviderLogger {
-    debug(message: string, meta?: Record<string, unknown>): void;
-    info(message: string, meta?: Record<string, unknown>): void;
-    warn(message: string, meta?: Record<string, unknown>): void;
-    error(message: string, meta?: Record<string, unknown>): void;
-    child(bindings: Record<string, unknown>): ProviderLogger;
-}
+export type ProviderLogger = Logger;
 
 /**
  * Provider context - shared with all providers during initialization
@@ -172,27 +165,8 @@ export interface ConfigAPI {
     readonly isTest: boolean;
 }
 
-// ============================================================================
-// Logging Provider Types
-// ============================================================================
-
-export interface LoggingProviderConfig {
-    adapter: 'console';
-    level?: LogLevel;
-    format?: 'pretty' | 'json';
-    timestamp?: boolean;
-    colors?: boolean;
-}
-
-export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
-
-export interface LoggerAPI extends ProviderLogger {
-    /** Current log level */
-    readonly level: LogLevel;
-
-    /** Is debug logging enabled? */
-    readonly isDebugEnabled: boolean;
-}
+// Logging is now a Core Service, not a Provider.
+// See @yamajs/logging for implementation and config.
 
 // ============================================================================
 // Database Provider Types
@@ -758,7 +732,6 @@ export interface FileMetadata {
  */
 export interface ProvidersConfig {
     config?: ConfigProviderConfig;
-    logging?: LoggingProviderConfig;
     database?: DatabaseProviderConfig;
     cache?: CacheProviderConfig;
     email?: EmailProviderConfig;
@@ -771,7 +744,6 @@ export interface ProvidersConfig {
  */
 export interface ProviderAPIs {
     config: ConfigAPI;
-    log: LoggerAPI;
     db: DatabaseAPI;
     cache: CacheAPI;
     email: EmailAPI;

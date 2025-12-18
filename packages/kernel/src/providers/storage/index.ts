@@ -14,14 +14,4 @@ export type {
     FileMetadata,
 } from '../types.js';
 
-// Re-export adapter utilities
-export {
-    LocalStorageProvider,
-    LocalStorageAPI,
-    parseFileSize,
-    matchesMimeType,
-    getMimeType,
-} from './adapters/local.js';
-
-// Register adapters (side effect)
-import './adapters/local.js';
+// Adapters are now in separate packages (e.g. @yamajs/storage-local)

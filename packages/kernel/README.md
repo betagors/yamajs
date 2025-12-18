@@ -1,16 +1,28 @@
-﻿# @yamajs/core
+﻿# @yamajs/kernel
 
-> Core runtime and types for Yama - backend as config framework
+> The heartbeat of Yama — Pure runtime-agnostic orchestration and types.
 
-[![npm version](https://img.shields.io/npm/v/@yamajs/core.svg)](https://www.npmjs.com/package/@yamajs/core)
+[![npm version](https://img.shields.io/npm/v/@yamajs/kernel.svg)](https://www.npmjs.com/package/@yamajs/kernel)
 [![License: MPL-2.0](https://img.shields.io/badge/License-MPL_2.0-brightgreen.svg)](https://opensource.org/licenses/MPL-2.0)
 
-The core package provides the foundational runtime, types, and utilities for the Yama framework. It includes schema validation, authentication, type generation, database adapters, HTTP server adapters, and the plugin system.
+The `@yamajs/kernel` package provides the foundational runtime-agnostic orchestration for the Yama framework. It defines the contracts, validates the schemas, and manages the lifecycle of plugins and providers.
+
+## Architecture
+
+Yama follows a strict tiered architecture to ensure complete runtime portability.
+
+- **Runtimes**: Platform I/O abstraction (`@yamajs/runtime-*`)
+- **Transporters**: API Entry points (`@yamajs/transporter-*`)
+- **Providers**: Infrastructure adapters (`@yamajs/provider-*`)
+- **Plugins**: Business logic and directives (`@yamajs/plugin-*`)
+- **Servers**: HTTP framework bridges (`@yamajs/server-*`)
+
+For a detailed breakdown of the components and naming conventions, see [ARCHITECTURE.md](./docs/ARCHITECTURE.md).
 
 ## Installation
 
 ```bash
-npm install @yamajs/core
+npm install @yamajs/kernel
 ```
 
 ### Deno
@@ -40,87 +52,54 @@ bun add @yamajs/core
 
 ## Usage (runtime-neutral)
 
-The core is runtime-neutral and expects the host to provide web-standard APIs (`fetch`, `URL`, `crypto.subtle`, `ReadableStream`, etc.). Node-specific globals are not required. Platform-specific concerns (fs/path/env/crypto/password hashing) are injected via providers.
+The kernel is runtime-neutral and expects a `RuntimeAdapter` to be provided. Platform-specific concerns (fs/path/env/crypto) are abstracted through this adapter.
 
-### Platform providers
+### Setting the Runtime
 
-- `setFileSystem`, `setPathModule`: provide minimal fs/path for features that need the file system (migrations, plugins). Node adapter wires these automatically.
-- `setEnvProvider`: provide `getEnv`/`setEnv`/`cwd`.
-- `setCryptoProvider`, `setPasswordHasher`: override random bytes/ints/timingSafeEqual and password hashing.
-
-If you use `@yamajs/node`, these are configured for you. Other runtimes (Deno/Bun/edge) can inject equivalents before calling APIs that need them.
-
-#### Deno adapter example (npm mode)
+If you use `@yamajs/runtime-node`, the runtime is configured for you. For other environments (Edge, Browser, Deno), you must provide an implementation of the `RuntimeAdapter` interface.
 
 ```ts
-import { setFileSystem, setPathModule, setEnvProvider } from "@yamajs/core";
+import { setRuntime } from "@yamajs/kernel";
 
-setFileSystem({
-  readFileSync: (p) => Deno.readTextFileSync(p),
-  writeFileSync: (p, data) =>
-    Deno.writeTextFileSync(p, typeof data === "string" ? data : new TextDecoder().decode(data)),
-  existsSync: (p) => {
-    try {
-      Deno.statSync(p);
-      return true;
-    } catch {
-      return false;
-    }
+setRuntime({
+  env: {
+    get: (key) => ...,
+    cwd: () => ...,
+    // ...
   },
-  mkdirSync: (p, opts) => Deno.mkdirSync(p, { recursive: opts?.recursive }),
-  readdirSync: (p) => Array.from(Deno.readDirSync(p)).map((e) => e.name),
-  statSync: (p) => Deno.statSync(p),
-  unlinkSync: (p) => Deno.removeSync(p),
-});
-
-setPathModule({
-  join: (...xs) => xs.join("/"),
-  dirname: (p) => p.split("/").slice(0, -1).join("/") || "/",
-  resolve: (...xs) => xs.join("/"),
-});
-
-setEnvProvider({
-  getEnv: (k) => Deno.env.get(k),
-  setEnv: (k, v) => (v === undefined ? Deno.env.delete(k) : Deno.env.set(k, v)),
-  cwd: () => Deno.cwd(),
-});
-```
-
-#### Bun adapter example
-
-```ts
-import { setFileSystem, setPathModule, setEnvProvider } from "@yamajs/core";
-import fs from "node:fs";
-import path from "node:path";
-
-setFileSystem(fs);
-setPathModule(path);
-setEnvProvider({
-  getEnv: (k) => process.env[k],
-  setEnv: (k, v) => {
-    if (v === undefined) {
-      delete process.env[k];
-    } else {
-      process.env[k] = v;
-    }
+  fs: {
+    readTextFile: async (path) => ...,
+    exists: async (path) => ...,
+    // ...
   },
-  cwd: () => process.cwd(),
+  path: {
+    join: (...args) => ...,
+    // ...
+  },
+  crypto: {
+    randomUUID: () => ...,
+    // ...
+  },
+  modules: {
+    resolve: async (name, from) => ...,
+    import: async (path) => ...,
+  }
 });
 ```
 
 ### Schema Validation
 
 ```typescript
-import { createSchemaValidator, type YamaSchemas } from '@yamajs/core';
+import { createSchemaValidator, type YamaSchemas } from '@yamajs/kernel';
 
 const validator = createSchemaValidator();
 
 const schemas: YamaSchemas = {
   User: {
     fields: {
-      id: { type: 'string', format: 'uuid' },
-      email: { type: 'string', format: 'email' },
-      name: { type: 'string' }
+      id: "uuid!",
+      email: "string",
+      name: "string"
     }
   }
 };

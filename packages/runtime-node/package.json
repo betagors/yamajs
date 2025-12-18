@@ -35,17 +35,30 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
-    "@yamajs/errors": "workspace:*",
+    "@yamajs/kernel": "workspace:*",
     "bcryptjs": "^2.4.3",
     "js-yaml": "^4.1.1",
-    "dotenv": "^16.4.5",
-    "@yamajs/plugin-openapi": "workspace:*",
-    "@yamajs/db-postgres": "workspace:*",
+    "dotenv": "^16.4.5"
+  },
+  "peerDependencies": {
     "@yamajs/server-fastify": "workspace:*",
-    "@yamajs/kernel": "workspace:*"
+    "@yamajs/plugin-openapi": "workspace:*",
+    "@yamajs/db-postgres": "workspace:*"
+  },
+  "peerDependenciesMeta": {
+    "@yamajs/server-fastify": {
+      "optional": false
+    },
+    "@yamajs/plugin-openapi": {
+      "optional": true
+    },
+    "@yamajs/db-postgres": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "rimraf": "^5.0.0",
+    "@types/bcryptjs": "^2.4.6",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^20.0.0",
     "@vitest/coverage-v8": "^1.0.0",

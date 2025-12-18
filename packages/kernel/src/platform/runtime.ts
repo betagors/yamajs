@@ -14,6 +14,21 @@ export interface RuntimeAdapter {
     path: PathAdapter;
     fs: FileSystemAdapter;
     crypto: CryptoAdapter;
+    modules: ModuleAdapter;
+}
+
+export interface ModuleAdapter {
+    /**
+     * Resolve a module or package name to its absolute file path.
+     * Analogous to require.resolve() or import.meta.resolve().
+     */
+    resolve(name: string, fromPath?: string): Promise<string>;
+
+    /**
+     * Dynamically import a module from a file path.
+     * Analogous to dynamic import(), but implementation-defined.
+     */
+    import<T = any>(path: string): Promise<T>;
 }
 
 export interface EnvAdapter {

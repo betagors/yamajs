@@ -18,6 +18,7 @@ import {
   recordPluginInitialized,
   recordPluginError,
 } from "./metrics.js";
+import { getRuntime } from "../platform/index.js";
 import type { MiddlewareRegistry } from "../middleware/registry.js";
 
 /**
@@ -30,7 +31,7 @@ export class PluginRegistry {
   private pluginAPIs = new Map<string, any>();
   private pluginContexts = new Map<string, PluginContext>();
   private config: Record<string, unknown> = {};
-  private projectDir: string = process.cwd();
+  private projectDir: string = "";
   private logger: Logger | null = null;
   private middlewareRegistry: MiddlewareRegistry | null = null;
 
@@ -93,7 +94,7 @@ export class PluginRegistry {
       warn: (message: string, ...args: any[]) => console.warn(`[WARN] ${message}`, ...args),
       error: (message: string, ...args: any[]) => console.error(`[ERROR] ${message}`, ...args),
       debug: (message: string, ...args: any[]) => {
-        if (process.env.DEBUG) {
+        if (getRuntime().env.get("DEBUG")) {
           console.debug(`[DEBUG] ${message}`, ...args);
         }
       },

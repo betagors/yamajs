@@ -154,7 +154,6 @@ export function normalizeEnhancedSchema(
             ([key, val]) =>
                 key === '$$' ||
                 key === 'computed' ||
-                key === 'variants' ||
                 key === 'database' ||
                 typeof val === 'string' ||
                 (typeof val === 'object' && val !== null)
@@ -189,7 +188,7 @@ export function normalizeEnhancedSchema(
             : Object.fromEntries(
                 Object.entries(schemaDef).filter(
                     ([key]) =>
-                        !['$$', 'computed', 'variants', 'database', 'table'].includes(key)
+                        !['$$', 'computed', 'database', 'table'].includes(key)
                 )
             );
 
@@ -248,7 +247,6 @@ export function normalizeEnhancedSchema(
         fields,
         pluginConfigs,
         computed: schemaDef.computed as Record<string, unknown> | undefined,
-        variants: schemaDef.variants as Record<string, unknown> | undefined,
         database: schemaDef.database as Record<string, unknown> | undefined,
     };
 }

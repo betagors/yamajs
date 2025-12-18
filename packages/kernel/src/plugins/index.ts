@@ -54,7 +54,6 @@ export {
   getAllPlugins,
   getPluginByCategory,
   getPluginsByCategory,
-  getPluginByType,
   setPluginRegistryConfig,
   getAllCLICommands,
   getAllMCPTools,
@@ -137,7 +136,6 @@ export {
   detectCircularDependencies,
   topologicalSort,
   resolvePluginDependencies,
-  validateDependencies,
   // NEW: Enhanced dependency functions
   validatePluginRelationships,
   detectPluginConflicts,

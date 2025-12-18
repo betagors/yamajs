@@ -32,30 +32,40 @@ import {
   generateArraySchema,
   registerGlobalDatabaseAdapter,
   getAllOAuthProviders,
-  type RateLimiter,
-  createRateLimiterFromConfig,
+
   MiddlewareRegistry,
   loadMiddlewareFromFile,
   type MiddlewareDefinition,
   type DatabaseConfig,
   generateIR,
-  setFileSystem,
-  setPathModule,
-  setEnvProvider,
-  setCryptoProvider,
-  setPasswordHasher,
   // Provider system (v1.0)
   initializeProvidersFromConfig,
   shutdownProvidersSystem,
   getProviders,
   createRequestContext,
   createProviderHealthHandler,
-  registerEmailUIRoutes,
   type RawProvidersConfig,
   type ProviderAPIs,
+  // Runtime adapter
   setRuntime,
 } from "@yamajs/kernel";
-import { createFastifyAdapter } from "@yamajs/server-fastify";
+// Dynamic import for server-fastify (peer dependency)
+let _fastifyAdapter: typeof import("@yamajs/server-fastify") | null = null;
+
+async function getFastifyAdapter() {
+  if (!_fastifyAdapter) {
+    try {
+      _fastifyAdapter = await import("@yamajs/server-fastify");
+    } catch (error) {
+      throw new Error(
+        `Failed to load @yamajs/server-fastify. Make sure it's installed as a peer dependency. ` +
+        `Run: pnpm add @yamajs/server-fastify. ` +
+        `Original error: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+  }
+  return _fastifyAdapter;
+}
 
 import { NodeRuntime } from "./runtime.js";
 import yaml from "js-yaml";
@@ -98,7 +108,8 @@ async function getOpenApiAdapter() {
  * - Automatic CRUD endpoints from entities
  * - Schema validation
  * - Authentication & authorization
- * - Rate limiting
+ * - Authentication &amp; authorization
+ * - Middleware support
  * - Middleware support
  * - Plugin system
  * - Monitoring & observability
@@ -123,16 +134,12 @@ export async function startYamaNodeRuntime(
   environment?: string
 ): Promise<YamaServer> {
   // Initialize Node.js Runtime Adapter (Layer 2)
+  // NodeRuntime provides: env, path, fs, crypto (including password hashing via bcrypt)
   setRuntime(new NodeRuntime());
 
-  // Set password hasher (Layer 2 - specific to Node runtime unless we add it to RuntimeAdapter)
-  setPasswordHasher({
-    hash: (password: string, saltRounds = 12) => bcrypt.hash(password, saltRounds),
-    verify: (password: string, hash: string) => bcrypt.compare(password, hash),
-  });
-
   // Register HTTP server adapter (always needed)
-  registerHttpServerAdapter("fastify", (options) => createFastifyAdapter(options));
+  const fastifyModule = await getFastifyAdapter();
+  registerHttpServerAdapter("fastify", (options) => fastifyModule.createFastifyAdapter(options));
 
   // Create schema validator
   const validator = createSchemaValidator();
@@ -140,8 +147,7 @@ export async function startYamaNodeRuntime(
   // Store loaded plugins
   const loadedPlugins = new Map<string, YamaPlugin>();
 
-  // Rate limiter (initialized later if config has rateLimit)
-  let globalRateLimiter: RateLimiter | null = null;
+
 
   // Cache adapter (initialized from cache plugin if available)
   let cacheAdapter: unknown = null;
@@ -694,16 +700,13 @@ export async function startYamaNodeRuntime(
   const nodeEnv = process.env.NODE_ENV || "development";
 
   // Email preview UI (dev mode only)
+  // TODO: Implement registerEmailUIRoutes in kernel or runtime-node
+  // The email preview UI feature needs to be re-implemented after kernel refactoring
   const isDevMode = nodeEnv === "development" || environment === "development";
   const emailDevConfig = (config as any)?.providers?.email?.dev;
   if (isDevMode && emailDevConfig?.capture !== false) {
     const emailUIPath = emailDevConfig?.uiPath || "/__yama/emails";
-    try {
-      registerEmailUIRoutes(serverAdapter, server, emailUIPath);
-      console.log(`✅ Email preview UI: GET ${emailUIPath}`);
-    } catch (error) {
-      console.warn("⚠️  Failed to register email UI routes:", error instanceof Error ? error.message : String(error));
-    }
+    console.log(`📧 Email preview UI path configured: ${emailUIPath} (not yet implemented)`);
   }
 
 
@@ -1024,7 +1027,7 @@ export async function startYamaNodeRuntime(
       config,
       configDir,
       validator,
-      globalRateLimiter,
+      null, // globalRateLimiter removed
       repositories,
       dbAdapter || null,
       cacheAdapter || null,

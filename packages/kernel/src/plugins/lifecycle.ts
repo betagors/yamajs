@@ -8,6 +8,7 @@
 import type { YamaPlugin, PluginContext, PluginManifest } from "./base.js";
 import { validateYamaPlugin, validatePluginConfig, validatePluginVersion } from "./validator.js";
 import { ErrorCodes } from "@yamajs/errors";
+import { getRuntime } from "../platform/index.js";
 
 /**
  * Plugin state in lifecycle
@@ -407,7 +408,7 @@ export class PluginLifecycleManager {
   private createMinimalContext(pluginName: string): PluginContext {
     return {
       config: {},
-      projectDir: process.cwd(),
+      projectDir: getRuntime().env.cwd(),
       logger: this.options.logger,
       getPlugin: (name: string) => this.plugins.get(name)?.plugin ?? null,
       getPluginAPI: (name: string) => this.plugins.get(name)?.api ?? null,
@@ -557,17 +558,25 @@ export function createLifecycleManager(
 }
 
 /**
- * [NEW] Register graceful shutdown handlers
+ * [DEPRECATED] Register graceful shutdown handlers
  * 
- * Automatically calls stopAll on SIGTERM/SIGINT for clean shutdown.
- * Essential for Kubernetes/Docker deployments.
+ * Signal handling (SIGTERM/SIGINT) is runtime-specific and must be handled
+ * by the runtime adapter (e.g., @yamajs/runtime-node).
  * 
- * @param manager - The lifecycle manager
- * @param options - Shutdown options
+ * This function is kept for API compatibility but does nothing.
+ * Use your runtime's shutdown registration instead:
+ * 
+ * @example
+ * // In @yamajs/runtime-node:
+ * import { registerNodeShutdown } from "@yamajs/runtime-node";
+ * registerNodeShutdown(manager.stopAll.bind(manager));
+ * 
+ * @param manager - The lifecycle manager (unused)
+ * @param options - Shutdown options (unused)
  */
 export function registerGracefulShutdown(
-  manager: PluginLifecycleManager,
-  options: {
+  _manager: PluginLifecycleManager,
+  _options: {
     timeout?: number;
     logger?: {
       log(message: string, ...args: unknown[]): void;
@@ -575,41 +584,8 @@ export function registerGracefulShutdown(
     };
   } = {}
 ): void {
-  const { timeout = 30000, logger = console } = options;
-  let isShuttingDown = false;
-
-  const shutdown = async (signal: string) => {
-    if (isShuttingDown) return;
-    isShuttingDown = true;
-
-    logger.log(`\n[Lifecycle] Received ${signal}, starting graceful shutdown...`);
-
-    const shutdownTimeout = setTimeout(() => {
-      logger.error("[Lifecycle] Shutdown timeout exceeded, forcing exit");
-      process.exit(1);
-    }, timeout);
-
-    try {
-      const result = await manager.stopAll();
-
-      if (result.success) {
-        logger.log("[Lifecycle] ✅ Graceful shutdown completed");
-      } else {
-        logger.error("[Lifecycle] ⚠️ Shutdown completed with errors:");
-        for (const { plugin, error } of result.errors) {
-          logger.error(`  - ${plugin}: ${error.message}`);
-        }
-      }
-    } catch (error) {
-      logger.error("[Lifecycle] ❌ Shutdown failed:", error);
-    } finally {
-      clearTimeout(shutdownTimeout);
-      process.exit(0);
-    }
-  };
-
-  process.on("SIGTERM", () => shutdown("SIGTERM"));
-  process.on("SIGINT", () => shutdown("SIGINT"));
+  // No-op in kernel. Signal handling must be done by runtime adapters.
+  // See @yamajs/runtime-node for the Node.js implementation.
 }
 
 /**

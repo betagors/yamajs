@@ -1,16 +1,6 @@
+import type { Logger } from "@yamajs/logging";
 import type { YamaPlugin, PluginManifest, PluginCLICommand, PluginMCPTool } from "./base.js";
-import type { EventEmitter } from "events";
 import type { MiddlewareRegistry } from "../middleware/registry.js";
-
-/**
- * Logger interface for plugins
- */
-export interface Logger {
-  info(message: string, ...args: any[]): void;
-  warn(message: string, ...args: any[]): void;
-  error(message: string, ...args: any[]): void;
-  debug(message: string, ...args: any[]): void;
-}
 
 /**
  * Simple event emitter implementation

@@ -38,7 +38,8 @@ export function generateIR(config: YamaConfig): YamaIR {
     apis: config.apis,
     operations: (config as any).operations,
     policies: (config as any).policies,
-    schemas: (config as any).schemas || (config as any).entities,
+    entities: (config as any).entities,
+    schemas: (config as any).schemas,
   });
 
   const endpoints: IRHttpEndpoint[] = [];

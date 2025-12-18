@@ -7,10 +7,9 @@ plugins:
   - "@yamajs/pglite"
 
 # ============================================================================
-# SCHEMAS: Data definitions
+# ENTITIES: Database definitions
 # ============================================================================
-schemas:
-  # Database entities
+entities:
   Author:
     database: authors
     fields:
@@ -54,7 +53,10 @@ schemas:
       createdAt: timestamp = now
       updatedAt: timestamp = now
 
-  # API schemas (views/DTOs)
+# ============================================================================
+# SCHEMAS: API views/DTOs
+# ============================================================================
+schemas:
   PostSummary:
     source: Post
     fields:
@@ -93,11 +95,34 @@ schemas:
 # ============================================================================
 operations:
   # Posts - Standard CRUD
-  listPosts: PostSummary[]
-  getPost: PostDetail
-  createPost: Post
-  updatePost: Post
-  deletePost: ~
+  listPosts:
+    output: PostSummary[]
+    rest: true
+    graphql: true
+    policy: public
+
+  getPost:
+    output: PostDetail
+    rest: true
+    graphql: true
+    policy: public
+
+  createPost:
+    output: Post
+    rest: true
+    graphql: true
+    policy: author
+
+  updatePost:
+    output: Post
+    rest: true
+    graphql: true
+    policy: author
+
+  deletePost:
+    rest:
+      visibility: admin
+    policy: admin
 
   # Posts - Custom operations
   searchPosts:
@@ -107,38 +132,75 @@ operations:
       limit: number = 20
       offset: number = 0
     output: PostSummary[]
+    rest:
+      method: GET
+      path: /posts/search
+    graphql: true
+    policy: public
 
   listPublishedPosts:
     output: PostSummary[]
     filter:
       published: true
+    rest:
+      method: GET
+      path: /posts/published
+    graphql: true
+    policy: public
 
   publishPost:
     input:
       id: uuid!
     output: Post
     handler: src/handlers/publishPost.ts
+    rest:
+      method: POST
+      path: /posts/:id/publish
+    policy: author
 
   unpublishPost:
     input:
       id: uuid!
     output: Post
     handler: src/handlers/unpublishPost.ts
+    rest:
+      method: POST
+      path: /posts/:id/unpublish
+    policy: author
 
   # Authors
-  listAuthors: Author[]
-  getAuthor: AuthorWithPosts
-  createAuthor: Author
-  updateAuthor: Author
+  listAuthors:
+    output: Author[]
+    rest: true
+    policy: public
+
+  getAuthor:
+    output: AuthorWithPosts
+    rest: true
+    policy: public
+
+  createAuthor:
+    output: Author
+    rest: true
+    policy: admin
+
+  updateAuthor:
+    output: Author
+    rest: true
+    policy: author
 
   # Comments - Nested under Post
   listComments:
     parent: Post
     output: Comment[]
+    rest: true
+    policy: public
 
   getComment:
     parent: Post
     output: Comment
+    rest: true
+    policy: public
 
   createComment:
     parent: Post
@@ -147,15 +209,21 @@ operations:
       authorName: string!
       authorEmail: string!
     output: Comment
+    rest: true
+    policy: authenticated
 
   deleteComment:
     parent: Post
-    output: ~
+    rest:
+      visibility: admin
+    policy: admin
 
   # Author posts (nested)
   listAuthorPosts:
     parent: Author
     output: PostSummary[]
+    rest: true
+    policy: public
 
 # ============================================================================
 # POLICIES: Reusable access control
@@ -176,45 +244,6 @@ policies:
     auth:
       required: true
       roles: [admin]
-
-# ============================================================================
-# APIS: Expose operations
-# ============================================================================
-apis:
-  rest:
-    public:
-      basePath: /api/v1
-      defaultPolicy: public
-      operations:
-        # Public read operations
-        - listPosts
-        - getPost
-        - searchPosts
-        - listPublishedPosts
-        - listAuthors
-        - getAuthor
-        - listComments
-        - getComment
-        - listAuthorPosts
-        
-        # Protected write operations
-        - createPost: author
-        - updatePost: author
-        - publishPost: author
-        - unpublishPost: author
-        - createComment: authenticated
-        - createAuthor: admin
-        
-      # Exclude from public API
-      exclude:
-        - deletePost
-        - deleteComment
-
-    admin:
-      basePath: /api/admin
-      defaultPolicy: admin
-      operations:
-        - all
 
 # ============================================================================
 # RATE LIMITS

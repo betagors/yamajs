@@ -33,7 +33,6 @@ export interface SchemaDefinition {
   table?: string; // Database table name (for schemas that map to database tables)
   fields: Record<string, SchemaField>;
   computed?: Record<string, ComputedFieldDefinition>;
-  variants?: Record<string, import("./variants/types.js").VariantConfig>;
   database?: {
     table?: string; // Override table name
     indexes?: Array<{ fields: string[]; unique?: boolean; name?: string }>;
@@ -167,7 +166,7 @@ export function parseSchemaFieldDefinition(
  * Parses shorthand field syntax automatically using new type system
  */
 export function normalizeSchemaDefinition(
-  schemaDef: SchemaDefinition | { fields?: Record<string, SchemaField | string>; computed?: any; variants?: any; database?: any }
+  schemaDef: SchemaDefinition | { fields?: Record<string, SchemaField | string>; computed?: any; database?: any }
 ): SchemaDefinition {
   // Validate input
   if (!schemaDef || typeof schemaDef !== 'object' || schemaDef === null) {
@@ -231,11 +230,6 @@ export function normalizeSchemaDefinition(
   // Preserve computed fields
   if (schemaDef.computed !== undefined) {
     normalized.computed = schemaDef.computed;
-  }
-
-  // Preserve variants
-  if (schemaDef.variants !== undefined) {
-    normalized.variants = schemaDef.variants;
   }
 
   // Preserve database config
@@ -897,26 +891,9 @@ export interface EndpointAuth {
 // Re-export for backward compatibility
 export type { AuthContext, AuthUser } from "./auth/types.js";
 
-// Rate limiting types
-export type RateLimitKeyStrategy = "ip" | "user" | "both";
-export type RateLimitStoreType = "memory" | "redis";
-
-export interface RateLimitConfig {
-  maxRequests: number;
-  windowMs: number;
-  keyBy?: RateLimitKeyStrategy;
-  store?: RateLimitStoreType;
-  redis?: {
-    url?: string;
-    host?: string;
-    port?: number;
-    password?: string;
-    db?: number;
-    [key: string]: unknown;
-  };
-}
 
 // Re-export ApisConfig from apis module
 export type { ApisConfig } from "./apis/types.js";
+
 
 

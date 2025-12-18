@@ -4,10 +4,8 @@
  * Creates request-scoped handler context with all provider APIs injected.
  * This is used by the HTTP server to provide ctx.db, ctx.log, ctx.auth, etc.
  */
-
 import type {
     ConfigAPI,
-    LoggerAPI,
     DatabaseAPI,
     CacheAPI,
     EmailAPI,
@@ -17,6 +15,8 @@ import type {
     JWTPayload,
 } from './types.js';
 import { getProviders } from './config-parser.js';
+import { getSystemLogger } from './registry.js';
+import { createContextLogger } from '@yamajs/logging';
 
 // ============================================================================
 // Handler Context Provider Interface
@@ -31,7 +31,7 @@ export interface HandlerContextProviders {
     config: ConfigAPI;
 
     /** Request-scoped logger (with requestId bound) */
-    log: LoggerAPI;
+    log: import('@yamajs/logging').Logger;
 
     /** Database access */
     db: DatabaseAPI;
@@ -68,8 +68,7 @@ export function createRequestContext(
     }
 
     // Create child logger with request context
-    // Cast is safe because ConsoleLogger.child() returns a full LoggerAPI
-    const requestLogger = providers.log.child({ requestId }) as LoggerAPI;
+    const requestLogger = createContextLogger(getSystemLogger(), { requestId });
 
     return {
         config: providers.config,

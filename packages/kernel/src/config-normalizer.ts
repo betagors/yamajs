@@ -1,72 +1,67 @@
-import type { YamaEntities, EntityDefinition } from './entities';
-import type { YamaSchemas, SchemaDefinition } from './schemas';
+import type { YamaEntities } from './entities.js';
+import type { YamaSchemas } from './schemas.js';
+import type { YamaOperations } from './operations/types.js';
 
 /**
- * Unified schema/entity definition
- * Entities and schemas are the same concept
- */
-export type UnifiedSchema = EntityDefinition | SchemaDefinition;
-
-/**
- * Unified schemas collection
- */
-export type UnifiedSchemas = Record<string, UnifiedSchema>;
-
-/**
- * Normalized config with unified schemas/entities
- * Treats 'schemas' and 'entities' as aliases - 'schemas' takes precedence
+ * Normalized config with separate entities and schemas
  */
 export interface NormalizedYamaConfig {
-  /** Unified schemas (from 'schemas' or 'entities' key) */
-  schemas: UnifiedSchemas;
-  
-  /** Original key used ('schemas' or 'entities') */
-  sourceKey: 'schemas' | 'entities';
+  /** Entity definitions (database models) */
+  entities: YamaEntities;
+
+  /** Schema definitions (DTOs, API types) */
+  schemas: YamaSchemas;
+
+  /** Operation definitions (API endpoints) */
+  operations: YamaOperations;
 }
 
 /**
- * Normalize YAMA config to support both 'schemas' and 'entities' keys
- * 'schemas' takes precedence if both are present
+ * Normalize YAMA config to support separate 'entities', 'schemas' and 'operations' keys
  * 
  * @param config Raw config object
- * @returns Normalized config with unified schemas
+ * @returns Normalized config with separate entities, schemas and operations
  */
 export function normalizeConfig(config: {
-  schemas?: YamaSchemas | YamaEntities;
-  entities?: YamaEntities | YamaSchemas;
+  entities?: YamaEntities;
+  schemas?: YamaSchemas;
+  operations?: YamaOperations;
   [key: string]: any;
 }): NormalizedYamaConfig {
-  // 'schemas' takes precedence
-  if (config.schemas) {
-    return {
-      schemas: config.schemas as UnifiedSchemas,
-      sourceKey: 'schemas',
-    };
-  }
-  
-  // Fall back to 'entities' if 'schemas' not present
-  if (config.entities) {
-    return {
-      schemas: config.entities as UnifiedSchemas,
-      sourceKey: 'entities',
-    };
-  }
-  
-  // Neither present - return empty
   return {
-    schemas: {},
-    sourceKey: 'schemas',
+    entities: (config.entities || {}) as YamaEntities,
+    schemas: (config.schemas || {}) as YamaSchemas,
+    operations: (config.operations || {}) as YamaOperations,
   };
 }
 
 /**
- * Get schemas from config (supports both 'schemas' and 'entities')
+ * Get entities from config
+ */
+export function getEntitiesFromConfig(config: {
+  entities?: YamaEntities;
+  [key: string]: any;
+}): YamaEntities {
+  return normalizeConfig(config).entities;
+}
+
+/**
+ * Get schemas from config
  */
 export function getSchemasFromConfig(config: {
-  schemas?: YamaSchemas | YamaEntities;
-  entities?: YamaEntities | YamaSchemas;
+  schemas?: YamaSchemas;
   [key: string]: any;
-}): UnifiedSchemas {
+}): YamaSchemas {
   return normalizeConfig(config).schemas;
+}
+
+/**
+ * Get operations from config
+ */
+export function getOperationsFromConfig(config: {
+  operations?: YamaOperations;
+  [key: string]: any;
+}): YamaOperations {
+  return normalizeConfig(config).operations;
 }
 

@@ -65,8 +65,8 @@ export function normalizeError(
   }
 
   // Non-error value (string, object, etc.)
-  const message = typeof error === 'string' 
-    ? error 
+  const message = typeof error === 'string'
+    ? error
     : typeof error === 'object' && error !== null
       ? JSON.stringify(error)
       : String(error);
@@ -122,7 +122,7 @@ export function wrapError(
   context: Record<string, unknown>
 ): YamaError {
   const yamaError = normalizeError(error);
-  
+
   return new YamaError(yamaError.message, {
     code: yamaError.code,
     statusCode: yamaError.statusCode,
@@ -145,7 +145,7 @@ export function withSuggestions(
   suggestions: string[]
 ): YamaError {
   const yamaError = normalizeError(error);
-  
+
   return new YamaError(yamaError.message, {
     code: yamaError.code,
     statusCode: yamaError.statusCode,
@@ -168,13 +168,13 @@ export function withSuggestions(
  */
 export function getSafeErrorMessage(
   error: YamaError,
-  isProduction: boolean = process.env.NODE_ENV === 'production'
+  isProduction: boolean = false
 ): string {
   // In production, don't expose internal error details
   if (isProduction && error.statusCode >= 500) {
     return 'An internal error occurred';
   }
-  
+
   return error.message;
 }
 
@@ -186,12 +186,12 @@ export function shouldLogError(error: YamaError): boolean {
   if (error.statusCode >= 500) {
     return true;
   }
-  
+
   // Log auth failures (potential security issues)
   if (error.code.startsWith('AUTH_') || error.code.startsWith('AUTHZ_')) {
     return true;
   }
-  
+
   // Don't log expected client errors
   return false;
 }
@@ -203,10 +203,10 @@ export function getErrorLogLevel(error: YamaError): 'error' | 'warn' | 'info' {
   if (error.statusCode >= 500) {
     return 'error';
   }
-  
+
   if (error.statusCode >= 400) {
     return 'warn';
   }
-  
+
   return 'info';
 }

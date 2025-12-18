@@ -104,7 +104,7 @@ class PluginMetricsCollector {
   private summaryCache: SummaryStats | null = null;
   private summaryCacheTime: number = 0;
   private updateQueue: Array<() => void> = [];
-  private batchTimeout: NodeJS.Timeout | null = null;
+  private batchTimeout: ReturnType<typeof setTimeout> | null = null;
   private apiCallTimestamps = new Map<string, CircularBuffer<number>>();
   private eventListeners = new Map<string, Set<Function>>();
 
@@ -113,22 +113,22 @@ class PluginMetricsCollector {
    */
   configure(config: Partial<MetricsConfig>): void {
     this.config = {
-      retention: { 
+      retention: {
         enabled: config.retention?.enabled ?? this.config.retention?.enabled ?? false,
         ...this.config.retention,
         ...config.retention,
       },
-      sampling: { 
+      sampling: {
         enabled: config.sampling?.enabled ?? this.config.sampling?.enabled ?? false,
         ...this.config.sampling,
         ...config.sampling,
       },
-      caching: { 
+      caching: {
         enabled: config.caching?.enabled ?? this.config.caching?.enabled ?? true,
         ...this.config.caching,
         ...config.caching,
       },
-      batching: { 
+      batching: {
         enabled: config.batching?.enabled ?? this.config.batching?.enabled ?? false,
         ...this.config.batching,
         ...config.batching,
@@ -299,9 +299,9 @@ class PluginMetricsCollector {
       lastLoadTime: new Date(),
     };
 
-    if (trackMemory && typeof process !== "undefined" && process.memoryUsage) {
-      metrics.memoryUsage = process.memoryUsage().heapUsed;
-    }
+    // Note: Memory tracking is runtime-specific and disabled in the kernel.
+    // Runtime adapters can provide this via their own metrics implementation.
+    // if (trackMemory) { metrics.memoryUsage = ... }
 
     this.metrics.set(pluginName, metrics);
     this.loadStartTimes.delete(pluginName);
@@ -376,9 +376,9 @@ class PluginMetricsCollector {
       ...metrics,
       lastError: metrics.lastError
         ? Object.freeze({
-            ...metrics.lastError,
-            timestamp: new Date(metrics.lastError.timestamp),
-          })
+          ...metrics.lastError,
+          timestamp: new Date(metrics.lastError.timestamp),
+        })
         : undefined,
       lastLoadTime: metrics.lastLoadTime
         ? new Date(metrics.lastLoadTime)

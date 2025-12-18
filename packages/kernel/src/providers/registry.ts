@@ -12,9 +12,11 @@ import type {
     ProvidersConfig,
     ProviderAPIs,
     ProviderLogger,
-    PROVIDER_INIT_ORDER,
     HealthCheckResult,
 } from './types.js';
+import { PROVIDER_INIT_ORDER } from './types.js';
+import { getRuntime } from '../platform/index.js';
+import { Logger, createConsoleTransport } from '@yamajs/logging';
 
 // ============================================================================
 // Adapter Registry
@@ -80,32 +82,13 @@ const initializedProviders = new Map<ProviderType, Provider>();
  * Provider APIs storage
  */
 const providerAPIs = new Map<ProviderType, unknown>();
+let systemLogger: Logger | null = null;
+
 
 /**
- * Default adapter for each provider type
+ * Provider initialization order (excluding core services like logging)
  */
-const DEFAULT_ADAPTERS: Record<ProviderType, string> = {
-    config: 'env',
-    logging: 'console',
-    database: 'pglite',
-    cache: 'memory',
-    email: 'smtp',
-    auth: 'jwt-password',
-    storage: 'local',
-};
-
-/**
- * Provider initialization order
- */
-const INIT_ORDER: readonly ProviderType[] = [
-    'config',
-    'logging',
-    'database',
-    'cache',
-    'email',
-    'auth',
-    'storage',
-];
+const INIT_ORDER: readonly ProviderType[] = PROVIDER_INIT_ORDER;
 
 /**
  * Initialize a single provider
@@ -116,7 +99,15 @@ async function initializeProvider(
     context: ProviderContext
 ): Promise<void> {
     // Get adapter name from config or use default
-    const adapterName = (config?.adapter as string) || DEFAULT_ADAPTERS[providerType];
+    // Get adapter name from config
+    const adapterName = (config?.adapter as string);
+
+    if (!adapterName) {
+        throw new Error(
+            `No adapter configured for provider '${providerType}'. ` +
+            `Please specify an adapter in the configuration (e.g. { adapter: 'memory' }).`
+        );
+    }
 
     // Get adapter factory
     const factory = getAdapterFactory(providerType, adapterName);
@@ -150,13 +141,16 @@ export async function initializeProviders(
     projectDir: string
 ): Promise<ProviderAPIs> {
     // Determine environment
-    const nodeEnv = process.env.NODE_ENV || 'development';
+    const nodeEnv = getRuntime().env.get('NODE_ENV') || 'development';
     const env = nodeEnv === 'production' ? 'production'
         : nodeEnv === 'test' ? 'test'
             : 'development';
 
-    // Create bootstrap logger (before logging provider is initialized)
-    const bootstrapLogger = createBootstrapLogger(env !== 'production');
+    systemLogger = new Logger({
+        transports: [createConsoleTransport({ format: env === 'development' ? 'pretty' : 'json' })]
+    });
+
+    const logger = systemLogger;
 
     // Create initial context
     const context: ProviderContext = {
@@ -164,14 +158,13 @@ export async function initializeProviders(
         env,
         isDev: env === 'development',
         isProd: env === 'production',
-        log: bootstrapLogger,
+        log: logger,
         getConfig: <T>(key: string, defaultValue?: T) => {
-            // Before config provider is ready, read from process.env
-            const value = process.env[key];
+            const value = getRuntime().env.get(key);
             return (value !== undefined ? value : defaultValue) as T | undefined;
         },
         getRequiredConfig: <T>(key: string) => {
-            const value = process.env[key];
+            const value = getRuntime().env.get(key);
             if (value === undefined) {
                 throw new Error(`Required config '${key}' is not set`);
             }
@@ -185,7 +178,7 @@ export async function initializeProviders(
         },
     };
 
-    bootstrapLogger.info('Starting provider initialization', {
+    logger.info('Starting provider initialization', {
         projectDir,
         env,
         providers: INIT_ORDER,
@@ -204,16 +197,8 @@ export async function initializeProviders(
                 context.getConfig = configAPI.get.bind(configAPI);
                 context.getRequiredConfig = configAPI.getRequired.bind(configAPI);
             }
-
-            // After logging provider is initialized, update context.log
-            if (providerType === 'logging') {
-                const loggerAPI = providerAPIs.get('logging') as import('./types.js').LoggerAPI;
-                context.log = loggerAPI;
-            }
         } catch (error) {
-            bootstrapLogger.error(`Failed to initialize ${providerType} provider`, {
-                error: error instanceof Error ? error.message : String(error),
-            });
+            logger.error(`Failed to initialize ${providerType} provider`, error);
 
             // Shutdown already initialized providers
             await shutdownProviders();
@@ -222,43 +207,36 @@ export async function initializeProviders(
         }
     }
 
-    context.log.info('All providers initialized successfully');
+    logger.info('All providers initialized successfully');
 
     // Return provider APIs
-    return {
-        config: providerAPIs.get('config') as import('./types.js').ConfigAPI,
-        log: providerAPIs.get('logging') as import('./types.js').LoggerAPI,
-        db: providerAPIs.get('database') as import('./types.js').DatabaseAPI,
-        cache: providerAPIs.get('cache') as import('./types.js').CacheAPI,
-        email: providerAPIs.get('email') as import('./types.js').EmailAPI,
-        auth: providerAPIs.get('auth') as import('./types.js').AuthAPI,
-        storage: providerAPIs.get('storage') as import('./types.js').StorageAPI,
-    };
+    const apis: any = {};
+    for (const [type, api] of providerAPIs) {
+        apis[type] = api;
+    }
+
+    return apis as ProviderAPIs;
 }
 
 /**
  * Shutdown all providers in reverse order
  */
 export async function shutdownProviders(): Promise<void> {
-    const logger = providerAPIs.get('logging') as ProviderLogger | undefined;
-    const log = logger ?? createBootstrapLogger(true);
-
-    log.info('Shutting down providers...');
-
-    // Shutdown in reverse order
+    const logger = new Logger({
+        transports: [createConsoleTransport()]
+    });
+    logger.info('Shutting down providers...');
     const reverseOrder = [...INIT_ORDER].reverse();
 
     for (const providerType of reverseOrder) {
         const provider = initializedProviders.get(providerType);
         if (provider?.shutdown) {
             try {
-                log.debug(`Shutting down ${providerType} provider`);
+                logger.debug(`Shutting down ${providerType} provider`);
                 await provider.shutdown();
-                log.info(`${providerType} provider shut down`);
+                logger.info(`${providerType} provider shut down`);
             } catch (error) {
-                log.error(`Error shutting down ${providerType} provider`, {
-                    error: error instanceof Error ? error.message : String(error),
-                });
+                logger.error(`Error shutting down ${providerType} provider`, error);
             }
         }
     }
@@ -267,7 +245,7 @@ export async function shutdownProviders(): Promise<void> {
     initializedProviders.clear();
     providerAPIs.clear();
 
-    log.info('All providers shut down');
+    logger.info('All providers shut down');
 }
 
 /**
@@ -316,69 +294,31 @@ export async function getProvidersHealth(): Promise<Record<ProviderType, HealthC
 /**
  * Create a simple bootstrap logger for use before logging provider is ready
  */
-function createBootstrapLogger(colors: boolean): ProviderLogger {
-    const formatMeta = (meta?: Record<string, unknown>): string => {
-        if (!meta || Object.keys(meta).length === 0) return '';
-        return ' ' + JSON.stringify(meta);
-    };
-
-    const timestamp = (): string => {
-        return new Date().toISOString();
-    };
-
-    const colorize = (level: string, message: string): string => {
-        if (!colors) return message;
-        const codes: Record<string, string> = {
-            debug: '\x1b[90m', // gray
-            info: '\x1b[36m',  // cyan
-            warn: '\x1b[33m',  // yellow
-            error: '\x1b[31m', // red
-        };
-        const reset = '\x1b[0m';
-        return `${codes[level] || ''}${message}${reset}`;
-    };
-
-    const log = (level: string, message: string, meta?: Record<string, unknown>): void => {
-        const output = `[${timestamp()}] ${level.toUpperCase().padEnd(5)} ${message}${formatMeta(meta)}`;
-        if (level === 'error') {
-            console.error(colorize(level, output));
-        } else if (level === 'warn') {
-            console.warn(colorize(level, output));
-        } else {
-            console.log(colorize(level, output));
-        }
-    };
-
-    const logger: ProviderLogger = {
-        debug: (message, meta) => log('debug', message, meta),
-        info: (message, meta) => log('info', message, meta),
-        warn: (message, meta) => log('warn', message, meta),
-        error: (message, meta) => log('error', message, meta),
-        child: (bindings) => {
-            // Create child logger that includes bindings
-            const childLog = (level: string, message: string, meta?: Record<string, unknown>): void => {
-                log(level, message, { ...bindings, ...meta });
-            };
-            return {
-                debug: (message, meta) => childLog('debug', message, meta),
-                info: (message, meta) => childLog('info', message, meta),
-                warn: (message, meta) => childLog('warn', message, meta),
-                error: (message, meta) => childLog('error', message, meta),
-                child: (newBindings) => logger.child({ ...bindings, ...newBindings }),
-            };
-        },
-    };
-
-    return logger;
+function createBootstrapLogger(colors: boolean): Logger {
+    return new Logger({
+        transports: [createConsoleTransport({ format: colors ? 'pretty' : 'json' })]
+    });
 }
 
 // ============================================================================
 // Exports
 // ============================================================================
 
+/**
+ * Get the core system logger
+ */
+export function getSystemLogger(): Logger {
+    if (!systemLogger) {
+        // Fallback to a basic console logger if not initialized
+        systemLogger = new Logger({
+            transports: [createConsoleTransport()]
+        });
+    }
+    return systemLogger;
+}
+
 export {
     initializedProviders,
     providerAPIs,
     INIT_ORDER,
-    DEFAULT_ADAPTERS,
 };

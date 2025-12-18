@@ -17,17 +17,4 @@ export type {
     RateLimitConfig,
 } from '../types.js';
 
-// Re-export adapter utilities
-export {
-    JWTPasswordAuthProvider,
-    JWTPasswordAuthAPI,
-    createJWT,
-    verifyJWT,
-    hashPassword,
-    verifyPassword,
-    validatePasswordStrength,
-    checkPasswordBreached,
-} from './adapters/jwt-password.js';
-
-// Register adapters (side effect)
-import './adapters/jwt-password.js';
+// Adapters are now in separate packages (e.g. @yamajs/auth-jwt-password)

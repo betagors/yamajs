@@ -14,14 +14,4 @@ export type {
     CapturedEmail,
 } from '../types.js';
 
-// Re-export adapter utilities
-export {
-    SMTPEmailProvider,
-    SMTPEmailAPI,
-    renderTemplate,
-    extractLinks,
-    BUILT_IN_TEMPLATES,
-} from './adapters/smtp.js';
-
-// Register adapters (side effect)
-import './adapters/smtp.js';
+// Adapters are now in separate packages (e.g. @yamajs/mail-smtp)

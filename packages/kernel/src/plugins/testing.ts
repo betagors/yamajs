@@ -1,6 +1,7 @@
 import type { YamaPlugin, PluginContext, Logger } from "./base.js";
 import { PluginContextImpl } from "./context.js";
 import { PluginRegistry } from "./registry.js";
+import { getRuntime } from "../platform/index.js";
 
 /**
  * Mock logger for testing
@@ -32,7 +33,7 @@ export function createMockLogger(): Logger {
  */
 export function createTestPluginContext(
   config: Record<string, unknown> = {},
-  projectDir: string = process.cwd(),
+  projectDir: string = getRuntime().env.cwd(),
   logger?: Logger
 ): PluginContext {
   const plugins = new Map<string, YamaPlugin>();
@@ -123,9 +124,9 @@ export function createTestRegistry(): {
 } {
   const registry = new PluginRegistry();
   const config = {};
-  const projectDir = process.cwd();
+  const projectDir = getRuntime().env.cwd();
   const logger = createMockLogger();
-  
+
   registry.setConfig(config, projectDir, logger);
   // Create context using the public method by loading a dummy plugin
   // or create it directly

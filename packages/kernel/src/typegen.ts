@@ -432,20 +432,12 @@ ${dbImport}import type * as Types from "${typesImportPath}";
 ${repositoryTypesImport}
 `;
 
-  // Normalize APIs config (includes operations conversion)
-  // Convert schemas to entities format for normalizer
-  const schemasAsEntities = config.schemas ? Object.fromEntries(
-    Object.entries(config.schemas).map(([name, schema]) => [
-      name,
-      { ...schema, fields: schema.fields || {} }
-    ])
-  ) : undefined;
-
   const normalizedApis = normalizeApisConfig({
     apis: config.apis,
     operations: config.operations,
     policies: config.policies,
-    schemas: schemasAsEntities as any,
+    entities: config.entities,
+    schemas: config.schemas,
   });
   const allEndpoints = normalizedApis.rest.flatMap(restConfig => restConfig.endpoints);
 

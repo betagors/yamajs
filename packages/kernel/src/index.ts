@@ -45,12 +45,7 @@ export {
   type OAuthAuthProvider,
 } from "./schemas.js";
 
-// Export rate limiting types from schemas
-export {
-  type RateLimitConfig,
-  type RateLimitKeyStrategy,
-  type RateLimitStoreType,
-} from "./schemas.js";
+
 
 // Export auth functions
 export {
@@ -69,21 +64,7 @@ export {
   getRegisteredProviderTypes,
 } from "./auth/registry.js";
 
-// Export rate limiting functions
-export {
-  createRateLimiter,
-  createRateLimiterFromConfig,
-  formatRateLimitHeaders,
-  type RateLimiter,
-  type RateLimitResult,
-  type RateLimitStore,
-  createMemoryRateLimitStore,
-  MemoryRateLimitStore,
-  createCacheRateLimitStore,
-  CacheRateLimitStore,
-  createRedisOptimizedRateLimitStore,
-  RedisOptimizedRateLimitStore,
-} from "./rate-limit/index.js";
+
 
 // Export auth provider types
 export {
@@ -271,11 +252,18 @@ export type {
   StorageAPI,
   FileInfo,
   FileMetadata,
-} from "./providers/types.js";
+  ProviderAPIs,
+  RawProvidersConfig,
+} from "./providers/index.js";
 
 export {
   registerAdapter,
-} from "./providers/registry.js";
+  initializeProvidersFromConfig,
+  getProviders,
+  shutdownProvidersSystem,
+  createRequestContext,
+  createProviderHealthHandler,
+} from "./providers/index.js";
 
 // Export infrastructure adapters
 export {
@@ -339,7 +327,6 @@ export {
   getAllPlugins,
   getPluginByCategory,
   getPluginsByCategory,
-  getPluginByType,
   loadPluginFromPackage,
   pluginRegistry,
   // Plugin migrations
@@ -370,7 +357,6 @@ export {
   getAllMCPTools,
   type DependencyResolution,
   resolvePluginDependencies,
-  validateDependencies,
   // Testing utilities
   createTestPluginContext,
   mockPlugin,
@@ -845,21 +831,12 @@ export type {
   FieldDefinition,
 } from "./types/index.js";
 
-// Export variants system
-export {
-  VariantGenerator,
-} from "./variants/index.js";
-export type {
-  VariantConfig,
-  SchemaVariants,
-  GlobalVariantDefaults,
-  VariantSchema,
-} from "./variants/index.js";
-
 // Export config normalizer
 export {
   normalizeConfig,
   getSchemasFromConfig,
+  getEntitiesFromConfig,
+  getOperationsFromConfig,
 } from "./config-normalizer.js";
 export type {
   NormalizedYamaConfig,

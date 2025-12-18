@@ -1,120 +1,78 @@
-﻿import type { LogEntry, Transport, S3TransportConfig, LogFormat } from "../types.js";
-import type { StorageBucket } from "@yamajs/kernel";
-import { formatLogEntry } from "../formatters.js";
+﻿import type { Transport } from "../logger.js";
+import type { LogEvent } from "../event.js";
+import { formatLogEntry, type LogFormat } from "../formatters.js";
+
+export interface S3TransportConfig {
+  bucket: string;
+  prefix?: string;
+  format?: LogFormat;
+  batchSize?: number;
+  flushInterval?: number;
+}
 
 /**
- * S3 transport implementation
+ * Minimal interface required for S3 uploading.
+ * This avoids a hard dependency on @yamajs/kernel or any specific S3 package.
+ */
+export interface S3Uploader {
+  upload(key: string, data: Buffer | Uint8Array): Promise<void>;
+}
+
+/**
+ * S3 Transport Adapter.
+ * Handles batched uploads to S3 compatible storage.
  */
 export class S3Transport implements Transport {
   private config: S3TransportConfig;
-  private bucket: StorageBucket | null = null;
+  private uploader: S3Uploader | null;
   private batch: string[] = [];
-  private batchSize: number;
   private format: LogFormat;
-  private flushTimer: NodeJS.Timeout | null = null;
-  private currentDate: string = "";
+  private flushTimer?: any;
 
-  constructor(config: S3TransportConfig, bucket: StorageBucket | null = null) {
+  constructor(config: S3TransportConfig, uploader?: S3Uploader) {
     this.config = config;
-    this.bucket = bucket;
+    this.uploader = uploader ?? null;
     this.format = config.format || "json";
-    this.batchSize = config.batchSize || 100;
-    this.currentDate = this.getDatePrefix();
 
-    // Auto-flush based on interval if configured
-    if (config.flushInterval && config.flushInterval > 0) {
-      this.flushTimer = setInterval(() => {
-        this.flush().catch((err) => {
-          console.error("Error flushing S3 transport:", err);
-        });
-      }, config.flushInterval);
+    if (config.flushInterval) {
+      this.flushTimer = setInterval(() => this.flush(), config.flushInterval);
     }
   }
 
-  /**
-   * Get date-based prefix for log files
-   */
-  private getDatePrefix(): string {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, "0");
-    const day = String(now.getDate()).padStart(2, "0");
-    return `${year}/${month}/${day}`;
-  }
-
-  /**
-   * Get S3 key for log file
-   */
-  private getLogKey(): string {
-    const prefix = this.config.prefix || "";
-    const datePrefix = this.getDatePrefix();
-    const timestamp = Date.now();
-    const random = Math.random().toString(36).substring(2, 9);
-    return `${prefix}${datePrefix}/app-${timestamp}-${random}.log`;
-  }
-
-  async write(entry: LogEntry): Promise<void> {
-    if (!this.bucket) {
-      // Silently fail if bucket not available
-      return;
-    }
-
-    const formatted = formatLogEntry(entry, this.format);
+  async write(event: LogEvent): Promise<void> {
+    const formatted = formatLogEntry(event, this.format);
     this.batch.push(formatted);
 
-    // Check if date changed (new day)
-    const newDate = this.getDatePrefix();
-    if (newDate !== this.currentDate) {
-      await this.flush();
-      this.currentDate = newDate;
-    }
-
-    // Flush if batch is full
-    if (this.batch.length >= this.batchSize) {
+    if (this.batch.length >= (this.config.batchSize || 100)) {
       await this.flush();
     }
   }
 
   async flush(): Promise<void> {
-    if (!this.bucket || this.batch.length === 0) {
-      return;
-    }
+    if (!this.uploader || this.batch.length === 0) return;
+
+    const data = Buffer.from(this.batch.join("\n") + "\n", "utf8");
+    const timestamp = Date.now();
+    const key = `${this.config.prefix || ""}logs/${new Date().toISOString().split('T')[0]}/${timestamp}.log`;
+
+    const currentBatch = [...this.batch];
+    this.batch = [];
 
     try {
-      const content = this.batch.join("\n") + "\n";
-      const buffer = Buffer.from(content, "utf8");
-      // Create unique key for each batch (include timestamp)
-      const key = this.getLogKey();
-
-      // Upload as new file (S3 doesn't support appending efficiently)
-      await this.bucket.upload(key, buffer);
-
-      this.batch = [];
-    } catch (error) {
-      console.error("Error writing to S3 transport:", error);
-      // Don't throw - fail gracefully
+      await this.uploader.upload(key, data);
+    } catch (err: any) {
+      console.error(`[Logging] S3 Transport failure: ${err.message}`);
+      // Fallback: put back in batch if possible or just drop?
+      // Core logging usually drops to avoid memory leaks if destination is dead.
     }
   }
 
   async close(): Promise<void> {
-    // Clear flush timer
-    if (this.flushTimer) {
-      clearInterval(this.flushTimer);
-      this.flushTimer = null;
-    }
-
-    // Flush remaining batch
+    if (this.flushTimer) clearInterval(this.flushTimer);
     await this.flush();
   }
 }
 
-/**
- * Create an S3 transport
- */
-export function createS3Transport(
-  config: S3TransportConfig,
-  bucket: StorageBucket | null = null
-): S3Transport {
-  return new S3Transport(config, bucket);
+export function createS3Transport(config: S3TransportConfig, uploader?: S3Uploader): S3Transport {
+  return new S3Transport(config, uploader);
 }
-

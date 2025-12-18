@@ -267,9 +267,6 @@ export interface SchemaWithPluginConfig {
     /** Computed fields */
     computed?: Record<string, unknown>;
 
-    /** Schema variants */
-    variants?: Record<string, unknown>;
-
     /** Database configuration */
     database?: Record<string, unknown>;
 }

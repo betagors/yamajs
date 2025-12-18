@@ -39,8 +39,8 @@ function pluralize(word: string): string {
       // Check if it ends with 'es' (likely already plural)
       if (word.endsWith("es")) {
         // Check if it's a plural form (not 'ies', 'ches', 'shes', 'xes', 'zes')
-        if (!word.endsWith("ies") && !word.endsWith("ches") && !word.endsWith("shes") && 
-            !word.endsWith("xes") && !word.endsWith("zes")) {
+        if (!word.endsWith("ies") && !word.endsWith("ches") && !word.endsWith("shes") &&
+          !word.endsWith("xes") && !word.endsWith("zes")) {
           // Already plural (e.g., "posts", "authors", "publishedposts")
           return word;
         }
@@ -56,7 +56,7 @@ function pluralize(word: string): string {
       }
     }
   }
-  
+
   // Apply pluralization rules for singular words
   if (word.endsWith("y")) {
     return word.slice(0, -1) + "ies";
@@ -99,22 +99,22 @@ function entityNameToPath(entityName: string, customPath?: string): string {
   if (customPath) {
     return customPath.startsWith("/") ? customPath : `/${customPath}`;
   }
-  
+
   // Convert to kebab-case and split into words
   const kebab = toKebabCase(entityName);
   const words = kebab.split('-');
-  
+
   // Check if the last word is already plural
   if (isLastWordPlural(words)) {
     // Already plural, return as-is
     return `/${kebab}`;
   }
-  
+
   // Pluralize the last word only
   const lastWord = words[words.length - 1];
   const pluralizedLast = pluralize(lastWord);
   words[words.length - 1] = pluralizedLast;
-  
+
   return `/${words.join('-')}`;
 }
 
@@ -124,7 +124,7 @@ function entityNameToPath(entityName: string, customPath?: string): string {
 function getPrimaryKeyField(entityDef: EntityDefinition, entityName: string, entities?: YamaEntities): string {
   const normalized = normalizeEntityDefinition(entityName, entityDef, entities);
   const fieldEntries = Object.entries(normalized.fields);
-  
+
   // Early return on first primary key found
   for (let i = 0; i < fieldEntries.length; i++) {
     const [fieldName, field] = fieldEntries[i];
@@ -132,7 +132,7 @@ function getPrimaryKeyField(entityDef: EntityDefinition, entityName: string, ent
       return (field.api && typeof field.api === "string") ? field.api : fieldName;
     }
   }
-  
+
   return "id"; // Default fallback
 }
 
@@ -157,23 +157,23 @@ function getAllSearchableFields(entityDef: EntityDefinition, entityName: string,
   const normalized = normalizeEntityDefinition(entityName, entityDef, entities);
   const searchable: string[] = [];
   const fieldEntries = Object.entries(normalized.fields);
-  
+
   // Pre-filter searchable types
   for (let i = 0; i < fieldEntries.length; i++) {
     const [fieldName, field] = fieldEntries[i];
     if (field.api === false) continue;
     if (field.type !== "string" && field.type !== "text") continue;
-    
+
     // Resolve API field name efficiently
     const apiFieldName = field.api && typeof field.api === "string"
       ? field.api
       : field.dbColumn
-      ? field.dbColumn.replace(/_([a-z])/g, (_, letter: string) => letter.toUpperCase())
-      : fieldName;
-    
+        ? field.dbColumn.replace(/_([a-z])/g, (_, letter: string) => letter.toUpperCase())
+        : fieldName;
+
     searchable.push(apiFieldName);
   }
-  
+
   return searchable;
 }
 
@@ -233,7 +233,7 @@ function shouldEnableSearch(
 
   // Check search config
   const searchConfig = crudConfig.search;
-  
+
   // Explicitly disabled
   if (searchConfig === false) {
     return false;
@@ -402,12 +402,12 @@ function getResponseType(
   // For GET endpoints, use GET_LIST or GET_ONE
   if (method === "GET" && endpointType) {
     const specificMethod = endpointType === "list" ? "GET_LIST" : "GET_ONE";
-    
+
     const methodConfig = getMethodConfig(specificMethod, crudConfig);
     if (methodConfig?.responseType) {
       return methodConfig.responseType;
     }
-    
+
     if (crudConfig.responseTypes?.[specificMethod]) {
       return crudConfig.responseTypes[specificMethod];
     }
@@ -435,7 +435,7 @@ export function generateCrudEndpoints(
   entities: YamaEntities
 ): CrudEndpoint[] {
   const crudConfig = entityDef.crud;
-  
+
   // If CRUD is not enabled, return empty array
   if (!crudConfig) {
     return [];
@@ -460,10 +460,10 @@ export function generateCrudEndpoints(
   if (shouldGenerateMethod("GET", crudConfig)) {
     const methodConfig = getMethodConfig("GET", crudConfig);
     const responseType = getResponseType("GET", crudConfig, arraySchemaName, "list");
-    
+
     // Build query parameters based on pagination config
     const queryParams: Record<string, SchemaField> = {};
-    
+
     // Handle pagination config
     const paginationConfig = typeof crudConfig === "object" ? crudConfig.pagination : undefined;
     if (paginationConfig === undefined || paginationConfig === true) {
@@ -638,72 +638,7 @@ export function generateCrudInputSchemas(
 
   // Get the base schema
   const baseSchema = entityToSchema(entityName, entityDef);
-  
-  // Check if variants are defined - if so, use them for explicit control
-  // Variants allow you to explicitly include/exclude fields like id, createdAt, updatedAt
-  if (entityDef.variants && (entityDef.variants.create || entityDef.variants.update)) {
-    const { VariantGenerator } = require('./variants/generator.js');
-    const result: Record<string, { fields: Record<string, SchemaField> }> = {};
-    
-    // Convert baseSchema fields to FieldType format for VariantGenerator
-    const baseFieldsAsFieldType: Record<string, any> = {};
-    for (const [fieldName, schemaField] of Object.entries(baseSchema.fields)) {
-      baseFieldsAsFieldType[fieldName] = {
-        type: schemaField.type,
-        nullable: !schemaField.required,
-        default: schemaField.default,
-      };
-    }
-    
-    // Use create variant if defined
-    if (entityDef.variants.create) {
-      const createVariant = VariantGenerator.generate(
-        { fields: baseFieldsAsFieldType, computed: entityDef.computed },
-        entityDef.variants.create
-      );
-      // Convert FieldType back to SchemaField
-      const createFields: Record<string, SchemaField> = {};
-      for (const [fieldName, fieldType] of Object.entries(createVariant.fields)) {
-        const ft = fieldType as any; // FieldType from VariantGenerator
-        createFields[fieldName] = {
-          type: ft.type as SchemaField['type'],
-          required: !ft.nullable,
-          default: ft.default,
-          format: (ft.type === 'timestamp' || ft.type === 'timestamptz' || ft.type === 'datetime') ? 'date-time' : undefined,
-        };
-      }
-      result[createInputName] = { fields: createFields };
-    }
-    
-    // Use update variant if defined
-    if (entityDef.variants.update) {
-      const updateVariant = VariantGenerator.generate(
-        { fields: baseFieldsAsFieldType, computed: entityDef.computed },
-        entityDef.variants.update
-      );
-      // Convert FieldType back to SchemaField
-      const updateFields: Record<string, SchemaField> = {};
-      for (const [fieldName, fieldType] of Object.entries(updateVariant.fields)) {
-        const ft = fieldType as any; // FieldType from VariantGenerator
-        updateFields[fieldName] = {
-          type: ft.type as SchemaField['type'],
-          required: false, // Update fields are always optional (partial: true is implied)
-          default: ft.default,
-          format: (ft.type === 'timestamp' || ft.type === 'timestamptz' || ft.type === 'datetime') ? 'date-time' : undefined,
-        };
-      }
-      result[updateInputName] = { fields: updateFields };
-    }
-    
-    // Fill in missing variants with auto-generated ones
-    if (!result[createInputName] || !result[updateInputName]) {
-      // Continue to auto-generation for missing variants
-    } else {
-      // Both variants defined, return early
-      return result;
-    }
-  }
-  
+
   // Normalize entity definition to handle shorthand syntax
   const normalized = normalizeEntityDefinition(entityName, entityDef, undefined);
 
@@ -712,7 +647,7 @@ export function generateCrudInputSchemas(
   const createFields: Record<string, SchemaField> = {};
   // Common timestamp field names that should be excluded from create input
   const timestampFieldNames = ['createdAt', 'updatedAt', 'deletedAt', 'created_at', 'updated_at', 'deleted_at'];
-  
+
   for (const [fieldName, field] of Object.entries(normalized.fields)) {
     // Skip primary key and generated fields for create
     if (field.primary || field.generated) {
@@ -728,9 +663,9 @@ export function generateCrudInputSchemas(
     }
     // Skip fields with default functions like now() - these are auto-generated
     // Check if default is a function name (string) that suggests auto-generation
-    if (field.default && typeof field.default === 'string' && 
-        (field.default === 'now()' || field.default === 'now' || 
-         field.default.includes('()') && (field.default.includes('now') || field.default.includes('uuid')))) {
+    if (field.default && typeof field.default === 'string' &&
+      (field.default === 'now()' || field.default === 'now' ||
+        field.default.includes('()') && (field.default.includes('now') || field.default.includes('uuid')))) {
       continue;
     }
     // Skip common timestamp fields that are conventionally auto-generated
@@ -748,15 +683,15 @@ export function generateCrudInputSchemas(
     const apiFieldName = field.api && typeof field.api === "string"
       ? field.api
       : field.dbColumn
-      ? field.dbColumn.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase())
-      : fieldName;
+        ? field.dbColumn.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase())
+        : fieldName;
 
     // Double-check: if this field was excluded above, don't add it even if it exists in baseSchema
     // (baseSchema might have it for response schemas, but we don't want it in input schemas)
     if (timestampFieldNames.includes(apiFieldName) || timestampFieldNames.includes(fieldName)) {
       continue; // Skip timestamp fields even if they exist in baseSchema
     }
-    
+
     // Also skip 'id' field - it's always auto-generated for create operations
     if (apiFieldName === 'id' || fieldName === 'id') {
       continue;
@@ -788,9 +723,9 @@ export function generateCrudInputSchemas(
       continue;
     }
     // Skip fields with default functions like now() - these are auto-generated
-    if (field.default && typeof field.default === 'string' && 
-        (field.default === 'now()' || field.default === 'now' || 
-         field.default.includes('()') && (field.default.includes('now') || field.default.includes('uuid')))) {
+    if (field.default && typeof field.default === 'string' &&
+      (field.default === 'now()' || field.default === 'now' ||
+        field.default.includes('()') && (field.default.includes('now') || field.default.includes('uuid')))) {
       continue;
     }
     // Skip common timestamp fields that are conventionally auto-generated
@@ -807,8 +742,8 @@ export function generateCrudInputSchemas(
     const apiFieldName = field.api && typeof field.api === "string"
       ? field.api
       : field.dbColumn
-      ? field.dbColumn.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase())
-      : fieldName;
+        ? field.dbColumn.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase())
+        : fieldName;
 
     // Double-check: skip timestamp fields and id even if they exist in baseSchema
     if (timestampFieldNames.includes(apiFieldName) || timestampFieldNames.includes(fieldName)) {
@@ -844,11 +779,8 @@ export function generateArraySchema(
     [arraySchemaName]: {
       fields: {
         items: {
-          type: "list",
+          type: `${schemaName}[]`,
           required: true,
-          items: {
-            $ref: schemaName,
-          } as SchemaField,
         },
       },
     },

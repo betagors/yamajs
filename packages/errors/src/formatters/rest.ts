@@ -80,7 +80,7 @@ export function formatRestError(
     requestId,
     path,
     method,
-    includeSuggestions = process.env.NODE_ENV !== 'production',
+    includeSuggestions = false,
   } = options;
 
   const response: RestErrorResponse = {

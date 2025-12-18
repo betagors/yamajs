@@ -66,23 +66,19 @@ export async function getPluginPackageDir(
 ): Promise<string> {
   const fs = getRuntime().fs;
   const path = getRuntime().path;
-  try {
-    const { createRequire } = await import("module");
+  const modules = getRuntime().modules;
 
+  try {
     const projectRoot = projectDir || getRuntime().env.cwd();
     let packagePath: string;
 
     try {
-      const projectRequire = createRequire(path.resolve(projectRoot, "package.json"));
-      packagePath = projectRequire.resolve(packageName);
+      packagePath = await modules.resolve(packageName, path.join(projectRoot, "package.json"));
     } catch {
-      const require = createRequire(import.meta.url);
-      packagePath = require.resolve(packageName);
+      packagePath = await modules.resolve(packageName);
     }
 
     // Get the directory containing the resolved file
-    // If packagePath points to a file, get its directory
-    // If it points to a directory, use it directly
     let packageDir: string;
     if (await fs.exists(packagePath) && !await fs.exists(path.join(packagePath, "package.json"))) {
       // It's a file, get its directory
