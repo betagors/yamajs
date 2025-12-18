@@ -45,7 +45,7 @@ export function generatePluginDocs(
   const docs: PluginDocumentation = {
     name: plugin.name,
     version: plugin.version || "Unknown",
-    description: manifest.service || manifest.type || plugin.category,
+    description: plugin.description || manifest.service || plugin.category,
     category: plugin.category,
     api: manifest.pluginApi,
     yamaCore: manifest.yamaCore || plugin.yamaCore,
@@ -247,16 +247,16 @@ export function generateHTMLDocs(docs: PluginDocumentation): string {
 </head>
 <body>
 ${markdown
-  .replace(/^# (.*)$/gm, "<h1>$1</h1>")
-  .replace(/^## (.*)$/gm, "<h2>$1</h2>")
-  .replace(/^### (.*)$/gm, "<h3>$1</h3>")
-  .replace(/```json\n([\s\S]*?)```/g, "<pre><code>$1</code></pre>")
-  .replace(/```yaml\n([\s\S]*?)```/g, "<pre><code>$1</code></pre>")
-  .replace(/```([\s\S]*?)```/g, "<pre><code>$1</code></pre>")
-  .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-  .replace(/\n\n/g, "</p><p>")
-  .replace(/^/gm, "<p>")
-  .replace(/$/gm, "</p>")}
+      .replace(/^# (.*)$/gm, "<h1>$1</h1>")
+      .replace(/^## (.*)$/gm, "<h2>$1</h2>")
+      .replace(/^### (.*)$/gm, "<h3>$1</h3>")
+      .replace(/```json\n([\s\S]*?)```/g, "<pre><code>$1</code></pre>")
+      .replace(/```yaml\n([\s\S]*?)```/g, "<pre><code>$1</code></pre>")
+      .replace(/```([\s\S]*?)```/g, "<pre><code>$1</code></pre>")
+      .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+      .replace(/\n\n/g, "</p><p>")
+      .replace(/^/gm, "<p>")
+      .replace(/$/gm, "</p>")}
 </body>
 </html>`;
 }

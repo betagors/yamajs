@@ -1,5 +1,4 @@
-import type { Logger } from "@yamajs/logging";
-import type { YamaPlugin, PluginManifest, PluginCLICommand, PluginMCPTool } from "./base.js";
+import type { Logger, YamaPlugin, PluginManifest, PluginCLICommand, PluginMCPTool } from "./base.js";
 import type { MiddlewareRegistry } from "../middleware/registry.js";
 
 /**

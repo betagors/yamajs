@@ -1,5 +1,5 @@
 import type { AuthContext } from "../schemas.js";
-import type { CacheAdapter } from "./cache.js";
+
 import type { StorageBucket } from "./storage.js";
 
 /**
@@ -52,7 +52,7 @@ export interface HandlerContext {
   // Framework services (for future extensibility)
   db?: unknown; // Direct database adapter access
   entities?: Record<string, unknown>; // Entity repositories (e.g., context.entities.Product)
-  cache?: CacheAdapter; // Cache adapter (Redis, Memcached, etc.)
+
   storage?: Record<string, StorageBucket>; // Storage buckets (e.g., context.storage.images, context.storage.documents)
   email?: {
     /**

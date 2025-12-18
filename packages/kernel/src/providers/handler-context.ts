@@ -7,7 +7,7 @@
 import type {
     ConfigAPI,
     DatabaseAPI,
-    CacheAPI,
+
     EmailAPI,
     AuthAPI,
     StorageAPI,
@@ -36,8 +36,7 @@ export interface HandlerContextProviders {
     /** Database access */
     db: DatabaseAPI;
 
-    /** Cache access */
-    cache: CacheAPI;
+
 
     /** Email sending */
     email: EmailAPI;
@@ -74,7 +73,7 @@ export function createRequestContext(
         config: providers.config,
         log: requestLogger,
         db: providers.db,
-        cache: providers.cache,
+
         email: providers.email,
         auth: providers.auth,
         storage: providers.storage,

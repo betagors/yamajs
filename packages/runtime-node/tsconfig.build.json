@@ -7,12 +7,21 @@
     "module": "NodeNext",
     "moduleResolution": "NodeNext"
   },
-  "include": ["src"],
+  "include": [
+    "src"
+  ],
   "references": [
-    { "path": "../core/tsconfig.build.json" },
-    { "path": "../openapi/tsconfig.build.json" },
-    { "path": "../postgres/tsconfig.build.json" },
-    { "path": "../fastify/tsconfig.build.json" }
+    {
+      "path": "../kernel/tsconfig.build.json"
+    },
+    {
+      "path": "../openapi/tsconfig.build.json"
+    },
+    {
+      "path": "../postgres/tsconfig.build.json"
+    },
+    {
+      "path": "../server-fastify/tsconfig.build.json"
+    }
   ]
 }
-

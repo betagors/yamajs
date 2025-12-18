@@ -161,6 +161,11 @@ export interface PluginDependencies {
    * Core version requirement - semver range (e.g., "^0.1.0")
    */
   core?: string;
+
+  /**
+   * Plugin dependencies - list of package names
+   */
+  plugins?: string[];
 }
 
 /**
