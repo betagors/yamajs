@@ -7,10 +7,9 @@
  * The 6 core providers:
  * 1. config   - Environment variables, .env files
  * 2. database - SQL database (PGLite/Postgres)
- * 3. cache    - In-memory/Redis caching
- * 4. email    - Email sending (SMTP/Resend/etc)
- * 5. auth     - Authentication & authorization
- * 6. storage  - File storage (local/S3)
+ * 3. email    - Email sending (SMTP/Resend/etc)
+ * 4. auth     - Authentication & authorization
+ * 5. storage  - File storage (local/S3)
  */
 import type { Logger } from "@yamajs/logging";
 
@@ -53,7 +52,6 @@ export interface Provider<TConfig = unknown, TAPI = unknown> {
 export type ProviderType =
     | 'config'
     | 'database'
-    | 'cache'
     | 'email'
     | 'auth'
     | 'storage';
@@ -64,10 +62,9 @@ export type ProviderType =
 export const PROVIDER_INIT_ORDER: readonly ProviderType[] = [
     'config',   // First - needed for all other configs
     'database', // Second - needed for auth sessions
-    'cache',    // Third - used by auth rate limiting
-    'email',    // Fourth - needed for auth verification
-    'auth',     // Fifth - depends on database, cache, email
-    'storage',  // Sixth - can depend on auth for permissions
+    'email',    // Third - needed for auth verification
+    'auth',     // Fourth - depends on database, email
+    'storage',  // Fifth - can depend on auth for permissions
 ] as const;
 
 /**
@@ -225,55 +222,7 @@ export type SQLTemplateTag = (
     ...values: unknown[]
 ) => { sql: string; params: unknown[] };
 
-// ============================================================================
-// Cache Provider Types
-// ============================================================================
 
-export interface CacheProviderConfig {
-    adapter: 'memory' | 'redis';
-    /** Maximum number of items (memory adapter) */
-    maxSize?: number;
-    /** Default TTL (e.g., '5m', '1h', '1d') */
-    ttl?: string;
-    /** Redis URL (redis adapter) */
-    url?: string;
-}
-
-export interface CacheAPI {
-    /** Get a cached value */
-    get<T>(key: string): Promise<T | null>;
-
-    /** Set a cached value */
-    set<T>(key: string, value: T, ttl?: string | number): Promise<void>;
-
-    /** Delete a cached value */
-    del(key: string): Promise<void>;
-
-    /** Check if key exists */
-    exists(key: string): Promise<boolean>;
-
-    /** Get multiple values */
-    mget<T>(keys: string[]): Promise<(T | null)[]>;
-
-    /** Set multiple values */
-    mset<T>(entries: Record<string, T>, ttl?: string | number): Promise<void>;
-
-    /** Delete multiple values */
-    mdel(keys: string[]): Promise<void>;
-
-    /** Clear all cached values */
-    clear(): Promise<void>;
-
-    /** Create a namespaced cache */
-    namespace(prefix: string): CacheAPI;
-
-    /** Get or compute value (cache-aside pattern) */
-    getOrSet<T>(
-        key: string,
-        factory: () => Promise<T>,
-        ttl?: string | number
-    ): Promise<T>;
-}
 
 // ============================================================================
 // Email Provider Types
@@ -733,7 +682,6 @@ export interface FileMetadata {
 export interface ProvidersConfig {
     config?: ConfigProviderConfig;
     database?: DatabaseProviderConfig;
-    cache?: CacheProviderConfig;
     email?: EmailProviderConfig;
     auth?: AuthProviderConfig;
     storage?: StorageProviderConfig;
@@ -745,7 +693,6 @@ export interface ProvidersConfig {
 export interface ProviderAPIs {
     config: ConfigAPI;
     db: DatabaseAPI;
-    cache: CacheAPI;
     email: EmailAPI;
     auth: AuthAPI;
     storage: StorageAPI;

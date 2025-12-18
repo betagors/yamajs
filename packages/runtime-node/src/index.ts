@@ -149,8 +149,7 @@ export async function startYamaNodeRuntime(
 
 
 
-  // Cache adapter (initialized from cache plugin if available)
-  let cacheAdapter: unknown = null;
+
 
   // Storage buckets (initialized from storage plugins)
   const storageBuckets: Record<string, any> = {};
@@ -304,11 +303,7 @@ export async function startYamaNodeRuntime(
               }
             }
 
-            // If this is a cache plugin, store the cache adapter
-            if (plugin.category === "cache" && pluginApi && typeof pluginApi === "object" && "adapter" in pluginApi) {
-              cacheAdapter = pluginApi.adapter;
-              console.log("âœ… Cache adapter initialized");
-            }
+
 
             // If this is a storage plugin, collect storage buckets
             if (plugin.category === "storage" && pluginApi && typeof pluginApi === "object") {
@@ -328,19 +323,7 @@ export async function startYamaNodeRuntime(
               realtimeAdapter = pluginApi.adapter;
               realtimePluginApi = pluginApi;
 
-              // Pass Redis client if available from cache plugin
-              if (cacheAdapter && typeof (cacheAdapter as any).getRedisClient === "function") {
-                const redisClient = (cacheAdapter as any).getRedisClient();
-                if (redisClient && pluginApi.init) {
-                  // Re-initialize with Redis client
-                  const realtimeConfig = typeof config.plugins === "object" && !Array.isArray(config.plugins)
-                    ? (config.plugins[pluginName] || {}) as any
-                    : {};
-                  realtimeConfig.redisClient = redisClient;
-                  // Note: We can't re-init here, but we can pass it via the plugin API
-                  // The plugin will check for redisClient in its setup
-                }
-              }
+
 
               console.log("âœ… Realtime adapter initialized");
             }
@@ -492,7 +475,7 @@ export async function startYamaNodeRuntime(
   if (config?.rateLimit) {
     try {
       // Use cache adapter if available (works with any cache implementation)
-      globalRateLimiter = await createRateLimiterFromConfig(config.rateLimit as any, cacheAdapter as any);
+      // globalRateLimiter = await createRateLimiterFromConfig(config.rateLimit as any, cacheAdapter as any);
       console.log("âœ… Initialized rate limiter");
     } catch (error) {
       console.warn(`âš ï¸  Failed to initialize rate limiter: ${error instanceof Error ? error.message : String(error)}`);
@@ -1027,10 +1010,9 @@ export async function startYamaNodeRuntime(
       config,
       configDir,
       validator,
-      null, // globalRateLimiter removed
       repositories,
       dbAdapter || null,
-      cacheAdapter || null,
+      null,
       storageBuckets,
       realtimeAdapter || null,
       middlewareRegistry,

@@ -273,9 +273,7 @@ export {
   registerDatabaseAdapter,
 } from "./infrastructure/database.js";
 
-export {
-  type CacheAdapter,
-} from "./infrastructure/cache.js";
+
 
 export {
   type StorageAdapter,

@@ -39,9 +39,7 @@ export type {
     TransactionAPI,
     SQLTemplateTag,
 
-    // Cache provider
-    CacheProviderConfig,
-    CacheAPI,
+
 
     // Email provider
     EmailProviderConfig,
