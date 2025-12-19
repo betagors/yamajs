@@ -1,5 +1,5 @@
 
-import { getRuntime } from "../platform/index.js";
+import { getRuntime } from "../../../../../../../../core/kernel/src/platform/index.js";
 
 function base64UrlEncode(data: Uint8Array | string): string {
     const buffer = typeof data === 'string' ? new TextEncoder().encode(data) : data;

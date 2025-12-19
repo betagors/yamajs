@@ -1,6 +1,6 @@
-import type { YamaSchemas } from "../schemas.js";
-import type { NormalizedApisConfig, NormalizedEndpoint } from "../apis/types.js";
-import type { AuthProvider } from "../schemas.js";
+import type { YamaSchemas } from "@yamajs/kernel";
+import type { NormalizedApisConfig, NormalizedEndpoint } from "../../../../../../../../../../../core/kernel/src/apis/types.js";
+import type { AuthProvider } from "@yamajs/kernel";
 
 /**
  * Versioned, minimal IR used to generate SDKs across languages.

@@ -3,12 +3,12 @@
   type AuthConfig,
   type EndpointAuth,
   type AuthContext,
-} from "./schemas.js";
-import { getAuthProvider } from "./auth/registry.js";
+} from "@yamajs/kernel";
+import { getAuthProvider } from "../../../../../../../../../../core/kernel/src/auth/registry.js";
 import { ErrorCodes } from "@yamajs/errors";
 
 // Import built-in providers to trigger registration
-import "./auth/providers/index.js";
+import "../../../../../../../../../../core/kernel/src/auth/providers/index.js";
 
 /**
  * Auth result with error code for typed error handling

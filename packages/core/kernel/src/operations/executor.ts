@@ -5,8 +5,8 @@ import {
     OperationResult,
     YamaError,
     OperationHandler
-} from './types.js';
-import { operationRegistry } from './registry.js';
+} from '../../../../../../../../core/kernel/src/operations/types.js';
+import { operationRegistry } from '../../../../../../../../core/kernel/src/operations/registry.js';
 
 /**
  * Executes a named operation through the standard pipeline.

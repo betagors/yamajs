@@ -11,7 +11,7 @@ import type {
     DirectiveValidationResult,
     ParsedDirective,
     DirectiveArgs,
-} from './types.js';
+} from '../../../../../../../../core/kernel/src/directives/types.js';
 
 /**
  * Directive registry manages all registered directives

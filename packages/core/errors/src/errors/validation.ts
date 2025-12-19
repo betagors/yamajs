@@ -1,4 +1,4 @@
-import { YamaError, YamaErrorOptions, ValidationErrorDetail } from '../base.js';
+import { YamaError, YamaErrorOptions, ValidationErrorDetail } from '../../../../../../../../../../../core/errors/src/base';
 
 /**
  * Options specific to validation errors

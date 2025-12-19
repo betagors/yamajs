@@ -7,9 +7,9 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { Logger } from "./logger.js";
-import { formatPretty, formatJSON } from "./formatters.js";
-import { LogLevel } from "./types.js";
+import { Logger } from "../../../../../../../../../../core/logging/src/logger.js";
+import { formatPretty, formatJSON } from "../../../../../../../../../../core/logging/src/formatters.js";
+import { LogLevel } from "../../../../../../../../../../core/logging/src/types.js";
 
 describe("Logger child()", () => {
     it("creates child logger with merged bindings", () => {

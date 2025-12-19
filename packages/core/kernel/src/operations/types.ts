@@ -1,5 +1,5 @@
 
-import { SchemaDefinition } from '../schemas.js';
+import { SchemaDefinition } from '@yamajs/kernel';
 
 /**
  * The Standardized Operation Types

@@ -4,10 +4,10 @@
  * Track schema versions with checksums for migration management.
  */
 
-import { getRuntime } from "../platform/index.js";
-import { sha256Hex } from "../platform/hash.js";
-import type { YamaEntities } from "../entities.js";
-import { computeModelHash } from "./model.js";
+import { getRuntime } from "../../../../../../../../core/kernel/src/platform/index.js";
+import { sha256Hex } from "../../../../../../../../core/kernel/src/platform/hash.js";
+import type { YamaEntities } from "@yamajs/kernel";
+import { computeModelHash } from "../../../../../../../../core/kernel/src/migrations/model.js";
 
 const fs = () => getRuntime().fs;
 const path = () => getRuntime().path;

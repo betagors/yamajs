@@ -9,7 +9,7 @@
  * - User?      -> Explicitly optional relation
  */
 
-import { scalarRegistry } from './scalars.js';
+import { scalarRegistry } from '../../../../../../../../core/kernel/src/types/scalars.js';
 
 // ============================================================================
 // Types

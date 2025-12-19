@@ -8,7 +8,7 @@ import {
     withMigrationLock,
     createGlobalMigrationLock,
     GLOBAL_MIGRATION_LOCK_ID,
-} from "./migration-lock.js";
+} from "../../../../../../../../core/kernel/src/plugins/migration-lock.js";
 
 describe("Migration Lock", () => {
     // Mock database for testing

@@ -1,5 +1,5 @@
-import { YamaError, ValidationErrorDetail } from '../base.js';
-import { RateLimitError } from '../errors/rate-limit.js';
+import { YamaError, ValidationErrorDetail } from '../../../../../../../../../../../core/errors/src/base';
+import { RateLimitError } from '../../../../../../../../../../../core/errors/src/errors/rate-limit';
 
 /**
  * Standardized REST API error response

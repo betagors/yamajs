@@ -9,8 +9,8 @@ import {
   transitionExists,
   getAllTransitions,
   deleteTransition,
-} from "./transitions.js";
-import type { MigrationStepUnion } from "./diff.js";
+} from "../../../../../../../../../../../core/kernel/src/migrations/transitions.js";
+import type { MigrationStepUnion } from "../../../../../../../../../../../core/kernel/src/migrations/diff.js";
 
 describe("Transitions", () => {
   let testDir: string;

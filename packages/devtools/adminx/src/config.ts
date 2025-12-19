@@ -1,4 +1,4 @@
-import type { AdminXPluginConfig, AdminXResolvedConfig } from "./types.js";
+import type { AdminXPluginConfig, AdminXResolvedConfig } from "./types";
 
 function normalizePath(path?: string): string {
   if (!path || path.trim() === "") {

@@ -4,7 +4,7 @@
  * Factory functions to enhance AuthContext with permission helpers.
  */
 
-import type { AuthContext } from "./types.js";
+import type { AuthContext } from "../../../../../../../../../../../core/kernel/src/auth/types.js";
 
 /**
  * Check if a user permission matches a required permission.

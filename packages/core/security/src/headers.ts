@@ -1,4 +1,4 @@
-import type { SecurityHeadersConfig } from "./types.js";
+import type { SecurityHeadersConfig } from "../../../../../../../core/security/src/types.js";
 
 /**
  * Response-like object for collecting headers

@@ -1,8 +1,8 @@
-import type { YamaEntities, EntityDefinition } from "../entities.js";
-import { entitiesToModel } from "./model.js";
-import { computeDiff } from "./diff.js";
-import { createSnapshot, saveSnapshot } from "./snapshots.js";
-import type { Snapshot } from "./snapshots.js";
+import type { YamaEntities, EntityDefinition } from "@yamajs/kernel";
+import { entitiesToModel } from "../../../../../../../../../../../core/kernel/src/migrations/model.js";
+import { computeDiff } from "../../../../../../../../../../../core/kernel/src/migrations/diff.js";
+import { createSnapshot, saveSnapshot } from "../../../../../../../../../../../core/kernel/src/migrations/snapshots.js";
+import type { Snapshot } from "../../../../../../../../../../../core/kernel/src/migrations/snapshots.js";
 
 /**
  * Type of conflict detected

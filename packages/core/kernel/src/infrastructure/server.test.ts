@@ -3,7 +3,7 @@ import {
   createHttpServerAdapter,
   registerHttpServerAdapter,
   type HttpServerAdapter,
-} from "./server";
+} from "../../../../../../../../../../../core/kernel/src/infrastructure/server";
 
 describe("HTTP Server Adapter", () => {
   it("should throw error for unsupported engine", () => {

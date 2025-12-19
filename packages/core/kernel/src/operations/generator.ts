@@ -1,6 +1,6 @@
-import type { ParsedOperation } from "./types.js";
-import type { SchemaField } from "../schemas.js";
-import type { NormalizedEndpoint } from "../apis/index.js";
+import type { ParsedOperation } from "../../../../../../../../core/kernel/src/operations/types.js";
+import type { SchemaField } from "@yamajs/kernel";
+import type { NormalizedEndpoint } from "../../../../../../../../core/kernel/src/apis/index.js";
 
 /**
  * Generate REST endpoint from parsed operation

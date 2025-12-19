@@ -1,5 +1,5 @@
 
-import { getRuntime } from "./platform/index.js";
+import { getRuntime } from "../../../../../../../../../../core/kernel/src/platform/index.js";
 
 /**
  * Determines the current environment from explicit parameter, NODE_ENV, or default

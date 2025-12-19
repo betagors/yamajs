@@ -1,10 +1,10 @@
 // Re-export all error classes
-export { ValidationError, type ValidationErrorOptions } from './validation.js';
-export { AuthenticationError, AuthorizationError } from './auth.js';
-export { NotFoundError } from './not-found.js';
-export { RateLimitError, type RateLimitErrorOptions } from './rate-limit.js';
-export { DatabaseError, ConflictError } from './database.js';
-export { ConfigurationError } from './config.js';
-export { PluginError } from './plugin.js';
-export { ExternalServiceError, TimeoutError } from './external.js';
-export { MiddlewareError } from './middleware.js';
+export { ValidationError, type ValidationErrorOptions } from '../../../../../../../../../../../core/errors/src/errors/validation';
+export { AuthenticationError, AuthorizationError } from '../../../../../../../../../../../core/errors/src/errors/auth';
+export { NotFoundError } from '../../../../../../../../../../../core/errors/src/errors/not-found';
+export { RateLimitError, type RateLimitErrorOptions } from '../../../../../../../../../../../core/errors/src/errors/rate-limit';
+export { DatabaseError, ConflictError } from '../../../../../../../../../../../core/errors/src/errors/database';
+export { ConfigurationError } from '../../../../../../../../../../../core/errors/src/errors/config';
+export { PluginError } from '../../../../../../../../../../../core/errors/src/errors/plugin';
+export { ExternalServiceError, TimeoutError } from '../../../../../../../../../../../core/errors/src/errors/external';
+export { MiddlewareError } from '../../../../../../../../../../../core/errors/src/errors/middleware';

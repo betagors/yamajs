@@ -4,8 +4,8 @@ import {
   registerDatabaseAdapter,
   type DatabaseAdapter,
   type DatabaseConnection,
-} from "./database";
-import type { DatabaseConfig } from "../entities";
+} from "../../../../../../../../../../../core/kernel/src/infrastructure/database";
+import type { DatabaseConfig } from "@yamajs/kernel";
 
 describe("Database Adapter", () => {
   beforeEach(() => {

@@ -4,7 +4,7 @@ export {
   getRestErrorHeaders,
   type RestErrorResponse,
   type FormatRestErrorOptions,
-} from './rest.js';
+} from '../../../../../../../../core/errors/src/formatters/rest';
 
 // GraphQL formatter
 export {
@@ -14,7 +14,7 @@ export {
   type GraphQLErrorLocation,
   type GraphQLErrorExtensions,
   type FormatGraphQLErrorOptions,
-} from './graphql.js';
+} from '../../../../../../../../core/errors/src/formatters/graphql';
 
 // MCP formatter
 export {
@@ -24,4 +24,4 @@ export {
   type MCPToolResult,
   type MCPToolResultContent,
   type FormatMCPErrorOptions,
-} from './mcp.js';
+} from '../../../../../../../../core/errors/src/formatters/mcp';

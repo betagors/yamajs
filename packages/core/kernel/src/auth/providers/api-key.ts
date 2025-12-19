@@ -1,5 +1,5 @@
-import type { AuthProviderHandler, AuthResult } from "../types.js";
-import type { ApiKeyAuthProvider, AuthContext } from "../../schemas.js";
+import type { AuthProviderHandler, AuthResult } from "../../../../../../../../../../../../core/kernel/src/auth/types.js";
+import type { ApiKeyAuthProvider, AuthContext } from "@yamajs/kernel";
 
 /**
  * API key auth provider handler

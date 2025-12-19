@@ -1,6 +1,6 @@
-import type { YamaEntities } from './entities.js';
-import type { YamaSchemas } from './schemas.js';
-import type { YamaOperations } from './operations/types.js';
+import type { YamaEntities } from '@yamajs/kernel';
+import type { YamaSchemas } from '@yamajs/kernel';
+import type { YamaOperations } from '../../../../../../../../../../core/kernel/src/operations/types.js';
 
 /**
  * Normalized config with separate entities and schemas

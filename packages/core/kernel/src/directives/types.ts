@@ -8,7 +8,7 @@
  * Directives execute left-to-right as a pipeline.
  */
 
-import type { FieldType } from '../types/types.js';
+import type { FieldType } from '../../../../../../../../core/kernel/src/types/types.js';
 
 // ============================================================================
 // Parsed Directive Types

@@ -1,6 +1,6 @@
-import type { OperationYamlDefinition, OperationConfig, ParsedOperation } from "./types.js";
-import { inferMethodFromName, inferPathFromName, inferOperationType, extractEntityName } from "./inference.js";
-import { parseSchemaFieldDefinition } from "../schemas.js";
+import type { OperationYamlDefinition, OperationConfig, ParsedOperation } from "../../../../../../../../core/kernel/src/operations/types.js";
+import { inferMethodFromName, inferPathFromName, inferOperationType, extractEntityName } from "../../../../../../../../core/kernel/src/operations/inference.js";
+import { parseSchemaFieldDefinition } from "@yamajs/kernel";
 
 /**
  * Parse operation definition (shorthand or full config)

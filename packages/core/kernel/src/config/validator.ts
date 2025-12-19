@@ -5,7 +5,7 @@
  * Provides T3-style "fail fast" validation at startup.
  */
 
-import { getRuntime } from "../platform/index.js";
+import { getRuntime } from "../../../../../../../../core/kernel/src/platform/index.js";
 import type {
     ConfigSchema,
     ConfigVarDefinition,
@@ -13,7 +13,7 @@ import type {
     ConfigValidationError,
     ResolvedConfig,
     ConfigValueType,
-} from "./types.js";
+} from "../../../../../../../../core/kernel/src/config/types.js";
 
 /**
  * Normalize shorthand definitions to full definitions

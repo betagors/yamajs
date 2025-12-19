@@ -19,10 +19,10 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "dev": "tsc -w -p tsconfig.build.json",
-    "lint": "eslint . --ext .ts,.tsx",
-    "lint:fix": "eslint . --ext .ts,.tsx --fix",
+    "lint": "eslint  --ext .ts,.tsx",
+    "lint:fix": "eslint  --ext .ts,.tsx --fix",
     "test": "echo \"no tests yet\"",
-    "clean": "rimraf dist"
+    "clean": "node_modules/.bin/rimraf dist"
   },
   "dependencies": {
     "@yamajs/kernel": "workspace:*"

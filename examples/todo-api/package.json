@@ -14,7 +14,7 @@
     "yama": "node ../../packages/cli/dist/cli/src/cli.js"
   },
   "dependencies": {
-    "@yamajs/db-pglite": "workspace:*"
+    "@yamajs/db-drizzle": "workspace:*"
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^1.0.0",

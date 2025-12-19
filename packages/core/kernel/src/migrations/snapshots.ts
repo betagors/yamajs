@@ -1,6 +1,6 @@
-import { getRuntime } from "../platform/index.js";
-import type { YamaEntities } from "../entities.js";
-import { entitiesToModel } from "./model.js";
+import { getRuntime } from "../../../../../../../../../../../core/kernel/src/platform/index.js";
+import type { YamaEntities } from "@yamajs/kernel";
+import { entitiesToModel } from "../../../../../../../../../../../core/kernel/src/migrations/model.js";
 
 const fs = () => getRuntime().fs;
 const path = () => getRuntime().path;

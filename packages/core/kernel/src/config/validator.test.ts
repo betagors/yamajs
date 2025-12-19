@@ -3,8 +3,8 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { validateConfig, validateConfigOrThrow, createConfigAccessor } from "./validator.js";
-import type { ConfigSchema } from "./types.js";
+import { validateConfig, validateConfigOrThrow, createConfigAccessor } from "../../../../../../../../../../../core/kernel/src/config/validator.js";
+import type { ConfigSchema } from "../../../../../../../../../../../core/kernel/src/config/types.js";
 
 // Mock the env provider
 vi.mock("../platform/env.js", () => ({

@@ -1,6 +1,6 @@
-﻿import type { AuthProviderHandler, AuthResult } from "../types.js";
-import type { BasicAuthProvider, AuthContext } from "../../schemas.js";
-import { getGlobalDatabaseAdapter } from "../../infrastructure/database-registry.js";
+﻿import type { AuthProviderHandler, AuthResult } from "../../../../../../../../../../../../core/kernel/src/auth/types.js";
+import type { BasicAuthProvider, AuthContext } from "@yamajs/kernel";
+import { getGlobalDatabaseAdapter } from "../../../../../../../../../../../../core/kernel/src/infrastructure/database-registry.js";
 import { ErrorCodes } from "@yamajs/errors";
 
 /**

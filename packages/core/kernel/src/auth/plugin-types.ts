@@ -5,8 +5,8 @@
  * All auth plugins (session, oauth, mfa, passkeys, etc.) implement this interface.
  */
 
-import type { AuthContext, AuthProviderHandler, AuthUser } from "./types.js";
-import type { MiddlewareDefinition, MiddlewareHandler } from "../middleware/types.js";
+import type { AuthContext, AuthProviderHandler, AuthUser } from "../../../../../../../../core/kernel/src/auth/types.js";
+import type { MiddlewareDefinition, MiddlewareHandler } from "../../../../../../../../core/kernel/src/middleware/types.js";
 
 // =============================================================================
 // Auth Plugin Types

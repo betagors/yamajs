@@ -1,5 +1,5 @@
 
-import { RuntimeAdapter } from './runtime.js';
+import { RuntimeAdapter } from '../../../../../../../../core/kernel/src/platform/runtime.js';
 
 let activeRuntime: RuntimeAdapter | null = null;
 
@@ -17,4 +17,4 @@ export function getRuntime(): RuntimeAdapter {
     return activeRuntime;
 }
 
-export * from './runtime.js';
+export * from '../../../../../../../../core/kernel/src/platform/runtime.js';

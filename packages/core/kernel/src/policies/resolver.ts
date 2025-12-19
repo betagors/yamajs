@@ -1,4 +1,4 @@
-import type { PolicyDefinition, ResolvedPolicy, YamaPolicies } from "./types.js";
+import type { PolicyDefinition, ResolvedPolicy, YamaPolicies } from "../../../../../../../../core/kernel/src/policies/types.js";
 
 /**
  * Default public policy (no restrictions)

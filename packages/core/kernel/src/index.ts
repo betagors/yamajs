@@ -11,7 +11,7 @@ export {
   type PathAdapter,
   type FileSystemAdapter,
   type CryptoAdapter
-} from "./platform/index.js";
+} from "../../../../../../../core/kernel/src/platform/index.js";
 
 // Export schema validation
 export {
@@ -28,7 +28,7 @@ export {
   type SchemaDefinition,
   type YamaSchemas,
   type ValidationResult
-} from "./schemas.js";
+} from "@yamajs/kernel";
 
 // Export auth types from schemas
 export {
@@ -43,7 +43,7 @@ export {
   type BasicAuthProviderStatic,
   type BasicAuthProviderDatabase,
   type OAuthAuthProvider,
-} from "./schemas.js";
+} from "@yamajs/kernel";
 
 
 
@@ -52,7 +52,7 @@ export {
   authenticateRequest,
   authorizeRequest,
   authenticateAndAuthorize,
-} from "./auth.js";
+} from "@yamajs/kernel";
 
 // Export auth provider registry functions
 export {
@@ -62,7 +62,7 @@ export {
   getOAuthProvider,
   getAllOAuthProviders,
   getRegisteredProviderTypes,
-} from "./auth/registry.js";
+} from "../../../../../../../core/kernel/src/auth/registry.js";
 
 
 
@@ -79,7 +79,7 @@ export {
   type TokenPair,
   type TokenGenerationOptions,
   type PasswordStrengthResult,
-} from "./auth/types.js";
+} from "../../../../../../../core/kernel/src/auth/types.js";
 
 // Export auth plugin types
 export {
@@ -95,7 +95,7 @@ export {
   type AuthUserEntityConfig,
   type AuthPluginRegistrationOptions,
   type RegisteredAuthPlugin,
-} from "./auth/plugin-types.js";
+} from "../../../../../../../core/kernel/src/auth/plugin-types.js";
 
 // Export auth utilities
 export {
@@ -106,7 +106,7 @@ export {
   generateOTP,
   secureCompare,
   type PasswordStrengthOptions,
-} from "./auth/utils.js";
+} from "../../../../../../../core/kernel/src/auth/utils.js";
 
 // Export auth context helpers
 export {
@@ -115,24 +115,24 @@ export {
   matchesPermission,
   getRolePermissions,
   extractRolePermissions,
-} from "./auth/context-helpers.js";
+} from "../../../../../../../core/kernel/src/auth/context-helpers.js";
 
 // Export auth endpoints builder
 export {
   buildAuthEndpoints,
   getDefaultAuthEndpointsConfig,
   type AuthEndpointBuilderOptions,
-} from "./auth/endpoints.js";
+} from "../../../../../../../core/kernel/src/auth/endpoints.js";
 
 // Export database registry
 export {
   registerGlobalDatabaseAdapter,
   getGlobalDatabaseAdapter,
-} from "./infrastructure/database-registry.js";
+} from "../../../../../../../core/kernel/src/infrastructure/database-registry.js";
 
 // Export type generation
-export { generateTypes, generateHandlerContexts } from "./typegen.js";
-export type { EndpointDefinition, HandlerContextConfig, AvailableServices } from "./typegen.js";
+export { generateTypes, generateHandlerContexts } from "@yamajs/kernel";
+export type { EndpointDefinition, HandlerContextConfig, AvailableServices } from "@yamajs/kernel";
 
 // Export entity types and functions
 export {
@@ -155,7 +155,7 @@ export {
   parseFieldDefinition,
   parseRelationDefinition,
   normalizeEntityDefinition,
-} from "./entities.js";
+} from "@yamajs/kernel";
 
 // Export CRUD generation functions
 export {
@@ -164,7 +164,7 @@ export {
   generateAllCrudEndpoints,
   generateCrudInputSchemas,
   generateArraySchema,
-} from "./crud.js";
+} from "@yamajs/kernel";
 
 // Export operations module
 export {
@@ -185,18 +185,18 @@ export {
   inferOperationType,
   generateEndpointFromOperation,
   generateEndpointsFromOperations,
-} from "./operations/index.js";
+} from "../../../../../../../core/kernel/src/operations/index.js";
 
 // Export Registry and Executor
 export {
   OperationRegistry,
   operationRegistry,
-} from "./operations/registry.js";
+} from "../../../../../../../core/kernel/src/operations/registry.js";
 
 export {
   executeOperation,
   createErrorResult,
-} from "./operations/executor.js";
+} from "../../../../../../../core/kernel/src/operations/executor.js";
 
 
 // Export policies module
@@ -208,14 +208,14 @@ export {
   normalizePolicy,
   mergePolicies,
   DEFAULT_PUBLIC_POLICY,
-} from "./policies/index.js";
+} from "../../../../../../../core/kernel/src/policies/index.js";
 
 // Export environment utilities
 export {
   loadEnvFile,
   resolveEnvVar,
   resolveEnvVars,
-} from "./env.js";
+} from "@yamajs/kernel";
 
 // Export configuration system
 export {
@@ -239,7 +239,7 @@ export {
   isConfigValid,
   getMissingConfig,
   getCurrentEnvironment,
-} from "./config/index.js";
+} from "../../../../../../../core/kernel/src/config/index.js";
 
 // Export provider system types & registry
 export type {
@@ -254,7 +254,7 @@ export type {
   FileMetadata,
   ProviderAPIs,
   RawProvidersConfig,
-} from "./providers/index.js";
+} from "../../../../../../../core/kernel/src/providers/index.js";
 
 export {
   registerAdapter,
@@ -263,7 +263,7 @@ export {
   shutdownProvidersSystem,
   createRequestContext,
   createProviderHealthHandler,
-} from "./providers/index.js";
+} from "../../../../../../../core/kernel/src/providers/index.js";
 
 // Export infrastructure adapters
 export {
@@ -271,7 +271,7 @@ export {
   type DatabaseConnection,
   createDatabaseAdapter,
   registerDatabaseAdapter,
-} from "./infrastructure/database.js";
+} from "../../../../../../../core/kernel/src/infrastructure/database.js";
 
 
 
@@ -284,7 +284,7 @@ export {
   type StorageMetadata,
   createStorageAdapter,
   registerStorageAdapter,
-} from "./infrastructure/storage.js";
+} from "../../../../../../../core/kernel/src/infrastructure/storage.js";
 
 export {
   type HttpServerAdapter,
@@ -297,19 +297,19 @@ export {
   type TraceSpan,
   createHttpServerAdapter,
   registerHttpServerAdapter,
-} from "./infrastructure/server.js";
+} from "../../../../../../../core/kernel/src/infrastructure/server.js";
 
 // Export monitoring types
 export {
   type MonitoringHooks,
   type MonitoringService,
   type ErrorContext,
-} from "./infrastructure/monitoring.js";
+} from "../../../../../../../core/kernel/src/infrastructure/monitoring.js";
 
 // Export updated config types
 export {
   type ServerConfig,
-} from "./entities.js";
+} from "@yamajs/kernel";
 
 // Export plugin system
 export {
@@ -390,7 +390,7 @@ export {
   createLifecycleManager,
   registerGracefulShutdown,
   aggregateHealthCheck,
-} from "./plugins/index.js";
+} from "../../../../../../../core/kernel/src/plugins/index.js";
 
 // Export directives system (NEW)
 export {
@@ -428,7 +428,7 @@ export {
   executeValidateDirectives,
   createTransformPipeline,
   createValidationFunction,
-} from "./directives/index.js";
+} from "../../../../../../../core/kernel/src/directives/index.js";
 
 // Export enhanced schema parsing with directives (NEW)
 export {
@@ -439,7 +439,7 @@ export {
   normalizeAllSchemas,
   getPluginSchemaConfigs,
   extractAllDirectives,
-} from "./schema-directives.js";
+} from "@yamajs/kernel";
 
 // Export migration types and functions
 export {
@@ -452,7 +452,7 @@ export {
   computeModelHash,
   entitiesToModel,
   compareModels,
-} from "./migrations/model.js";
+} from "../../../../../../../core/kernel/src/migrations/model.js";
 
 export {
   type DiffResult,
@@ -470,14 +470,14 @@ export {
   type MigrationStepUnion,
   computeDiff,
   diffToSteps,
-} from "./migrations/diff.js";
+} from "../../../../../../../core/kernel/src/migrations/diff.js";
 
 export {
   type ValidationError,
   validateMigrationHash,
   validateStepDependencies,
   validateTransition,
-} from "./migrations/validator.js";
+} from "../../../../../../../core/kernel/src/migrations/validator.js";
 
 // Export snapshot system
 export {
@@ -499,7 +499,7 @@ export {
   getSnapshotMetadata,
   deleteSnapshot,
   getAllSnapshots,
-} from "./migrations/snapshots.js";
+} from "../../../../../../../core/kernel/src/migrations/snapshots.js";
 
 // Export transition system
 export {
@@ -514,7 +514,7 @@ export {
   transitionExists,
   deleteTransition,
   getAllTransitions,
-} from "./migrations/transitions.js";
+} from "../../../../../../../core/kernel/src/migrations/transitions.js";
 
 // Export graph path computation
 export {
@@ -531,7 +531,7 @@ export {
   pathExists,
   getReachableSnapshots,
   getPredecessorSnapshots,
-} from "./migrations/graph.js";
+} from "../../../../../../../core/kernel/src/migrations/graph.js";
 
 // Export schema versioning
 export {
@@ -550,7 +550,7 @@ export {
   loadEntitySnapshot,
   getVersionDiff,
   detectChangedEntities,
-} from "./migrations/versioning.js";
+} from "../../../../../../../core/kernel/src/migrations/versioning.js";
 
 // Export migration generator
 export {
@@ -561,7 +561,7 @@ export {
   generateMigration,
   formatMigration,
   hasEntityChanges,
-} from "./migrations/generator.js";
+} from "../../../../../../../core/kernel/src/migrations/generator.js";
 
 // Export state management
 export {
@@ -578,7 +578,7 @@ export {
   deleteState,
   listEnvironments,
   getAllStates,
-} from "./migrations/state.js";
+} from "../../../../../../../core/kernel/src/migrations/state.js";
 
 // Export merge resolution
 export {
@@ -589,7 +589,7 @@ export {
   detectConflicts,
   canAutoMerge,
   createMergeSnapshot,
-} from "./migrations/merge.js";
+} from "../../../../../../../core/kernel/src/migrations/merge.js";
 
 // Export shadow columns
 export {
@@ -610,7 +610,7 @@ export {
   markShadowRestored,
   deleteShadowColumn,
   isShadowExpired,
-} from "./migrations/shadows.js";
+} from "../../../../../../../core/kernel/src/migrations/shadows.js";
 
 // Export backup system
 export {
@@ -633,7 +633,7 @@ export {
   calculateBackupSize,
   isBackupExpired,
   getExpiredBackups,
-} from "./migrations/backups.js";
+} from "../../../../../../../core/kernel/src/migrations/backups.js";
 
 // Export audit logging
 export {
@@ -645,7 +645,7 @@ export {
   parseRetentionPeriod,
   isAuditEntryExpired,
   toAuditOperation,
-} from "./migrations/audit.js";
+} from "../../../../../../../core/kernel/src/migrations/audit.js";
 
 // Export safety classification
 export {
@@ -663,7 +663,7 @@ export {
   getSafetySummary,
   validateForEnvironment,
   getPreMigrationChecks,
-} from "./migrations/safety.js";
+} from "../../../../../../../core/kernel/src/migrations/safety.js";
 
 // Export trash/recycle bin types
 export {
@@ -672,7 +672,7 @@ export {
   DEFAULT_RETENTION_DAYS,
   calculateExpirationDate,
   isExpired,
-} from "./migrations/trash.js";
+} from "../../../../../../../core/kernel/src/migrations/trash.js";
 
 // Export migration plugin interface
 export {
@@ -686,7 +686,7 @@ export {
   isStepSupported,
   validateStepsAgainstCapabilities,
   createBaseMigrationPlugin,
-} from "./migrations/plugin-interface.js";
+} from "../../../../../../../core/kernel/src/migrations/plugin-interface.js";
 
 // Export safety operations
 export {
@@ -701,7 +701,7 @@ export {
   getAuditTableSQL,
   createStepAuditEntry,
   generateSafetyAwareSQL,
-} from "./migrations/safety-ops.js";
+} from "../../../../../../../core/kernel/src/migrations/safety-ops.js";
 
 // Export Phase 2: Shadow cleanup
 export {
@@ -717,7 +717,7 @@ export {
   restoreShadowColumn,
   formatShadowList,
   formatCleanupResult as formatShadowCleanupResult,
-} from "./migrations/shadows.js";
+} from "../../../../../../../core/kernel/src/migrations/shadows.js";
 
 // Export Phase 2: Graph pruning
 export {
@@ -730,7 +730,7 @@ export {
   pruneGraph,
   formatGraphStats,
   formatPruneResult,
-} from "./migrations/graph.js";
+} from "../../../../../../../core/kernel/src/migrations/graph.js";
 
 // Export Phase 2: Audit cleanup
 export {
@@ -742,7 +742,7 @@ export {
   cleanupExpiredAuditEntries,
   formatAuditStats,
   formatAuditCleanupResult,
-} from "./migrations/audit.js";
+} from "../../../../../../../core/kernel/src/migrations/audit.js";
 
 // Export Phase 2: Index recovery
 export {
@@ -757,7 +757,7 @@ export {
   recoverInvalidIndexes,
   formatIndexRecoveryResult,
   formatIndexHealthCheck,
-} from "./migrations/index-recovery.js";
+} from "../../../../../../../core/kernel/src/migrations/index-recovery.js";
 
 // Export Phase 2: Table sandbox (via plugins)
 export {
@@ -769,7 +769,7 @@ export {
   inferPolicyFromPluginName,
   formatSandboxViolations,
   analyzePluginTableAccess,
-} from "./plugins/table-sandbox.js";
+} from "../../../../../../../core/kernel/src/plugins/table-sandbox.js";
 
 // Export Phase 2: Dependency resolver (via plugins)
 export {
@@ -780,7 +780,7 @@ export {
   validateDependencyChain as validatePluginDependencyChain,
   formatDependencyResult,
   canMigrationRun,
-} from "./plugins/dependency-resolver.js";
+} from "../../../../../../../core/kernel/src/plugins/dependency-resolver.js";
 
 // Export pagination types and utilities
 export {
@@ -793,7 +793,7 @@ export {
   type NormalizedPaginationConfig,
   type PaginationMetadata,
   type PaginatedResponse,
-} from "./pagination/types.js";
+} from "../../../../../../../core/kernel/src/pagination/types.js";
 
 export {
   pageToOffset,
@@ -802,7 +802,7 @@ export {
   filterMetadata,
   wrapPaginatedResponse,
   detectPaginationFromQuery,
-} from "./pagination/utils.js";
+} from "../../../../../../../core/kernel/src/pagination/utils.js";
 
 // Export middleware system
 export {
@@ -815,19 +815,19 @@ export {
   type Middleware,
   MiddlewareRegistry,
   loadMiddlewareFromFile,
-} from "./middleware/index.js";
+} from "../../../../../../../core/kernel/src/middleware/index.js";
 
 // Export type system
 export {
   TypeParser,
   DatabaseTypeMapper,
   ValidationGenerator,
-} from "./types/index.js";
+} from "../../../../../../../core/kernel/src/types/index.js";
 export type {
   FieldType,
   BaseType,
   FieldDefinition,
-} from "./types/index.js";
+} from "../../../../../../../core/kernel/src/types/index.js";
 
 // Export config normalizer
 export {
@@ -835,21 +835,21 @@ export {
   getSchemasFromConfig,
   getEntitiesFromConfig,
   getOperationsFromConfig,
-} from "./config-normalizer.js";
+} from "@yamajs/kernel";
 export type {
   NormalizedYamaConfig,
-} from "./config-normalizer.js";
+} from "@yamajs/kernel";
 // Export IR builder
 export {
   generateIR,
-} from "./ir/generator.js";
+} from "../../../../../../../core/kernel/src/ir/generator.js";
 export type {
   YamaIR,
   IRHttpEndpoint,
-} from "./ir/types.js";
+} from "../../../../../../../core/kernel/src/ir/types.js";
 
 // Export APIs system
-export * from "./apis/index.js";
+export * from "../../../../../../../core/kernel/src/apis/index.js";
 export type {
   ApisConfig,
   RestApiConfig,
@@ -857,16 +857,16 @@ export type {
   NormalizedEndpoint,
   NormalizedRestConfig,
   NormalizedApisConfig,
-} from "./apis/types.js";
+} from "../../../../../../../core/kernel/src/apis/types.js";
 export {
   normalizeApisConfig,
-} from "./apis/normalizer.js";
+} from "../../../../../../../core/kernel/src/apis/normalizer.js";
 export {
   ApiEndpointParser,
-} from "./apis/parser.js";
+} from "../../../../../../../core/kernel/src/apis/parser.js";
 
 
 
 export {
   type Transporter
-} from './transporters/types.js';
+} from '../../../../../../../core/kernel/src/transporters/types.js';

@@ -10,8 +10,11 @@ export type {
     DatabaseAPI,
     ExecuteResult,
     TransactionAPI,
-    SQLTemplateTag,
-} from '../types.js';
+} from './types.js';
 
-// Re-export adapter utilities
-// Adapters are now in separate packages (e.g. @yamajs/pglite)
+export type { SQLTemplateTag } from './sql.js';
+
+// Re-export IR and generators
+export type * from './ir.js';
+export { generateDatabaseIR } from './ir-generator.js';
+export { generateDrizzleSchemaFromIR } from './drizzle-schema-generator.js';

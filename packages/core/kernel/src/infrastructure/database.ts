@@ -1,4 +1,4 @@
-import type { DatabaseConfig, YamaEntities } from "../entities.js";
+import type { DatabaseConfig, YamaEntities } from "@yamajs/kernel";
 
 /**
  * Database connection result

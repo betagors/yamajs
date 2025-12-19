@@ -1,4 +1,4 @@
-﻿import type { CorsConfig } from "./types.js";
+﻿import type { CorsConfig } from "../../../../../../../core/security/src/types.js";
 import type { HttpRequest } from "@yamajs/kernel";
 
 /**

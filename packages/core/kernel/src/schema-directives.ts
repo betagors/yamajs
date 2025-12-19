@@ -7,16 +7,16 @@
  * - Schema-level metadata
  */
 
-import type { FieldType } from './types/types.js';
-import type { SchemaField, SchemaDefinition, YamaSchemas } from './schemas.js';
+import type { FieldType } from '../../../../../../../../../../core/kernel/src/types/types.js';
+import type { SchemaField, SchemaDefinition, YamaSchemas } from '@yamajs/kernel';
 import type {
     ParsedDirective,
     FieldWithDirectives,
     SchemaWithPluginConfig,
     PluginSchemaConfig,
-} from './directives/types.js';
-import { extractDirectives } from './directives/parser.js';
-import { TypeParser } from './types/parser.js';
+} from '../../../../../../../../../../core/kernel/src/directives/types.js';
+import { extractDirectives } from '../../../../../../../../../../core/kernel/src/directives/parser.js';
+import { TypeParser } from '../../../../../../../../../../core/kernel/src/types/parser.js';
 
 /**
  * Extended schema field with directive support

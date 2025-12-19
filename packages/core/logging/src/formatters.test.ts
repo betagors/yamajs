@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { formatText, formatJSON, formatLogEntry } from "./formatters.js";
-import type { LogEntry } from "./types.js";
-import { LogLevel } from "./types.js";
+import { formatText, formatJSON, formatLogEntry } from "../../../../../../../core/logging/src/formatters.js";
+import type { LogEntry } from "../../../../../../../core/logging/src/types.js";
+import { LogLevel } from "../../../../../../../core/logging/src/types.js";
 
 describe("Log Formatters", () => {
   const createLogEntry = (

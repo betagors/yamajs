@@ -1,7 +1,7 @@
-import { getRuntime } from "../platform/index.js";
-import { sha256Hex } from "../platform/hash.js";
+import { getRuntime } from "../../../../../../../../core/kernel/src/platform/index.js";
+import { sha256Hex } from "../../../../../../../../core/kernel/src/platform/hash.js";
 import semver from "semver";
-import type { YamaPlugin, PluginManifest, PluginMigrationDefinition } from "./base.js";
+import type { YamaPlugin, PluginManifest, PluginMigrationDefinition } from "../../../../../../../../core/kernel/src/plugins/base.js";
 
 const fs = () => getRuntime().fs;
 const path = () => getRuntime().path;

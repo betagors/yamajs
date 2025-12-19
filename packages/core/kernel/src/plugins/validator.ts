@@ -1,12 +1,12 @@
 import semver from "semver";
 import Ajv from "ajv";
 import addFormats from "ajv-formats";
-import type { YamaPlugin, PluginManifest } from "./base.js";
+import type { YamaPlugin, PluginManifest } from "../../../../../../../../../../../core/kernel/src/plugins/base.js";
 import {
   validateSecurityPolicy,
   getSecurityWarnings,
-} from "./security.js";
-import { getRuntime } from "../platform/index.js";
+} from "../../../../../../../../../../../core/kernel/src/plugins/security.js";
+import { getRuntime } from "../../../../../../../../../../../core/kernel/src/platform/index.js";
 
 // Create Ajv instance with formats
 const ajv = new Ajv({ allErrors: true, strict: false });

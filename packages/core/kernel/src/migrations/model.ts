@@ -1,7 +1,7 @@
-import type { YamaEntities, EntityDefinition } from "../entities.js";
-import { normalizeEntityDefinition } from "../entities.js";
-import { DatabaseTypeMapper } from "../types/index.js";
-import { sha256Hex } from "../platform/hash.js";
+import type { YamaEntities, EntityDefinition } from "@yamajs/kernel";
+import { normalizeEntityDefinition } from "@yamajs/kernel";
+import { DatabaseTypeMapper } from "../../../../../../../../../../../core/kernel/src/types/index.js";
+import { sha256Hex } from "../../../../../../../../../../../core/kernel/src/platform/hash.js";
 
 /**
  * Represents the schema state of the database

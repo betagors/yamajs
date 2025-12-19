@@ -2,7 +2,7 @@
  * Pagination utility functions for Yama
  */
 
-import type { HandlerContext } from "../infrastructure/server.js";
+import type { HandlerContext } from "../../../../../../../../../../../core/kernel/src/infrastructure/server.js";
 import type {
   PaginationConfig,
   NormalizedPaginationConfig,
@@ -10,7 +10,7 @@ import type {
   PaginationMetadataField,
   PaginationType,
   PaginatedResponse,
-} from "./types.js";
+} from "../../../../../../../../../../../core/kernel/src/pagination/types.js";
 
 /**
  * Resolve a parameter reference (e.g., "query.limit" or "params.id")

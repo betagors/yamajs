@@ -10,14 +10,14 @@
  * - Dependency validation (Phase 2)
  */
 
-import type { YamaPlugin, PluginManifest, PluginMigrationDefinition } from "./base.js";
-import type { PluginMigration } from "./migrations.js";
-import { MigrationLock, withMigrationLock } from "./migration-lock.js";
+import type { YamaPlugin, PluginManifest, PluginMigrationDefinition } from "../../../../../../../../../../../core/kernel/src/plugins/base.js";
+import type { PluginMigration } from "../../../../../../../../../../../core/kernel/src/plugins/migrations.js";
+import { MigrationLock, withMigrationLock } from "../../../../../../../../../../../core/kernel/src/plugins/migration-lock.js";
 import {
     analyzeMigrationSafety,
     analyzeMultipleMigrations,
     type MigrationSafetyAnalysis
-} from "./migration-safety.js";
+} from "../../../../../../../../../../../core/kernel/src/plugins/migration-safety.js";
 import {
     validateTableAccess,
     inferPolicyFromPluginName,
@@ -25,15 +25,15 @@ import {
     formatSandboxViolations,
     type PluginTablePolicy,
     type SandboxValidationResult
-} from "./table-sandbox.js";
+} from "../../../../../../../../../../../core/kernel/src/plugins/table-sandbox.js";
 import {
     canMigrationRun,
     resolveDependencies,
     formatDependencyResult,
     type DependencyResolutionResult
-} from "./dependency-resolver.js";
-import { getRuntime } from "../platform/index.js";
-import { computeChecksum } from "./migrations.js";
+} from "../../../../../../../../../../../core/kernel/src/plugins/dependency-resolver.js";
+import { getRuntime } from "../../../../../../../../../../../core/kernel/src/platform/index.js";
+import { computeChecksum } from "../../../../../../../../../../../core/kernel/src/plugins/migrations.js";
 
 const fs = () => getRuntime().fs;
 const path = () => getRuntime().path;

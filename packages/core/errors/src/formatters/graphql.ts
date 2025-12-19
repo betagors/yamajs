@@ -1,4 +1,4 @@
-import { YamaError } from '../base.js';
+import { YamaError } from '../../../../../../../../core/errors/src/base';
 
 /**
  * GraphQL error location

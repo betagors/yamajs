@@ -1,4 +1,4 @@
-import type { ParsedOperation } from "./types.js";
+import type { ParsedOperation } from "../../../../../../../../../../../core/kernel/src/operations/types.js";
 
 /**
  * Pluralize a word (simple implementation)

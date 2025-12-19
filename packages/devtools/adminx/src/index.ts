@@ -1,3 +1,3 @@
-export { default as plugin } from "./plugin.js";
-export type { AdminXPluginAPI, AdminXResolvedConfig, AdminXPluginConfig } from "./types.js";
+export { default as plugin } from "./plugin";
+export type { AdminXPluginAPI, AdminXResolvedConfig, AdminXPluginConfig } from "./types";
 

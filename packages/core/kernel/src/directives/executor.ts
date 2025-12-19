@@ -5,7 +5,7 @@
  * Handles the directive pipeline (left-to-right execution).
  */
 
-import type { FieldType } from '../types/types.js';
+import type { FieldType } from '../../../../../../../../../../../core/kernel/src/types/types.js';
 import type {
     ParsedDirective,
     DirectiveFieldContext,
@@ -14,8 +14,8 @@ import type {
     DirectiveValidateContext,
     DirectiveValidationResult,
     DirectiveExecutionOptions,
-} from './types.js';
-import { directiveRegistry } from './registry.js';
+} from '../../../../../../../../../../../core/kernel/src/directives/types.js';
+import { directiveRegistry } from '../../../../../../../../../../../core/kernel/src/directives/registry.js';
 
 /**
  * Default logger for directive execution

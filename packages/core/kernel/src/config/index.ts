@@ -15,14 +15,14 @@ export type {
     ResolvedConfig,
     YamaConfigSection,
     ConfigSource,
-} from "./types.js";
+} from "../../../../../../../../../../../core/kernel/src/config/types.js";
 
 // Validation
 export {
     validateConfig,
     validateConfigOrThrow,
     createConfigAccessor,
-} from "./validator.js";
+} from "../../../../../../../../../../../core/kernel/src/config/validator.js";
 
 // Loading
 export {
@@ -32,4 +32,4 @@ export {
     getMissingConfig,
     getCurrentEnvironment,
     type ConfigLoaderOptions,
-} from "./loader.js";
+} from "../../../../../../../../../../../core/kernel/src/config/loader.js";

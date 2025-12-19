@@ -1,6 +1,6 @@
 
-import { getRuntime } from "../platform/index.js";
-import { sha256Hex } from "../platform/hash.js";
+import { getRuntime } from "../../../../../../../../core/kernel/src/platform/index.js";
+import { sha256Hex } from "../../../../../../../../core/kernel/src/platform/hash.js";
 
 const fs = () => getRuntime().fs;
 const path = () => getRuntime().path;

@@ -19,7 +19,7 @@ export {
   type PluginDirectiveDefinition,
   type PluginSchemaOptionsSchema,
   type SchemaWithPluginOptions,
-} from "./base.js";
+} from "../../../../../../../../../../../core/kernel/src/plugins/base.js";
 
 // Export plugin definition helper (NEW)
 export {
@@ -27,13 +27,13 @@ export {
   validatePluginDefinition,
   type PluginDefinition,
   type PluginAPI,
-} from "./define.js";
+} from "../../../../../../../../../../../core/kernel/src/plugins/define.js";
 
 // Export plugin loader
 export {
   loadPluginFromPackage,
   importPlugin,
-} from "./loader.js";
+} from "../../../../../../../../../../../core/kernel/src/plugins/loader.js";
 
 // Export plugin validator
 export {
@@ -43,7 +43,7 @@ export {
   validatePluginVersion,
   validateMigrations,
   validatePluginConfig,
-} from "./validator.js";
+} from "../../../../../../../../../../../core/kernel/src/plugins/validator.js";
 
 // Export plugin registry
 export {
@@ -57,7 +57,7 @@ export {
   setPluginRegistryConfig,
   getAllCLICommands,
   getAllMCPTools,
-} from "./registry.js";
+} from "../../../../../../../../../../../core/kernel/src/plugins/registry.js";
 
 // Export plugin migrations
 export {
@@ -79,7 +79,7 @@ export {
   type DataMigrationResult,
   executeDataMigration,
   formatDataMigrationProgress,
-} from "./migrations.js";
+} from "../../../../../../../../../../../core/kernel/src/plugins/migrations.js";
 
 // Export migration utilities
 export {
@@ -88,7 +88,7 @@ export {
   getMigrationPlan,
   formatMigrationPlan,
   getPluginMigrationStatus,
-} from "./migration-utils.js";
+} from "../../../../../../../../../../../core/kernel/src/plugins/migration-utils.js";
 
 // Export migration lock (Phase 1 safety)
 export {
@@ -98,7 +98,7 @@ export {
   withMigrationLock,
   GLOBAL_MIGRATION_LOCK_ID,
   createGlobalMigrationLock,
-} from "./migration-lock.js";
+} from "../../../../../../../../../../../core/kernel/src/plugins/migration-lock.js";
 
 // Export migration safety analysis (Phase 1 safety)
 export {
@@ -111,7 +111,7 @@ export {
   isMigrationFunction,
   getConfirmationPrompt,
   validateConfirmation,
-} from "./migration-safety.js";
+} from "../../../../../../../../../../../core/kernel/src/plugins/migration-safety.js";
 
 // Export migration runner (Phase 1 safety)
 export {
@@ -121,12 +121,12 @@ export {
   createMigrationRunner,
   runPluginMigrations,
   dryRunMigrations,
-} from "./migration-runner.js";
+} from "../../../../../../../../../../../core/kernel/src/plugins/migration-runner.js";
 
 // Export plugin context
 export {
   PluginContextImpl,
-} from "./context.js";
+} from "../../../../../../../../../../../core/kernel/src/plugins/context.js";
 
 // Export dependency resolution
 export {
@@ -142,7 +142,7 @@ export {
   buildEnhancedDependencyGraph,
   getShutdownOrder,
   canLoadPlugin,
-} from "./dependencies.js";
+} from "../../../../../../../../../../../core/kernel/src/plugins/dependencies.js";
 
 // Export testing utilities
 export {
@@ -152,7 +152,7 @@ export {
   testPluginIntegration,
   createTestRegistry,
   waitForEvent,
-} from "./testing.js";
+} from "../../../../../../../../../../../core/kernel/src/plugins/testing.js";
 
 // Export security features
 export {
@@ -161,7 +161,7 @@ export {
   validateSecurityPolicy,
   isPluginTrusted,
   getSecurityWarnings,
-} from "./security.js";
+} from "../../../../../../../../../../../core/kernel/src/plugins/security.js";
 
 // Export metrics
 export {
@@ -175,7 +175,7 @@ export {
   recordPluginInitialized,
   recordPluginAPICall,
   recordPluginError,
-} from "./metrics.js";
+} from "../../../../../../../../../../../core/kernel/src/plugins/metrics.js";
 
 // Export documentation generator
 export {
@@ -183,7 +183,7 @@ export {
   generatePluginDocs,
   generateMarkdownDocs,
   generateHTMLDocs,
-} from "./docs-generator.js";
+} from "../../../../../../../../../../../core/kernel/src/plugins/docs-generator.js";
 
 // Export plugin lifecycle manager
 export {
@@ -196,7 +196,7 @@ export {
   // NEW: Lifecycle helpers
   registerGracefulShutdown,
   aggregateHealthCheck,
-} from "./lifecycle.js";
+} from "../../../../../../../../../../../core/kernel/src/plugins/lifecycle.js";
 
 // Export table sandbox (Phase 2 security)
 export {
@@ -215,7 +215,7 @@ export {
   createPermissivePolicy,
   formatSandboxViolations,
   analyzePluginTableAccess,
-} from "./table-sandbox.js";
+} from "../../../../../../../../../../../core/kernel/src/plugins/table-sandbox.js";
 
 // Export dependency resolver (Phase 2 ecosystem)
 export {
@@ -231,4 +231,4 @@ export {
   validateDependencyChain,
   formatDependencyResult,
   canMigrationRun,
-} from "./dependency-resolver.js";
+} from "../../../../../../../../../../../core/kernel/src/plugins/dependency-resolver.js";

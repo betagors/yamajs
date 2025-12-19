@@ -13,14 +13,14 @@
  * 8. Schema defaults (lowest)
  */
 
-import { getRuntime } from "../platform/index.js";
-import { loadEnvFile } from "../env.js"; // Now async
+import { getRuntime } from "../../../../../../../../../../../core/kernel/src/platform/index.js";
+import { loadEnvFile } from "@yamajs/kernel"; // Now async
 import type {
     ConfigSchema,
     YamaConfigSection,
     ResolvedConfig
-} from "./types.js";
-import { validateConfig, validateConfigOrThrow } from "./validator.js";
+} from "../../../../../../../../../../../core/kernel/src/config/types.js";
+import { validateConfig, validateConfigOrThrow } from "../../../../../../../../../../../core/kernel/src/config/validator.js";
 
 /**
  * Options for loading configuration

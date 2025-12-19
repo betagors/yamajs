@@ -1,5 +1,5 @@
 
-import { getRuntime } from "../platform/index.js";
+import { getRuntime } from "../../../../../../../../../../../core/kernel/src/platform/index.js";
 
 function getCrypto() {
   return getRuntime().crypto;

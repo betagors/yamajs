@@ -57,7 +57,7 @@
     "zod": "^3.23.8",
     "zod-to-json-schema": "^3.25.0",
     "@yamajs/plugin-openapi": "workspace:*",
-    "@yamajs/db-postgres": "workspace:*",
+    "@yamajs/db-drizzle": "workspace:*",
     "@yamajs/kernel": "workspace:*",
     "@yamajs/runtime-node": "workspace:*"
   },

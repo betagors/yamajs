@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { generateIR } from "./generator.js";
+import { generateIR } from "../../../../../../../../core/kernel/src/ir/generator.js";
 
 describe("generateIR", () => {
   it("builds IR with endpoints and schemas", () => {

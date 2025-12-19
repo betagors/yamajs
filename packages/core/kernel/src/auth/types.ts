@@ -1,4 +1,4 @@
-﻿import type { AuthProvider } from "../schemas.js";
+﻿import type { AuthProvider } from "@yamajs/kernel";
 
 // =============================================================================
 // Core Auth Types (v1 Stable Interface)

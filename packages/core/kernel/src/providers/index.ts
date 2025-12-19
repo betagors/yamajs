@@ -6,16 +6,6 @@
  * - Lifecycle management
  * - Adapter registration
  * - Context typing
- * 
- * Concrete implementations (adapters) live in separate packages:
- * - @yamajs/pglite, @yamajs/postgres (database)
- * - @yamajs/cache (cache)
- * - @yamajs/storage, @yamajs/s3 (storage)
- * - @yamajs/smtp (email)
- * - etc.
- * 
- * For zero-config experience, use a preset like @yamajs/runtime-node
- * which wires default adapters automatically.
  */
 
 // Core types
@@ -38,8 +28,11 @@ export type {
     ExecuteResult,
     TransactionAPI,
     SQLTemplateTag,
-
-
+    // Database IR
+    DatabaseIR,
+    TableIR,
+    ColumnIR,
+    IndexIR,
 
     // Email provider
     EmailProviderConfig,
@@ -51,14 +44,12 @@ export type {
 
     // Auth provider
     AuthProviderConfig,
-    RateLimitConfig,
     AuthAPI,
     JWTPayload,
     RefreshTokenPayload,
     TokenPair,
     Session,
     PasswordValidationResult,
-    RateLimitResult,
 
     // Storage provider
     StorageProviderConfig,

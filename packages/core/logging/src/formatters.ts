@@ -1,5 +1,5 @@
-import { LogLevel } from "./levels.js";
-import type { LogEvent } from "./event.js";
+import { LogLevel } from "../../../../../../../../../../core/logging/src/levels.js";
+import type { LogEvent } from "../../../../../../../../../../core/logging/src/event.js";
 
 export type LogFormat = "json" | "text" | "pretty";
 

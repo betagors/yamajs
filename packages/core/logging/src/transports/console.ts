@@ -1,7 +1,7 @@
-import type { Transport } from "../logger.js";
-import type { LogEvent } from "../event.js";
-import { LogLevel } from "../levels.js";
-import { formatLogEntry, type LogFormat } from "../formatters.js";
+import type { Transport } from "../../../../../../../../../../../core/logging/src/logger.js";
+import type { LogEvent } from "../../../../../../../../../../../core/logging/src/event.js";
+import { LogLevel } from "../../../../../../../../../../../core/logging/src/levels.js";
+import { formatLogEntry, type LogFormat } from "../../../../../../../../../../../core/logging/src/formatters.js";
 
 export interface ConsoleTransportConfig {
   format?: LogFormat;

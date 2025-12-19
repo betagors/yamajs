@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { Logger, createTransports } from "./logger.js";
-import type { LoggingPluginConfig, Transport, LogEntry } from "./types.js";
-import { LogLevel } from "./types.js";
+import { Logger, createTransports } from "../../../../../../../core/logging/src/logger.js";
+import type { LoggingPluginConfig, Transport, LogEntry } from "../../../../../../../core/logging/src/types.js";
+import { LogLevel } from "../../../../../../../core/logging/src/types.js";
 
 describe("Logger", () => {
   let logger: Logger;

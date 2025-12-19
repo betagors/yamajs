@@ -14,7 +14,7 @@ import type {
     PluginLifecycle,
     PluginRelationships,
     PluginManifest,
-} from './base.js';
+} from '../../../../../../../../core/kernel/src/plugins/base.js';
 
 /**
  * Plugin definition input type

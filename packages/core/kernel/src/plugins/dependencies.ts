@@ -1,5 +1,5 @@
-import type { PluginManifest, YamaPlugin } from "./base.js";
-import { loadPluginFromPackage } from "./loader.js";
+import type { PluginManifest, YamaPlugin } from "../../../../../../../../core/kernel/src/plugins/base.js";
+import { loadPluginFromPackage } from "../../../../../../../../core/kernel/src/plugins/loader.js";
 
 /**
  * Dependency graph node

@@ -1,4 +1,4 @@
-import type { DatabaseAdapter } from "./database.js";
+import type { DatabaseAdapter } from "../../../../../../../../core/kernel/src/infrastructure/database.js";
 
 /**
  * Global database adapter registry

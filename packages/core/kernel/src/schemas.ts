@@ -1,8 +1,8 @@
 import Ajv, { ValidateFunction, ErrorObject } from "ajv";
 import addFormats from "ajv-formats";
-import { TypeParser } from "./types/index.js";
-import type { FieldType } from "./types/index.js";
-import type { ComputedFieldDefinition } from "./entities.js";
+import { TypeParser } from "../../../../../../../core/kernel/src/types/index.js";
+import type { FieldType } from "../../../../../../../core/kernel/src/types/index.js";
+import type { ComputedFieldDefinition } from "@yamajs/kernel";
 
 // Type definitions for YAML schema structure
 export interface SchemaField {
@@ -40,7 +40,7 @@ export interface SchemaDefinition {
 }
 
 // Re-export for convenience
-export type { ComputedFieldDefinition } from "./entities.js";
+export type { ComputedFieldDefinition } from "@yamajs/kernel";
 
 export interface YamaSchemas {
   [schemaName: string]: SchemaDefinition;
@@ -889,11 +889,11 @@ export interface EndpointAuth {
 
 // AuthContext is now defined in auth/types.ts with full plugin extension support
 // Re-export for backward compatibility
-export type { AuthContext, AuthUser } from "./auth/types.js";
+export type { AuthContext, AuthUser } from "../../../../../../../core/kernel/src/auth/types.js";
 
 
 // Re-export ApisConfig from apis module
-export type { ApisConfig } from "./apis/types.js";
+export type { ApisConfig } from "../../../../../../../core/kernel/src/apis/types.js";
 
 
 

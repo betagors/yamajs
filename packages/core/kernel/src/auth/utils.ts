@@ -4,8 +4,8 @@
  * Password hashing, verification, and strength checking utilities.
  */
 
-import type { PasswordStrengthResult } from "./types.js";
-import { getRuntime } from "../platform/index.js";
+import type { PasswordStrengthResult } from "../../../../../../../../../../../core/kernel/src/auth/types.js";
+import { getRuntime } from "../../../../../../../../../../../core/kernel/src/platform/index.js";
 
 // Default bcrypt cost factor
 const DEFAULT_SALT_ROUNDS = 12;

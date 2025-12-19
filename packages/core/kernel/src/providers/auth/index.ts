@@ -13,8 +13,6 @@ export type {
     TokenPair,
     Session,
     PasswordValidationResult,
-    RateLimitResult,
-    RateLimitConfig,
-} from '../types.js';
+} from './types.js';
 
 // Adapters are now in separate packages (e.g. @yamajs/auth-jwt-password)

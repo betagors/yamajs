@@ -1,7 +1,7 @@
-import type { EntityDefinition, YamaEntities, CrudConfig, EntityField } from "./entities.js";
-import type { SchemaField } from "./schemas.js";
-import { entityToSchema, normalizeEntityDefinition, parseFieldDefinition } from "./entities.js";
-import type { PaginationConfig } from "./pagination/types.js";
+import type { EntityDefinition, YamaEntities, CrudConfig, EntityField } from "@yamajs/kernel";
+import type { SchemaField } from "@yamajs/kernel";
+import { entityToSchema, normalizeEntityDefinition, parseFieldDefinition } from "@yamajs/kernel";
+import type { PaginationConfig } from "../../../../../../../../../../core/kernel/src/pagination/types.js";
 
 /**
  * Endpoint definition for CRUD operations

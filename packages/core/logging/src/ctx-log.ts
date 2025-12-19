@@ -1,5 +1,5 @@
-import type { Logger } from "./logger.js";
-import { LogLevel } from "./levels.js";
+import type { Logger } from "../../../../../../../core/logging/src/logger.js";
+import { LogLevel } from "../../../../../../../core/logging/src/levels.js";
 
 /**
  * Options for creating a context-bound logger

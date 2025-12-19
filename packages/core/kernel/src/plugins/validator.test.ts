@@ -2,8 +2,8 @@
 import {
   validateManifest,
   validateYamaPlugin,
-} from "./validator";
-import type { PluginManifest, YamaPlugin } from "./base";
+} from "../../../../../../../../core/kernel/src/plugins/validator";
+import type { PluginManifest, YamaPlugin } from "../../../../../../../../core/kernel/src/plugins/base";
 
 describe("Plugin Validator", () => {
   describe("validateManifest", () => {

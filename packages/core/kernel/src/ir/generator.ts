@@ -1,7 +1,7 @@
-import { normalizeApisConfig } from "../apis/normalizer.js";
-import type { NormalizedEndpoint } from "../apis/types.js";
-import { getSchemasFromConfig } from "../config-normalizer.js";
-import type { YamaIR, IRHttpEndpoint } from "./types.js";
+import { normalizeApisConfig } from "../../../../../../../../core/kernel/src/apis/normalizer.js";
+import type { NormalizedEndpoint } from "../../../../../../../../core/kernel/src/apis/types.js";
+import { getSchemasFromConfig } from "@yamajs/kernel";
+import type { YamaIR, IRHttpEndpoint } from "../../../../../../../../core/kernel/src/ir/types.js";
 
 // Local definition of full YamaConfig structure
 interface YamaConfig {

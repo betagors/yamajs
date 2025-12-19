@@ -4,7 +4,7 @@
  * Provides request-scoped logging with automatic requestId binding.
  */
 
-import type { Logger } from "./logger.js";
+import type { Logger } from "../../../../../../../../../../core/logging/src/logger.js";
 
 /**
  * Handler context interface (minimal for middleware)

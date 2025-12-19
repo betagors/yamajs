@@ -1,4 +1,4 @@
-import { YamaError, YamaErrorOptions } from '../base.js';
+import { YamaError, YamaErrorOptions } from '../../../../../../../../core/errors/src/base';
 
 /**
  * Error thrown when configuration is invalid or missing.

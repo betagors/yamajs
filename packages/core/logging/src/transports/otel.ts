@@ -1,5 +1,5 @@
-import type { Transport } from "../logger.js";
-import type { LogEvent } from "../event.js";
+import type { Transport } from "../../../../../../../../../../../core/logging/src/logger.js";
+import type { LogEvent } from "../../../../../../../../../../../core/logging/src/event.js";
 
 /**
  * OpenTelemetry Transport Adapter.

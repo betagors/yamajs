@@ -1,4 +1,4 @@
-﻿import type { HandlerContext } from "../infrastructure/server.js";
+﻿import type { HandlerContext } from "../../../../../../../../core/kernel/src/infrastructure/server.js";
 
 /**
  * Middleware lifecycle phases

@@ -5,8 +5,8 @@
  * These map directly to schema/field type properties.
  */
 
-import { directiveRegistry } from './registry.js';
-import type { DirectiveDefinition } from './types.js';
+import { directiveRegistry } from '../../../../../../../../core/kernel/src/directives/registry.js';
+import type { DirectiveDefinition } from '../../../../../../../../core/kernel/src/directives/types.js';
 
 /**
  * Core directives built into Yama

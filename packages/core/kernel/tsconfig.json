@@ -1,3 +1,3 @@
 {
-  "extends": "./tsconfig.build.json"
+  "extends": "../../../../../../core/kernel/tsconfig.build.json"
 }

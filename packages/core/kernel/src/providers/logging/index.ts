@@ -8,6 +8,6 @@
  */
 
 // Re-export core logging types from @yamajs/logging
-export { Logger, LogLevel } from "@yamajs/logging";
-export type { Transport as LogTransport, LoggerConfig } from "@yamajs/logging";
+export { Logger, LogLevel } from "packages/core/logging";
+export type { Transport as LogTransport, LoggerConfig } from "packages/core/logging";
 

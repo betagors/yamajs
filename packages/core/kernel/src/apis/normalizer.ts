@@ -1,12 +1,12 @@
-import type { ApisConfig, NormalizedApisConfig, NormalizedRestConfig, RestApiConfig, RestApisConfig } from './types.js';
-import { ApiEndpointParser } from './parser.js';
-import { parseOperations, generateEndpointsFromOperations } from '../operations/index.js';
-import { resolvePolicy } from '../policies/index.js';
-import type { YamaEntities } from '../entities.js';
-import type { YamaOperations } from '../operations/types.js';
-import type { YamaPolicies } from '../policies/types.js';
+import type { ApisConfig, NormalizedApisConfig, NormalizedRestConfig, RestApiConfig, RestApisConfig } from '../../../../../../../../../../../core/kernel/src/apis/types.js';
+import { ApiEndpointParser } from '../../../../../../../../../../../core/kernel/src/apis/parser.js';
+import { parseOperations, generateEndpointsFromOperations } from '../../../../../../../../../../../core/kernel/src/operations/index.js';
+import { resolvePolicy } from '../../../../../../../../../../../core/kernel/src/policies/index.js';
+import type { YamaEntities } from '@yamajs/kernel';
+import type { YamaOperations } from '../../../../../../../../../../../core/kernel/src/operations/types.js';
+import type { YamaPolicies } from '../../../../../../../../../../../core/kernel/src/policies/types.js';
 
-import type { YamaSchemas } from '../schemas.js';
+import type { YamaSchemas } from '@yamajs/kernel';
 
 export function normalizeApisConfig(
   config: {

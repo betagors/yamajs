@@ -4,7 +4,7 @@ import type {
   Middleware,
   MiddlewareContext,
   MiddlewareState,
-} from "./types.js";
+} from "../../../../../../../../../../../core/kernel/src/middleware/types.js";
 
 /**
  * Middleware registry manages middleware registration and execution

@@ -1,7 +1,7 @@
-import type { SchemaField, SchemaDefinition, YamaSchemas } from "./schemas.js";
-import { TypeParser } from "./types/index.js";
-import type { FieldType } from "./types/index.js";
-import { normalizeConfig } from "./config-normalizer.js";
+import type { SchemaField, SchemaDefinition, YamaSchemas } from "@yamajs/kernel";
+import { TypeParser } from "../../../../../../../core/kernel/src/types/index.js";
+import type { FieldType } from "../../../../../../../core/kernel/src/types/index.js";
+import { normalizeConfig } from "@yamajs/kernel";
 
 /**
  * Entity field types supported by Yama
@@ -225,7 +225,7 @@ export interface CrudConfig {
    * - `pagination: { type: "page" }` - Use page-based pagination
    * - `pagination: { type: "cursor", cursorField: "id" }` - Use cursor pagination
    */
-  pagination?: import("./pagination/types.js").PaginationConfig;
+  pagination?: import("../../../../../../../core/kernel/src/pagination/types.js").PaginationConfig;
 }
 
 /**
@@ -268,8 +268,8 @@ export interface YamaEntities {
 }
 
 // Re-export types from operations and policies for convenience
-export type { YamaOperations } from "./operations/types.js";
-export type { YamaPolicies } from "./policies/types.js";
+export type { YamaOperations } from "../../../../../../../core/kernel/src/operations/types.js";
+export type { YamaPolicies } from "../../../../../../../core/kernel/src/policies/types.js";
 
 /**
  * Database connection configuration
@@ -812,8 +812,8 @@ export function normalizeSchemas(config: { schemas?: YamaSchemas; entities?: Yam
  * Convert entities to API schemas (SchemaDefinition format for validation)
  * This converts EntityDefinition to SchemaDefinition format
  */
-export function entitiesToSchemas(entities: YamaEntities): import("./schemas.js").YamaSchemas {
-  const schemas: import("./schemas.js").YamaSchemas = {};
+export function entitiesToSchemas(entities: YamaEntities): import("@yamajs/kernel").YamaSchemas {
+  const schemas: import("@yamajs/kernel").YamaSchemas = {};
   if (!entities || typeof entities !== 'object' || entities === null) {
     return schemas;
   }

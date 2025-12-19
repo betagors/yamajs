@@ -10,7 +10,7 @@ import {
     parseValue,
     isValidDirectiveName,
     extractPluginFromDirective,
-} from './parser.js';
+} from '../../../../../../../../core/kernel/src/directives/parser.js';
 
 describe('Directive Parser', () => {
     describe('extractDirectives', () => {

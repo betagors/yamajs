@@ -1,0 +1,38 @@
+{
+    "name": "@yamajs/db-drizzle",
+    "version": "0.1.0-alpha.0",
+    "type": "module",
+    "description": "Yama Drizzle-based query engine and adapters",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "default": "./dist/index.js"
+        }
+    },
+    "files": [
+        "dist"
+    ],
+    "dependencies": {
+        "drizzle-orm": "^0.30.0",
+        "@yamajs/kernel": "workspace:*"
+    },
+    "peerDependencies": {
+        "@electric-sql/pglite": "^0.2.0",
+        "postgres": "^3.4.4"
+    },
+    "peerDependenciesMeta": {
+        "@electric-sql/pglite": {
+            "optional": true
+        },
+        "postgres": {
+            "optional": true
+        }
+    },
+    "scripts": {
+        "build": "tsc -p tsconfig.build.json",
+        "dev": "tsc -w -p tsconfig.build.json",
+        "clean": "rimraf dist"
+    }
+}

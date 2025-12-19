@@ -30,7 +30,7 @@ import {
 
     // Type definitions
     type ScalarTypeDefinition,
-} from '../scalars.js';
+} from '../../../../../../../../../core/kernel/src/types/scalars.js';
 
 import {
     // Relation detection
@@ -41,9 +41,9 @@ import {
     isRequiredType,
     classifyType,
     parseRelationType,
-} from '../relations.js';
+} from '../../../../../../../../../core/kernel/src/types/relations.js';
 
-import { TypeParser } from '../parser.js';
+import { TypeParser } from '../../../../../../../../../core/kernel/src/types/parser.js';
 
 // ============================================================================
 // String Scalar Tests

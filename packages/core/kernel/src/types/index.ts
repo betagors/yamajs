@@ -18,17 +18,17 @@
  */
 
 // Base types and parser
-export * from './types.js';
-export * from './parser.js';
+export * from '../../../../../../../../../../../core/kernel/src/types/types.js';
+export * from '../../../../../../../../../../../core/kernel/src/types/parser.js';
 
 // Core scalar types with runtime validators
-export * from './scalars.js';
+export * from '../../../../../../../../../../../core/kernel/src/types/scalars.js';
 
 // Relation type detection
-export * from './relations.js';
+export * from '../../../../../../../../../../../core/kernel/src/types/relations.js';
 
 // Database mapping
-export * from './mapper.js';
+export * from '../../../../../../../../../../../core/kernel/src/types/mapper.js';
 
 // Validation generation (CHECK constraints)
-export * from './validator.js';
+export * from '../../../../../../../../../../../core/kernel/src/types/validator.js';

@@ -1,4 +1,4 @@
-import { helloYamaCore, getCryptoProvider, getEnvProvider } from "../src/index.js";
+import { helloYamaCore, getCryptoProvider, getEnvProvider } from "@yamajs/kernel";
 
 export async function initSmoke() {
   // Basic import works

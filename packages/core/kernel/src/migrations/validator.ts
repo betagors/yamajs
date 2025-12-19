@@ -1,6 +1,6 @@
-import type { MigrationStepUnion } from "./diff.js";
-import type { Model } from "./model.js";
-import type { Transition } from "./transitions.js";
+import type { MigrationStepUnion } from "../../../../../../../../core/kernel/src/migrations/diff.js";
+import type { Model } from "../../../../../../../../core/kernel/src/migrations/model.js";
+import type { Transition } from "../../../../../../../../core/kernel/src/migrations/transitions.js";
 
 /**
  * Validation error

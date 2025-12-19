@@ -1,25 +1,25 @@
-import type { YamaPlugin, PluginManifest, PluginContext, Logger } from "./base.js";
-import { loadPluginFromPackage, importPlugin } from "./loader.js";
-import { validateYamaPlugin, validatePluginVersion } from "./validator.js";
+import type { YamaPlugin, PluginManifest, PluginContext, Logger } from "../../../../../../../../../../../core/kernel/src/plugins/base.js";
+import { loadPluginFromPackage, importPlugin } from "../../../../../../../../../../../core/kernel/src/plugins/loader.js";
+import { validateYamaPlugin, validatePluginVersion } from "../../../../../../../../../../../core/kernel/src/plugins/validator.js";
 import {
   ensurePluginMigrationTables,
   getInstalledPluginVersion,
   getPendingPluginMigrations,
   getPluginPackageDir,
-} from "./migrations.js";
-import { PluginContextImpl } from "./context.js";
+} from "../../../../../../../../../../../core/kernel/src/plugins/migrations.js";
+import { PluginContextImpl } from "../../../../../../../../../../../core/kernel/src/plugins/context.js";
 import {
   resolvePluginDependencies,
-} from "./dependencies.js";
+} from "../../../../../../../../../../../core/kernel/src/plugins/dependencies.js";
 import {
   trackPluginLoad,
   recordPluginLoaded,
   trackPluginInit,
   recordPluginInitialized,
   recordPluginError,
-} from "./metrics.js";
-import { getRuntime } from "../platform/index.js";
-import type { MiddlewareRegistry } from "../middleware/registry.js";
+} from "../../../../../../../../../../../core/kernel/src/plugins/metrics.js";
+import { getRuntime } from "../../../../../../../../../../../core/kernel/src/platform/index.js";
+import type { MiddlewareRegistry } from "../../../../../../../../../../../core/kernel/src/middleware/registry.js";
 
 /**
  * Plugin registry
@@ -182,7 +182,7 @@ export class PluginRegistry {
 
     // Validate security policy
     if (manifest.security) {
-      const { validateSecurityPolicy, getSecurityWarnings } = await import("./security.js");
+      const { validateSecurityPolicy, getSecurityWarnings } = await import("../../../../../../../../../../../core/kernel/src/plugins/security.js");
       const securityValidation = validateSecurityPolicy(manifest);
       const warnings = getSecurityWarnings(manifest);
 
@@ -201,7 +201,7 @@ export class PluginRegistry {
 
     // Validate plugin configuration if schema is provided
     if (manifest.configSchema && pluginConfig) {
-      const { validatePluginConfig } = await import("./validator.js");
+      const { validatePluginConfig } = await import("../../../../../../../../../../../core/kernel/src/plugins/validator.js");
       const configValidation = validatePluginConfig(pluginConfig, manifest);
       if (!configValidation.valid) {
         throw new Error(
@@ -237,7 +237,7 @@ export class PluginRegistry {
 
       // Register plugin's directives with the global directive registry
       if (plugin.directives && typeof plugin.directives === "object") {
-        const { directiveRegistry } = await import("../directives/registry.js");
+        const { directiveRegistry } = await import("../../../../../../../../../../../core/kernel/src/directives/registry.js");
 
         for (const [directiveName, directiveConfig] of Object.entries(plugin.directives)) {
           try {
@@ -310,7 +310,7 @@ export class PluginRegistry {
               );
             } else {
               // Import and use the migration runner
-              const { MigrationRunner } = await import("./migration-runner.js");
+              const { MigrationRunner } = await import("../../../../../../../../../../../core/kernel/src/plugins/migration-runner.js");
 
               const runner = new MigrationRunner(sql, {
                 transactional: true,  // Use transactions
@@ -421,8 +421,8 @@ export class PluginRegistry {
   /**
    * Get all registered CLI commands from all plugins
    */
-  getAllCLICommands(): import("./base.js").PluginCLICommand[] {
-    const allCommands: import("./base.js").PluginCLICommand[] = [];
+  getAllCLICommands(): import("../../../../../../../../../../../core/kernel/src/plugins/base.js").PluginCLICommand[] {
+    const allCommands: import("../../../../../../../../../../../core/kernel/src/plugins/base.js").PluginCLICommand[] = [];
     for (const context of this.pluginContexts.values()) {
       // All contexts are PluginContextImpl instances
       allCommands.push(...(context as PluginContextImpl).getCLICommands());
@@ -433,8 +433,8 @@ export class PluginRegistry {
   /**
    * Get all registered MCP tools from all plugins
    */
-  getAllMCPTools(): import("./base.js").PluginMCPTool[] {
-    const allTools: import("./base.js").PluginMCPTool[] = [];
+  getAllMCPTools(): import("../../../../../../../../../../../core/kernel/src/plugins/base.js").PluginMCPTool[] {
+    const allTools: import("../../../../../../../../../../../core/kernel/src/plugins/base.js").PluginMCPTool[] = [];
     for (const context of this.pluginContexts.values()) {
       // All contexts are PluginContextImpl instances
       allTools.push(...(context as PluginContextImpl).getMCPTools());
@@ -522,14 +522,14 @@ export function getPluginsByCategory(category: string): YamaPlugin[] {
 /**
  * Get all registered CLI commands from all plugins
  */
-export function getAllCLICommands(): import("./base.js").PluginCLICommand[] {
+export function getAllCLICommands(): import("../../../../../../../../../../../core/kernel/src/plugins/base.js").PluginCLICommand[] {
   return pluginRegistry.getAllCLICommands();
 }
 
 /**
  * Get all registered MCP tools from all plugins
  */
-export function getAllMCPTools(): import("./base.js").PluginMCPTool[] {
+export function getAllMCPTools(): import("../../../../../../../../../../../core/kernel/src/plugins/base.js").PluginMCPTool[] {
   return pluginRegistry.getAllMCPTools();
 }
 

@@ -1,7 +1,7 @@
-﻿import type { AuthProviderHandler, AuthResult, AuthUser, TokenPair, TokenGenerationOptions } from "../types.js";
-import type { JwtAuthProvider, AuthContext } from "../../schemas.js";
+﻿import type { AuthProviderHandler, AuthResult, AuthUser, TokenPair, TokenGenerationOptions } from "../../../../../../../../../../../../core/kernel/src/auth/types.js";
+import type { JwtAuthProvider, AuthContext } from "@yamajs/kernel";
 import { ErrorCodes } from "@yamajs/errors";
-import { getTokenSigner, TokenExpiredError, JsonWebTokenError } from "../jwt-utils.js";
+import { getTokenSigner, TokenExpiredError, JsonWebTokenError } from "../../../../../../../../../../../../core/kernel/src/auth/jwt-utils.js";
 
 // Local definition to avoid importing from jsonwebtoken
 export type JwtPayload = {
@@ -19,7 +19,7 @@ export type JwtPayload = {
  * Resolve environment variable references in strings
  * Supports ${VAR_NAME} syntax
  */
-import { getRuntime } from "../../platform/index.js";
+import { getRuntime } from "../../../../../../../../../../../../core/kernel/src/platform/index.js";
 
 function resolveEnvVar(value: string): string {
   return value.replace(/\$\{(\w+)\}/g, (_, varName) => {

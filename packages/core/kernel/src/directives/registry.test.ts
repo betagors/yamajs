@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { DirectiveRegistry } from './registry.js';
+import { DirectiveRegistry } from '../../../../../../../../core/kernel/src/directives/registry.js';
 
 describe('DirectiveRegistry', () => {
     let registry: DirectiveRegistry;

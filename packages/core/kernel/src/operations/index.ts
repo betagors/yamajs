@@ -9,13 +9,13 @@ export type {
   OperationContext,
   OperationHandler,
   OperationType,
-} from "./types.js";
+} from "../../../../../../../../../../../core/kernel/src/operations/types.js";
 
 // Parser
 export {
   parseOperation,
   parseOperations,
-} from "./parser.js";
+} from "../../../../../../../../../../../core/kernel/src/operations/parser.js";
 
 // Inference
 export {
@@ -23,10 +23,10 @@ export {
   inferMethodFromName,
   inferPathFromName,
   inferOperationType,
-} from "./inference.js";
+} from "../../../../../../../../../../../core/kernel/src/operations/inference.js";
 
 // Generator
 export {
   generateEndpointFromOperation,
   generateEndpointsFromOperations,
-} from "./generator.js";
+} from "../../../../../../../../../../../core/kernel/src/operations/generator.js";

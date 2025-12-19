@@ -1,7 +1,7 @@
 ﻿
-import type { MiddlewareHandler } from "./types.js";
+import type { MiddlewareHandler } from "../../../../../../../../core/kernel/src/middleware/types.js";
 import { MiddlewareError, ErrorCodes } from "@yamajs/errors";
-import { getRuntime } from "../platform/index.js";
+import { getRuntime } from "../../../../../../../../core/kernel/src/platform/index.js";
 
 /**
  * Load middleware handler from a file

@@ -9,11 +9,11 @@ import {
   findReversePath,
   pathExists,
   getReachableSnapshots,
-} from "./graph.js";
-import { createSnapshot, saveSnapshot } from "./snapshots.js";
-import { createTransition, saveTransition } from "./transitions.js";
-import type { YamaEntities } from "../entities.js";
-import type { MigrationStepUnion } from "./diff.js";
+} from "../../../../../../../../core/kernel/src/migrations/graph.js";
+import { createSnapshot, saveSnapshot } from "../../../../../../../../core/kernel/src/migrations/snapshots.js";
+import { createTransition, saveTransition } from "../../../../../../../../core/kernel/src/migrations/transitions.js";
+import type { YamaEntities } from "@yamajs/kernel";
+import type { MigrationStepUnion } from "../../../../../../../../core/kernel/src/migrations/diff.js";
 
 describe("Graph", () => {
   let testDir: string;

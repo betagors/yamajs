@@ -1,8 +1,8 @@
-import type { MigrationStepUnion } from "./diff.js";
-import type { DatabaseCapabilities } from "./plugin-interface.js";
-import { generateShadowColumnName, registerShadowColumn, calculateExpirationDate } from "./shadows.js";
-import { registerBackup, generateBackupFilename, calculateChecksum, ensureBackupDirs } from "./backups.js";
-import { CREATE_AUDIT_LOG_TABLE_SQL, createAuditEntry, shouldAudit, type AuditConfig } from "./audit.js";
+import type { MigrationStepUnion } from "../../../../../../../../../../../core/kernel/src/migrations/diff.js";
+import type { DatabaseCapabilities } from "../../../../../../../../../../../core/kernel/src/migrations/plugin-interface.js";
+import { generateShadowColumnName, registerShadowColumn, calculateExpirationDate } from "../../../../../../../../../../../core/kernel/src/migrations/shadows.js";
+import { registerBackup, generateBackupFilename, calculateChecksum, ensureBackupDirs } from "../../../../../../../../../../../core/kernel/src/migrations/backups.js";
+import { CREATE_AUDIT_LOG_TABLE_SQL, createAuditEntry, shouldAudit, type AuditConfig } from "../../../../../../../../../../../core/kernel/src/migrations/audit.js";
 
 /**
  * Safety operation options

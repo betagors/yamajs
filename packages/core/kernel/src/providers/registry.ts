@@ -11,7 +11,6 @@ import type {
     ProviderContext,
     ProvidersConfig,
     ProviderAPIs,
-    ProviderLogger,
     HealthCheckResult,
 } from './types.js';
 import { PROVIDER_INIT_ORDER } from './types.js';
@@ -98,7 +97,6 @@ async function initializeProvider(
     config: Record<string, unknown> | undefined,
     context: ProviderContext
 ): Promise<void> {
-    // Get adapter name from config or use default
     // Get adapter name from config
     const adapterName = (config?.adapter as string);
 
@@ -222,9 +220,7 @@ export async function initializeProviders(
  * Shutdown all providers in reverse order
  */
 export async function shutdownProviders(): Promise<void> {
-    const logger = new Logger({
-        transports: [createConsoleTransport()]
-    });
+    const logger = getSystemLogger();
     logger.info('Shutting down providers...');
     const reverseOrder = [...INIT_ORDER].reverse();
 
@@ -285,19 +281,6 @@ export async function getProvidersHealth(): Promise<Record<ProviderType, HealthC
     }
 
     return results as Record<ProviderType, HealthCheckResult>;
-}
-
-// ============================================================================
-// Bootstrap Logger
-// ============================================================================
-
-/**
- * Create a simple bootstrap logger for use before logging provider is ready
- */
-function createBootstrapLogger(colors: boolean): Logger {
-    return new Logger({
-        transports: [createConsoleTransport({ format: colors ? 'pretty' : 'json' })]
-    });
 }
 
 // ============================================================================

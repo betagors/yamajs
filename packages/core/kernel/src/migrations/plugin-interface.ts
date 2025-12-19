@@ -1,5 +1,5 @@
-import type { MigrationStepUnion, MigrationStepType } from "./diff.js";
-import { sha256Hex } from "../platform/hash.js";
+import type { MigrationStepUnion, MigrationStepType } from "../../../../../../../../../../../core/kernel/src/migrations/diff.js";
+import { sha256Hex } from "../../../../../../../../../../../core/kernel/src/platform/hash.js";
 
 /**
  * Database capabilities for migration operations

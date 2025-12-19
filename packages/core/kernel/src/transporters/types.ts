@@ -1,7 +1,7 @@
 
-import { ProviderContext } from '../providers/types.js';
-import { OperationDefinition } from '../operations/index.js';
-import { EndpointDefinition } from '../typegen.js';
+import { ProviderContext } from '../../../../../../../../core/kernel/src/providers/types.js';
+import { OperationDefinition } from '../../../../../../../../core/kernel/src/operations/index.js';
+import { EndpointDefinition } from '@yamajs/kernel';
 
 export interface Transporter<TConfig = unknown> {
     name: string;

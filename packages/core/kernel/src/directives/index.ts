@@ -24,7 +24,7 @@ export type {
     PluginSchemaOptionsDefinition,
     SchemaWithPluginConfig,
     FieldWithDirectives,
-} from './types.js';
+} from '../../../../../../../../core/kernel/src/directives/types.js';
 
 // Parser
 export {
@@ -35,7 +35,7 @@ export {
     isValidDirectiveName,
     extractPluginFromDirective,
     type DirectiveExtractionResult,
-} from './parser.js';
+} from '../../../../../../../../core/kernel/src/directives/parser.js';
 
 // Registry
 export {
@@ -43,13 +43,13 @@ export {
     directiveRegistry,
     registerDirective,
     getDirective,
-} from './registry.js';
+} from '../../../../../../../../core/kernel/src/directives/registry.js';
 
 // Core directives
 export {
     registerCoreDirectives,
     getCoreDirectiveNames,
-} from './core-directives.js';
+} from '../../../../../../../../core/kernel/src/directives/core-directives.js';
 
 // Executor
 export {
@@ -59,4 +59,4 @@ export {
     executeValidateDirectives,
     createTransformPipeline,
     createValidationFunction,
-} from './executor.js';
+} from '../../../../../../../../core/kernel/src/directives/executor.js';

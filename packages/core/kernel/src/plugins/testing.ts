@@ -1,7 +1,7 @@
-import type { YamaPlugin, PluginContext, Logger } from "./base.js";
-import { PluginContextImpl } from "./context.js";
-import { PluginRegistry } from "./registry.js";
-import { getRuntime } from "../platform/index.js";
+import type { YamaPlugin, PluginContext, Logger } from "../../../../../../../../core/kernel/src/plugins/base.js";
+import { PluginContextImpl } from "../../../../../../../../core/kernel/src/plugins/context.js";
+import { PluginRegistry } from "../../../../../../../../core/kernel/src/plugins/registry.js";
+import { getRuntime } from "../../../../../../../../core/kernel/src/platform/index.js";
 
 /**
  * Mock logger for testing

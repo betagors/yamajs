@@ -10,7 +10,7 @@
  *   "@upload(folder: "avatars", resize: { width: 200 })" → { name: "@upload", args: { folder: "avatars", resize: { width: 200 } } }
  */
 
-import type { ParsedDirective, DirectiveArgs } from './types.js';
+import type { ParsedDirective, DirectiveArgs } from '../../../../../../../../core/kernel/src/directives/types.js';
 
 /**
  * Result of extracting directives from a type string

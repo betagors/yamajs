@@ -581,7 +581,7 @@ export interface PluginContext {
   /**
    * Get middleware registry to register middleware
    */
-  getMiddlewareRegistry(): import("../middleware/registry.js").MiddlewareRegistry;
+  getMiddlewareRegistry(): import("../../../../../../../../core/kernel/src/middleware/registry.js").MiddlewareRegistry;
 
   /**
    * Register a CLI command that will be available in the Yama CLI

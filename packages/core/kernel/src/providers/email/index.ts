@@ -12,6 +12,6 @@ export type {
     EmailAttachment,
     EmailResult,
     CapturedEmail,
-} from '../types.js';
+} from './types.js';
 
 // Adapters are now in separate packages (e.g. @yamajs/mail-smtp)

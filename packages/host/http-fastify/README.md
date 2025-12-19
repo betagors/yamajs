@@ -10,7 +10,7 @@ HTTP server adapter that integrates [Fastify](https://www.fastify.io/) with the 
 ## Installation
 
 ```bash
-npm install @yamajs/server-fastify fastify
+npm install @yamajs/http-fastify fastify
 ```
 
 ## Usage
@@ -18,7 +18,7 @@ npm install @yamajs/server-fastify fastify
 The adapter is typically used internally by `@yamajs/node`, but you can also use it directly:
 
 ```typescript
-import { createFastifyAdapter } from '@yamajs/server-fastify';
+import { createFastifyAdapter } from '@yamajs/http-fastify';
 import { createHttpServerAdapter } from '@yamajs/core';
 
 // Register the Fastify adapter

@@ -5,10 +5,10 @@
  * initialization, validation, and error handling.
  */
 
-import type { YamaPlugin, PluginContext, PluginManifest } from "./base.js";
-import { validateYamaPlugin, validatePluginConfig, validatePluginVersion } from "./validator.js";
+import type { YamaPlugin, PluginContext, PluginManifest } from "../../../../../../../../core/kernel/src/plugins/base.js";
+import { validateYamaPlugin, validatePluginConfig, validatePluginVersion } from "../../../../../../../../core/kernel/src/plugins/validator.js";
 import { ErrorCodes } from "@yamajs/errors";
-import { getRuntime } from "../platform/index.js";
+import { getRuntime } from "../../../../../../../../core/kernel/src/platform/index.js";
 
 /**
  * Plugin state in lifecycle

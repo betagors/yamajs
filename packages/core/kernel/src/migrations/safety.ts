@@ -1,5 +1,5 @@
-import type { MigrationStepUnion } from "./diff.js";
-import type { Transition } from "./transitions.js";
+import type { MigrationStepUnion } from "../../../../../../../../core/kernel/src/migrations/diff.js";
+import type { Transition } from "../../../../../../../../core/kernel/src/migrations/transitions.js";
 
 /**
  * Safety level classification (numeric for comparison, higher = more dangerous)

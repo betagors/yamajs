@@ -6,10 +6,10 @@ export type {
   MiddlewareState,
   MiddlewareDefinition,
   Middleware,
-} from "./types.js";
+} from "../../../../../../../../core/kernel/src/middleware/types.js";
 
-export { MiddlewareRegistry } from "./registry.js";
-export { loadMiddlewareFromFile } from "./loader.js";
+export { MiddlewareRegistry } from "../../../../../../../../core/kernel/src/middleware/registry.js";
+export { loadMiddlewareFromFile } from "../../../../../../../../core/kernel/src/middleware/loader.js";
 
 
 

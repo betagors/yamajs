@@ -1,12 +1,12 @@
 import semver from "semver";
-import type { YamaPlugin, PluginManifest } from "./base.js";
-import type { PluginMigration } from "./migrations.js";
+import type { YamaPlugin, PluginManifest } from "../../../../../../../../core/kernel/src/plugins/base.js";
+import type { PluginMigration } from "../../../../../../../../core/kernel/src/plugins/migrations.js";
 import {
   getPendingPluginMigrations,
   getInstalledPluginVersion,
   getPluginMigrationHistory,
-} from "./migrations.js";
-import { getRuntime } from "../platform/index.js";
+} from "../../../../../../../../core/kernel/src/plugins/migrations.js";
+import { getRuntime } from "../../../../../../../../core/kernel/src/platform/index.js";
 
 const fs = () => getRuntime().fs;
 

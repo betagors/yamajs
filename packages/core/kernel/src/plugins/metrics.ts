@@ -1,4 +1,4 @@
-import type { YamaPlugin } from "./base.js";
+import type { YamaPlugin } from "../../../../../../../../core/kernel/src/plugins/base.js";
 
 /**
  * Plugin metrics

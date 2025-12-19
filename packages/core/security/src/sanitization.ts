@@ -1,4 +1,4 @@
-import type { SanitizationConfig } from "./types.js";
+import type { SanitizationConfig } from "../../../../../../../core/security/src/types.js";
 
 /**
  * Default sanitization configuration

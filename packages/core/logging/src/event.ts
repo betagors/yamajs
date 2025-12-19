@@ -1,4 +1,4 @@
-import type { LogLevel } from "./levels.js";
+import type { LogLevel } from "../../../../../../../../../../core/logging/src/levels.js";
 
 /**
  * The core event model for all logs in Yama.

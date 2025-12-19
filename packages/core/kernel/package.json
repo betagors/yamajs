@@ -35,14 +35,14 @@
   ],
   "license": "MPL-2.0",
   "scripts": {
-    "build": "tsup --config tsup.config.ts && tsc -p tsconfig.declarations.json",
-    "dev": "tsup --config tsup.config.ts --watch",
-    "lint": "eslint . --ext .ts,.tsx",
-    "lint:fix": "eslint . --ext .ts,.tsx --fix",
-    "test": "vitest",
-    "test:watch": "vitest --watch",
-    "test:coverage": "vitest --coverage",
-    "clean": "rimraf dist tsconfig.build.tsbuildinfo"
+    "build": "node_modules/.bin/tsup --config tsup.config.ts && tsc -p tsconfig.declarations.json",
+    "dev": "node_modules/.bin/tsup --config tsup.config.ts --watch",
+    "lint": "eslint  --ext .ts,.tsx",
+    "lint:fix": "eslint  --ext .ts,.tsx --fix",
+    "test": "node_modules/.bin/vitest",
+    "test:watch": "node_modules/.bin/vitest --watch",
+    "test:coverage": "node_modules/.bin/vitest --coverage",
+    "clean": "node_modules/.bin/rimraf dist tsconfig.build.tsbuildinfo"
   },
   "dependencies": {
     "@noble/hashes": "^2.0.1",

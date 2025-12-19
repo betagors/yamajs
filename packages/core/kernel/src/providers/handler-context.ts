@@ -7,7 +7,6 @@
 import type {
     ConfigAPI,
     DatabaseAPI,
-
     EmailAPI,
     AuthAPI,
     StorageAPI,
@@ -15,7 +14,7 @@ import type {
     JWTPayload,
 } from './types.js';
 import { getProviders } from './config-parser.js';
-import { getSystemLogger } from './registry.js';
+import { getSystemLogger, getProvidersHealth } from './registry.js';
 import { createContextLogger } from '@yamajs/logging';
 
 // ============================================================================
@@ -35,8 +34,6 @@ export interface HandlerContextProviders {
 
     /** Database access */
     db: DatabaseAPI;
-
-
 
     /** Email sending */
     email: EmailAPI;
@@ -73,7 +70,6 @@ export function createRequestContext(
         config: providers.config,
         log: requestLogger,
         db: providers.db,
-
         email: providers.email,
         auth: providers.auth,
         storage: providers.storage,
@@ -145,7 +141,6 @@ export async function createProviderHealthHandler() {
         };
     }
 
-    const { getProvidersHealth } = await import('./registry.js');
     const health = await getProvidersHealth();
 
     const allHealthy = Object.values(health).every(h => h.healthy);
@@ -155,5 +150,3 @@ export async function createProviderHealthHandler() {
         providers: health,
     };
 }
-
-// Note: HandlerContextProviders is already exported via interface declaration above

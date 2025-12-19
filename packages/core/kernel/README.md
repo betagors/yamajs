@@ -17,7 +17,7 @@ Yama follows a strict tiered architecture to ensure complete runtime portability
 - **Plugins**: Business logic and directives (`@yamajs/plugin-*`)
 - **Servers**: HTTP framework bridges (`@yamajs/server-*`)
 
-For a detailed breakdown of the components and naming conventions, see [ARCHITECTURE.md](./docs/ARCHITECTURE.md).
+For a detailed breakdown of the components and naming conventions, see [ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Installation
 

@@ -5,7 +5,7 @@
  * Ensures plugins are installed in the correct order and dependencies are satisfied.
  */
 
-import type { PluginManifest, PluginMigrationDefinition } from "./base.js";
+import type { PluginManifest, PluginMigrationDefinition } from "../../../../../../../../../../../core/kernel/src/plugins/base.js";
 
 /**
  * Migration dependency specification

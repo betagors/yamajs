@@ -1,4 +1,4 @@
-import { FieldType } from './types.js';
+import { FieldType } from '../../../../../../../../core/kernel/src/types/types.js';
 
 /**
  * Validation Rule Generator

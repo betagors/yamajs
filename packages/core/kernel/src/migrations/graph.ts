@@ -1,7 +1,7 @@
-import type { Transition } from "./transitions.js";
-import { getAllSnapshotHashes } from "./snapshots.js";
-import { getTransitionsDir, ensureTransitionsDir, getAllTransitions } from "./transitions.js";
-import { getRuntime } from "../platform/index.js";
+import type { Transition } from "../../../../../../../../core/kernel/src/migrations/transitions.js";
+import { getAllSnapshotHashes } from "../../../../../../../../core/kernel/src/migrations/snapshots.js";
+import { getTransitionsDir, ensureTransitionsDir, getAllTransitions } from "../../../../../../../../core/kernel/src/migrations/transitions.js";
+import { getRuntime } from "../../../../../../../../core/kernel/src/platform/index.js";
 
 const fs = () => getRuntime().fs;
 const path = () => getRuntime().path;

@@ -1,5 +1,5 @@
-import { YamaError, YamaErrorOptions } from './base.js';
-import { ErrorCodes, getStatusForCode } from './codes.js';
+import { YamaError, YamaErrorOptions } from '../../../../../../../../../../core/errors/src/base';
+import { ErrorCodes, getStatusForCode } from '../../../../../../../../../../core/errors/src/codes';
 
 /**
  * Type guard to check if an error is a YamaError

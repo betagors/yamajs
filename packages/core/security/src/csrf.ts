@@ -1,5 +1,5 @@
 ﻿import { createHash, randomBytes } from "node:crypto";
-import type { CsrfConfig } from "./types.js";
+import type { CsrfConfig } from "../../../../../../../core/security/src/types.js";
 import type { HttpRequest } from "@yamajs/kernel";
 
 /**

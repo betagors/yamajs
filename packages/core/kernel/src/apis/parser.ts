@@ -1,4 +1,4 @@
-import type { RestEndpointDefinition, NormalizedEndpoint } from './types.js';
+import type { RestEndpointDefinition, NormalizedEndpoint } from '../../../../../../../../core/kernel/src/apis/types.js';
 
 export class ApiEndpointParser {
   /**

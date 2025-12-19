@@ -3,7 +3,7 @@ export type {
   PolicyDefinition,
   YamaPolicies,
   ResolvedPolicy,
-} from "./types.js";
+} from "../../../../../../../../../../../core/kernel/src/policies/types.js";
 
 // Resolver
 export {
@@ -11,4 +11,4 @@ export {
   normalizePolicy,
   mergePolicies,
   DEFAULT_PUBLIC_POLICY,
-} from "./resolver.js";
+} from "../../../../../../../../../../../core/kernel/src/policies/resolver.js";

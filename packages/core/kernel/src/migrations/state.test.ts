@@ -12,7 +12,7 @@ import {
   deleteState,
   listEnvironments,
   getAllStates,
-} from "./state.js";
+} from "../../../../../../../../../../../core/kernel/src/migrations/state.js";
 
 describe("State", () => {
   let testDir: string;

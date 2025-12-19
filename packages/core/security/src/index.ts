@@ -1,4 +1,4 @@
-export { default as plugin } from "./plugin.js";
+export { default as plugin } from "../../../../../../../../../../core/security/src/plugin.js";
 
 // Export types
 export type {
@@ -7,13 +7,13 @@ export type {
   SecurityHeadersConfig,
   SanitizationConfig,
   SecurityPluginConfig,
-} from "./types.js";
+} from "../../../../../../../../../../core/security/src/types.js";
 
 // Export CORS functions
 export {
   handleCorsPreflight,
   applyCorsHeaders,
-} from "./cors.js";
+} from "../../../../../../../../../../core/security/src/cors.js";
 
 // Export CSRF functions
 export {
@@ -21,22 +21,22 @@ export {
   verifyCsrfToken,
   validateCsrfToken,
   setCsrfTokenCookie,
-} from "./csrf.js";
+} from "../../../../../../../../../../core/security/src/csrf.js";
 
 // Export security headers functions
 export {
   applySecurityHeaders,
-} from "./headers.js";
+} from "../../../../../../../../../../core/security/src/headers.js";
 
 // Export sanitization functions
 export {
   sanitizeRequestData,
-} from "./sanitization.js";
+} from "../../../../../../../../../../core/security/src/sanitization.js";
 
 // Export middleware creation
 export {
   createSecurityMiddleware,
-} from "./middleware.js";
+} from "../../../../../../../../../../core/security/src/middleware.js";
 
 
 

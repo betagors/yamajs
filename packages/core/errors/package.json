@@ -27,12 +27,12 @@
   "scripts": {
     "build": "pnpm exec tsc --build --force tsconfig.build.json",
     "dev": "pnpm exec tsc --build -w tsconfig.build.json",
-    "lint": "eslint . --ext .ts,.tsx",
-    "lint:fix": "eslint . --ext .ts,.tsx --fix",
-    "test": "vitest",
-    "test:watch": "vitest --watch",
-    "test:coverage": "vitest --coverage",
-    "clean": "rimraf dist tsconfig.build.tsbuildinfo"
+    "lint": "eslint  --ext .ts,.tsx",
+    "lint:fix": "eslint  --ext .ts,.tsx --fix",
+    "test": "node_modules/.bin/vitest",
+    "test:watch": "node_modules/.bin/vitest --watch",
+    "test:coverage": "node_modules/.bin/vitest --coverage",
+    "clean": "node_modules/.bin/rimraf dist tsconfig.build.tsbuildinfo"
   },
   "dependencies": {},
   "devDependencies": {

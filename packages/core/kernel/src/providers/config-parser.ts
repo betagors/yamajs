@@ -7,7 +7,7 @@
 
 import type { ProvidersConfig, ProviderAPIs } from './types.js';
 import { initializeProviders, shutdownProviders, getProvidersHealth } from './registry.js';
-import { resolveEnvVars } from '../env.js';
+import { resolveEnvVars } from '@yamajs/kernel';
 
 // ============================================================================
 // YAML Configuration Parsing
@@ -73,18 +73,6 @@ export interface RawProvidersConfig {
             requireSpecial?: boolean;
             denyCommon?: boolean;
             checkBreached?: boolean;
-        };
-        rateLimit?: {
-            enabled?: boolean;
-            login?: {
-                maxAttempts?: number;
-                window?: string;
-                blockDuration?: string;
-            };
-            signup?: {
-                maxAttempts?: number;
-                window?: string;
-            };
         };
         lockout?: {
             enabled?: boolean;
@@ -170,6 +158,3 @@ export async function shutdownProvidersSystem(): Promise<void> {
 export async function getProviderSystemHealth() {
     return getProvidersHealth();
 }
-
-
-// Note: RawProvidersConfig is already exported above on line 20

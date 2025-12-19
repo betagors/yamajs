@@ -3,15 +3,86 @@
  * 
  * Providers are built-in, zero-dependency core services that form
  * the foundation of every Yama application.
- * 
- * The 6 core providers:
- * 1. config   - Environment variables, .env files
- * 2. database - SQL database (PGLite/Postgres)
- * 3. email    - Email sending (SMTP/Resend/etc)
- * 4. auth     - Authentication & authorization
- * 5. storage  - File storage (local/S3)
  */
 import type { Logger } from "@yamajs/logging";
+
+import type {
+    ConfigProviderConfig,
+    ConfigAPI
+} from "./config/index.js";
+
+import type {
+    DatabaseProviderConfig,
+    DatabaseAPI,
+    ExecuteResult,
+    TransactionAPI,
+    SQLTemplateTag,
+    DatabaseIR,
+    TableIR,
+    ColumnIR,
+    IndexIR
+} from "./database/index.js";
+
+import type {
+    EmailProviderConfig,
+    EmailAPI,
+    EmailOptions,
+    EmailAttachment,
+    EmailResult,
+    CapturedEmail
+} from "./email/index.js";
+
+import type {
+    AuthProviderConfig,
+    AuthAPI,
+    JWTPayload,
+    RefreshTokenPayload,
+    TokenPair,
+    Session,
+    PasswordValidationResult
+} from "./auth/index.js";
+
+import type {
+    StorageProviderConfig,
+    StorageAPI,
+    UploadOptions,
+    UploadResult,
+    FileInfo,
+    FileMetadata
+} from "./storage/index.js";
+
+export type {
+    ConfigProviderConfig,
+    ConfigAPI,
+    DatabaseProviderConfig,
+    DatabaseAPI,
+    ExecuteResult,
+    TransactionAPI,
+    SQLTemplateTag,
+    DatabaseIR,
+    TableIR,
+    ColumnIR,
+    IndexIR,
+    EmailProviderConfig,
+    EmailAPI,
+    EmailOptions,
+    EmailAttachment,
+    EmailResult,
+    CapturedEmail,
+    AuthProviderConfig,
+    AuthAPI,
+    JWTPayload,
+    RefreshTokenPayload,
+    TokenPair,
+    Session,
+    PasswordValidationResult,
+    StorageProviderConfig,
+    StorageAPI,
+    UploadOptions,
+    UploadResult,
+    FileInfo,
+    FileMetadata
+};
 
 // ============================================================================
 // Core Provider Types
@@ -21,10 +92,10 @@ import type { Logger } from "@yamajs/logging";
  * Base provider interface - all providers implement this
  */
 export interface Provider<TConfig = unknown, TAPI = unknown> {
-    /** Provider type name (e.g., 'database', 'logging') */
+    /** Provider type name (e.g., 'database', 'auth') */
     readonly type: ProviderType;
 
-    /** Currently loaded adapter name (e.g., 'pglite', 'console') */
+    /** Currently loaded adapter name (e.g., 'pglite', 'smtp') */
     readonly adapter: string;
 
     /** Provider version */
@@ -110,7 +181,7 @@ export interface ProviderContext {
     /** Is production environment? */
     isProd: boolean;
 
-    /** Logger instance (available after logging provider init) */
+    /** Logger instance */
     log: ProviderLogger;
 
     /** Get a config value (available after config provider init) */
@@ -124,552 +195,6 @@ export interface ProviderContext {
 
     /** Check if a provider is initialized */
     isProviderInitialized(type: ProviderType): boolean;
-}
-
-// ============================================================================
-// Config Provider Types
-// ============================================================================
-
-export interface ConfigProviderConfig {
-    adapter: 'env';
-    /** Additional .env file paths to load */
-    paths?: string[];
-}
-
-export interface ConfigAPI {
-    /** Get a config value with optional default */
-    get<T = string>(key: string, defaultValue?: T): T | undefined;
-
-    /** Get a required config value (throws if not set) */
-    getRequired<T = string>(key: string): T;
-
-    /** Check if a config value exists */
-    has(key: string): boolean;
-
-    /** Get all config values (for debugging) */
-    getAll(): Record<string, unknown>;
-
-    /** Current environment */
-    readonly env: 'development' | 'production' | 'test';
-
-    /** Is development? */
-    readonly isDev: boolean;
-
-    /** Is production? */
-    readonly isProd: boolean;
-
-    /** Is test? */
-    readonly isTest: boolean;
-}
-
-// Logging is now a Core Service, not a Provider.
-// See @yamajs/logging for implementation and config.
-
-// ============================================================================
-// Database Provider Types
-// ============================================================================
-
-export interface DatabaseProviderConfig {
-    adapter: 'pglite' | 'postgres';
-    /** PGLite: storage directory path */
-    path?: string;
-    /** PGLite: use in-memory mode */
-    memory?: boolean;
-    /** Postgres: connection URL */
-    url?: string;
-    /** Connection pool settings */
-    pool?: {
-        min?: number;
-        max?: number;
-    };
-    /** Enable SQL debugging */
-    debug?: boolean;
-}
-
-export interface DatabaseAPI {
-    /** Execute a raw SQL query */
-    query<T = unknown>(sql: string, params?: unknown[]): Promise<T[]>;
-
-    /** Execute SQL and return first row */
-    queryOne<T = unknown>(sql: string, params?: unknown[]): Promise<T | null>;
-
-    /** Execute SQL (INSERT/UPDATE/DELETE) and return result */
-    execute(sql: string, params?: unknown[]): Promise<ExecuteResult>;
-
-    /** Start a transaction */
-    transaction<T>(fn: (tx: TransactionAPI) => Promise<T>): Promise<T>;
-
-    /** Get raw database client (for advanced use) */
-    getClient(): unknown;
-
-    /** SQL template tag for safe queries */
-    readonly sql: SQLTemplateTag;
-}
-
-export interface ExecuteResult {
-    rowsAffected: number;
-    lastInsertId?: string;
-}
-
-export interface TransactionAPI {
-    query<T = unknown>(sql: string, params?: unknown[]): Promise<T[]>;
-    queryOne<T = unknown>(sql: string, params?: unknown[]): Promise<T | null>;
-    execute(sql: string, params?: unknown[]): Promise<ExecuteResult>;
-}
-
-export type SQLTemplateTag = (
-    strings: TemplateStringsArray,
-    ...values: unknown[]
-) => { sql: string; params: unknown[] };
-
-
-
-// ============================================================================
-// Email Provider Types
-// ============================================================================
-
-export interface EmailProviderConfig {
-    adapter: 'smtp' | 'resend' | 'sendgrid' | 'capture';
-    /** Default from address */
-    from: string;
-    /** Default reply-to address */
-    replyTo?: string;
-
-    /** SMTP configuration */
-    smtp?: {
-        host: string;
-        port: number;
-        secure?: boolean;
-        auth?: {
-            user: string;
-            pass: string;
-        };
-    };
-
-    /** Resend API key */
-    resendApiKey?: string;
-
-    /** SendGrid API key */
-    sendgridApiKey?: string;
-
-    /** Dev mode settings */
-    dev?: {
-        /** Save emails to .yama/emails/ */
-        capture?: boolean;
-        /** Log to console */
-        console?: boolean;
-        /** Enable /__yama/emails UI */
-        ui?: boolean;
-    };
-
-    /** Custom templates directory */
-    templates?: string;
-}
-
-export interface EmailAPI {
-    /** Send an email */
-    send(options: EmailOptions): Promise<EmailResult>;
-
-    /** Send using a template */
-    sendTemplate(
-        template: string,
-        to: string | string[],
-        data: Record<string, unknown>,
-        options?: Partial<EmailOptions>
-    ): Promise<EmailResult>;
-
-    /** Check if email is in dev capture mode */
-    readonly isDevMode: boolean;
-
-    /** Get captured emails (dev mode only) */
-    getCapturedEmails(): Promise<CapturedEmail[]>;
-
-    /** Clear captured emails (dev mode only) */
-    clearCapturedEmails(): Promise<void>;
-}
-
-export interface EmailOptions {
-    to: string | string[];
-    subject: string;
-    html?: string;
-    text?: string;
-    from?: string;
-    replyTo?: string;
-    cc?: string | string[];
-    bcc?: string | string[];
-    attachments?: EmailAttachment[];
-}
-
-export interface EmailAttachment {
-    filename: string;
-    content: string | Uint8Array;
-    contentType?: string;
-}
-
-export interface EmailResult {
-    success: boolean;
-    messageId?: string;
-    error?: string;
-}
-
-export interface CapturedEmail {
-    id: string;
-    to: string[];
-    from: string;
-    subject: string;
-    html?: string;
-    text?: string;
-    sentAt: Date;
-    /** Extracted links for testing */
-    links: string[];
-}
-
-// ============================================================================
-// Auth Provider Types
-// ============================================================================
-
-export interface AuthProviderConfig {
-    adapter: 'jwt-password';
-
-    /** JWT configuration */
-    jwt: {
-        secret: string;
-        accessTokenExpiry?: string;
-        refreshTokenExpiry?: string;
-        issuer?: string;
-        audience?: string;
-    };
-
-    /** Cookie configuration */
-    cookie?: {
-        enabled?: boolean;
-        httpOnly?: boolean;
-        secure?: boolean;
-        sameSite?: 'strict' | 'lax' | 'none';
-        name?: string;
-    };
-
-    /** Refresh token settings */
-    refreshTokens?: {
-        enabled?: boolean;
-        storage?: 'database' | 'redis';
-        maxPerUser?: number;
-        rotating?: boolean;
-    };
-
-    /** Password requirements */
-    password?: {
-        minLength?: number;
-        maxLength?: number;
-        requireUppercase?: boolean;
-        requireLowercase?: boolean;
-        requireNumber?: boolean;
-        requireSpecial?: boolean;
-        checkBreached?: boolean;
-        denyCommon?: boolean;
-    };
-
-    /** Rate limiting */
-    rateLimit?: {
-        enabled?: boolean;
-        login?: RateLimitConfig;
-        signup?: RateLimitConfig;
-        passwordReset?: RateLimitConfig;
-        verification?: RateLimitConfig;
-    };
-
-    /** Account lockout */
-    lockout?: {
-        enabled?: boolean;
-        maxAttempts?: number;
-        duration?: string;
-        notifyEmail?: boolean;
-    };
-
-    /** Session management */
-    sessions?: {
-        enabled?: boolean;
-        maxPerUser?: number;
-        trackDevice?: boolean;
-        trackIP?: boolean;
-        trackUserAgent?: boolean;
-    };
-
-    /** Email verification */
-    verification?: {
-        email?: {
-            enabled?: boolean;
-            required?: boolean;
-            method?: 'link' | 'code';
-            expiresIn?: string;
-            template?: string;
-        };
-    };
-
-    /** Password reset */
-    passwordReset?: {
-        enabled?: boolean;
-        method?: 'link' | 'code';
-        expiresIn?: string;
-        template?: string;
-    };
-}
-
-export interface RateLimitConfig {
-    maxAttempts: number;
-    window: string;
-    blockDuration?: string;
-}
-
-export interface AuthAPI {
-    // Current request context
-    /** Current authenticated user (from JWT) */
-    readonly user: JWTPayload | null;
-
-    /** Is the current request authenticated? */
-    readonly isAuthenticated: boolean;
-
-    /** Require authentication (throws if not authenticated) */
-    requireAuth(): JWTPayload;
-
-    // Token management
-    /** Create an access token */
-    createAccessToken(payload: Omit<JWTPayload, 'iat' | 'exp'>): Promise<string>;
-
-    /** Create a refresh token for a user */
-    createRefreshToken(userId: string): Promise<string>;
-
-    /** Verify an access token */
-    verifyAccessToken(token: string): Promise<JWTPayload | null>;
-
-    /** Verify a refresh token */
-    verifyRefreshToken(token: string): Promise<RefreshTokenPayload | null>;
-
-    /** Refresh tokens (get new access + refresh tokens) */
-    refreshTokens(refreshToken: string): Promise<TokenPair>;
-
-    /** Revoke a specific refresh token */
-    revokeRefreshToken(token: string): Promise<void>;
-
-    /** Revoke all refresh tokens for a user */
-    revokeAllUserTokens(userId: string): Promise<void>;
-
-    // Password management
-    /** Hash a password */
-    hashPassword(password: string): Promise<string>;
-
-    /** Verify a password against a hash */
-    verifyPassword(password: string, hash: string): Promise<boolean>;
-
-    /** Validate password strength */
-    validatePasswordStrength(password: string): PasswordValidationResult;
-
-    /** Check if password has been breached */
-    checkPasswordBreached(password: string): Promise<boolean>;
-
-    // Email verification
-    /** Send verification email */
-    sendVerificationEmail(userId: string, email: string): Promise<void>;
-
-    /** Verify email with token */
-    verifyEmail(token: string): Promise<{ userId: string }>;
-
-    // Password reset
-    /** Send password reset email */
-    sendPasswordResetEmail(email: string): Promise<void>;
-
-    /** Reset password with token */
-    resetPassword(token: string, newPassword: string): Promise<void>;
-
-    /** Change password (when logged in) */
-    changePassword(
-        userId: string,
-        currentPassword: string,
-        newPassword: string
-    ): Promise<void>;
-
-    // Session management
-    /** Get all sessions for a user */
-    getSessions(userId: string): Promise<Session[]>;
-
-    /** Get a specific session */
-    getSession(sessionId: string): Promise<Session | null>;
-
-    /** Revoke a specific session */
-    revokeSession(sessionId: string): Promise<void>;
-
-    /** Revoke all sessions for a user */
-    revokeAllSessions(userId: string): Promise<void>;
-
-    // Rate limiting
-    /** Check rate limit for an action */
-    checkRateLimit(action: string, identifier: string): Promise<RateLimitResult>;
-
-    // Account lockout
-    /** Check if account is locked */
-    isLocked(userId: string): Promise<boolean>;
-
-    /** Lock an account */
-    lockAccount(userId: string, duration?: string): Promise<void>;
-
-    /** Unlock an account */
-    unlockAccount(userId: string): Promise<void>;
-}
-
-export interface JWTPayload {
-    /** Subject (user ID) */
-    sub: string;
-    /** Email (optional) */
-    email?: string;
-    /** Single role */
-    role?: string;
-    /** Multiple roles */
-    roles?: string[];
-    /** Issued at */
-    iat: number;
-    /** Expiration */
-    exp: number;
-    /** Custom claims */
-    [key: string]: unknown;
-}
-
-export interface RefreshTokenPayload {
-    /** Token ID */
-    jti: string;
-    /** User ID */
-    sub: string;
-    /** Issued at */
-    iat: number;
-    /** Expiration */
-    exp: number;
-}
-
-export interface TokenPair {
-    accessToken: string;
-    refreshToken: string;
-}
-
-export interface Session {
-    id: string;
-    userId: string;
-    deviceInfo?: {
-        type?: string;
-        browser?: string;
-        os?: string;
-    };
-    ipAddress?: string;
-    userAgent?: string;
-    lastActiveAt: Date;
-    createdAt: Date;
-    expiresAt: Date;
-}
-
-export interface PasswordValidationResult {
-    valid: boolean;
-    errors: string[];
-    /** Strength score 0-4 */
-    score: number;
-}
-
-export interface RateLimitResult {
-    allowed: boolean;
-    remaining: number;
-    resetAt: Date;
-    retryAfter?: number;
-}
-
-// ============================================================================
-// Storage Provider Types
-// ============================================================================
-
-export interface StorageProviderConfig {
-    adapter: 'local' | 's3';
-    /** Base path for local storage */
-    path?: string;
-    /** Maximum file size (e.g., '10MB', '1GB') */
-    maxFileSize?: string;
-    /** Allowed MIME types (e.g., ['image/*', 'application/pdf']) */
-    allowedTypes?: string[];
-
-    /** Static file serving */
-    serve?: {
-        enabled?: boolean;
-        path?: string;
-    };
-
-    /** S3 configuration */
-    s3?: {
-        bucket: string;
-        region: string;
-        accessKeyId?: string;
-        secretAccessKey?: string;
-        endpoint?: string;
-    };
-}
-
-export interface StorageAPI {
-    /** Upload a file */
-    upload(
-        data: Uint8Array | ReadableStream<Uint8Array> | string,
-        path: string,
-        options?: UploadOptions
-    ): Promise<UploadResult>;
-
-    /** Download a file */
-    download(path: string): Promise<Uint8Array>;
-
-    /** Stream a file */
-    stream(path: string): Promise<ReadableStream<Uint8Array>>;
-
-    /** Get a URL for a file */
-    getUrl(path: string, expiresIn?: number): Promise<string>;
-
-    /** Delete a file */
-    delete(path: string): Promise<void>;
-
-    /** Check if a file exists */
-    exists(path: string): Promise<boolean>;
-
-    /** List files with optional prefix */
-    list(prefix?: string): Promise<FileInfo[]>;
-
-    /** Get file metadata */
-    getMetadata(path: string): Promise<FileMetadata | null>;
-
-    /** Copy a file */
-    copy(source: string, dest: string): Promise<void>;
-
-    /** Move a file */
-    move(source: string, dest: string): Promise<void>;
-}
-
-export interface UploadOptions {
-    contentType?: string;
-    contentDisposition?: string;
-    metadata?: Record<string, string>;
-    overwrite?: boolean;
-}
-
-export interface UploadResult {
-    path: string;
-    url: string;
-    size: number;
-    contentType?: string;
-}
-
-export interface FileInfo {
-    path: string;
-    size: number;
-    isDirectory: boolean;
-    modifiedAt: Date;
-}
-
-export interface FileMetadata {
-    path: string;
-    size: number;
-    contentType?: string;
-    modifiedAt: Date;
-    metadata?: Record<string, string>;
 }
 
 // ============================================================================

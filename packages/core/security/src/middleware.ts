@@ -5,11 +5,11 @@ import type {
   MiddlewareHandler, 
   MiddlewareContext
 } from "../../core/src/middleware/index.js";
-import type { SecurityPluginConfig } from "./types.js";
-import { handleCorsPreflight, applyCorsHeaders } from "./cors.js";
-import { validateCsrfToken, setCsrfTokenCookie } from "./csrf.js";
-import { applySecurityHeaders } from "./headers.js";
-import { sanitizeRequestData } from "./sanitization.js";
+import type { SecurityPluginConfig } from "../../../../../../../../../../core/security/src/types.js";
+import { handleCorsPreflight, applyCorsHeaders } from "../../../../../../../../../../core/security/src/cors.js";
+import { validateCsrfToken, setCsrfTokenCookie } from "../../../../../../../../../../core/security/src/csrf.js";
+import { applySecurityHeaders } from "../../../../../../../../../../core/security/src/headers.js";
+import { sanitizeRequestData } from "../../../../../../../../../../core/security/src/sanitization.js";
 
 /**
  * Response-like object for collecting headers

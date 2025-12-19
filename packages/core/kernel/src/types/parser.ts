@@ -1,4 +1,4 @@
-import { BaseType, FieldType } from './types.js';
+import { BaseType, FieldType } from '../../../../../../../../../../../core/kernel/src/types/types.js';
 
 /**
  * Type Parser

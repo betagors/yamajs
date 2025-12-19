@@ -10,8 +10,8 @@ import {
   getAllSnapshots,
   getAllSnapshotHashes,
   deleteSnapshot,
-} from "./snapshots.js";
-import type { YamaEntities } from "../entities.js";
+} from "../../../../../../../../../../../core/kernel/src/migrations/snapshots.js";
+import type { YamaEntities } from "@yamajs/kernel";
 
 describe("Snapshots", () => {
   let testDir: string;

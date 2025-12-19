@@ -2,51 +2,51 @@ export {
   Logger,
   type Transport,
   type LoggerConfig
-} from "./logger.js";
+} from "../../../../../../../../../../core/logging/src/logger.js";
 
 export {
   LogLevel,
   parseLogLevel,
   getLogLevelName
-} from "./levels.js";
+} from "../../../../../../../../../../core/logging/src/levels.js";
 
 export {
   type LogEvent
-} from "./event.js";
+} from "../../../../../../../../../../core/logging/src/event.js";
 
 export {
   redact,
   type RedactionConfig
-} from "./redact.js";
+} from "../../../../../../../../../../core/logging/src/redact.js";
 
 export {
   createContextLogger,
   type ContextLoggerOptions
-} from "./ctx-log.js";
+} from "../../../../../../../../../../core/logging/src/ctx-log.js";
 
 export {
   createConsoleTransport,
   ConsoleTransport,
   type ConsoleTransportConfig
-} from "./transports/console.js";
+} from "../../../../../../../../../../core/logging/src/transports/console.js";
 
 export {
   createFSTransport,
   FSTransport,
   type FSTransportConfig
-} from "./transports/fs.js";
+} from "../../../../../../../../../../core/logging/src/transports/fs.js";
 
 export {
   createS3Transport,
   S3Transport,
   type S3TransportConfig,
   type S3Uploader
-} from "./transports/s3.js";
+} from "../../../../../../../../../../core/logging/src/transports/s3.js";
 
 export {
   createOTELTransport,
   OTELTransport
-} from "./transports/otel.js";
+} from "../../../../../../../../../../core/logging/src/transports/otel.js";
 
 export {
   formatLogEntry,
@@ -54,4 +54,4 @@ export {
   formatPretty,
   formatText,
   type LogFormat
-} from "./formatters.js";
+} from "../../../../../../../../../../core/logging/src/formatters.js";

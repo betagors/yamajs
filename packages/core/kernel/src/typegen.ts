@@ -1,10 +1,10 @@
-﻿import type { SchemaField, SchemaDefinition, YamaSchemas } from "./schemas.js";
-import type { YamaEntities } from "./entities.js";
-import { entitiesToSchemas, mergeSchemas } from "./entities.js";
-import { normalizeQueryOrParams, normalizeBodyDefinition, parseSchemaFieldDefinition } from "./schemas.js";
-import { normalizeApisConfig, type NormalizedEndpoint } from "./apis/index.js";
-import type { YamaOperations } from "./operations/types.js";
-import { parseOperations } from "./operations/index.js";
+﻿import type { SchemaField, SchemaDefinition, YamaSchemas } from "@yamajs/kernel";
+import type { YamaEntities } from "@yamajs/kernel";
+import { entitiesToSchemas, mergeSchemas } from "@yamajs/kernel";
+import { normalizeQueryOrParams, normalizeBodyDefinition, parseSchemaFieldDefinition } from "@yamajs/kernel";
+import { normalizeApisConfig, type NormalizedEndpoint } from "../../../../../../../../../../core/kernel/src/apis/index.js";
+import type { YamaOperations } from "../../../../../../../../../../core/kernel/src/operations/types.js";
+import { parseOperations } from "../../../../../../../../../../core/kernel/src/operations/index.js";
 
 /**
  * Endpoint definition for handler context generation
@@ -40,7 +40,7 @@ export interface HandlerContextConfig {
     rest?: any;
   };
   operations?: YamaOperations;
-  policies?: import("./policies/types.js").YamaPolicies;
+  policies?: import("../../../../../../../../../../core/kernel/src/policies/types.js").YamaPolicies;
 }
 
 /**

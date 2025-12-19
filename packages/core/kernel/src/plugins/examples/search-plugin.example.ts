@@ -24,7 +24,7 @@
  * ```
  */
 
-import { definePlugin } from '../define.js';
+import { definePlugin } from '../../../../../../../../../core/kernel/src/plugins/define.js';
 
 /**
  * Search plugin configuration

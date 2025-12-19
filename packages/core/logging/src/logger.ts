@@ -1,6 +1,6 @@
-﻿import { LogLevel, getLogLevelName, parseLogLevel } from "./levels.js";
-import type { LogEvent } from "./event.js";
-import { redact, type RedactionConfig } from "./redact.js";
+﻿import { LogLevel, getLogLevelName, parseLogLevel } from "../../../../../../../core/logging/src/levels.js";
+import type { LogEvent } from "../../../../../../../core/logging/src/event.js";
+import { redact, type RedactionConfig } from "../../../../../../../core/logging/src/redact.js";
 
 /**
  * Transport interface that all logging adapters must implement.

@@ -1,5 +1,5 @@
 
-import { OperationDefinition } from './types.js';
+import { OperationDefinition } from '../../../../../../../../../../../core/kernel/src/operations/types.js';
 
 /**
  * The Central Registry for all System Operations.

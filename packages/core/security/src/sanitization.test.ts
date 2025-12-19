@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { sanitizeRequestData } from "./sanitization.js";
-import type { SanitizationConfig } from "./types.js";
+import { sanitizeRequestData } from "../../../../../../../../../../core/security/src/sanitization.js";
+import type { SanitizationConfig } from "../../../../../../../../../../core/security/src/types.js";
 
 describe("Sanitization", () => {
   describe("sanitizeRequestData", () => {

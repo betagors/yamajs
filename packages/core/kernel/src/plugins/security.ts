@@ -1,4 +1,4 @@
-import type { PluginManifest } from "./base.js";
+import type { PluginManifest } from "../../../../../../../../../../../core/kernel/src/plugins/base.js";
 
 /**
  * Plugin security policy

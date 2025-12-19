@@ -1,5 +1,5 @@
-import { getRuntime } from "../platform/index.js";
-import type { PluginManifest, YamaPlugin } from "./base.js";
+import { getRuntime } from "../../../../../../../../../../../core/kernel/src/platform/index.js";
+import type { PluginManifest, YamaPlugin } from "../../../../../../../../../../../core/kernel/src/plugins/base.js";
 import { PluginError, ErrorCodes } from "@yamajs/errors";
 
 /**

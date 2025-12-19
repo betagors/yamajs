@@ -1,7 +1,7 @@
 ﻿import type { YamaPlugin } from "@yamajs/kernel";
-import { resolveAdminXConfig } from "./config.js";
-import { registerAdminXRoutes } from "./routes.js";
-import type { AdminXPluginAPI, AdminXPluginConfig } from "./types.js";
+import { resolveAdminXConfig } from "./config";
+import { registerAdminXRoutes } from "./routes";
+import type { AdminXPluginAPI, AdminXPluginConfig } from "./types";
 
 const plugin: YamaPlugin = {
   name: "@yamajs/adminx",

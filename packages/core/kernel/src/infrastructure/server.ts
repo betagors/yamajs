@@ -1,6 +1,6 @@
-import type { AuthContext } from "../schemas.js";
+import type { AuthContext } from "@yamajs/kernel";
 
-import type { StorageBucket } from "./storage.js";
+import type { StorageBucket } from "../../../../../../../../../../../core/kernel/src/infrastructure/storage.js";
 
 /**
  * Normalized HTTP request interface

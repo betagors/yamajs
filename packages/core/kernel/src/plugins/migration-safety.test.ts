@@ -9,7 +9,7 @@ import {
     formatSafetyAnalysis,
     getConfirmationPrompt,
     validateConfirmation,
-} from "./migration-safety.js";
+} from "../../../../../../../../../../../core/kernel/src/plugins/migration-safety.js";
 
 describe("Migration Safety Analysis", () => {
     describe("analyzeMigrationSafety", () => {

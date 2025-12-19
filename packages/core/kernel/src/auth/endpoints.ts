@@ -13,9 +13,9 @@
  * - POST /auth/change-password
  */
 
-import type { AuthEndpoint, AuthEndpointContext, AuthEndpointResponse, AuthEndpointsConfig, AuthUserEntityConfig } from "./plugin-types.js";
-import type { AuthUser, TokenPair } from "./types.js";
-import { hashPassword, verifyPassword, checkPasswordStrength, generateSecureToken } from "./utils.js";
+import type { AuthEndpoint, AuthEndpointContext, AuthEndpointResponse, AuthEndpointsConfig, AuthUserEntityConfig } from "../../../../../../../../core/kernel/src/auth/plugin-types.js";
+import type { AuthUser, TokenPair } from "../../../../../../../../core/kernel/src/auth/types.js";
+import { hashPassword, verifyPassword, checkPasswordStrength, generateSecureToken } from "../../../../../../../../core/kernel/src/auth/utils.js";
 import { ErrorCodes } from "@yamajs/errors";
 
 /**

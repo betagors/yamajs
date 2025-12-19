@@ -1,0 +1,27 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+    "composite": true,
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext"
+  },
+  "include": [
+    "src"
+  ],
+  "references": [
+    {
+      "path": "../kernel/tsconfig.build.json"
+    },
+    {
+      "path": "../../codegen/openapi/tsconfig.build.json"
+    },
+    {
+      "path": "../postgres/tsconfig.build.json"
+    },
+    {
+      "path": "../../host/http-fastify/tsconfig.build.json"
+    }
+  ]
+}

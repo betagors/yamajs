@@ -1,5 +1,5 @@
-import type { Logger, YamaPlugin, PluginManifest, PluginCLICommand, PluginMCPTool } from "./base.js";
-import type { MiddlewareRegistry } from "../middleware/registry.js";
+import type { Logger, YamaPlugin, PluginManifest, PluginCLICommand, PluginMCPTool } from "../../../../../../../../../../../core/kernel/src/plugins/base.js";
+import type { MiddlewareRegistry } from "../../../../../../../../../../../core/kernel/src/middleware/registry.js";
 
 /**
  * Simple event emitter implementation

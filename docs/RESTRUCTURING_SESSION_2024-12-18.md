@@ -16,14 +16,14 @@
 "dependencies": {
   "@yamajs/plugin-openapi": "workspace:*",   // ❌ ILLEGAL
   "@yamajs/db-postgres": "workspace:*",      // ❌ ILLEGAL  
-  "@yamajs/server-fastify": "workspace:*",   // ❌ ILLEGAL
+  "@yamajs/http-fastify": "workspace:*",   // ❌ ILLEGAL
 }
 ```
 
 **After:** Moved to peer dependencies
 ```json
 "peerDependencies": {
-  "@yamajs/server-fastify": "workspace:*",    // Required
+  "@yamajs/http-fastify": "workspace:*",    // Required
   "@yamajs/plugin-openapi": "workspace:*",    // Optional
   "@yamajs/db-postgres": "workspace:*"        // Optional
 }

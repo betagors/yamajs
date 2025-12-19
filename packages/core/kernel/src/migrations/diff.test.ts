@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { computeDiff, diffToSteps } from "./diff.js";
-import { entitiesToModel } from "./model.js";
-import type { YamaEntities } from "../entities.js";
+import { computeDiff, diffToSteps } from "../../../../../../../../core/kernel/src/migrations/diff.js";
+import { entitiesToModel } from "../../../../../../../../core/kernel/src/migrations/model.js";
+import type { YamaEntities } from "@yamajs/kernel";
 
 describe("Diff", () => {
   describe("computeDiff", () => {

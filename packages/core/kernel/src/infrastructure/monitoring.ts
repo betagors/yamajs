@@ -1,4 +1,4 @@
-import type { HttpRequest, HttpResponse, HandlerContext } from "./server.js";
+import type { HttpRequest, HttpResponse, HandlerContext } from "../../../../../../../../core/kernel/src/infrastructure/server.js";
 
 /**
  * Context for error tracking
