@@ -20,10 +20,9 @@
   "dependencies": {
     "drizzle-orm": "^0.30.0",
     "postgres": "^3.4.3",
-    "@yamajs/db-pglite": "file:../../packages/pglite",
-    "@yamajs/db-postgres": "file:../../packages/postgres",
-    "@yamajs/kernel": "file:../../packages/kernel",
-    "@yamajs/runtime-node": "file:../../packages/runtime-node"
+    "@yamajs/db-drizzle": "workspace:*",
+    "@yamajs/kernel": "workspace:*",
+    "@yamajs/runtime-node": "workspace:*"
   },
   "devDependencies": {
     "@yamajs/cli": "file:../../packages/cli"
