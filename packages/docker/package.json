@@ -43,7 +43,7 @@
   },
   "dependencies": {
     "@betagors/yama-core": "workspace:*",
-    "inquirer": "^10.2.2",
+    "inquirer": "^12.0.0",
     "js-yaml": "^4.1.0",
     "zod": "^3.22.4"
   },
